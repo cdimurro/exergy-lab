@@ -1,0 +1,20 @@
+{
+  "name": "clean-energy-platform",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The intelligence platform for the clean energy transition",
+  "workspaces": [
+    "frontend",
+    "shared"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=frontend",
+    "build": "npm run build --workspace=frontend",
+    "preview": "npm run preview --workspace=frontend",
+    "backend": "cd backend && uvicorn app.main:app --reload --port 8000",
+    "dev:all": "concurrently \"npm run dev\" \"npm run backend\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
