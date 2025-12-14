@@ -474,7 +474,7 @@ export function InteractiveEnergyExplorer({ className }: InteractiveEnergyExplor
                   stackId="1"
                   stroke={sourceColors[source]}
                   fill={sourceColors[source]}
-                  fillOpacity={0.6}
+                  fillOpacity={0.1}
                 />
               ))}
             </AreaChart>
