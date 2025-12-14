@@ -398,7 +398,7 @@ export function InteractiveEnergyExplorer({ className }: InteractiveEnergyExplor
                   : 'bg-background-surface text-foreground-muted hover:bg-background-surface/80'
               }`}
             >
-              Fossil Only
+              Fossil Fuels
             </button>
             <button
               onClick={() => handleFilterChange('clean')}
