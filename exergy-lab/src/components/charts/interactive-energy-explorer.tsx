@@ -23,11 +23,11 @@ const ENERGY_COLORS: Record<string, string> = {
   gas: '#06b6d4',       // Cyan
   nuclear: '#8b5cf6',   // Purple
   hydro: '#3b82f6',     // Blue
-  wind: '#14b8a6',      // Teal
+  wind: '#84cc16',      // Lime (swapped with other)
   solar: '#f59e0b',     // Amber
   biomass: '#166534',   // Dark Green
   geothermal: '#f43f5e', // Rose
-  other: '#84cc16',     // Lime (bright lime, distinct from teal)
+  other: '#14b8a6',     // Teal (swapped with wind)
   fossil: '#DC2626',    // Red
   clean: '#16A34A',     // Green
 }
@@ -174,11 +174,11 @@ const buttonColors: Record<string, { selected: string; unselected: string }> = {
   'Natural Gas': { selected: 'bg-cyan-500 border-cyan-500 text-white ring-2 ring-cyan-500 ring-offset-2', unselected: 'bg-gray-200 border-gray-200 text-gray-700 hover:bg-gray-300' },
   Nuclear: { selected: 'bg-violet-500 border-violet-500 text-white ring-2 ring-violet-500 ring-offset-2', unselected: 'bg-gray-200 border-gray-200 text-gray-700 hover:bg-gray-300' },
   Hydro: { selected: 'bg-blue-500 border-blue-500 text-white ring-2 ring-blue-500 ring-offset-2', unselected: 'bg-gray-200 border-gray-200 text-gray-700 hover:bg-gray-300' },
-  Wind: { selected: 'bg-teal-500 border-teal-500 text-white ring-2 ring-teal-500 ring-offset-2', unselected: 'bg-gray-200 border-gray-200 text-gray-700 hover:bg-gray-300' },
+  Wind: { selected: 'bg-lime-500 border-lime-500 text-white ring-2 ring-lime-500 ring-offset-2', unselected: 'bg-gray-200 border-gray-200 text-gray-700 hover:bg-gray-300' },
   Solar: { selected: 'bg-amber-500 border-amber-500 text-white ring-2 ring-amber-500 ring-offset-2', unselected: 'bg-gray-200 border-gray-200 text-gray-700 hover:bg-gray-300' },
   Biomass: { selected: 'bg-green-800 border-green-800 text-white ring-2 ring-green-800 ring-offset-2', unselected: 'bg-gray-200 border-gray-200 text-gray-700 hover:bg-gray-300' },
   Geothermal: { selected: 'bg-rose-500 border-rose-500 text-white ring-2 ring-rose-500 ring-offset-2', unselected: 'bg-gray-200 border-gray-200 text-gray-700 hover:bg-gray-300' },
-  'Other Renewables': { selected: 'bg-lime-500 border-lime-500 text-white ring-2 ring-lime-500 ring-offset-2', unselected: 'bg-gray-200 border-gray-200 text-gray-700 hover:bg-gray-300' },
+  'Other Renewables': { selected: 'bg-teal-500 border-teal-500 text-white ring-2 ring-teal-500 ring-offset-2', unselected: 'bg-gray-200 border-gray-200 text-gray-700 hover:bg-gray-300' },
 }
 
 // Color mapping for legend dots (Tailwind classes)
@@ -188,11 +188,11 @@ const colorMap: Record<string, string> = {
   'Natural Gas': 'bg-cyan-500',
   Nuclear: 'bg-violet-500',
   Hydro: 'bg-blue-500',
-  Wind: 'bg-teal-500',
+  Wind: 'bg-lime-500',
   Solar: 'bg-amber-500',
   Biomass: 'bg-green-800',
   Geothermal: 'bg-rose-500',
-  'Other Renewables': 'bg-lime-500',
+  'Other Renewables': 'bg-teal-500',
   'Fossil Fuels': 'bg-red-600',
   'Clean Energy': 'bg-green-600',
 }

@@ -249,7 +249,7 @@ export function RegionalExplorer({ className }: RegionalExplorerProps) {
                   stackId="1"
                   stroke={regionColors[region]}
                   fill={regionColors[region]}
-                  fillOpacity={0.7}
+                  fillOpacity={0.6}
                 />
               ))}
             </AreaChart>

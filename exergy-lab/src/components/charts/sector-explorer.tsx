@@ -249,7 +249,7 @@ export function SectorExplorer({ className }: SectorExplorerProps) {
                   stackId="1"
                   stroke={sectorColors[sector]}
                   fill={sectorColors[sector]}
-                  fillOpacity={0.7}
+                  fillOpacity={0.6}
                 />
               ))}
             </AreaChart>
