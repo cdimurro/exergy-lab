@@ -1,0 +1,1219 @@
+{
+  "metadata": {
+    "generated_at": "2025-11-21T20:26:47.741487",
+    "version": "v2.0",
+    "description": "Global energy services by source (Exajoules) - Tier 3: Useful \u00d7 Exergy Factor",
+    "sources": [
+      "Our World in Data Energy Dataset",
+      "IEA World Energy Outlook 2024",
+      "IEA Energy Efficiency Indicators (EEI)",
+      "Brockway et al. 2019 - Global energy services baseline (~100 EJ 2015)",
+      "RMI 2024 - Final energy proxy"
+    ],
+    "methodology": "Exergy-weighted useful energy based on sectoral allocation (electricity=1.0, mechanical=1.0, high-temp heat=0.6, low-temp heat=0.15)",
+    "unit": "Exajoules (EJ)",
+    "validation": "Calibrated to IEA WEO 2024 (fossil 80-82%, clean 18-20%) and Brockway 2019 (~100 EJ services 2015, ~120 EJ expected 2024)"
+  },
+  "data": [
+    {
+      "year": 1965,
+      "total_services_ej": 29.0,
+      "global_exergy_efficiency": 14.9,
+      "sources_services_ej": {
+        "oil": 11.005,
+        "gas": 3.693,
+        "coal": 10.562,
+        "nuclear": 0.025,
+        "hydro": 2.056,
+        "wind": 0,
+        "solar": 0,
+        "biomass": 1.659,
+        "geothermal": 0
+      },
+      "fossil_services_ej": 25.26,
+      "clean_services_ej": 3.74,
+      "fossil_services_share_percent": 87.1,
+      "clean_services_share_percent": 12.9
+    },
+    {
+      "year": 1966,
+      "total_services_ej": 30.58,
+      "global_exergy_efficiency": 15.1,
+      "sources_services_ej": {
+        "oil": 11.91,
+        "gas": 4.044,
+        "coal": 10.732,
+        "nuclear": 0.033,
+        "hydro": 2.191,
+        "wind": 0,
+        "solar": 0,
+        "biomass": 1.666,
+        "geothermal": 0
+      },
+      "fossil_services_ej": 26.69,
+      "clean_services_ej": 3.89,
+      "fossil_services_share_percent": 87.3,
+      "clean_services_share_percent": 12.7
+    },
+    {
+      "year": 1967,
+      "total_services_ej": 31.7,
+      "global_exergy_efficiency": 15.2,
+      "sources_services_ej": {
+        "oil": 12.782,
+        "gas": 4.362,
+        "coal": 10.609,
+        "nuclear": 0.039,
+        "hydro": 2.239,
+        "wind": 0,
+        "solar": 0,
+        "biomass": 1.672,
+        "geothermal": 0
+      },
+      "fossil_services_ej": 27.75,
+      "clean_services_ej": 3.95,
+      "fossil_services_share_percent": 87.5,
+      "clean_services_share_percent": 12.5
+    },
+    {
+      "year": 1968,
+      "total_services_ej": 33.58,
+      "global_exergy_efficiency": 15.4,
+      "sources_services_ej": {
+        "oil": 13.894,
+        "gas": 4.782,
+        "coal": 10.817,
+        "nuclear": 0.05,
+        "hydro": 2.359,
+        "wind": 0,
+        "solar": 0,
+        "biomass": 1.679,
+        "geothermal": 0
+      },
+      "fossil_services_ej": 29.49,
+      "clean_services_ej": 4.09,
+      "fossil_services_share_percent": 87.8,
+      "clean_services_share_percent": 12.2
+    },
+    {
+      "year": 1969,
+      "total_services_ej": 35.87,
+      "global_exergy_efficiency": 15.6,
+      "sources_services_ej": {
+        "oil": 15.139,
+        "gas": 5.276,
+        "coal": 11.21,
+        "nuclear": 0.059,
+        "hydro": 2.498,
+        "wind": 0,
+        "solar": 0,
+        "biomass": 1.686,
+        "geothermal": 0
+      },
+      "fossil_services_ej": 31.62,
+      "clean_services_ej": 4.24,
+      "fossil_services_share_percent": 88.2,
+      "clean_services_share_percent": 11.8
+    },
+    {
+      "year": 1970,
+      "total_services_ej": 38.16,
+      "global_exergy_efficiency": 15.8,
+      "sources_services_ej": {
+        "oil": 16.582,
+        "gas": 5.77,
+        "coal": 11.423,
+        "nuclear": 0.076,
+        "hydro": 2.615,
+        "wind": 0,
+        "solar": 0,
+        "biomass": 1.694,
+        "geothermal": 0
+      },
+      "fossil_services_ej": 33.77,
+      "clean_services_ej": 4.39,
+      "fossil_services_share_percent": 88.5,
+      "clean_services_share_percent": 11.5
+    },
+    {
+      "year": 1971,
+      "total_services_ej": 39.68,
+      "global_exergy_efficiency": 15.9,
+      "sources_services_ej": {
+        "oil": 17.53,
+        "gas": 6.207,
+        "coal": 11.41,
+        "nuclear": 0.105,
+        "hydro": 2.732,
+        "wind": 0,
+        "solar": 0,
+        "biomass": 1.7,
+        "geothermal": 0
+      },
+      "fossil_services_ej": 35.15,
+      "clean_services_ej": 4.54,
+      "fossil_services_share_percent": 88.6,
+      "clean_services_share_percent": 11.4
+    },
+    {
+      "year": 1972,
+      "total_services_ej": 41.86,
+      "global_exergy_efficiency": 16.1,
+      "sources_services_ej": {
+        "oil": 18.976,
+        "gas": 6.58,
+        "coal": 11.585,
+        "nuclear": 0.147,
+        "hydro": 2.86,
+        "wind": 0,
+        "solar": 0,
+        "biomass": 1.708,
+        "geothermal": 0
+      },
+      "fossil_services_ej": 37.14,
+      "clean_services_ej": 4.72,
+      "fossil_services_share_percent": 88.7,
+      "clean_services_share_percent": 11.3
+    },
+    {
+      "year": 1973,
+      "total_services_ej": 44.27,
+      "global_exergy_efficiency": 16.2,
+      "sources_services_ej": {
+        "oil": 20.542,
+        "gas": 6.926,
+        "coal": 11.989,
+        "nuclear": 0.198,
+        "hydro": 2.901,
+        "wind": 0,
+        "solar": 0,
+        "biomass": 1.714,
+        "geothermal": 0
+      },
+      "fossil_services_ej": 39.46,
+      "clean_services_ej": 4.81,
+      "fossil_services_share_percent": 89.1,
+      "clean_services_share_percent": 10.9
+    },
+    {
+      "year": 1974,
+      "total_services_ej": 44.64,
+      "global_exergy_efficiency": 16.4,
+      "sources_services_ej": {
+        "oil": 20.295,
+        "gas": 7.13,
+        "coal": 12.053,
+        "nuclear": 0.258,
+        "hydro": 3.186,
+        "wind": 0,
+        "solar": 0,
+        "biomass": 1.721,
+        "geothermal": 0
+      },
+      "fossil_services_ej": 39.48,
+      "clean_services_ej": 5.16,
+      "fossil_services_share_percent": 88.4,
+      "clean_services_share_percent": 11.6
+    },
+    {
+      "year": 1975,
+      "total_services_ej": 45.04,
+      "global_exergy_efficiency": 16.5,
+      "sources_services_ej": {
+        "oil": 20.215,
+        "gas": 7.163,
+        "coal": 12.347,
+        "nuclear": 0.359,
+        "hydro": 3.226,
+        "wind": 0,
+        "solar": 0,
+        "biomass": 1.728,
+        "geothermal": 0
+      },
+      "fossil_services_ej": 39.73,
+      "clean_services_ej": 5.31,
+      "fossil_services_share_percent": 88.2,
+      "clean_services_share_percent": 11.8
+    },
+    {
+      "year": 1976,
+      "total_services_ej": 47.44,
+      "global_exergy_efficiency": 16.6,
+      "sources_services_ej": {
+        "oil": 21.59,
+        "gas": 7.625,
+        "coal": 12.853,
+        "nuclear": 0.421,
+        "hydro": 3.213,
+        "wind": 0,
+        "solar": 0,
+        "biomass": 1.735,
+        "geothermal": 0
+      },
+      "fossil_services_ej": 42.07,
+      "clean_services_ej": 5.37,
+      "fossil_services_share_percent": 88.7,
+      "clean_services_share_percent": 11.3
+    },
+    {
+      "year": 1977,
+      "total_services_ej": 49.19,
+      "global_exergy_efficiency": 16.7,
+      "sources_services_ej": {
+        "oil": 22.382,
+        "gas": 7.912,
+        "coal": 13.304,
+        "nuclear": 0.524,
+        "hydro": 3.321,
+        "wind": 0,
+        "solar": 0,
+        "biomass": 1.743,
+        "geothermal": 0
+      },
+      "fossil_services_ej": 43.6,
+      "clean_services_ej": 5.59,
+      "fossil_services_share_percent": 88.6,
+      "clean_services_share_percent": 11.4
+    },
+    {
+      "year": 1978,
+      "total_services_ej": 51.16,
+      "global_exergy_efficiency": 16.9,
+      "sources_services_ej": {
+        "oil": 23.421,
+        "gas": 8.28,
+        "coal": 13.503,
+        "nuclear": 0.61,
+        "hydro": 3.594,
+        "wind": 0,
+        "solar": 0,
+        "biomass": 1.75,
+        "geothermal": 0
+      },
+      "fossil_services_ej": 45.2,
+      "clean_services_ej": 5.95,
+      "fossil_services_share_percent": 88.4,
+      "clean_services_share_percent": 11.6
+    },
+    {
+      "year": 1979,
+      "total_services_ej": 52.99,
+      "global_exergy_efficiency": 17.0,
+      "sources_services_ej": {
+        "oil": 23.797,
+        "gas": 8.834,
+        "coal": 14.193,
+        "nuclear": 0.636,
+        "hydro": 3.774,
+        "wind": 0,
+        "solar": 0,
+        "biomass": 1.758,
+        "geothermal": 0
+      },
+      "fossil_services_ej": 46.82,
+      "clean_services_ej": 6.17,
+      "fossil_services_share_percent": 88.4,
+      "clean_services_share_percent": 11.6
+    },
+    {
+      "year": 1980,
+      "total_services_ej": 52.72,
+      "global_exergy_efficiency": 17.1,
+      "sources_services_ej": {
+        "oil": 22.841,
+        "gas": 8.949,
+        "coal": 14.612,
+        "nuclear": 0.696,
+        "hydro": 3.855,
+        "wind": 0,
+        "solar": 0,
+        "biomass": 1.766,
+        "geothermal": 0
+      },
+      "fossil_services_ej": 46.4,
+      "clean_services_ej": 6.32,
+      "fossil_services_share_percent": 88.0,
+      "clean_services_share_percent": 12.0
+    },
+    {
+      "year": 1981,
+      "total_services_ej": 52.59,
+      "global_exergy_efficiency": 17.2,
+      "sources_services_ej": {
+        "oil": 22.091,
+        "gas": 9.09,
+        "coal": 14.874,
+        "nuclear": 0.824,
+        "hydro": 3.939,
+        "wind": 0,
+        "solar": 0,
+        "biomass": 1.772,
+        "geothermal": 0
+      },
+      "fossil_services_ej": 46.05,
+      "clean_services_ej": 6.54,
+      "fossil_services_share_percent": 87.6,
+      "clean_services_share_percent": 12.4
+    },
+    {
+      "year": 1982,
+      "total_services_ej": 52.48,
+      "global_exergy_efficiency": 17.3,
+      "sources_services_ej": {
+        "oil": 21.504,
+        "gas": 9.178,
+        "coal": 15.108,
+        "nuclear": 0.895,
+        "hydro": 4.01,
+        "wind": 0,
+        "solar": 0,
+        "biomass": 1.78,
+        "geothermal": 0
+      },
+      "fossil_services_ej": 45.79,
+      "clean_services_ej": 6.68,
+      "fossil_services_share_percent": 87.3,
+      "clean_services_share_percent": 12.7
+    },
+    {
+      "year": 1983,
+      "total_services_ej": 53.45,
+      "global_exergy_efficiency": 17.4,
+      "sources_services_ej": {
+        "oil": 21.461,
+        "gas": 9.368,
+        "coal": 15.64,
+        "nuclear": 1.016,
+        "hydro": 4.181,
+        "wind": 0,
+        "solar": 0,
+        "biomass": 1.789,
+        "geothermal": 0
+      },
+      "fossil_services_ej": 46.47,
+      "clean_services_ej": 6.99,
+      "fossil_services_share_percent": 86.9,
+      "clean_services_share_percent": 13.1
+    },
+    {
+      "year": 1984,
+      "total_services_ej": 55.79,
+      "global_exergy_efficiency": 17.6,
+      "sources_services_ej": {
+        "oil": 21.872,
+        "gas": 10.177,
+        "coal": 16.391,
+        "nuclear": 1.235,
+        "hydro": 4.322,
+        "wind": 0,
+        "solar": 0,
+        "biomass": 1.797,
+        "geothermal": 0
+      },
+      "fossil_services_ej": 48.44,
+      "clean_services_ej": 7.35,
+      "fossil_services_share_percent": 86.8,
+      "clean_services_share_percent": 13.2
+    },
+    {
+      "year": 1985,
+      "total_services_ej": 57.29,
+      "global_exergy_efficiency": 17.7,
+      "sources_services_ej": {
+        "oil": 21.981,
+        "gas": 10.454,
+        "coal": 17.17,
+        "nuclear": 1.468,
+        "hydro": 4.407,
+        "wind": 0,
+        "solar": 0,
+        "biomass": 1.805,
+        "geothermal": 0
+      },
+      "fossil_services_ej": 49.61,
+      "clean_services_ej": 7.68,
+      "fossil_services_share_percent": 86.6,
+      "clean_services_share_percent": 13.4
+    },
+    {
+      "year": 1986,
+      "total_services_ej": 58.62,
+      "global_exergy_efficiency": 17.8,
+      "sources_services_ej": {
+        "oil": 22.723,
+        "gas": 10.602,
+        "coal": 17.438,
+        "nuclear": 1.575,
+        "hydro": 4.466,
+        "wind": 0,
+        "solar": 0,
+        "biomass": 1.814,
+        "geothermal": 0
+      },
+      "fossil_services_ej": 50.76,
+      "clean_services_ej": 7.85,
+      "fossil_services_share_percent": 86.6,
+      "clean_services_share_percent": 13.4
+    },
+    {
+      "year": 1987,
+      "total_services_ej": 60.8,
+      "global_exergy_efficiency": 17.9,
+      "sources_services_ej": {
+        "oil": 23.318,
+        "gas": 11.207,
+        "coal": 18.21,
+        "nuclear": 1.716,
+        "hydro": 4.527,
+        "wind": 0,
+        "solar": 0,
+        "biomass": 1.822,
+        "geothermal": 0
+      },
+      "fossil_services_ej": 52.73,
+      "clean_services_ej": 8.07,
+      "fossil_services_share_percent": 86.7,
+      "clean_services_share_percent": 13.3
+    },
+    {
+      "year": 1988,
+      "total_services_ej": 63.13,
+      "global_exergy_efficiency": 18.0,
+      "sources_services_ej": {
+        "oil": 24.14,
+        "gas": 11.782,
+        "coal": 18.836,
+        "nuclear": 1.873,
+        "hydro": 4.672,
+        "wind": 0.001,
+        "solar": 0,
+        "biomass": 1.829,
+        "geothermal": 0
+      },
+      "fossil_services_ej": 54.76,
+      "clean_services_ej": 8.38,
+      "fossil_services_share_percent": 86.7,
+      "clean_services_share_percent": 13.3
+    },
+    {
+      "year": 1989,
+      "total_services_ej": 64.47,
+      "global_exergy_efficiency": 18.1,
+      "sources_services_ej": {
+        "oil": 24.594,
+        "gas": 12.357,
+        "coal": 19.098,
+        "nuclear": 1.93,
+        "hydro": 4.647,
+        "wind": 0.006,
+        "solar": 0.001,
+        "biomass": 1.837,
+        "geothermal": 0
+      },
+      "fossil_services_ej": 56.05,
+      "clean_services_ej": 8.42,
+      "fossil_services_share_percent": 86.9,
+      "clean_services_share_percent": 13.1
+    },
+    {
+      "year": 1990,
+      "total_services_ej": 65.54,
+      "global_exergy_efficiency": 18.2,
+      "sources_services_ej": {
+        "oil": 25.13,
+        "gas": 12.8,
+        "coal": 18.959,
+        "nuclear": 1.988,
+        "hydro": 4.806,
+        "wind": 0.009,
+        "solar": 0.001,
+        "biomass": 1.845,
+        "geothermal": 0
+      },
+      "fossil_services_ej": 56.89,
+      "clean_services_ej": 8.65,
+      "fossil_services_share_percent": 86.8,
+      "clean_services_share_percent": 13.2
+    },
+    {
+      "year": 1991,
+      "total_services_ej": 66.1,
+      "global_exergy_efficiency": 18.3,
+      "sources_services_ej": {
+        "oil": 25.189,
+        "gas": 13.18,
+        "coal": 18.863,
+        "nuclear": 2.087,
+        "hydro": 4.917,
+        "wind": 0.009,
+        "solar": 0.001,
+        "biomass": 1.853,
+        "geothermal": 0
+      },
+      "fossil_services_ej": 57.23,
+      "clean_services_ej": 8.87,
+      "fossil_services_share_percent": 86.6,
+      "clean_services_share_percent": 13.4
+    },
+    {
+      "year": 1992,
+      "total_services_ej": 66.68,
+      "global_exergy_efficiency": 18.3,
+      "sources_services_ej": {
+        "oil": 25.62,
+        "gas": 13.297,
+        "coal": 18.867,
+        "nuclear": 2.106,
+        "hydro": 4.916,
+        "wind": 0.01,
+        "solar": 0.001,
+        "biomass": 1.86,
+        "geothermal": 0
+      },
+      "fossil_services_ej": 57.78,
+      "clean_services_ej": 8.89,
+      "fossil_services_share_percent": 86.7,
+      "clean_services_share_percent": 13.3
+    },
+    {
+      "year": 1993,
+      "total_services_ej": 67.4,
+      "global_exergy_efficiency": 18.5,
+      "sources_services_ej": {
+        "oil": 25.594,
+        "gas": 13.489,
+        "coal": 19.04,
+        "nuclear": 2.182,
+        "hydro": 5.213,
+        "wind": 0.012,
+        "solar": 0.001,
+        "biomass": 1.867,
+        "geothermal": 0
+      },
+      "fossil_services_ej": 58.12,
+      "clean_services_ej": 9.27,
+      "fossil_services_share_percent": 86.2,
+      "clean_services_share_percent": 13.8
+    },
+    {
+      "year": 1994,
+      "total_services_ej": 68.42,
+      "global_exergy_efficiency": 18.5,
+      "sources_services_ej": {
+        "oil": 26.225,
+        "gas": 13.629,
+        "coal": 19.2,
+        "nuclear": 2.227,
+        "hydro": 5.245,
+        "wind": 0.016,
+        "solar": 0.001,
+        "biomass": 1.876,
+        "geothermal": 0
+      },
+      "fossil_services_ej": 59.05,
+      "clean_services_ej": 9.36,
+      "fossil_services_share_percent": 86.3,
+      "clean_services_share_percent": 13.7
+    },
+    {
+      "year": 1995,
+      "total_services_ej": 70.05,
+      "global_exergy_efficiency": 18.7,
+      "sources_services_ej": {
+        "oil": 26.709,
+        "gas": 14.167,
+        "coal": 19.418,
+        "nuclear": 2.327,
+        "hydro": 5.529,
+        "wind": 0.018,
+        "solar": 0.001,
+        "biomass": 1.884,
+        "geothermal": 0
+      },
+      "fossil_services_ej": 60.29,
+      "clean_services_ej": 9.76,
+      "fossil_services_share_percent": 86.1,
+      "clean_services_share_percent": 13.9
+    },
+    {
+      "year": 1996,
+      "total_services_ej": 72.24,
+      "global_exergy_efficiency": 18.8,
+      "sources_services_ej": {
+        "oil": 27.406,
+        "gas": 14.938,
+        "coal": 19.963,
+        "nuclear": 2.415,
+        "hydro": 5.603,
+        "wind": 0.021,
+        "solar": 0.002,
+        "biomass": 1.89,
+        "geothermal": 0
+      },
+      "fossil_services_ej": 62.31,
+      "clean_services_ej": 9.93,
+      "fossil_services_share_percent": 86.3,
+      "clean_services_share_percent": 13.7
+    },
+    {
+      "year": 1997,
+      "total_services_ej": 73.17,
+      "global_exergy_efficiency": 18.8,
+      "sources_services_ej": {
+        "oil": 28.219,
+        "gas": 14.914,
+        "coal": 20.005,
+        "nuclear": 2.403,
+        "hydro": 5.703,
+        "wind": 0.027,
+        "solar": 0.002,
+        "biomass": 1.898,
+        "geothermal": 0
+      },
+      "fossil_services_ej": 63.14,
+      "clean_services_ej": 10.03,
+      "fossil_services_share_percent": 86.3,
+      "clean_services_share_percent": 13.7
+    },
+    {
+      "year": 1998,
+      "total_services_ej": 73.75,
+      "global_exergy_efficiency": 18.9,
+      "sources_services_ej": {
+        "oil": 28.398,
+        "gas": 15.251,
+        "coal": 19.963,
+        "nuclear": 2.447,
+        "hydro": 5.747,
+        "wind": 0.035,
+        "solar": 0.002,
+        "biomass": 1.905,
+        "geothermal": 0
+      },
+      "fossil_services_ej": 63.61,
+      "clean_services_ej": 10.14,
+      "fossil_services_share_percent": 86.3,
+      "clean_services_share_percent": 13.7
+    },
+    {
+      "year": 1999,
+      "total_services_ej": 75.1,
+      "global_exergy_efficiency": 19.0,
+      "sources_services_ej": {
+        "oil": 28.926,
+        "gas": 15.75,
+        "coal": 20.131,
+        "nuclear": 2.544,
+        "hydro": 5.789,
+        "wind": 0.048,
+        "solar": 0.002,
+        "biomass": 1.912,
+        "geothermal": 0
+      },
+      "fossil_services_ej": 64.81,
+      "clean_services_ej": 10.3,
+      "fossil_services_share_percent": 86.3,
+      "clean_services_share_percent": 13.7
+    },
+    {
+      "year": 2000,
+      "total_services_ej": 77.27,
+      "global_exergy_efficiency": 19.1,
+      "sources_services_ej": {
+        "oil": 29.412,
+        "gas": 16.448,
+        "coal": 20.937,
+        "nuclear": 2.565,
+        "hydro": 5.855,
+        "wind": 0.069,
+        "solar": 0.002,
+        "biomass": 1.919,
+        "geothermal": 0.059
+      },
+      "fossil_services_ej": 66.8,
+      "clean_services_ej": 10.47,
+      "fossil_services_share_percent": 86.5,
+      "clean_services_share_percent": 13.5
+    },
+    {
+      "year": 2001,
+      "total_services_ej": 78.27,
+      "global_exergy_efficiency": 19.2,
+      "sources_services_ej": {
+        "oil": 29.762,
+        "gas": 16.738,
+        "coal": 21.347,
+        "nuclear": 2.643,
+        "hydro": 5.708,
+        "wind": 0.085,
+        "solar": 0.003,
+        "biomass": 1.926,
+        "geothermal": 0.06
+      },
+      "fossil_services_ej": 67.85,
+      "clean_services_ej": 10.42,
+      "fossil_services_share_percent": 86.7,
+      "clean_services_share_percent": 13.3
+    },
+    {
+      "year": 2002,
+      "total_services_ej": 80.27,
+      "global_exergy_efficiency": 19.3,
+      "sources_services_ej": {
+        "oil": 30.058,
+        "gas": 17.316,
+        "coal": 22.281,
+        "nuclear": 2.689,
+        "hydro": 5.814,
+        "wind": 0.116,
+        "solar": 0.004,
+        "biomass": 1.935,
+        "geothermal": 0.062
+      },
+      "fossil_services_ej": 69.66,
+      "clean_services_ej": 10.62,
+      "fossil_services_share_percent": 86.8,
+      "clean_services_share_percent": 13.2
+    },
+    {
+      "year": 2003,
+      "total_services_ej": 83.58,
+      "global_exergy_efficiency": 19.4,
+      "sources_services_ej": {
+        "oil": 30.78,
+        "gas": 17.856,
+        "coal": 24.331,
+        "nuclear": 2.639,
+        "hydro": 5.815,
+        "wind": 0.141,
+        "solar": 0.005,
+        "biomass": 1.946,
+        "geothermal": 0.063
+      },
+      "fossil_services_ej": 72.97,
+      "clean_services_ej": 10.61,
+      "fossil_services_share_percent": 87.3,
+      "clean_services_share_percent": 12.7
+    },
+    {
+      "year": 2004,
+      "total_services_ej": 88.13,
+      "global_exergy_efficiency": 19.5,
+      "sources_services_ej": {
+        "oil": 32.119,
+        "gas": 18.663,
+        "coal": 26.127,
+        "nuclear": 2.764,
+        "hydro": 6.24,
+        "wind": 0.19,
+        "solar": 0.006,
+        "biomass": 1.958,
+        "geothermal": 0.065
+      },
+      "fossil_services_ej": 76.91,
+      "clean_services_ej": 11.22,
+      "fossil_services_share_percent": 87.3,
+      "clean_services_share_percent": 12.7
+    },
+    {
+      "year": 2005,
+      "total_services_ej": 91.54,
+      "global_exergy_efficiency": 19.7,
+      "sources_services_ej": {
+        "oil": 32.635,
+        "gas": 19.2,
+        "coal": 28.172,
+        "nuclear": 2.776,
+        "hydro": 6.483,
+        "wind": 0.233,
+        "solar": 0.008,
+        "biomass": 1.97,
+        "geothermal": 0.066
+      },
+      "fossil_services_ej": 80.01,
+      "clean_services_ej": 11.54,
+      "fossil_services_share_percent": 87.4,
+      "clean_services_share_percent": 12.6
+    },
+    {
+      "year": 2006,
+      "total_services_ej": 94.47,
+      "global_exergy_efficiency": 19.8,
+      "sources_services_ej": {
+        "oil": 33.025,
+        "gas": 19.793,
+        "coal": 29.759,
+        "nuclear": 2.815,
+        "hydro": 6.719,
+        "wind": 0.296,
+        "solar": 0.012,
+        "biomass": 1.986,
+        "geothermal": 0.069
+      },
+      "fossil_services_ej": 82.58,
+      "clean_services_ej": 11.9,
+      "fossil_services_share_percent": 87.4,
+      "clean_services_share_percent": 12.6
+    },
+    {
+      "year": 2007,
+      "total_services_ej": 97.9,
+      "global_exergy_efficiency": 19.9,
+      "sources_services_ej": {
+        "oil": 33.578,
+        "gas": 20.696,
+        "coal": 31.569,
+        "nuclear": 2.76,
+        "hydro": 6.819,
+        "wind": 0.381,
+        "solar": 0.015,
+        "biomass": 2.008,
+        "geothermal": 0.072
+      },
+      "fossil_services_ej": 85.84,
+      "clean_services_ej": 12.06,
+      "fossil_services_share_percent": 87.7,
+      "clean_services_share_percent": 12.3
+    },
+    {
+      "year": 2008,
+      "total_services_ej": 99.43,
+      "global_exergy_efficiency": 20.0,
+      "sources_services_ej": {
+        "oil": 33.401,
+        "gas": 21.284,
+        "coal": 32.132,
+        "nuclear": 2.756,
+        "hydro": 7.226,
+        "wind": 0.491,
+        "solar": 0.025,
+        "biomass": 2.038,
+        "geothermal": 0.077
+      },
+      "fossil_services_ej": 86.82,
+      "clean_services_ej": 12.61,
+      "fossil_services_share_percent": 87.3,
+      "clean_services_share_percent": 12.7
+    },
+    {
+      "year": 2009,
+      "total_services_ej": 98.2,
+      "global_exergy_efficiency": 20.1,
+      "sources_services_ej": {
+        "oil": 32.757,
+        "gas": 20.91,
+        "coal": 31.803,
+        "nuclear": 2.721,
+        "hydro": 7.216,
+        "wind": 0.615,
+        "solar": 0.042,
+        "biomass": 2.055,
+        "geothermal": 0.079
+      },
+      "fossil_services_ej": 85.47,
+      "clean_services_ej": 12.73,
+      "fossil_services_share_percent": 87.0,
+      "clean_services_share_percent": 13.0
+    },
+    {
+      "year": 2010,
+      "total_services_ej": 103.29,
+      "global_exergy_efficiency": 20.3,
+      "sources_services_ej": {
+        "oil": 33.952,
+        "gas": 22.556,
+        "coal": 33.356,
+        "nuclear": 2.796,
+        "hydro": 7.632,
+        "wind": 0.77,
+        "solar": 0.068,
+        "biomass": 2.075,
+        "geothermal": 0.081
+      },
+      "fossil_services_ej": 89.86,
+      "clean_services_ej": 13.42,
+      "fossil_services_share_percent": 87.0,
+      "clean_services_share_percent": 13.0
+    },
+    {
+      "year": 2011,
+      "total_services_ej": 106.3,
+      "global_exergy_efficiency": 20.4,
+      "sources_services_ej": {
+        "oil": 34.324,
+        "gas": 23.189,
+        "coal": 35.056,
+        "nuclear": 2.682,
+        "hydro": 7.765,
+        "wind": 0.979,
+        "solar": 0.136,
+        "biomass": 2.088,
+        "geothermal": 0.083
+      },
+      "fossil_services_ej": 92.57,
+      "clean_services_ej": 13.73,
+      "fossil_services_share_percent": 87.1,
+      "clean_services_share_percent": 12.9
+    },
+    {
+      "year": 2012,
+      "total_services_ej": 108.41,
+      "global_exergy_efficiency": 20.5,
+      "sources_services_ej": {
+        "oil": 34.98,
+        "gas": 23.926,
+        "coal": 35.286,
+        "nuclear": 2.502,
+        "hydro": 8.149,
+        "wind": 1.178,
+        "solar": 0.207,
+        "biomass": 2.1,
+        "geothermal": 0.085
+      },
+      "fossil_services_ej": 94.19,
+      "clean_services_ej": 14.22,
+      "fossil_services_share_percent": 86.9,
+      "clean_services_share_percent": 13.1
+    },
+    {
+      "year": 2013,
+      "total_services_ej": 110.66,
+      "global_exergy_efficiency": 20.7,
+      "sources_services_ej": {
+        "oil": 35.482,
+        "gas": 24.372,
+        "coal": 35.943,
+        "nuclear": 2.523,
+        "hydro": 8.44,
+        "wind": 1.412,
+        "solar": 0.281,
+        "biomass": 2.119,
+        "geothermal": 0.087
+      },
+      "fossil_services_ej": 95.8,
+      "clean_services_ej": 14.86,
+      "fossil_services_share_percent": 86.6,
+      "clean_services_share_percent": 13.4
+    },
+    {
+      "year": 2014,
+      "total_services_ej": 112.16,
+      "global_exergy_efficiency": 20.8,
+      "sources_services_ej": {
+        "oil": 35.88,
+        "gas": 24.645,
+        "coal": 36.218,
+        "nuclear": 2.579,
+        "hydro": 8.617,
+        "wind": 1.572,
+        "solar": 0.421,
+        "biomass": 2.134,
+        "geothermal": 0.095
+      },
+      "fossil_services_ej": 96.74,
+      "clean_services_ej": 15.42,
+      "fossil_services_share_percent": 86.3,
+      "clean_services_share_percent": 13.7
+    },
+    {
+      "year": 2015,
+      "total_services_ej": 113.27,
+      "global_exergy_efficiency": 20.9,
+      "sources_services_ej": {
+        "oil": 36.669,
+        "gas": 25.326,
+        "coal": 35.374,
+        "nuclear": 2.618,
+        "hydro": 8.642,
+        "wind": 1.847,
+        "solar": 0.546,
+        "biomass": 2.146,
+        "geothermal": 0.099
+      },
+      "fossil_services_ej": 97.37,
+      "clean_services_ej": 15.9,
+      "fossil_services_share_percent": 86.0,
+      "clean_services_share_percent": 14.0
+    },
+    {
+      "year": 2016,
+      "total_services_ej": 114.98,
+      "global_exergy_efficiency": 21.0,
+      "sources_services_ej": {
+        "oil": 37.507,
+        "gas": 26.013,
+        "coal": 34.757,
+        "nuclear": 2.662,
+        "hydro": 8.939,
+        "wind": 2.137,
+        "solar": 0.7,
+        "biomass": 2.16,
+        "geothermal": 0.103
+      },
+      "fossil_services_ej": 98.28,
+      "clean_services_ej": 16.7,
+      "fossil_services_share_percent": 85.5,
+      "clean_services_share_percent": 14.5
+    },
+    {
+      "year": 2017,
+      "total_services_ej": 117.9,
+      "global_exergy_efficiency": 21.1,
+      "sources_services_ej": {
+        "oil": 38.298,
+        "gas": 26.863,
+        "coal": 35.265,
+        "nuclear": 2.689,
+        "hydro": 9.026,
+        "wind": 2.536,
+        "solar": 0.949,
+        "biomass": 2.171,
+        "geothermal": 0.107
+      },
+      "fossil_services_ej": 100.43,
+      "clean_services_ej": 17.48,
+      "fossil_services_share_percent": 85.2,
+      "clean_services_share_percent": 14.8
+    },
+    {
+      "year": 2018,
+      "total_services_ej": 121.38,
+      "global_exergy_efficiency": 21.3,
+      "sources_services_ej": {
+        "oil": 38.791,
+        "gas": 28.229,
+        "coal": 35.949,
+        "nuclear": 2.761,
+        "hydro": 9.3,
+        "wind": 2.823,
+        "solar": 1.224,
+        "biomass": 2.192,
+        "geothermal": 0.111
+      },
+      "fossil_services_ej": 102.97,
+      "clean_services_ej": 18.41,
+      "fossil_services_share_percent": 84.8,
+      "clean_services_share_percent": 15.2
+    },
+    {
+      "year": 2019,
+      "total_services_ej": 123.07,
+      "global_exergy_efficiency": 21.4,
+      "sources_services_ej": {
+        "oil": 39.051,
+        "gas": 28.883,
+        "coal": 35.865,
+        "nuclear": 2.864,
+        "hydro": 9.415,
+        "wind": 3.163,
+        "solar": 1.502,
+        "biomass": 2.213,
+        "geothermal": 0.112
+      },
+      "fossil_services_ej": 103.8,
+      "clean_services_ej": 19.27,
+      "fossil_services_share_percent": 84.3,
+      "clean_services_share_percent": 15.7
+    },
+    {
+      "year": 2020,
+      "total_services_ej": 119.4,
+      "global_exergy_efficiency": 21.6,
+      "sources_services_ej": {
+        "oil": 35.612,
+        "gas": 28.735,
+        "coal": 34.92,
+        "nuclear": 2.759,
+        "hydro": 9.68,
+        "wind": 3.543,
+        "solar": 1.824,
+        "biomass": 2.211,
+        "geothermal": 0.117
+      },
+      "fossil_services_ej": 99.27,
+      "clean_services_ej": 20.13,
+      "fossil_services_share_percent": 83.1,
+      "clean_services_share_percent": 16.9
+    },
+    {
+      "year": 2021,
+      "total_services_ej": 125.82,
+      "global_exergy_efficiency": 21.8,
+      "sources_services_ej": {
+        "oil": 37.71,
+        "gas": 29.979,
+        "coal": 36.979,
+        "nuclear": 2.881,
+        "hydro": 9.547,
+        "wind": 4.133,
+        "solar": 2.247,
+        "biomass": 2.228,
+        "geothermal": 0.117
+      },
+      "fossil_services_ej": 104.67,
+      "clean_services_ej": 21.15,
+      "fossil_services_share_percent": 83.2,
+      "clean_services_share_percent": 16.8
+    },
+    {
+      "year": 2022,
+      "total_services_ej": 128.67,
+      "global_exergy_efficiency": 22.0,
+      "sources_services_ej": {
+        "oil": 39.07,
+        "gas": 29.969,
+        "coal": 37.356,
+        "nuclear": 2.758,
+        "hydro": 9.621,
+        "wind": 4.691,
+        "solar": 2.836,
+        "biomass": 2.247,
+        "geothermal": 0.119
+      },
+      "fossil_services_ej": 106.4,
+      "clean_services_ej": 22.27,
+      "fossil_services_share_percent": 82.7,
+      "clean_services_share_percent": 17.3
+    },
+    {
+      "year": 2023,
+      "total_services_ej": 131.42,
+      "global_exergy_efficiency": 22.1,
+      "sources_services_ej": {
+        "oil": 40.114,
+        "gas": 30.152,
+        "coal": 37.824,
+        "nuclear": 2.824,
+        "hydro": 9.428,
+        "wind": 5.148,
+        "solar": 3.534,
+        "biomass": 2.275,
+        "geothermal": 0.12
+      },
+      "fossil_services_ej": 108.09,
+      "clean_services_ej": 23.33,
+      "fossil_services_share_percent": 82.2,
+      "clean_services_share_percent": 17.8
+    },
+    {
+      "year": 2024,
+      "total_services_ej": 135.34,
+      "global_exergy_efficiency": 22.4,
+      "sources_services_ej": {
+        "oil": 40.561,
+        "gas": 31.116,
+        "coal": 38.411,
+        "nuclear": 2.897,
+        "hydro": 9.838,
+        "wind": 5.56,
+        "solar": 4.544,
+        "biomass": 2.291,
+        "geothermal": 0.12
+      },
+      "fossil_services_ej": 110.09,
+      "clean_services_ej": 25.25,
+      "fossil_services_share_percent": 81.3,
+      "clean_services_share_percent": 18.7
+    }
+  ]
+}

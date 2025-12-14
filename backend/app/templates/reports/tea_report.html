@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>TEA Report - {{ project_name }}</title>
+</head>
+<body>
+    <header style="border-bottom: 2px solid #10b981; padding-bottom: 1em; margin-bottom: 2em;">
+        <h1 style="margin: 0;">Techno-Economic Analysis Report</h1>
+        <p style="color: #666; margin: 0.5em 0 0 0;">{{ project_name }} | {{ technology }}</p>
+    </header>
+
+    <section class="executive-summary">
+        <h2>Executive Summary</h2>
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1em;">
+            <div class="metric-card">
+                <div class="metric-label">Levelized Cost of Energy</div>
+                <div class="metric-value">{{ tea_results.lcoe|currency(2) }}/MWh</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Net Present Value</div>
+                <div class="metric-value">{{ tea_results.npv|currency }}</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Internal Rate of Return</div>
+                <div class="metric-value">{{ tea_results.irr|percent }}</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Payback Period</div>
+                <div class="metric-value">{{ tea_results.payback_years|number(1) }} years</div>
+            </div>
+        </div>
+    </section>
+
+    <section class="project-inputs">
+        <h2>Project Parameters</h2>
+        <table>
+            <tr>
+                <th>Parameter</th>
+                <th>Value</th>
+                <th>Unit</th>
+            </tr>
+            <tr>
+                <td>Technology</td>
+                <td>{{ technology }}</td>
+                <td>-</td>
+            </tr>
+            <tr>
+                <td>Capacity</td>
+                <td>{{ tea_results.capacity_mw|number(1) }}</td>
+                <td>MW</td>
+            </tr>
+            <tr>
+                <td>Capital Expenditure (CAPEX)</td>
+                <td>{{ tea_results.capex|currency }}</td>
+                <td>$/kW</td>
+            </tr>
+            <tr>
+                <td>Operating Expenditure (OPEX)</td>
+                <td>{{ tea_results.opex|currency }}</td>
+                <td>$/kW/year</td>
+            </tr>
+            <tr>
+                <td>Capacity Factor</td>
+                <td>{{ tea_results.capacity_factor|percent }}</td>
+                <td>-</td>
+            </tr>
+            <tr>
+                <td>Project Lifetime</td>
+                <td>{{ tea_results.project_life }}</td>
+                <td>years</td>
+            </tr>
+            <tr>
+                <td>Discount Rate</td>
+                <td>{{ tea_results.discount_rate|percent }}</td>
+                <td>-</td>
+            </tr>
+        </table>
+    </section>
+
+    {% if ai_insights %}
+    <section class="ai-insights">
+        <h2>AI-Powered Insights</h2>
+        <div class="insight-box">
+            {{ ai_insights|safe }}
+        </div>
+    </section>
+    {% endif %}
+
+    <section class="financial-analysis">
+        <h2>Financial Analysis</h2>
+
+        <h3>Cost Breakdown</h3>
+        <table>
+            <tr>
+                <th>Cost Category</th>
+                <th>Total ($)</th>
+                <th>% of Total</th>
+            </tr>
+            {% if tea_results.cost_breakdown %}
+            {% for category, value in tea_results.cost_breakdown.items() %}
+            <tr>
+                <td>{{ category }}</td>
+                <td>{{ value|currency }}</td>
+                <td>{{ (value / tea_results.total_cost * 100)|number(1) }}%</td>
+            </tr>
+            {% endfor %}
+            {% endif %}
+        </table>
+
+        <h3>Key Financial Metrics</h3>
+        <table>
+            <tr>
+                <th>Metric</th>
+                <th>Value</th>
+                <th>Benchmark</th>
+            </tr>
+            <tr>
+                <td>LCOE</td>
+                <td>{{ tea_results.lcoe|currency(2) }}/MWh</td>
+                <td>{{ tea_results.benchmark_lcoe|currency(2) if tea_results.benchmark_lcoe else "N/A" }}/MWh</td>
+            </tr>
+            <tr>
+                <td>NPV</td>
+                <td>{{ tea_results.npv|currency }}</td>
+                <td>-</td>
+            </tr>
+            <tr>
+                <td>IRR</td>
+                <td>{{ tea_results.irr|percent }}</td>
+                <td>>{{ tea_results.hurdle_rate|percent if tea_results.hurdle_rate else "8%" }}</td>
+            </tr>
+        </table>
+    </section>
+
+    {% if tea_results.sensitivity %}
+    <section class="sensitivity-analysis">
+        <h2>Sensitivity Analysis</h2>
+        <p>Impact of ±20% change in key parameters on LCOE:</p>
+        <table>
+            <tr>
+                <th>Parameter</th>
+                <th>-20%</th>
+                <th>Base Case</th>
+                <th>+20%</th>
+            </tr>
+            {% for param, values in tea_results.sensitivity.items() %}
+            <tr>
+                <td>{{ param }}</td>
+                <td>{{ values.low|currency(2) }}/MWh</td>
+                <td>{{ values.base|currency(2) }}/MWh</td>
+                <td>{{ values.high|currency(2) }}/MWh</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </section>
+    {% endif %}
+
+    <section class="recommendations">
+        <h2>Recommendations</h2>
+        <div class="{% if tea_results.irr > 0.08 %}insight-box{% else %}warning-box{% endif %}">
+            {% if tea_results.irr > 0.08 %}
+            <strong>Investment Recommendation: FAVORABLE</strong>
+            <p>The project shows an IRR of {{ tea_results.irr|percent }}, exceeding typical hurdle rates.
+               With an LCOE of {{ tea_results.lcoe|currency(2) }}/MWh, this project is competitive in the market.</p>
+            {% else %}
+            <strong>Investment Recommendation: REQUIRES OPTIMIZATION</strong>
+            <p>The project's IRR of {{ tea_results.irr|percent }} is below typical hurdle rates.
+               Consider optimizing CAPEX, improving capacity factor, or exploring policy incentives.</p>
+            {% endif %}
+        </div>
+    </section>
+
+    <footer style="margin-top: 3em; padding-top: 1em; border-top: 1px solid #ddd; font-size: 9pt; color: #666;">
+        <p>Generated by {{ platform_name }} on {{ generated_at }}</p>
+        {% if user_name %}<p>Prepared for: {{ user_name }}</p>{% endif %}
+        <p style="font-style: italic;">This report is for informational purposes only and should not be considered financial advice.</p>
+    </footer>
+</body>
+</html>

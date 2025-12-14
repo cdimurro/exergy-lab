@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Exergy Analysis Report - {{ process_name }}</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2em;
+        }
+        h1, h2, h3 { color: #1a1a1a; }
+        h1 { border-bottom: 3px solid #3b82f6; padding-bottom: 0.5em; }
+        h2 { border-bottom: 1px solid #ddd; padding-bottom: 0.3em; margin-top: 2em; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1em 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 0.75em;
+            text-align: left;
+        }
+        th {
+            background-color: #f8fafc;
+            font-weight: 600;
+        }
+        tr:nth-child(even) { background-color: #f9fafb; }
+        .metric-card {
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            border-radius: 8px;
+            padding: 1.5em;
+            margin: 0.5em 0;
+        }
+        .metric-label {
+            font-size: 0.9em;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .metric-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #1e40af;
+        }
+        .efficiency-high { color: #059669; }
+        .efficiency-medium { color: #d97706; }
+        .efficiency-low { color: #dc2626; }
+        .insight-box {
+            background: #f0fdf4;
+            border-left: 4px solid #22c55e;
+            padding: 1em 1.5em;
+            margin: 1em 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .warning-box {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 1em 1.5em;
+            margin: 1em 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .sankey-placeholder {
+            background: #f1f5f9;
+            border: 2px dashed #cbd5e1;
+            border-radius: 8px;
+            padding: 3em;
+            text-align: center;
+            color: #64748b;
+            margin: 1em 0;
+        }
+        .carrier-bar {
+            height: 24px;
+            border-radius: 4px;
+            margin: 0.25em 0;
+        }
+        .carrier-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <header style="border-bottom: 2px solid #3b82f6; padding-bottom: 1em; margin-bottom: 2em;">
+        <h1 style="margin: 0; border: none;">Exergy Analysis Report</h1>
+        <p style="color: #666; margin: 0.5em 0 0 0;">{{ process_name }} | {{ technology_type }}</p>
+    </header>
+
+    <section class="executive-summary">
+        <h2>Executive Summary</h2>
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1em;">
+            <div class="metric-card">
+                <div class="metric-label">Exergy Efficiency</div>
+                <div class="metric-value {% if exergy_results.exergy_efficiency > 0.6 %}efficiency-high{% elif exergy_results.exergy_efficiency > 0.4 %}efficiency-medium{% else %}efficiency-low{% endif %}">
+                    {{ exergy_results.exergy_efficiency|percent }}
+                </div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Exergy Destruction</div>
+                <div class="metric-value">{{ exergy_results.exergy_destruction|number(1) }} kW</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Exergy Input</div>
+                <div class="metric-value">{{ exergy_results.exergy_input|number(1) }} kW</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Exergy Output</div>
+                <div class="metric-value">{{ exergy_results.exergy_output|number(1) }} kW</div>
+            </div>
+        </div>
+
+        <div class="{% if exergy_results.exergy_efficiency > 0.5 %}insight-box{% else %}warning-box{% endif %}" style="margin-top: 1.5em;">
+            {% if exergy_results.exergy_efficiency > 0.6 %}
+            <strong>Excellent Thermodynamic Performance</strong>
+            <p>This process achieves {{ exergy_results.exergy_efficiency|percent }} exergy efficiency, which is above industry average.
+               The system effectively utilizes available work potential.</p>
+            {% elif exergy_results.exergy_efficiency > 0.4 %}
+            <strong>Moderate Thermodynamic Performance</strong>
+            <p>This process achieves {{ exergy_results.exergy_efficiency|percent }} exergy efficiency.
+               There is opportunity to reduce irreversibilities and improve performance.</p>
+            {% else %}
+            <strong>Optimization Recommended</strong>
+            <p>This process has {{ exergy_results.exergy_efficiency|percent }} exergy efficiency, indicating significant irreversibilities.
+               Review the destruction analysis below for improvement opportunities.</p>
+            {% endif %}
+        </div>
+    </section>
+
+    <section class="exergy-balance">
+        <h2>Exergy Balance</h2>
+        <p>The exergy balance shows where work potential enters, exits, and is destroyed in the system.</p>
+
+        <table>
+            <tr>
+                <th>Flow</th>
+                <th>Exergy (kW)</th>
+                <th>% of Input</th>
+            </tr>
+            <tr>
+                <td><strong>Input Exergy</strong></td>
+                <td>{{ exergy_results.exergy_input|number(2) }}</td>
+                <td>100%</td>
+            </tr>
+            <tr>
+                <td style="padding-left: 2em;">→ Useful Output</td>
+                <td>{{ exergy_results.exergy_output|number(2) }}</td>
+                <td>{{ (exergy_results.exergy_output / exergy_results.exergy_input * 100)|number(1) }}%</td>
+            </tr>
+            <tr>
+                <td style="padding-left: 2em;">→ Destroyed (Irreversibilities)</td>
+                <td>{{ exergy_results.exergy_destruction|number(2) }}</td>
+                <td>{{ (exergy_results.exergy_destruction / exergy_results.exergy_input * 100)|number(1) }}%</td>
+            </tr>
+            {% if exergy_results.exergy_loss %}
+            <tr>
+                <td style="padding-left: 2em;">→ Losses (to environment)</td>
+                <td>{{ exergy_results.exergy_loss|number(2) }}</td>
+                <td>{{ (exergy_results.exergy_loss / exergy_results.exergy_input * 100)|number(1) }}%</td>
+            </tr>
+            {% endif %}
+        </table>
+
+        <div class="sankey-placeholder">
+            <p><strong>Exergy Flow Diagram</strong></p>
+            <p>Sankey diagram showing exergy flows would be embedded here in the full report.</p>
+        </div>
+    </section>
+
+    {% if exergy_results.carrier_breakdown %}
+    <section class="carrier-analysis">
+        <h2>Exergy by Energy Carrier</h2>
+        <p>Breakdown of exergy content by energy carrier type, using thermodynamically accurate β-factors.</p>
+
+        <table>
+            <tr>
+                <th>Energy Carrier</th>
+                <th>Energy (kW)</th>
+                <th>β-Factor</th>
+                <th>Exergy (kW)</th>
+                <th>% of Total</th>
+            </tr>
+            {% for carrier, data in exergy_results.carrier_breakdown.items() %}
+            <tr>
+                <td>{{ carrier }}</td>
+                <td>{{ data.energy|number(2) }}</td>
+                <td>{{ data.beta|number(3) }}</td>
+                <td>{{ data.exergy|number(2) }}</td>
+                <td>{{ data.percentage|number(1) }}%</td>
+            </tr>
+            {% endfor %}
+        </table>
+
+        <h3>Understanding β-Factors</h3>
+        <p>The β-factor (exergy-to-energy ratio) indicates how much useful work potential each energy form contains:</p>
+        <ul>
+            <li><strong>Electricity (β ≈ 1.0)</strong>: Pure exergy - can be fully converted to any other form</li>
+            <li><strong>Mechanical Work (β ≈ 1.0)</strong>: Pure exergy - fully convertible</li>
+            <li><strong>High-Temperature Heat (β > 0.5)</strong>: Significant work potential</li>
+            <li><strong>Low-Temperature Heat (β < 0.3)</strong>: Limited work potential due to Carnot constraints</li>
+            <li><strong>Chemical Fuels (β ≈ 1.0-1.1)</strong>: High exergy content, varies by fuel</li>
+        </ul>
+    </section>
+    {% endif %}
+
+    {% if exergy_results.component_analysis %}
+    <section class="component-analysis">
+        <h2>Component-Level Analysis</h2>
+        <p>Exergy destruction by system component, identifying where improvements would be most impactful.</p>
+
+        <table>
+            <tr>
+                <th>Component</th>
+                <th>Exergy Destruction (kW)</th>
+                <th>% of Total Destruction</th>
+                <th>Improvement Priority</th>
+            </tr>
+            {% for component, data in exergy_results.component_analysis.items() %}
+            <tr>
+                <td>{{ component }}</td>
+                <td>{{ data.destruction|number(2) }}</td>
+                <td>{{ data.percentage|number(1) }}%</td>
+                <td>
+                    {% if data.percentage > 30 %}
+                    <span style="color: #dc2626; font-weight: bold;">HIGH</span>
+                    {% elif data.percentage > 15 %}
+                    <span style="color: #d97706;">MEDIUM</span>
+                    {% else %}
+                    <span style="color: #059669;">LOW</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+    </section>
+    {% endif %}
+
+    {% if ai_insights %}
+    <section class="ai-insights">
+        <h2>AI-Powered Analysis</h2>
+        <div class="insight-box">
+            {{ ai_insights|safe }}
+        </div>
+    </section>
+    {% endif %}
+
+    <section class="benchmarks">
+        <h2>Industry Benchmarks</h2>
+        <p>Comparison of this process's exergy efficiency against typical industry values.</p>
+
+        <table>
+            <tr>
+                <th>Technology/Process</th>
+                <th>Typical Exergy Efficiency</th>
+                <th>Best Practice</th>
+            </tr>
+            <tr>
+                <td>Combined Cycle Gas Turbine</td>
+                <td>50-55%</td>
+                <td>58-60%</td>
+            </tr>
+            <tr>
+                <td>Solar PV</td>
+                <td>15-22%</td>
+                <td>26-30%</td>
+            </tr>
+            <tr>
+                <td>Wind Turbine</td>
+                <td>35-45%</td>
+                <td>50%</td>
+            </tr>
+            <tr>
+                <td>Electrolyzer (PEM)</td>
+                <td>55-65%</td>
+                <td>70-75%</td>
+            </tr>
+            <tr>
+                <td>Heat Pump (Heating)</td>
+                <td>30-50%</td>
+                <td>55-60%</td>
+            </tr>
+            <tr>
+                <td>Industrial Boiler</td>
+                <td>25-35%</td>
+                <td>40-45%</td>
+            </tr>
+            <tr style="background-color: #dbeafe;">
+                <td><strong>This Analysis: {{ process_name }}</strong></td>
+                <td colspan="2" style="text-align: center;"><strong>{{ exergy_results.exergy_efficiency|percent }}</strong></td>
+            </tr>
+        </table>
+    </section>
+
+    <section class="recommendations">
+        <h2>Improvement Recommendations</h2>
+
+        {% if exergy_results.exergy_efficiency < 0.4 %}
+        <div class="warning-box">
+            <strong>Priority: Reduce Major Irreversibilities</strong>
+            <p>With {{ exergy_results.exergy_efficiency|percent }} exergy efficiency, focus on:</p>
+            <ol>
+                <li>Identify components with highest exergy destruction</li>
+                <li>Consider heat integration to recover thermal exergy</li>
+                <li>Evaluate alternative process configurations</li>
+                <li>Review operating conditions (temperature, pressure differentials)</li>
+            </ol>
+        </div>
+        {% elif exergy_results.exergy_efficiency < 0.6 %}
+        <div class="insight-box">
+            <strong>Optimization Opportunities</strong>
+            <p>At {{ exergy_results.exergy_efficiency|percent }} exergy efficiency, consider:</p>
+            <ol>
+                <li>Optimize heat exchanger approach temperatures</li>
+                <li>Reduce mixing irreversibilities where possible</li>
+                <li>Evaluate waste heat recovery options</li>
+                <li>Consider process intensification</li>
+            </ol>
+        </div>
+        {% else %}
+        <div class="insight-box">
+            <strong>Maintaining High Performance</strong>
+            <p>At {{ exergy_results.exergy_efficiency|percent }} exergy efficiency, focus on:</p>
+            <ol>
+                <li>Regular maintenance to prevent efficiency degradation</li>
+                <li>Monitor key performance indicators</li>
+                <li>Consider incremental improvements in highest-destruction components</li>
+                <li>Document best practices for replication</li>
+            </ol>
+        </div>
+        {% endif %}
+    </section>
+
+    <section class="methodology">
+        <h2>Methodology Notes</h2>
+        <p>This exergy analysis follows the principles established in:</p>
+        <ul>
+            <li>Szargut, J., Morris, D. R., & Steward, F. R. (1988). <em>Exergy Analysis of Thermal, Chemical, and Metallurgical Processes</em>.</li>
+            <li>Kotas, T. J. (1985). <em>The Exergy Method of Thermal Plant Analysis</em>.</li>
+            <li>Sciubba, E., & Wall, G. (2007). "A brief commented history of exergy." <em>International Journal of Thermodynamics</em>.</li>
+        </ul>
+
+        <p><strong>Reference Environment:</strong></p>
+        <ul>
+            <li>Temperature: {{ exergy_results.reference_temp|default('298.15') }} K (25°C)</li>
+            <li>Pressure: {{ exergy_results.reference_pressure|default('101.325') }} kPa</li>
+        </ul>
+    </section>
+
+    <footer style="margin-top: 3em; padding-top: 1em; border-top: 1px solid #ddd; font-size: 9pt; color: #666;">
+        <p>Generated by {{ platform_name }} on {{ generated_at }}</p>
+        {% if user_name %}<p>Prepared for: {{ user_name }}</p>{% endif %}
+        <p style="font-style: italic;">This report provides thermodynamically rigorous exergy analysis. Results should be validated against measured data where available.</p>
+    </footer>
+</body>
+</html>

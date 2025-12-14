@@ -2,9 +2,12 @@ import { useState } from 'react'
 import { Header } from '@/components/layout/Header'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { Calculator, Download, Save } from 'lucide-react'
+import { Calculator, Download, Save, Sparkles, Lock, CheckCircle, Loader2 } from 'lucide-react'
 import type { TEAInput, TEAResult, TechnologyType } from '@/types/tea'
 import { formatCurrency, formatEnergy } from '@/lib/utils'
+import { useAuthContext } from '@/lib/auth'
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
 const TECHNOLOGY_DEFAULTS: Record<TechnologyType, Partial<TEAInput>> = {
   solar: {
@@ -98,6 +101,14 @@ export function TEACalculator() {
   const [input, setInput] = useState<TEAInput>(DEFAULT_INPUT)
   const [result, setResult] = useState<TEAResult | null>(null)
   const [loading, setLoading] = useState(false)
+  const [insights, setInsights] = useState<string | null>(null)
+  const [insightsLoading, setInsightsLoading] = useState(false)
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const [savedProjectId, setSavedProjectId] = useState<number | null>(null)
+
+  const { tier, isAuthenticated, getAuthToken } = useAuthContext()
+  const isProfessional = tier === 'professional' || tier === 'discovery'
+  // Starter tier gets basic TEA, Professional+ gets AI insights and advanced features
 
   const handleTechnologyChange = (tech: TechnologyType) => {
     const defaults = TECHNOLOGY_DEFAULTS[tech]
@@ -106,6 +117,11 @@ export function TEACalculator() {
       technology_type: tech,
       ...defaults,
     }))
+    // Clear previous results when technology changes
+    setResult(null)
+    setInsights(null)
+    setSaveStatus('idle')
+    setSavedProjectId(null)
   }
 
   const updateInput = (field: keyof TEAInput, value: string | number) => {
@@ -114,8 +130,31 @@ export function TEACalculator() {
 
   const calculateTEA = async () => {
     setLoading(true)
+    setInsights(null)
     try {
-      // Simulated calculation (replace with API call)
+      // Call the API for calculation (with insights if Professional+)
+      const token = await getAuthToken()
+      if (token && isProfessional) {
+        const response = await fetch(`${API_URL}/api/tea/calculate-with-insights`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ ...input, include_insights: true }),
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          setResult(data.results)
+          if (data.insights) {
+            setInsights(data.insights)
+          }
+          return
+        }
+      }
+
+      // Fallback to local calculation
       const annualProduction = input.capacity_mw * input.capacity_factor * 8760
       const totalCapex =
         input.capacity_mw * 1000 * input.capex_per_kw * input.installation_factor +
@@ -181,6 +220,113 @@ export function TEACalculator() {
     }
   }
 
+  const generateInsights = async () => {
+    if (!result || !isProfessional) return
+
+    const token = await getAuthToken()
+    if (!token) return
+
+    setInsightsLoading(true)
+    try {
+      const response = await fetch(`${API_URL}/api/tea/insights`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          technology: input.technology_type,
+          tea_results: result,
+        }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setInsights(data.insights)
+      }
+    } catch (error) {
+      console.error('Failed to generate insights:', error)
+    } finally {
+      setInsightsLoading(false)
+    }
+  }
+
+  const saveProject = async () => {
+    if (!result) return
+
+    const token = await getAuthToken()
+    if (!token) return
+
+    setSaveStatus('saving')
+    try {
+      const response = await fetch(`${API_URL}/api/tea/save`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          project_id: savedProjectId,
+          project_name: input.project_name,
+          technology_type: input.technology_type,
+          input_data: input,
+          results: result,
+        }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setSavedProjectId(data.project_id)
+        setSaveStatus('saved')
+        setTimeout(() => setSaveStatus('idle'), 3000)
+      } else {
+        setSaveStatus('error')
+        setTimeout(() => setSaveStatus('idle'), 3000)
+      }
+    } catch (error) {
+      console.error('Failed to save project:', error)
+      setSaveStatus('error')
+      setTimeout(() => setSaveStatus('idle'), 3000)
+    }
+  }
+
+  const downloadReport = async () => {
+    if (!result || !isProfessional) return
+
+    const token = await getAuthToken()
+    if (!token) return
+
+    try {
+      const response = await fetch(`${API_URL}/api/tea/report`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          project_name: input.project_name,
+          technology: input.technology_type,
+          tea_results: result,
+          include_ai_insights: true,
+        }),
+      })
+
+      if (response.ok) {
+        const blob = await response.blob()
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `TEA_Report_${input.project_name.replace(/\s+/g, '_')}.pdf`
+        document.body.appendChild(a)
+        a.click()
+        window.URL.revokeObjectURL(url)
+        document.body.removeChild(a)
+      }
+    } catch (error) {
+      console.error('Failed to download report:', error)
+    }
+  }
+
   return (
     <div>
       <Header
@@ -197,16 +343,16 @@ export function TEACalculator() {
               <h3 className="text-lg font-semibold text-text-primary mb-4">
                 Technology Type
               </h3>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                {(['solar', 'wind', 'offshore_wind', 'hydrogen', 'storage'] as TechnologyType[]).map(
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+                {(['solar', 'wind', 'offshore_wind', 'hydrogen', 'storage', 'nuclear', 'geothermal', 'hydro', 'biomass', 'generic'] as TechnologyType[]).map(
                   (tech) => (
                     <button
                       key={tech}
                       onClick={() => handleTechnologyChange(tech)}
-                      className={`p-3 rounded-lg text-sm font-medium transition-colors ${
+                      className={`p-3 rounded-lg text-sm font-medium transition-all duration-200 ${
                         input.technology_type === tech
-                          ? 'bg-primary text-white'
-                          : 'bg-surface-elevated text-text-secondary hover:bg-border'
+                          ? 'bg-primary text-white shadow-lg shadow-primary/25 scale-105'
+                          : 'bg-surface-elevated text-text-secondary hover:bg-border hover:scale-102'
                       }`}
                     >
                       {tech.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
@@ -371,11 +517,33 @@ export function TEACalculator() {
                       Results
                     </h3>
                     <div className="flex gap-2">
-                      <Button variant="ghost" size="sm">
-                        <Save className="w-4 h-4" />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={saveProject}
+                        disabled={!isAuthenticated || saveStatus === 'saving'}
+                        title={!isAuthenticated ? 'Sign in to save' : 'Save project'}
+                      >
+                        {saveStatus === 'saving' ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : saveStatus === 'saved' ? (
+                          <CheckCircle className="w-4 h-4 text-green-500" />
+                        ) : (
+                          <Save className="w-4 h-4" />
+                        )}
                       </Button>
-                      <Button variant="ghost" size="sm">
-                        <Download className="w-4 h-4" />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={downloadReport}
+                        disabled={!isProfessional}
+                        title={!isProfessional ? 'Upgrade to Professional for PDF reports' : 'Download PDF report'}
+                      >
+                        {isProfessional ? (
+                          <Download className="w-4 h-4" />
+                        ) : (
+                          <Lock className="w-4 h-4" />
+                        )}
                       </Button>
                     </div>
                   </div>
@@ -466,6 +634,63 @@ export function TEACalculator() {
                       </span>
                     </div>
                   </div>
+                </div>
+
+                {/* AI Insights Panel */}
+                <div className="card">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-md font-semibold text-text-primary flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-purple-500" />
+                      AI Insights
+                    </h4>
+                    {isProfessional && !insights && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={generateInsights}
+                        disabled={insightsLoading}
+                      >
+                        {insightsLoading ? (
+                          <>
+                            <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                            Generating...
+                          </>
+                        ) : (
+                          'Generate'
+                        )}
+                      </Button>
+                    )}
+                  </div>
+
+                  {isProfessional ? (
+                    insights ? (
+                      <div className="prose prose-sm max-w-none text-text-secondary">
+                        <div className="whitespace-pre-wrap text-sm leading-relaxed">
+                          {insights}
+                        </div>
+                      </div>
+                    ) : insightsLoading ? (
+                      <div className="flex items-center justify-center py-6">
+                        <Loader2 className="w-6 h-6 animate-spin text-purple-500" />
+                        <span className="ml-2 text-text-muted">Analyzing with Claude Sonnet...</span>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-text-muted">
+                        Click "Generate" to get AI-powered insights about your TEA results,
+                        including key cost drivers, risk factors, and recommendations.
+                      </p>
+                    )
+                  ) : (
+                    <div className="bg-surface-elevated rounded-lg p-4 text-center">
+                      <Lock className="w-8 h-8 text-text-muted mx-auto mb-2" />
+                      <p className="text-sm text-text-secondary mb-2">
+                        AI-powered insights require Professional tier
+                      </p>
+                      <Button variant="primary" size="sm" onClick={() => window.location.href = '/pricing'}>
+                        Upgrade to Professional
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </>
             ) : (

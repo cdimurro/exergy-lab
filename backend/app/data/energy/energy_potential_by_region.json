@@ -1,0 +1,370 @@
+{
+  "metadata": {
+    "title": "Energy Potential by Region: Fossil Reserves vs Renewable Potential",
+    "description": "Compares proven fossil fuel reserves against technical renewable energy potential for each region. Most regions have 10-1000x more renewable potential than fossil reserves.",
+    "units": "EJ (exajoules)",
+    "sources": "BP Statistical Review (fossil reserves), IRENA Global Atlas, academic literature",
+    "methodology": "Fossil reserves = proven economically recoverable reserves. Renewable potential = technical potential based on land area, resource quality, and technology constraints (not theoretical maximum).",
+    "notes": "Even major fossil exporters have significantly more renewable potential than reserves."
+  },
+  "regions": [
+    {
+      "region": "South Korea",
+      "fossil_reserves": {
+        "coal": 5,
+        "oil": 0,
+        "gas": 0,
+        "total": 5
+      },
+      "renewable_potential": {
+        "solar": 1400,
+        "wind": 5200,
+        "hydro": 10,
+        "total": 6610
+      },
+      "renewable_advantage_ratio": 1322.0,
+      "notes": "Major importer with 1300x more renewable potential"
+    },
+    {
+      "region": "France",
+      "fossil_reserves": {
+        "coal": 4,
+        "oil": 1,
+        "gas": 1,
+        "total": 6
+      },
+      "renewable_potential": {
+        "solar": 2400,
+        "wind": 4200,
+        "hydro": 140,
+        "total": 6740
+      },
+      "renewable_advantage_ratio": 1123.3,
+      "notes": "Nuclear leader with 1100x renewable vs fossil potential"
+    },
+    {
+      "region": "Japan",
+      "fossil_reserves": {
+        "coal": 8,
+        "oil": 2,
+        "gas": 1,
+        "total": 11
+      },
+      "renewable_potential": {
+        "solar": 2800,
+        "wind": 8400,
+        "hydro": 120,
+        "total": 11320
+      },
+      "renewable_advantage_ratio": 1029.1,
+      "notes": "Major importer with 1000x more renewable than fossil potential"
+    },
+    {
+      "region": "Italy",
+      "fossil_reserves": {
+        "coal": 1,
+        "oil": 7,
+        "gas": 3,
+        "total": 11
+      },
+      "renewable_potential": {
+        "solar": 4500,
+        "wind": 1800,
+        "hydro": 110,
+        "total": 6410
+      },
+      "renewable_advantage_ratio": 582.7,
+      "notes": "Major importer with 580x renewable potential"
+    },
+    {
+      "region": "Spain",
+      "fossil_reserves": {
+        "coal": 20,
+        "oil": 1,
+        "gas": 0,
+        "total": 21
+      },
+      "renewable_potential": {
+        "solar": 8500,
+        "wind": 3200,
+        "hydro": 90,
+        "total": 11790
+      },
+      "renewable_advantage_ratio": 561.4,
+      "notes": "Renewable leader with 560x potential vs fossil reserves"
+    },
+    {
+      "region": "Brazil",
+      "fossil_reserves": {
+        "coal": 15,
+        "oil": 80,
+        "gas": 18,
+        "total": 113
+      },
+      "renewable_potential": {
+        "solar": 28000,
+        "wind": 9000,
+        "hydro": 1400,
+        "total": 38400
+      },
+      "renewable_advantage_ratio": 339.8,
+      "notes": "Renewable superpower with 340x potential vs fossil reserves"
+    },
+    {
+      "region": "Mexico",
+      "fossil_reserves": {
+        "coal": 30,
+        "oil": 50,
+        "gas": 11,
+        "total": 91
+      },
+      "renewable_potential": {
+        "solar": 18000,
+        "wind": 5500,
+        "hydro": 180,
+        "total": 23680
+      },
+      "renewable_advantage_ratio": 260.2,
+      "notes": "Strong renewable potential (260x fossil reserves)"
+    },
+    {
+      "region": "Thailand",
+      "fossil_reserves": {
+        "coal": 30,
+        "oil": 3,
+        "gas": 11,
+        "total": 44
+      },
+      "renewable_potential": {
+        "solar": 8500,
+        "wind": 1800,
+        "hydro": 160,
+        "total": 10460
+      },
+      "renewable_advantage_ratio": 237.7,
+      "notes": "Major importer with 240x renewable potential"
+    },
+    {
+      "region": "South Africa",
+      "fossil_reserves": {
+        "coal": 260,
+        "oil": 1,
+        "gas": 1,
+        "total": 262
+      },
+      "renewable_potential": {
+        "solar": 21000,
+        "wind": 6800,
+        "hydro": 60,
+        "total": 27860
+      },
+      "renewable_advantage_ratio": 106.3,
+      "notes": "Coal-dependent with 106x renewable potential"
+    },
+    {
+      "region": "United Kingdom",
+      "fossil_reserves": {
+        "coal": 60,
+        "oil": 14,
+        "gas": 11,
+        "total": 85
+      },
+      "renewable_potential": {
+        "solar": 180,
+        "wind": 6800,
+        "hydro": 8,
+        "total": 6988
+      },
+      "renewable_advantage_ratio": 82.2,
+      "notes": "Strong offshore wind with 82x renewable vs fossil potential"
+    },
+    {
+      "region": "Saudi Arabia",
+      "fossil_reserves": {
+        "coal": 0,
+        "oil": 1800,
+        "gas": 340,
+        "total": 2140
+      },
+      "renewable_potential": {
+        "solar": 125000,
+        "wind": 6000,
+        "hydro": 0,
+        "total": 131000
+      },
+      "renewable_advantage_ratio": 61.2,
+      "notes": "Oil giant with 60x solar potential vs oil reserves"
+    },
+    {
+      "region": "Germany",
+      "fossil_reserves": {
+        "coal": 100,
+        "oil": 1,
+        "gas": 2,
+        "total": 103
+      },
+      "renewable_potential": {
+        "solar": 1200,
+        "wind": 3500,
+        "hydro": 30,
+        "total": 4730
+      },
+      "renewable_advantage_ratio": 45.9,
+      "notes": "Leading Energiewende with 45x more renewable potential"
+    },
+    {
+      "region": "Canada",
+      "fossil_reserves": {
+        "coal": 175,
+        "oil": 1100,
+        "gas": 75,
+        "total": 1350
+      },
+      "renewable_potential": {
+        "solar": 22000,
+        "wind": 38000,
+        "hydro": 1100,
+        "total": 61100
+      },
+      "renewable_advantage_ratio": 45.3,
+      "notes": "Resource-rich with 45x renewable vs fossil potential"
+    },
+    {
+      "region": "Turkey",
+      "fossil_reserves": {
+        "coal": 300,
+        "oil": 2,
+        "gas": 2,
+        "total": 304
+      },
+      "renewable_potential": {
+        "solar": 8200,
+        "wind": 4800,
+        "hydro": 650,
+        "total": 13650
+      },
+      "renewable_advantage_ratio": 44.9,
+      "notes": "Major importer with 45x renewable vs fossil potential"
+    },
+    {
+      "region": "Australia",
+      "fossil_reserves": {
+        "coal": 3100,
+        "oil": 25,
+        "gas": 100,
+        "total": 3225
+      },
+      "renewable_potential": {
+        "solar": 95000,
+        "wind": 15000,
+        "hydro": 60,
+        "total": 110060
+      },
+      "renewable_advantage_ratio": 34.1,
+      "notes": "Coal exporter with 34x renewable potential"
+    },
+    {
+      "region": "India",
+      "fossil_reserves": {
+        "coal": 2600,
+        "oil": 30,
+        "gas": 50,
+        "total": 2680
+      },
+      "renewable_potential": {
+        "solar": 65000,
+        "wind": 9000,
+        "hydro": 660,
+        "total": 74660
+      },
+      "renewable_advantage_ratio": 27.9,
+      "notes": "Major importer with huge renewable potential"
+    },
+    {
+      "region": "United States",
+      "fossil_reserves": {
+        "coal": 6500,
+        "oil": 350,
+        "gas": 530,
+        "total": 7380
+      },
+      "renewable_potential": {
+        "solar": 158000,
+        "wind": 28000,
+        "hydro": 400,
+        "total": 186400
+      },
+      "renewable_advantage_ratio": 25.3,
+      "notes": "Abundant resources in both fossil and renewable"
+    },
+    {
+      "region": "Indonesia",
+      "fossil_reserves": {
+        "coal": 850,
+        "oil": 20,
+        "gas": 40,
+        "total": 910
+      },
+      "renewable_potential": {
+        "solar": 12000,
+        "wind": 3500,
+        "hydro": 1100,
+        "geothermal": 1400,
+        "total": 18000
+      },
+      "renewable_advantage_ratio": 19.8,
+      "notes": "Coal exporter with 20x renewable potential"
+    },
+    {
+      "region": "China",
+      "fossil_reserves": {
+        "coal": 3627,
+        "oil": 180,
+        "gas": 320,
+        "total": 4127
+      },
+      "renewable_potential": {
+        "solar": 52000,
+        "wind": 12000,
+        "hydro": 2800,
+        "total": 66800
+      },
+      "renewable_advantage_ratio": 16.2,
+      "notes": "World's largest energy market transitioning to renewables"
+    },
+    {
+      "region": "Russia",
+      "fossil_reserves": {
+        "coal": 4200,
+        "oil": 690,
+        "gas": 1490,
+        "total": 6380
+      },
+      "renewable_potential": {
+        "solar": 18000,
+        "wind": 45000,
+        "hydro": 1700,
+        "total": 64700
+      },
+      "renewable_advantage_ratio": 10.1,
+      "notes": "Major exporter with significant renewable potential"
+    },
+    {
+      "region": "Poland",
+      "fossil_reserves": {
+        "coal": 650,
+        "oil": 1,
+        "gas": 4,
+        "total": 655
+      },
+      "renewable_potential": {
+        "solar": 1100,
+        "wind": 4500,
+        "hydro": 20,
+        "total": 5620
+      },
+      "renewable_advantage_ratio": 8.6,
+      "notes": "Coal-dependent with 9x renewable potential"
+    }
+  ]
+}
