@@ -1,0 +1,242 @@
+@import "tailwindcss";
+
+/* Exergy Lab Design System - Light Theme */
+:root {
+  /* Background Layers - Clean whites and light grays */
+  --background: 0 0% 100%;              /* #ffffff - Base */
+  --background-elevated: 0 0% 100%;     /* #ffffff - Cards */
+  --background-surface: 220 14% 96%;    /* #f1f5f9 - Inputs/surfaces */
+
+  /* Border & Dividers */
+  --border: 220 13% 91%;                /* #e2e8f0 */
+  --border-subtle: 220 13% 86%;         /* #cbd5e1 */
+
+  /* Text */
+  --foreground: 222 47% 11%;            /* #1e293b - Primary text */
+  --foreground-muted: 215 16% 47%;      /* #64748b - Secondary */
+  --foreground-subtle: 215 20% 65%;     /* #94a3b8 - Tertiary */
+
+  /* Primary Brand - Blue */
+  --primary: 217 91% 60%;               /* #3b82f6 */
+  --primary-hover: 217 91% 50%;         /* #2563eb */
+  --primary-foreground: 0 0% 100%;      /* White text on primary */
+
+  /* Accent Colors - Vibrant for charts */
+  --accent-blue: 217 91% 60%;           /* #3b82f6 */
+  --accent-purple: 263 70% 50%;         /* #8b5cf6 */
+  --accent-cyan: 187 85% 43%;           /* #06b6d4 */
+  --accent-amber: 38 92% 50%;           /* #f59e0b */
+  --accent-rose: 350 89% 60%;           /* #f43f5e */
+  --accent-green: 142 71% 45%;          /* #22c55e */
+  --accent-orange: 25 95% 53%;          /* #f97316 */
+  --accent-teal: 172 66% 50%;           /* #14b8a6 */
+
+  /* Status Colors */
+  --success: 142 71% 45%;               /* #22c55e */
+  --warning: 38 92% 50%;                /* #f59e0b */
+  --error: 0 84% 60%;                   /* #ef4444 */
+  --info: 217 91% 60%;                  /* #3b82f6 */
+
+  /* Chart Colors - Matching your reference code */
+  --chart-coal: 215 14% 34%;            /* #475569 - Slate */
+  --chart-oil: 25 95% 53%;              /* #f97316 - Orange */
+  --chart-gas: 187 85% 43%;             /* #06b6d4 - Cyan */
+  --chart-nuclear: 263 70% 50%;         /* #8b5cf6 - Purple */
+  --chart-hydro: 217 91% 60%;           /* #3b82f6 - Blue */
+  --chart-wind: 172 66% 50%;            /* #14b8a6 - Teal */
+  --chart-solar: 38 92% 50%;            /* #f59e0b - Amber */
+  --chart-biomass: 142 71% 45%;         /* #22c55e - Green */
+  --chart-geothermal: 350 89% 60%;      /* #f43f5e - Rose */
+  --chart-other: 142 76% 36%;           /* #16a34a - Lime green */
+
+  /* Fossil vs Clean */
+  --chart-fossil: 0 72% 51%;            /* #DC2626 - Red */
+  --chart-clean: 142 71% 45%;           /* #16A34A - Green */
+
+  /* Radius */
+  --radius-sm: 0.375rem;
+  --radius: 0.5rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+
+  /* Shadows - Lighter for light theme */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+}
+
+@theme inline {
+  /* Core Colors */
+  --color-background: hsl(var(--background));
+  --color-background-elevated: hsl(var(--background-elevated));
+  --color-background-surface: hsl(var(--background-surface));
+  --color-foreground: hsl(var(--foreground));
+  --color-foreground-muted: hsl(var(--foreground-muted));
+  --color-foreground-subtle: hsl(var(--foreground-subtle));
+  --color-border: hsl(var(--border));
+  --color-border-subtle: hsl(var(--border-subtle));
+
+  /* Brand Colors */
+  --color-primary: hsl(var(--primary));
+  --color-primary-hover: hsl(var(--primary-hover));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+
+  /* Accent Colors */
+  --color-accent-blue: hsl(var(--accent-blue));
+  --color-accent-purple: hsl(var(--accent-purple));
+  --color-accent-cyan: hsl(var(--accent-cyan));
+  --color-accent-amber: hsl(var(--accent-amber));
+  --color-accent-rose: hsl(var(--accent-rose));
+  --color-accent-green: hsl(var(--accent-green));
+  --color-accent-orange: hsl(var(--accent-orange));
+  --color-accent-teal: hsl(var(--accent-teal));
+
+  /* Status Colors */
+  --color-success: hsl(var(--success));
+  --color-warning: hsl(var(--warning));
+  --color-error: hsl(var(--error));
+  --color-info: hsl(var(--info));
+
+  /* Chart Colors */
+  --color-chart-coal: hsl(var(--chart-coal));
+  --color-chart-oil: hsl(var(--chart-oil));
+  --color-chart-gas: hsl(var(--chart-gas));
+  --color-chart-nuclear: hsl(var(--chart-nuclear));
+  --color-chart-hydro: hsl(var(--chart-hydro));
+  --color-chart-wind: hsl(var(--chart-wind));
+  --color-chart-solar: hsl(var(--chart-solar));
+  --color-chart-biomass: hsl(var(--chart-biomass));
+  --color-chart-geothermal: hsl(var(--chart-geothermal));
+
+  /* Radius */
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+
+  /* Fonts */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+/* Base styles */
+html {
+  color-scheme: light;
+}
+
+body {
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: var(--font-sans, 'Inter', system-ui, sans-serif);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Selection */
+::selection {
+  background: hsl(var(--primary) / 0.2);
+  color: hsl(var(--foreground));
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--background-surface));
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border-subtle));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--foreground-subtle));
+}
+
+/* Focus ring */
+*:focus-visible {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+}
+
+/* Tremor theme overrides */
+.tremor-Card-root {
+  background: hsl(var(--background-elevated)) !important;
+  border-color: hsl(var(--border)) !important;
+}
+
+.tremor-Metric-root {
+  color: hsl(var(--foreground)) !important;
+}
+
+.tremor-Text-root {
+  color: hsl(var(--foreground-muted)) !important;
+}
+
+/* Chart styling for light theme */
+.recharts-surface {
+  background: transparent !important;
+}
+
+.recharts-cartesian-grid-horizontal line,
+.recharts-cartesian-grid-vertical line {
+  stroke: #e0e0e0 !important;
+}
+
+.recharts-text {
+  fill: hsl(var(--foreground-muted)) !important;
+}
+
+.recharts-legend-item-text {
+  color: hsl(var(--foreground-muted)) !important;
+}
+
+/* Area chart gradients */
+.recharts-area-area {
+  fill-opacity: 0.8 !important;
+}
+
+.recharts-layer.recharts-area {
+  opacity: 1 !important;
+}
+
+/* Tremor color variable overrides */
+:root {
+  --tremor-content-DEFAULT: hsl(var(--foreground-muted));
+  --tremor-content-emphasis: hsl(var(--foreground));
+  --tremor-content-subtle: hsl(var(--foreground-subtle));
+  --tremor-background-DEFAULT: hsl(var(--background));
+  --tremor-background-subtle: hsl(var(--background-surface));
+  --tremor-background-muted: hsl(var(--background-elevated));
+  --tremor-border-DEFAULT: hsl(var(--border));
+}
+
+/* Bar chart styling */
+.recharts-bar-rectangle {
+  fill-opacity: 0.9 !important;
+}
+
+/* Line chart styling */
+.recharts-line .recharts-curve {
+  stroke-width: 2px !important;
+}
+
+/* Utility classes */
+.glass {
+  background: hsl(var(--background-elevated) / 0.95);
+  backdrop-filter: blur(8px);
+  border: 1px solid hsl(var(--border));
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent-cyan)) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
