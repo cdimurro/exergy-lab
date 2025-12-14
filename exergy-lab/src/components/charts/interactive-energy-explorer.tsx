@@ -25,7 +25,7 @@ const ENERGY_COLORS: Record<string, string> = {
   hydro: '#3b82f6',     // Blue
   wind: '#14b8a6',      // Teal
   solar: '#f59e0b',     // Amber
-  biomass: '#a855f7',   // Violet/Purple (changed from green)
+  biomass: '#166534',   // Dark Green
   geothermal: '#f43f5e', // Rose
   other: '#84cc16',     // Lime (bright lime, distinct from teal)
   fossil: '#DC2626',    // Red
@@ -176,7 +176,7 @@ const buttonColors: Record<string, { selected: string; unselected: string }> = {
   Hydro: { selected: 'bg-blue-500 border-blue-500 text-white ring-2 ring-blue-500 ring-offset-2', unselected: 'bg-gray-200 border-gray-200 text-gray-700 hover:bg-gray-300' },
   Wind: { selected: 'bg-teal-500 border-teal-500 text-white ring-2 ring-teal-500 ring-offset-2', unselected: 'bg-gray-200 border-gray-200 text-gray-700 hover:bg-gray-300' },
   Solar: { selected: 'bg-amber-500 border-amber-500 text-white ring-2 ring-amber-500 ring-offset-2', unselected: 'bg-gray-200 border-gray-200 text-gray-700 hover:bg-gray-300' },
-  Biomass: { selected: 'bg-purple-500 border-purple-500 text-white ring-2 ring-purple-500 ring-offset-2', unselected: 'bg-gray-200 border-gray-200 text-gray-700 hover:bg-gray-300' },
+  Biomass: { selected: 'bg-green-800 border-green-800 text-white ring-2 ring-green-800 ring-offset-2', unselected: 'bg-gray-200 border-gray-200 text-gray-700 hover:bg-gray-300' },
   Geothermal: { selected: 'bg-rose-500 border-rose-500 text-white ring-2 ring-rose-500 ring-offset-2', unselected: 'bg-gray-200 border-gray-200 text-gray-700 hover:bg-gray-300' },
   'Other Renewables': { selected: 'bg-lime-500 border-lime-500 text-white ring-2 ring-lime-500 ring-offset-2', unselected: 'bg-gray-200 border-gray-200 text-gray-700 hover:bg-gray-300' },
 }
@@ -190,7 +190,7 @@ const colorMap: Record<string, string> = {
   Hydro: 'bg-blue-500',
   Wind: 'bg-teal-500',
   Solar: 'bg-amber-500',
-  Biomass: 'bg-purple-500',
+  Biomass: 'bg-green-800',
   Geothermal: 'bg-rose-500',
   'Other Renewables': 'bg-lime-500',
   'Fossil Fuels': 'bg-red-600',
@@ -215,28 +215,28 @@ function CustomTooltip({ active, payload, label, valueFormatter }: CustomTooltip
   const total = payload.reduce((sum, item) => sum + (item.value || 0), 0)
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-lg max-w-xs">
-      <p className="font-bold text-xl text-gray-800 mb-3">{label}</p>
-      <div className="space-y-2 max-h-64 overflow-y-auto">
+    <div className="bg-white border border-gray-200 rounded p-2 shadow-lg text-xs">
+      <p className="font-bold text-sm text-gray-800 mb-1">{label}</p>
+      <div className="space-y-0.5 max-h-40 overflow-y-auto">
         {payload
           .filter(item => item.value > 0)
           .sort((a, b) => b.value - a.value)
           .map((item) => (
-            <div key={item.dataKey} className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-2">
+            <div key={item.dataKey} className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1">
                 <div
-                  className="w-4 h-4 rounded-full flex-shrink-0"
+                  className="w-2 h-2 rounded-full flex-shrink-0"
                   style={{ backgroundColor: item.color }}
                 />
-                <span className="text-base text-gray-700">{item.name}</span>
+                <span className="text-xs text-gray-700">{item.name}</span>
               </div>
-              <span className="text-base font-medium text-gray-900">{valueFormatter(item.value)}</span>
+              <span className="text-xs font-medium text-gray-900">{valueFormatter(item.value)}</span>
             </div>
           ))}
       </div>
-      <div className="border-t border-gray-200 mt-3 pt-3 flex items-center justify-between">
-        <span className="text-lg font-semibold text-gray-700">Total</span>
-        <span className="text-lg font-bold text-gray-900">{valueFormatter(total)}</span>
+      <div className="border-t border-gray-200 mt-1 pt-1 flex items-center justify-between">
+        <span className="text-xs font-semibold text-gray-700">Total</span>
+        <span className="text-xs font-bold text-gray-900">{valueFormatter(total)}</span>
       </div>
     </div>
   )
@@ -394,7 +394,7 @@ export function InteractiveEnergyExplorer({ className }: InteractiveEnergyExplor
               onClick={() => handleFilterChange('fossil')}
               className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
                 sourceFilter === 'fossil'
-                  ? 'bg-orange-500 text-white'
+                  ? 'bg-red-600 text-white'
                   : 'bg-background-surface text-foreground-muted hover:bg-background-surface/80'
               }`}
             >
@@ -438,39 +438,31 @@ export function InteractiveEnergyExplorer({ className }: InteractiveEnergyExplor
       </div>
 
       {/* Chart */}
-      <div className="mb-4 h-96">
+      <div className="mb-4 h-[500px]">
         <ResponsiveContainer width="100%" height="100%">
           {chartType === 'total' ? (
-            <AreaChart data={chartData} margin={{ top: 10, right: 40, left: 80, bottom: 20 }}>
-              <defs>
-                {/* Gradient definitions for all sources */}
-                {Object.entries(sourceColors).map(([name, color]) => (
-                  <linearGradient key={name} id={`gradient-${name.replace(/\s+/g, '-')}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={color} stopOpacity={0.95} />
-                    <stop offset="95%" stopColor={color} stopOpacity={0.6} />
-                  </linearGradient>
-                ))}
-              </defs>
+            <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 20, bottom: 20 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
               <XAxis
                 dataKey="year"
-                tick={{ fill: '#64748b', fontSize: 14 }}
+                tick={{ fill: '#64748b', fontSize: 12 }}
                 tickLine={{ stroke: '#e0e0e0' }}
                 axisLine={{ stroke: '#e0e0e0' }}
                 interval="preserveStartEnd"
-                height={60}
               />
               <YAxis
-                tick={{ fill: '#64748b', fontSize: 14 }}
+                tick={{ fill: '#64748b', fontSize: 12 }}
                 tickLine={{ stroke: '#e0e0e0' }}
                 axisLine={{ stroke: '#e0e0e0' }}
-                width={80}
-                domain={showRelative ? [0, 100] : [0, 'auto']}
+                width={70}
+                domain={[0, 100]}
+                tickFormatter={(value) => showRelative ? `${value}%` : `${value}`}
                 label={{
-                  value: showRelative ? 'Share of Total Energy (%)' : 'Global Energy (EJ)',
+                  value: showRelative ? 'Share of Total (%)' : 'Energy (EJ)',
                   angle: -90,
                   position: 'insideLeft',
-                  style: { fontSize: 16, fontWeight: 600, fill: '#475569' }
+                  offset: 10,
+                  style: { fontSize: 12, fontWeight: 500, fill: '#475569', textAnchor: 'middle' }
                 }}
               />
               <Tooltip content={<CustomTooltip valueFormatter={valueFormatter} />} />
@@ -481,32 +473,32 @@ export function InteractiveEnergyExplorer({ className }: InteractiveEnergyExplor
                   dataKey={source}
                   stackId="1"
                   stroke={sourceColors[source]}
-                  fill={`url(#gradient-${source.replace(/\s+/g, '-')})`}
-                  fillOpacity={1}
+                  fill={sourceColors[source]}
+                  fillOpacity={0.7}
                 />
               ))}
             </AreaChart>
           ) : (
-            <LineChart data={chartData} margin={{ top: 20, right: 40, left: 80, bottom: 20 }}>
+            <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
               <XAxis
                 dataKey="year"
-                tick={{ fill: '#64748b', fontSize: 14 }}
+                tick={{ fill: '#64748b', fontSize: 12 }}
                 tickLine={{ stroke: '#e0e0e0' }}
                 axisLine={{ stroke: '#e0e0e0' }}
                 interval="preserveStartEnd"
-                height={60}
               />
               <YAxis
-                tick={{ fill: '#64748b', fontSize: 14 }}
+                tick={{ fill: '#64748b', fontSize: 12 }}
                 tickLine={{ stroke: '#e0e0e0' }}
                 axisLine={{ stroke: '#e0e0e0' }}
-                width={80}
+                width={70}
                 label={{
-                  value: 'Change in Global Energy (EJ)',
+                  value: 'Change (EJ)',
                   angle: -90,
                   position: 'insideLeft',
-                  style: { fontSize: 16, fontWeight: 600, fill: '#475569' }
+                  offset: 10,
+                  style: { fontSize: 12, fontWeight: 500, fill: '#475569', textAnchor: 'middle' }
                 }}
               />
               <Tooltip content={<CustomTooltip valueFormatter={valueFormatter} />} />

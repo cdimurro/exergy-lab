@@ -223,18 +223,10 @@ export function RegionalExplorer({ className }: RegionalExplorerProps) {
       )}
 
       {/* Chart */}
-      <div className="h-64">
+      <div className="h-80">
         <ResponsiveContainer width="100%" height="100%">
           {viewType === 'timeseries' ? (
             <AreaChart data={regionalData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-              <defs>
-                {Object.entries(regionColors).map(([name, color]) => (
-                  <linearGradient key={name} id={`gradient-region-${name.replace(/\s+/g, '-')}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={color} stopOpacity={0.95} />
-                    <stop offset="95%" stopColor={color} stopOpacity={0.6} />
-                  </linearGradient>
-                ))}
-              </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
               <XAxis
                 dataKey="year"
@@ -256,8 +248,8 @@ export function RegionalExplorer({ className }: RegionalExplorerProps) {
                   dataKey={region}
                   stackId="1"
                   stroke={regionColors[region]}
-                  fill={`url(#gradient-region-${region.replace(/\s+/g, '-')})`}
-                  fillOpacity={1}
+                  fill={regionColors[region]}
+                  fillOpacity={0.7}
                 />
               ))}
             </AreaChart>

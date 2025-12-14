@@ -223,18 +223,10 @@ export function SectorExplorer({ className }: SectorExplorerProps) {
       )}
 
       {/* Chart */}
-      <div className="h-64">
+      <div className="h-80">
         <ResponsiveContainer width="100%" height="100%">
           {viewType === 'timeseries' ? (
             <AreaChart data={sectorData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-              <defs>
-                {Object.entries(sectorColors).map(([name, color]) => (
-                  <linearGradient key={name} id={`gradient-sector-${name.replace(/\s+/g, '-')}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={color} stopOpacity={0.95} />
-                    <stop offset="95%" stopColor={color} stopOpacity={0.6} />
-                  </linearGradient>
-                ))}
-              </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
               <XAxis
                 dataKey="year"
@@ -256,8 +248,8 @@ export function SectorExplorer({ className }: SectorExplorerProps) {
                   dataKey={sector}
                   stackId="1"
                   stroke={sectorColors[sector]}
-                  fill={`url(#gradient-sector-${sector.replace(/\s+/g, '-')})`}
-                  fillOpacity={1}
+                  fill={sectorColors[sector]}
+                  fillOpacity={0.7}
                 />
               ))}
             </AreaChart>
