@@ -1,0 +1,100 @@
+{
+  "metadata": {
+    "description": "Efficiency factors for converting final energy to useful energy by source and sector",
+    "sources": [
+      "IEA Energy Efficiency Indicators 2023",
+      "Lawrence Livermore National Laboratory Energy Flow Charts",
+      "IPCC AR6 Working Group III",
+      "Academic literature review"
+    ],
+    "last_updated": "2024-01-15"
+  },
+  "transport": {
+    "oil": 0.22,
+    "gas": 0.25,
+    "electricity": 0.80,
+    "biomass": 0.20,
+    "notes": "ICE vehicles ~20-25%, EVs ~75-85%"
+  },
+  "buildings_heating": {
+    "oil": 0.75,
+    "gas": 0.85,
+    "coal": 0.65,
+    "electricity_resistance": 1.00,
+    "electricity_heat_pump": 3.00,
+    "biomass": 0.70,
+    "geothermal": 0.80,
+    "solar_thermal": 0.65,
+    "notes": "Heat pumps achieve COP 2.5-4.0"
+  },
+  "buildings_cooling": {
+    "electricity": 2.80,
+    "gas_absorption": 0.70,
+    "notes": "AC COP typically 2.5-4.0"
+  },
+  "buildings_lighting": {
+    "electricity_led": 0.45,
+    "electricity_cfl": 0.22,
+    "electricity_incandescent": 0.05,
+    "electricity_average": 0.35,
+    "notes": "Weighted average trending toward LED"
+  },
+  "buildings_appliances": {
+    "electricity": 0.85,
+    "gas": 0.70,
+    "notes": "Modern appliances, refrigeration, cooking"
+  },
+  "industry_process_heat_low": {
+    "gas": 0.80,
+    "oil": 0.75,
+    "coal": 0.70,
+    "electricity": 0.90,
+    "biomass": 0.65,
+    "notes": "Low temperature <100°C"
+  },
+  "industry_process_heat_medium": {
+    "gas": 0.75,
+    "oil": 0.70,
+    "coal": 0.65,
+    "electricity": 0.85,
+    "biomass": 0.60,
+    "notes": "Medium temperature 100-400°C"
+  },
+  "industry_process_heat_high": {
+    "gas": 0.65,
+    "oil": 0.60,
+    "coal": 0.55,
+    "electricity": 0.75,
+    "notes": "High temperature >400°C"
+  },
+  "industry_machine_drives": {
+    "electricity": 0.90,
+    "notes": "Electric motors"
+  },
+  "power_generation": {
+    "coal": 0.37,
+    "gas": 0.55,
+    "oil": 0.35,
+    "nuclear": 0.33,
+    "hydro": 0.90,
+    "wind": 1.00,
+    "solar_pv": 1.00,
+    "solar_thermal": 0.18,
+    "geothermal": 0.15,
+    "biomass": 0.35,
+    "notes": "Conversion to electricity at power plant"
+  },
+  "weighted_averages": {
+    "oil": 0.35,
+    "gas": 0.65,
+    "coal": 0.45,
+    "nuclear": 0.33,
+    "hydro": 0.90,
+    "wind": 1.00,
+    "solar": 0.85,
+    "biomass": 0.50,
+    "geothermal": 0.65,
+    "electricity_end_use": 0.85,
+    "notes": "Approximate weighted averages across all end-uses. These are simplified factors for initial calculations. More granular sector-specific calculations should be applied when detailed data is available."
+  }
+}

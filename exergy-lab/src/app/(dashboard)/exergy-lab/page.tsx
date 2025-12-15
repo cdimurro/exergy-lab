@@ -28,22 +28,26 @@ import {
 } from 'lucide-react'
 
 // Energy source configurations
+// Efficiency: Primary -> Useful conversion efficiency
+// Quality Factor: Weighted exergy factor based on typical end-use allocation
 const ENERGY_SOURCES = [
   { id: 'solar', name: 'Solar PV', efficiency: 0.85, qualityFactor: 0.95, icon: Sun, color: 'amber' },
-  { id: 'wind', name: 'Wind', efficiency: 0.88, qualityFactor: 0.95, icon: Wind, color: 'cyan' },
-  { id: 'hydro', name: 'Hydro', efficiency: 0.87, qualityFactor: 0.95, icon: Droplets, color: 'blue' },
-  { id: 'nuclear', name: 'Nuclear', efficiency: 0.33, qualityFactor: 0.95, icon: Atom, color: 'purple' },
-  { id: 'gas', name: 'Natural Gas', efficiency: 0.52, qualityFactor: 0.85, icon: Flame, color: 'orange' },
-  { id: 'coal', name: 'Coal', efficiency: 0.32, qualityFactor: 0.78, icon: Zap, color: 'slate' },
+  { id: 'wind', name: 'Wind', efficiency: 1.00, qualityFactor: 1.00, icon: Wind, color: 'cyan' },
+  { id: 'hydro', name: 'Hydro', efficiency: 0.90, qualityFactor: 1.00, icon: Droplets, color: 'blue' },
+  { id: 'nuclear', name: 'Nuclear', efficiency: 0.33, qualityFactor: 1.00, icon: Atom, color: 'purple' },
+  { id: 'gas', name: 'Natural Gas', efficiency: 0.65, qualityFactor: 0.48, icon: Flame, color: 'orange' },
+  { id: 'coal', name: 'Coal', efficiency: 0.45, qualityFactor: 0.78, icon: Zap, color: 'slate' },
 ]
 
-// End-use categories
+// End-use categories with strict Carnot exergy factors
+// Based on Brockway et al. 2019 methodology
 const END_USES = [
   { id: 'electricity', name: 'Electricity', qualityFactor: 1.0 },
-  { id: 'mechanical', name: 'Mechanical Work', qualityFactor: 0.95 },
-  { id: 'high_heat', name: 'High-Temp Heat (>500°C)', qualityFactor: 0.7 },
-  { id: 'medium_heat', name: 'Medium-Temp Heat', qualityFactor: 0.4 },
-  { id: 'low_heat', name: 'Low-Temp Heat (<100°C)', qualityFactor: 0.2 },
+  { id: 'mechanical', name: 'Mechanical Work', qualityFactor: 1.0 },
+  { id: 'high_heat', name: 'High-Temp Heat (>400°C)', qualityFactor: 0.6 },
+  { id: 'medium_heat', name: 'Medium-Temp Heat (100-400°C)', qualityFactor: 0.4 },
+  { id: 'low_heat', name: 'Low-Temp Heat (<100°C)', qualityFactor: 0.07 }, // Strict Carnot
+  { id: 'cooling', name: 'Cooling/AC', qualityFactor: 0.3 },
 ]
 
 interface AnalysisResult {

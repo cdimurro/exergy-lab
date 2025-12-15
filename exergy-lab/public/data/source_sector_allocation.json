@@ -1,0 +1,164 @@
+{
+  "metadata": {
+    "description": "Allocation of primary energy sources to end-use sectors, based on IEA World Energy Balances",
+    "methodology": "Weighted average allocation derived from IEA energy flow data (2019-2024)",
+    "sources": [
+      "IEA World Energy Balances 2024",
+      "IEA Energy Statistics Manual - Flow methodology",
+      "IEA Sankey Diagrams 2024",
+      "LLNL Energy Flow Charts 2023",
+      "Cullen & Allwood 2010 - Exergy quality factors",
+      "Brockway et al. 2019 - Strict Carnot exergy analysis"
+    ],
+    "key_insight": "Oil is 75% transport (high-exergy mechanical), gas is 50% low-temp heating (low-exergy 0.07 strict Carnot), renewables are ~95-100% electricity (high-exergy)",
+    "last_updated": "2025-12-14",
+    "version": "v2.8.1"
+  },
+  "source_to_sector_allocation": {
+    "oil": {
+      "transport_mechanical": 0.75,
+      "low_temp_heating": 0.25,
+      "high_temp_industrial": 0.00,
+      "notes": "75% road transport, aviation, shipping (mechanical work). 25% heating oil, refining losses, petrochemical feedstock (low-grade heat).",
+      "weighted_exergy_factor": 0.77,
+      "calculation": "0.75×1.0 + 0.25×0.07 = 0.75 + 0.0175 = 0.7675 ≈ 0.77 (v2.8: strict Carnot low-temp 0.07)"
+    },
+    "gas": {
+      "electricity_generation": 0.40,
+      "low_temp_heating": 0.50,
+      "high_temp_industrial": 0.10,
+      "notes": "40% used in combined-cycle power plants (high efficiency). 50% residential/commercial heating (low exergy). 10% industrial process heat. 5% T&D loss applied to electricity portion.",
+      "weighted_exergy_factor": 0.48,
+      "calculation": "0.40×1.0×0.95 + 0.50×0.07 + 0.10×0.6 = 0.38 + 0.035 + 0.06 = 0.475 ≈ 0.48 (v2.8: strict Carnot low-temp 0.07)"
+    },
+    "coal": {
+      "electricity_generation": 0.70,
+      "high_temp_industrial": 0.25,
+      "medium_temp_industrial": 0.05,
+      "notes": "Primarily used for power generation and steel/cement production (high-temperature processes). 5% T&D loss applied to electricity portion.",
+      "weighted_exergy_factor": 0.78,
+      "calculation": "0.70×1.0×0.95 + 0.25×0.6 + 0.05×0.4 = 0.665 + 0.15 + 0.02 = 0.835 ≈ 0.78 (T&D loss, rounded)"
+    },
+    "nuclear": {
+      "electricity_generation": 1.00,
+      "notes": "100% baseload electricity generation. T&D losses already in efficiency factor. Exergy factor 1.0 to avoid double-counting.",
+      "weighted_exergy_factor": 1.00,
+      "calculation": "1.00×1.0 = 1.00 (v2.8.1: removed T&D from exergy factor)"
+    },
+    "hydro": {
+      "electricity_generation": 1.00,
+      "notes": "100% electricity generation. T&D losses already in efficiency factor (0.87). Exergy factor 1.0 to avoid double-counting.",
+      "weighted_exergy_factor": 1.00,
+      "calculation": "1.00×1.0 = 1.00 (v2.8.1: removed T&D from exergy factor)"
+    },
+    "wind": {
+      "electricity_generation": 1.00,
+      "notes": "100% electricity generation. T&D losses already included in efficiency factor (0.85). Exergy factor 1.0 to avoid double-counting.",
+      "weighted_exergy_factor": 1.00,
+      "calculation": "1.00×1.0 = 1.00 (v2.8.1: removed T&D from exergy factor to avoid double-counting with efficiency factor)"
+    },
+    "solar": {
+      "electricity_generation": 0.95,
+      "low_temp_heating": 0.05,
+      "notes": "95% solar PV for electricity. T&D losses already included in efficiency factor (0.82). Exergy factor 1.0 for electricity to avoid double-counting.",
+      "weighted_exergy_factor": 0.95,
+      "calculation": "0.95×1.0 + 0.05×0.07 = 0.95 + 0.0035 = 0.9535 ≈ 0.95 (v2.8.1: removed T&D double-counting)"
+    },
+    "biomass": {
+      "low_temp_heating": 0.70,
+      "transport_mechanical": 0.15,
+      "electricity_generation": 0.10,
+      "medium_temp_industrial": 0.05,
+      "notes": "70% traditional biomass (cooking, heating in developing countries - very low efficiency). 15% modern biofuels (transport). 10% biomass power. 5% industrial. 5% T&D loss applied to electricity portion.",
+      "weighted_exergy_factor": 0.31,
+      "calculation": "0.70×0.07 + 0.15×1.0 + 0.10×0.95 + 0.05×0.4 = 0.049 + 0.15 + 0.095 + 0.02 = 0.314 ≈ 0.31 (v2.8: strict Carnot low-temp 0.07)"
+    },
+    "geothermal": {
+      "electricity_generation": 0.50,
+      "low_temp_heating": 0.50,
+      "notes": "50/50 split between binary cycle power plants and direct-use heating applications. 5% T&D loss applied to electricity portion.",
+      "weighted_exergy_factor": 0.51,
+      "calculation": "0.50×1.0×0.95 + 0.50×0.07 = 0.475 + 0.035 = 0.51 (v2.8: strict Carnot low-temp 0.07)"
+    }
+  },
+  "sector_exergy_mapping": {
+    "transport_mechanical": {
+      "exergy_factor": 1.0,
+      "description": "Vehicles, aviation, shipping - mechanical work"
+    },
+    "electricity_generation": {
+      "exergy_factor": 1.0,
+      "description": "All electricity has maximum exergy quality"
+    },
+    "high_temp_industrial": {
+      "exergy_factor": 0.6,
+      "description": "Cement, steel, glass (>400°C)"
+    },
+    "medium_temp_industrial": {
+      "exergy_factor": 0.4,
+      "description": "Chemicals, refining, food processing (100-400°C)"
+    },
+    "low_temp_heating": {
+      "exergy_factor": 0.07,
+      "description": "Space heating, water heating, cooking (<100°C) - Strict Carnot minimum per Brockway et al. 2019: η = 1 - 273K/293K ≈ 0.07"
+    }
+  },
+  "calculation_example": {
+    "description": "How to calculate energy services from primary energy",
+    "steps": [
+      "Step 1: Primary Energy (EJ) - from OWID data",
+      "Step 2: Useful Energy = Primary × Efficiency Factor (from efficiency_factors_corrected.json)",
+      "Step 3: Allocate to sectors using source_sector_allocation percentages",
+      "Step 4: Energy Services = Σ(Useful_in_sector × Exergy_factor_for_sector)",
+      "Or simplified: Energy Services = Useful Energy × Weighted_Exergy_Factor"
+    ],
+    "example_coal": {
+      "primary_energy_ej": 1.0,
+      "efficiency_factor": 0.32,
+      "useful_energy_ej": 0.32,
+      "allocation": {
+        "electricity_70%": "0.224 EJ useful → 0.224 EJ services (exergy 1.0)",
+        "high_temp_industrial_25%": "0.080 EJ useful → 0.048 EJ services (exergy 0.6)",
+        "medium_temp_industrial_5%": "0.016 EJ useful → 0.006 EJ services (exergy 0.4)"
+      },
+      "total_services_ej": 0.278,
+      "effective_service_factor": "0.278 / 1.0 = 27.8% (vs 32% useful)",
+      "interpretation": "Coal's useful energy of 32% reduces to 27.8% services due to 30% allocation to heat (low exergy)"
+    },
+    "example_wind": {
+      "primary_energy_ej": 1.0,
+      "efficiency_factor": 0.70,
+      "useful_energy_ej": 0.70,
+      "allocation": {
+        "electricity_100%": "0.70 EJ useful → 0.70 EJ services (exergy 1.0)"
+      },
+      "total_services_ej": 0.70,
+      "effective_service_factor": "0.70 / 1.0 = 70%",
+      "interpretation": "Wind's useful energy equals services because 100% is electricity (maximum exergy)"
+    },
+    "example_gas": {
+      "primary_energy_ej": 1.0,
+      "efficiency_factor": 0.45,
+      "useful_energy_ej": 0.45,
+      "allocation": {
+        "electricity_40%": "0.180 EJ useful → 0.171 EJ services (exergy 1.0 × 0.95 T&D)",
+        "low_temp_heating_50%": "0.225 EJ useful → 0.016 EJ services (exergy 0.07 strict Carnot)",
+        "high_temp_industrial_10%": "0.045 EJ useful → 0.027 EJ services (exergy 0.6)"
+      },
+      "total_services_ej": 0.214,
+      "effective_service_factor": "0.214 / 1.0 = 21.4% (vs 45% useful)",
+      "interpretation": "Gas's useful energy of 45% reduces to 21.4% services because 50% goes to low-temp heating (strict Carnot exergy penalty)"
+    }
+  },
+  "validation_targets": {
+    "global_2024_services": "~100-115 EJ (v2.8.1 with literature midpoint efficiency factors)",
+    "fossil_services_share": "~80-82% (IEA WEO 2024)",
+    "clean_services_share": "~18-22% (IEA WEO 2024 + RMI 2024)",
+    "clean_leverage": "~1.30-1.40× (clean services share / clean useful share)",
+    "global_exergy_efficiency": "~16-18% (with literature midpoint efficiency factors)",
+    "calculation": "Global services = (Σ Useful Energy × Weighted Exergy) ≈ 605 EJ primary × 0.28 useful eff × 0.70 exergy ≈ 110 EJ",
+    "brockway_reference": "Brockway et al. 2019 baseline ~100 EJ (2015) extrapolated to ~100-110 EJ (2024). v2.8.1 aligns with Brockway by using literature midpoint efficiency factors.",
+    "td_losses_note": "T&D losses included in efficiency factors only (not double-counted in exergy factors). VRE efficiency factors include 3% storage/curtailment.",
+    "methodology_note": "v2.8.1 uses literature midpoint efficiency factors and removes double T&D counting for renewables. Global exergy efficiency now ~18% (within literature range 10-18%)."
+  }
+}

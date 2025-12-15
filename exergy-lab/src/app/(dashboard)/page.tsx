@@ -13,8 +13,8 @@ export default function GlobalEnergySystemPage() {
       <div>
         <h1 className="text-3xl font-bold text-gray-800">Global Energy System</h1>
         <p className="text-gray-600 mt-1">
-          Comprehensive view of global energy flows by source, region, and sector.
-          Explore 60 years of energy data from 1965 to 2024.
+          Thermodynamically accurate view of global energy flows using the three-tier framework:
+          Primary Energy, Useful Energy, and Applied Exergy. Explore 60 years of data (1965-2024).
         </p>
       </div>
 
