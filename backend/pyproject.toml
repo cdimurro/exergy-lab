@@ -5,7 +5,6 @@ description = "Multi-agent platform for clean energy R&D acceleration"
 authors = ["Exergy Lab Team"]
 readme = "README.md"
 license = "MIT"
-python = "^3.11"
 
 [tool.poetry.dependencies]
 python = "^3.11"
@@ -35,8 +34,10 @@ aiohttp = "^3.9.0"
 requests = "^2.31.0"
 
 # Chemistry and Materials Science
-rdkit = "^2023.9.4"
-pyscf = "^2.4.0"
+# Note: RDKit and PySCF require platform-specific builds
+# Install manually if needed: pip install rdkit pyscf
+# rdkit = "^2023.9.4"
+# pyscf = "^2.4.0"
 pymatgen = "^2024.1.26"
 ase = "^3.22.1"
 
@@ -53,9 +54,6 @@ pyyaml = "^6.0.1"
 
 # Server-Sent Events
 sse-starlette = "^2.0.0"
-
-# CORS
-python-cors = "^1.0.0"
 
 # Data Validation
 email-validator = "^2.1.0"
@@ -76,7 +74,6 @@ pytest = "^7.4.0"
 pytest-asyncio = "^0.21.0"
 pytest-cov = "^4.1.0"
 pytest-mock = "^3.12.0"
-httpx-mock = "^0.1.0"
 
 # Code Quality
 black = "^24.1.0"
