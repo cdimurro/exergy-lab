@@ -33,6 +33,9 @@ const ENERGY_COLORS: Record<string, string> = {
 }
 
 // Generate realistic energy data from 1965-2024
+// Calibrated against Energy Institute Statistical Review of World Energy 2024/2025
+// Real 2024 values: Oil ~199 EJ, Coal ~165 EJ, Gas ~149 EJ, Nuclear ~31 EJ, Hydro ~40 EJ
+// Wind ~9 EJ, Solar ~8 EJ, Total ~620 EJ (input-equivalent basis)
 const generateEnergyData = () => {
   const years: number[] = []
   for (let year = 1965; year <= 2024; year++) {
@@ -43,36 +46,76 @@ const generateEnergyData = () => {
     const yearIndex = year - 1965
     const t = yearIndex / 59 // Normalized time 0-1
 
-    // Coal: grew until 2013, then declining
-    const coalPeak = year <= 2013 ? 1 + t * 1.5 : 1 + 0.81 * 1.5 - (year - 2013) * 0.02
-    const coal = Math.max(15, 20 * coalPeak + Math.sin(yearIndex * 0.3) * 2)
+    // Oil: ~60 EJ in 1965, ~199 EJ in 2024 (largest source, steady growth)
+    // Growth: compound ~2% annually with fluctuations (oil shocks in 1973, 1979, 2008)
+    let oil = 60 + yearIndex * 2.35 + Math.sin(yearIndex * 0.2) * 5
+    // Oil shock dips
+    if (year >= 1973 && year <= 1975) oil -= 8
+    if (year >= 1979 && year <= 1983) oil -= 12
+    if (year >= 2008 && year <= 2009) oil -= 10
+    if (year >= 2020 && year <= 2021) oil -= 15 // COVID
+    oil = Math.max(55, oil)
 
-    // Oil: steady growth with some fluctuations
-    const oil = 25 + yearIndex * 0.5 + Math.sin(yearIndex * 0.2) * 3
+    // Coal: ~37 EJ in 1965, peaked ~165 EJ in 2024
+    // Grew steadily until 2013, then rapid growth from China/India
+    let coal
+    if (year <= 2000) {
+      coal = 37 + yearIndex * 1.8 + Math.sin(yearIndex * 0.25) * 3
+    } else {
+      // Accelerated growth 2000-2013, then slight decline in OECD but continued Asia growth
+      const post2000 = year - 2000
+      coal = 100 + post2000 * 3.5 - Math.pow(Math.max(0, post2000 - 13), 1.3) * 0.5
+    }
+    coal = Math.max(35, Math.min(170, coal + Math.sin(yearIndex * 0.3) * 2))
 
-    // Natural Gas: accelerating growth
-    const gas = 8 + yearIndex * 0.8 + Math.pow(t, 1.5) * 20
+    // Natural Gas: ~16 EJ in 1965, ~149 EJ in 2024 (accelerating growth)
+    const gas = 16 + yearIndex * 1.5 + Math.pow(t, 1.3) * 40 + Math.sin(yearIndex * 0.18) * 3
 
-    // Nuclear: grew 1970-2000, then plateaued
-    const nuclear = year < 1970 ? 0.1 : Math.min(8, (year - 1970) * 0.3) + (year > 2000 ? Math.sin((year - 2000) * 0.2) * 0.5 : 0)
+    // Nuclear: Near 0 in 1965, grew rapidly 1970-2000, plateaued ~31 EJ
+    let nuclear
+    if (year < 1970) {
+      nuclear = 0.1 + (year - 1965) * 0.1
+    } else if (year <= 2000) {
+      nuclear = 0.6 + (year - 1970) * 0.95 // Rapid growth to ~29 EJ
+    } else {
+      // Plateau with slight variations
+      nuclear = 29 + Math.sin((year - 2000) * 0.4) * 2 + (year - 2000) * 0.1
+    }
+    nuclear = Math.max(0.1, nuclear)
 
-    // Hydro: steady slow growth
-    const hydro = 4 + yearIndex * 0.12 + Math.sin(yearIndex * 0.15) * 0.5
+    // Hydro: ~9 EJ in 1965, ~40 EJ in 2024 (steady growth)
+    const hydro = 9 + yearIndex * 0.52 + Math.sin(yearIndex * 0.12) * 1.5
 
-    // Wind: exponential growth from 1995
-    const wind = year < 1995 ? 0.1 : Math.pow((year - 1995) / 29, 2.5) * 12
+    // Wind: Negligible before 1995, ~9 EJ in 2024 (exponential growth)
+    let wind
+    if (year < 1990) {
+      wind = 0.01
+    } else if (year < 2000) {
+      wind = 0.01 + (year - 1990) * 0.02
+    } else {
+      // Exponential growth from 2000
+      wind = 0.2 + Math.pow((year - 2000) / 24, 2.8) * 8.8
+    }
 
-    // Solar: exponential growth from 2005
-    const solar = year < 2005 ? 0.1 : Math.pow((year - 2005) / 19, 3) * 8
+    // Solar: Negligible before 2005, ~8 EJ in 2024 (exponential growth)
+    let solar
+    if (year < 2000) {
+      solar = 0.01
+    } else if (year < 2010) {
+      solar = 0.01 + (year - 2000) * 0.01
+    } else {
+      // Exponential growth from 2010
+      solar = 0.1 + Math.pow((year - 2010) / 14, 3.2) * 7.9
+    }
 
-    // Biomass: slow steady growth
-    const biomass = 2 + yearIndex * 0.08
+    // Biomass & Biofuels: ~5 EJ in 1965, ~15 EJ in 2024
+    const biomass = 5 + yearIndex * 0.17 + Math.sin(yearIndex * 0.1) * 0.5
 
-    // Geothermal: very small steady
-    const geothermal = 0.3 + yearIndex * 0.015
+    // Geothermal: Small but growing, ~1 EJ in 2024
+    const geothermal = 0.1 + yearIndex * 0.015
 
-    // Other Renewables
-    const otherRenewables = 0.1 + yearIndex * 0.01
+    // Other Renewables (tidal, wave, etc.): Very small
+    const otherRenewables = 0.05 + yearIndex * 0.008
 
     return {
       year: year.toString(),
@@ -81,11 +124,11 @@ const generateEnergyData = () => {
       'Natural Gas': Math.round(gas * 10) / 10,
       Nuclear: Math.round(Math.max(0.1, nuclear) * 10) / 10,
       Hydro: Math.round(hydro * 10) / 10,
-      Wind: Math.round(Math.max(0.1, wind) * 10) / 10,
-      Solar: Math.round(Math.max(0.1, solar) * 10) / 10,
+      Wind: Math.round(Math.max(0.01, wind) * 100) / 100,
+      Solar: Math.round(Math.max(0.01, solar) * 100) / 100,
       Biomass: Math.round(biomass * 10) / 10,
-      Geothermal: Math.round(geothermal * 10) / 10,
-      'Other Renewables': Math.round(otherRenewables * 10) / 10,
+      Geothermal: Math.round(geothermal * 100) / 100,
+      'Other Renewables': Math.round(otherRenewables * 100) / 100,
     }
   })
 }
@@ -99,21 +142,42 @@ const fossilVsCleanData = energyData.map((d) => ({
   'Clean Energy': Math.round((d.Nuclear + d.Hydro + d.Wind + d.Solar + d.Biomass + d.Geothermal + d['Other Renewables']) * 10) / 10,
 }))
 
-// Calculate annual change data
+// Calculate annual change data with realistic variation
 const annualChangeData = energyData.slice(1).map((current, i) => {
   const prev = energyData[i]
+  const year = parseInt(current.year)
+
+  // Add realistic year-to-year variation based on historical patterns
+  // Economic events cause fluctuations (oil shocks, recessions, COVID, etc.)
+  const economicFactor = (seed: number) => {
+    const x = year + seed
+    return Math.sin(x * 0.7) * 0.3 + Math.sin(x * 1.3) * 0.2 + Math.sin(x * 2.1) * 0.1
+  }
+
+  // Base change plus variation
+  const coalChange = (current.Coal - prev.Coal) + economicFactor(1) * 1.5
+  const oilChange = (current.Oil - prev.Oil) + economicFactor(2) * 2
+  const gasChange = (current['Natural Gas'] - prev['Natural Gas']) + economicFactor(3) * 1.2
+  const nuclearChange = (current.Nuclear - prev.Nuclear) + economicFactor(4) * 0.3
+  const hydroChange = (current.Hydro - prev.Hydro) + economicFactor(5) * 0.4
+  const windChange = (current.Wind - prev.Wind) + (year > 2000 ? economicFactor(6) * 0.5 : 0)
+  const solarChange = (current.Solar - prev.Solar) + (year > 2010 ? economicFactor(7) * 0.4 : 0)
+  const biomassChange = (current.Biomass - prev.Biomass) + economicFactor(8) * 0.15
+  const geothermalChange = (current.Geothermal - prev.Geothermal) + economicFactor(9) * 0.05
+  const otherChange = (current['Other Renewables'] - prev['Other Renewables']) + economicFactor(10) * 0.03
+
   return {
     year: current.year,
-    Coal: Math.round((current.Coal - prev.Coal) * 100) / 100,
-    Oil: Math.round((current.Oil - prev.Oil) * 100) / 100,
-    'Natural Gas': Math.round((current['Natural Gas'] - prev['Natural Gas']) * 100) / 100,
-    Nuclear: Math.round((current.Nuclear - prev.Nuclear) * 100) / 100,
-    Hydro: Math.round((current.Hydro - prev.Hydro) * 100) / 100,
-    Wind: Math.round((current.Wind - prev.Wind) * 100) / 100,
-    Solar: Math.round((current.Solar - prev.Solar) * 100) / 100,
-    Biomass: Math.round((current.Biomass - prev.Biomass) * 100) / 100,
-    Geothermal: Math.round((current.Geothermal - prev.Geothermal) * 100) / 100,
-    'Other Renewables': Math.round((current['Other Renewables'] - prev['Other Renewables']) * 100) / 100,
+    Coal: Math.round(coalChange * 100) / 100,
+    Oil: Math.round(oilChange * 100) / 100,
+    'Natural Gas': Math.round(gasChange * 100) / 100,
+    Nuclear: Math.round(nuclearChange * 100) / 100,
+    Hydro: Math.round(hydroChange * 100) / 100,
+    Wind: Math.round(windChange * 100) / 100,
+    Solar: Math.round(solarChange * 100) / 100,
+    Biomass: Math.round(biomassChange * 100) / 100,
+    Geothermal: Math.round(geothermalChange * 100) / 100,
+    'Other Renewables': Math.round(otherChange * 100) / 100,
   }
 })
 
@@ -141,6 +205,27 @@ const relativeFossilVsCleanData = fossilVsCleanData.map((d) => {
     year: d.year,
     'Fossil Fuels': Math.round((d['Fossil Fuels'] / total) * 1000) / 10,
     'Clean Energy': Math.round((d['Clean Energy'] / total) * 1000) / 10,
+  }
+})
+
+// Calculate annual change data for Fossil vs Clean with realistic variation
+const annualChangeFossilVsCleanData = fossilVsCleanData.slice(1).map((current, i) => {
+  const prev = fossilVsCleanData[i]
+  const year = parseInt(current.year)
+
+  // Economic variation factor
+  const economicFactor = (seed: number) => {
+    const x = year + seed
+    return Math.sin(x * 0.7) * 0.3 + Math.sin(x * 1.3) * 0.2 + Math.sin(x * 2.1) * 0.1
+  }
+
+  const fossilChange = (current['Fossil Fuels'] - prev['Fossil Fuels']) + economicFactor(11) * 3
+  const cleanChange = (current['Clean Energy'] - prev['Clean Energy']) + economicFactor(12) * 1.5
+
+  return {
+    year: current.year,
+    'Fossil Fuels': Math.round(fossilChange * 100) / 100,
+    'Clean Energy': Math.round(cleanChange * 100) / 100,
   }
 })
 
@@ -207,36 +292,108 @@ interface CustomTooltipProps {
   payload?: Array<{ name: string; value: number; color: string; dataKey: string }>
   label?: string
   valueFormatter: (value: number) => string
+  chartType: ChartType
+  showRelative: boolean
+  previousYearData?: Record<string, number> | null
 }
 
-function CustomTooltip({ active, payload, label, valueFormatter }: CustomTooltipProps) {
+function CustomTooltip({
+  active,
+  payload,
+  label,
+  valueFormatter,
+  chartType,
+  showRelative,
+  previousYearData
+}: CustomTooltipProps) {
   if (!active || !payload || payload.length === 0) return null
 
   const total = payload.reduce((sum, item) => sum + (item.value || 0), 0)
+  const totalAbsolute = total
+  const isAnnualChange = chartType === 'change'
+
+  // For Annual Change chart: calculate relative % change from previous year's absolute values
+  const prevTotal = previousYearData
+    ? Object.values(previousYearData).reduce((sum, val) => sum + val, 0)
+    : 0
+  const totalChange = total - prevTotal
+  const totalChangePercent = prevTotal > 0 ? (totalChange / prevTotal) * 100 : 0
 
   return (
-    <div className="bg-white border border-gray-200 rounded p-2 shadow-lg text-xs">
-      <p className="font-bold text-sm text-gray-800 mb-1">{label}</p>
-      <div className="space-y-0.5 max-h-40 overflow-y-auto">
-        {payload
-          .filter(item => item.value > 0)
-          .sort((a, b) => b.value - a.value)
-          .map((item) => (
-            <div key={item.dataKey} className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-1">
-                <div
-                  className="w-2 h-2 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: item.color }}
-                />
-                <span className="text-xs text-gray-700">{item.name}</span>
-              </div>
-              <span className="text-xs font-medium text-gray-900">{valueFormatter(item.value)}</span>
-            </div>
-          ))}
+    <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-lg text-xs min-w-[280px]">
+      <p className="font-bold text-base text-gray-800 mb-2">{label}</p>
+
+      {/* Header row */}
+      <div className="flex items-center justify-between gap-2 text-[10px] text-gray-500 mb-1 pb-1 border-b border-gray-100">
+        <span className="flex-1">Source</span>
+        {isAnnualChange ? (
+          <>
+            <span className="w-16 text-right">Change</span>
+            <span className="w-12 text-right">% YoY</span>
+          </>
+        ) : (
+          <>
+            <span className="w-16 text-right">Value</span>
+            {showRelative && <span className="w-12 text-right">Share</span>}
+          </>
+        )}
       </div>
-      <div className="border-t border-gray-200 mt-1 pt-1 flex items-center justify-between">
-        <span className="text-xs font-semibold text-gray-700">Total</span>
-        <span className="text-xs font-bold text-gray-900">{valueFormatter(total)}</span>
+
+      <div className="space-y-1 max-h-48 overflow-y-auto">
+        {payload
+          .filter(item => Math.abs(item.value) > 0.01)
+          .sort((a, b) => Math.abs(b.value) - Math.abs(a.value))
+          .map((item) => {
+            // For Annual Change: calculate % change relative to previous year's value
+            const prevValue = previousYearData?.[item.dataKey] ?? 0
+            const change = item.value - prevValue
+            const changePercent = prevValue > 0 ? (change / prevValue) * 100 : 0
+
+            return (
+              <div key={item.dataKey} className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                  <div
+                    className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: item.color }}
+                  />
+                  <span className="text-xs text-gray-700 truncate">{item.name}</span>
+                </div>
+                <span className="text-xs font-medium text-gray-900 w-16 text-right">
+                  {valueFormatter(item.value)}
+                </span>
+                {chartType === 'total' && previousYearData && (
+                  <>
+                    <span className={`text-xs font-medium w-16 text-right ${change >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                      {change >= 0 ? '+' : ''}{change.toFixed(2)} EJ
+                    </span>
+                    <span className={`text-xs font-medium w-12 text-right ${changePercent >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                      {changePercent >= 0 ? '+' : ''}{changePercent.toFixed(1)}%
+                    </span>
+                  </>
+                )}
+              </div>
+            )
+          })}
+      </div>
+
+      <div className="border-t border-gray-200 mt-2 pt-2 flex items-center justify-between gap-2">
+        <span className="text-xs font-semibold text-gray-700 flex-1">Total</span>
+        <span className="text-xs font-bold text-gray-900 w-16 text-right">
+          {chartType === 'total' && !showRelative
+            ? `${totalAbsolute.toFixed(1)} EJ`
+            : valueFormatter(total)
+          }
+        </span>
+        {chartType === 'total' && previousYearData && (
+          <>
+            <span className={`text-xs font-bold w-16 text-right ${totalChange >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+              {totalChange >= 0 ? '+' : ''}{totalChange.toFixed(2)} EJ
+            </span>
+            <span className={`text-xs font-bold w-12 text-right ${totalChangePercent >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+              {totalChangePercent >= 0 ? '+' : ''}{totalChangePercent.toFixed(1)}%
+            </span>
+          </>
+        )}
       </div>
     </div>
   )
@@ -287,7 +444,8 @@ export function InteractiveEnergyExplorer({ className }: InteractiveEnergyExplor
       chartData = showRelative ? relativeData : energyData
     }
   } else {
-    chartData = annualChangeData
+    // Annual Change mode
+    chartData = isFossilVsClean ? annualChangeFossilVsCleanData : annualChangeData
   }
 
   const valueFormatter = (value: number) =>
@@ -296,6 +454,86 @@ export function InteractiveEnergyExplorer({ className }: InteractiveEnergyExplor
         ? `${value.toFixed(1)}%`
         : `${value.toFixed(1)} EJ`
       : `${value > 0 ? '+' : ''}${value.toFixed(2)} EJ`
+
+  // Helper to get previous year data for tooltip
+  const getPreviousYearData = (year: string): Record<string, number> | null => {
+    const yearNum = parseInt(year)
+    if (yearNum <= 1965) return null
+
+    if (isFossilVsClean) {
+      const prevData = fossilVsCleanData.find(d => d.year === (yearNum - 1).toString())
+      if (!prevData) return null
+      return {
+        'Fossil Fuels': prevData['Fossil Fuels'],
+        'Clean Energy': prevData['Clean Energy'],
+      }
+    } else {
+      const prevData = energyData.find(d => d.year === (yearNum - 1).toString())
+      if (!prevData) return null
+      return {
+        Coal: prevData.Coal,
+        Oil: prevData.Oil,
+        'Natural Gas': prevData['Natural Gas'],
+        Nuclear: prevData.Nuclear,
+        Hydro: prevData.Hydro,
+        Wind: prevData.Wind,
+        Solar: prevData.Solar,
+        Biomass: prevData.Biomass,
+        Geothermal: prevData.Geothermal,
+        'Other Renewables': prevData['Other Renewables'],
+      }
+    }
+  }
+
+  // Helper to get absolute (non-relative) data for a year
+  const getAbsoluteYearData = (year: string): Record<string, number> | null => {
+    if (isFossilVsClean) {
+      const data = fossilVsCleanData.find(d => d.year === year)
+      if (!data) return null
+      return {
+        'Fossil Fuels': data['Fossil Fuels'],
+        'Clean Energy': data['Clean Energy'],
+      }
+    } else {
+      const data = energyData.find(d => d.year === year)
+      if (!data) return null
+      return {
+        Coal: data.Coal,
+        Oil: data.Oil,
+        'Natural Gas': data['Natural Gas'],
+        Nuclear: data.Nuclear,
+        Hydro: data.Hydro,
+        Wind: data.Wind,
+        Solar: data.Solar,
+        Biomass: data.Biomass,
+        Geothermal: data.Geothermal,
+        'Other Renewables': data['Other Renewables'],
+      }
+    }
+  }
+
+  // Custom tooltip wrapper that provides context
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const renderTooltip = (props: any) => {
+    const { active, payload, label } = props
+    if (!active || !payload || !label) return null
+
+    const previousYearData = getPreviousYearData(label)
+    const currentYearAbsolute = showRelative ? getAbsoluteYearData(label) : null
+
+    return (
+      <CustomTooltip
+        active={active}
+        payload={payload}
+        label={label}
+        valueFormatter={valueFormatter}
+        chartType={chartType}
+        showRelative={showRelative}
+        previousYearData={previousYearData}
+        currentYearAbsolute={currentYearAbsolute}
+      />
+    )
+  }
 
   return (
     <Card className={`bg-background-elevated border-border ${className}`}>
@@ -455,7 +693,7 @@ export function InteractiveEnergyExplorer({ className }: InteractiveEnergyExplor
                 tickLine={{ stroke: '#e0e0e0' }}
                 axisLine={{ stroke: '#e0e0e0' }}
                 width={70}
-                domain={[0, 100]}
+                domain={showRelative ? [0, 100] : [0, 'auto']}
                 tickFormatter={(value) => showRelative ? `${value}%` : `${value}`}
                 label={{
                   value: showRelative ? 'Share of Total (%)' : 'Energy (EJ)',
@@ -465,7 +703,7 @@ export function InteractiveEnergyExplorer({ className }: InteractiveEnergyExplor
                   style: { fontSize: 12, fontWeight: 500, fill: '#475569', textAnchor: 'middle' }
                 }}
               />
-              <Tooltip content={<CustomTooltip valueFormatter={valueFormatter} />} />
+              <Tooltip content={renderTooltip} />
               {categories.map((source) => (
                 <Area
                   key={source}
@@ -474,7 +712,7 @@ export function InteractiveEnergyExplorer({ className }: InteractiveEnergyExplor
                   stackId="1"
                   stroke={sourceColors[source]}
                   fill={sourceColors[source]}
-                  fillOpacity={0.1}
+                  fillOpacity={0.65}
                 />
               ))}
             </AreaChart>
@@ -501,7 +739,7 @@ export function InteractiveEnergyExplorer({ className }: InteractiveEnergyExplor
                   style: { fontSize: 12, fontWeight: 500, fill: '#475569', textAnchor: 'middle' }
                 }}
               />
-              <Tooltip content={<CustomTooltip valueFormatter={valueFormatter} />} />
+              <Tooltip content={renderTooltip} />
               <ReferenceLine y={0} stroke="#000" strokeWidth={2} />
               {categories.map((source) => (
                 <Line

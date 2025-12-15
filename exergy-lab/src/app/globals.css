@@ -197,14 +197,7 @@ body {
   color: hsl(var(--foreground-muted)) !important;
 }
 
-/* Area chart gradients */
-.recharts-area-area {
-  fill-opacity: 0.8 !important;
-}
-
-.recharts-layer.recharts-area {
-  opacity: 1 !important;
-}
+/* Area chart - let component props control opacity */
 
 /* Tremor color variable overrides */
 :root {
