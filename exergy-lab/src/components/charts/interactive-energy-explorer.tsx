@@ -485,33 +485,6 @@ export function InteractiveEnergyExplorer({ className }: InteractiveEnergyExplor
     }
   }
 
-  // Helper to get absolute (non-relative) data for a year
-  const getAbsoluteYearData = (year: string): Record<string, number> | null => {
-    if (isFossilVsClean) {
-      const data = fossilVsCleanData.find(d => d.year === year)
-      if (!data) return null
-      return {
-        'Fossil Fuels': data['Fossil Fuels'],
-        'Clean Energy': data['Clean Energy'],
-      }
-    } else {
-      const data = energyData.find(d => d.year === year)
-      if (!data) return null
-      return {
-        Coal: data.Coal,
-        Oil: data.Oil,
-        'Natural Gas': data['Natural Gas'],
-        Nuclear: data.Nuclear,
-        Hydro: data.Hydro,
-        Wind: data.Wind,
-        Solar: data.Solar,
-        Biomass: data.Biomass,
-        Geothermal: data.Geothermal,
-        'Other Renewables': data['Other Renewables'],
-      }
-    }
-  }
-
   // Custom tooltip wrapper that provides context
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const renderTooltip = (props: any) => {
@@ -519,7 +492,6 @@ export function InteractiveEnergyExplorer({ className }: InteractiveEnergyExplor
     if (!active || !payload || !label) return null
 
     const previousYearData = getPreviousYearData(label)
-    const currentYearAbsolute = showRelative ? getAbsoluteYearData(label) : null
 
     return (
       <CustomTooltip
@@ -530,7 +502,6 @@ export function InteractiveEnergyExplorer({ className }: InteractiveEnergyExplor
         chartType={chartType}
         showRelative={showRelative}
         previousYearData={previousYearData}
-        currentYearAbsolute={currentYearAbsolute}
       />
     )
   }
