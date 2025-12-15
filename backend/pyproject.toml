@@ -1,0 +1,187 @@
+[tool.poetry]
+name = "exergy-lab-backend"
+version = "0.1.0"
+description = "Multi-agent platform for clean energy R&D acceleration"
+authors = ["Exergy Lab Team"]
+readme = "README.md"
+license = "MIT"
+python = "^3.11"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+
+# Core Web Framework
+fastapi = "^0.109.0"
+uvicorn = {extras = ["standard"], version = "^0.27.0"}
+pydantic = "^2.5.0"
+pydantic-settings = "^2.1.0"
+python-multipart = "^0.0.6"
+
+# Agent Orchestration
+crewai = "^0.11.0"
+langchain = "^0.1.0"
+langchain-anthropic = "^0.1.0"
+langchain-community = "^0.0.13"
+langchain-core = "^0.1.0"
+
+# Database
+sqlalchemy = "^2.0.25"
+alembic = "^1.13.0"
+psycopg2-binary = "^2.9.9"
+
+# HTTP Clients
+httpx = "^0.26.0"
+aiohttp = "^3.9.0"
+requests = "^2.31.0"
+
+# Chemistry and Materials Science
+rdkit = "^2023.9.4"
+pyscf = "^2.4.0"
+pymatgen = "^2024.1.26"
+ase = "^3.22.1"
+
+# Scientific Computing
+numpy = "^1.26.0"
+pandas = "^2.1.0"
+scipy = "^1.11.0"
+
+# Utilities
+python-dotenv = "^1.0.0"
+loguru = "^0.7.0"
+tenacity = "^8.2.0"
+pyyaml = "^6.0.1"
+
+# Server-Sent Events
+sse-starlette = "^2.0.0"
+
+# CORS
+python-cors = "^1.0.0"
+
+# Data Validation
+email-validator = "^2.1.0"
+
+# XML Parsing (for arXiv)
+lxml = "^5.1.0"
+xmltodict = "^0.13.0"
+
+# JSON Schema
+jsonschema = "^4.21.0"
+
+# UUID
+uuid6 = "^2024.1.12"
+
+[tool.poetry.group.dev.dependencies]
+# Testing
+pytest = "^7.4.0"
+pytest-asyncio = "^0.21.0"
+pytest-cov = "^4.1.0"
+pytest-mock = "^3.12.0"
+httpx-mock = "^0.1.0"
+
+# Code Quality
+black = "^24.1.0"
+flake8 = "^7.0.0"
+mypy = "^1.8.0"
+isort = "^5.13.0"
+pylint = "^3.0.0"
+
+# Pre-commit Hooks
+pre-commit = "^3.6.0"
+
+# Type Stubs
+types-requests = "^2.31.0"
+types-pyyaml = "^6.0.0"
+
+# Development Tools
+ipython = "^8.20.0"
+jupyter = "^1.0.0"
+
+[tool.poetry.group.docs.dependencies]
+mkdocs = "^1.5.0"
+mkdocs-material = "^9.5.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 100
+target-version = ['py311']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.venv
+  | \.mypy_cache
+  | \.pytest_cache
+  | __pycache__
+  | build
+  | dist
+  | alembic
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 100
+skip_gitignore = true
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+follow_imports = "normal"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = [
+    "crewai.*",
+    "langchain.*",
+    "rdkit.*",
+    "pyscf.*",
+    "pymatgen.*",
+    "ase.*",
+]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "-ra -q --strict-markers --cov=src --cov-report=html --cov-report=term"
+testpaths = [
+    "src/tests",
+]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+markers = [
+    "unit: Unit tests",
+    "integration: Integration tests",
+    "slow: Slow running tests",
+    "api: Tests that call external APIs",
+]
+
+[tool.coverage.run]
+source = ["src"]
+omit = [
+    "*/tests/*",
+    "*/alembic/*",
+    "*/__pycache__/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "@abstractmethod",
+]

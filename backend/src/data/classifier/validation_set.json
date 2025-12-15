@@ -1,0 +1,102 @@
+[
+  {
+    "query": "How does humidity affect perovskite solar cell performance?",
+    "domain": "solar_pv"
+  },
+  {
+    "query": "What's the maximum achievable efficiency for silicon-perovskite tandem cells?",
+    "domain": "solar_pv"
+  },
+  {
+    "query": "Synthesis methods for MAPbI3 perovskite films",
+    "domain": "solar_pv"
+  },
+  {
+    "query": "Optimizing anti-solvent dripping for perovskite deposition",
+    "domain": "solar_pv"
+  },
+  {
+    "query": "Dendrite formation in lithium metal anodes",
+    "domain": "battery"
+  },
+  {
+    "query": "NMC811 cathode cycling stability",
+    "domain": "battery"
+  },
+  {
+    "query": "Solid electrolyte interface chemistry in Na-ion batteries",
+    "domain": "battery"
+  },
+  {
+    "query": "Improving capacity retention in all-solid-state batteries",
+    "domain": "battery"
+  },
+  {
+    "query": "R-32 vs R-410A for residential heat pumps",
+    "domain": "heat_pump"
+  },
+  {
+    "query": "Ground source heat pump sizing for commercial buildings",
+    "domain": "heat_pump"
+  },
+  {
+    "query": "Thermal efficiency of air-to-water heat pumps",
+    "domain": "heat_pump"
+  },
+  {
+    "query": "Battery thermal management systems for EVs",
+    "domain": "electric_vehicle"
+  },
+  {
+    "query": "Induction motor vs permanent magnet motor for electric buses",
+    "domain": "electric_vehicle"
+  },
+  {
+    "query": "SiC inverter efficiency in EV powertrains",
+    "domain": "electric_vehicle"
+  },
+  {
+    "query": "Onboard charger design for 800V EV architectures",
+    "domain": "electric_vehicle"
+  },
+  {
+    "query": "Iridium-free OER catalysts for PEM electrolyzers",
+    "domain": "electrolyzer"
+  },
+  {
+    "query": "Stack degradation in alkaline water electrolysis",
+    "domain": "electrolyzer"
+  },
+  {
+    "query": "High-temperature SOEC operating conditions",
+    "domain": "electrolyzer"
+  },
+  {
+    "query": "Wake effect modeling in offshore wind farms",
+    "domain": "wind_turbine"
+  },
+  {
+    "query": "Composite materials for lightweight turbine blades",
+    "domain": "wind_turbine"
+  },
+  {
+    "query": "Direct-drive vs gearbox wind turbine reliability",
+    "domain": "wind_turbine"
+  },
+  {
+    "query": "What's the LCOE for different renewable energy sources in 2024?",
+    "domain": "general"
+  },
+  {
+    "query": "Policy incentives for clean energy deployment in the US",
+    "domain": "general"
+  },
+  {
+    "query": "How do I choose between solar, wind, and battery storage for a microgrid?",
+    "domain": "general"
+  },
+  {
+    "query": "Environmental impact assessment of renewable energy manufacturing",
+    "domain": "general"
+  }
+]

@@ -1,0 +1,142 @@
+[
+  {
+    "query": "What are the latest perovskite solar cell efficiency records?",
+    "domain": "solar_pv",
+    "confidence": "0.98",
+    "reasoning": "Explicitly mentions perovskite solar cells and efficiency, core Solar PV topic",
+    "keywords": "perovskite, solar cell, efficiency"
+  },
+  {
+    "query": "How can I improve tandem solar cell stability?",
+    "domain": "solar_pv",
+    "confidence": "0.96",
+    "reasoning": "Tandem solar cells are a specialized Solar PV architecture",
+    "keywords": "tandem, solar cell, stability"
+  },
+  {
+    "query": "Best materials for low-cost photovoltaic absorbers",
+    "domain": "solar_pv",
+    "confidence": "0.95",
+    "reasoning": "Photovoltaic absorbers directly relate to solar cell technology",
+    "keywords": "photovoltaic, absorbers, materials"
+  },
+  {
+    "query": "What solid-state electrolytes have the highest ionic conductivity?",
+    "domain": "battery",
+    "confidence": "0.97",
+    "reasoning": "Solid-state electrolytes and ionic conductivity are key battery topics",
+    "keywords": "solid-state, electrolyte, ionic conductivity"
+  },
+  {
+    "query": "Compare energy density of Na-ion vs Li-ion batteries",
+    "domain": "battery",
+    "confidence": "0.99",
+    "reasoning": "Direct comparison of battery chemistries",
+    "keywords": "Na-ion, Li-ion, energy density, batteries"
+  },
+  {
+    "query": "Cathode degradation mechanisms in lithium batteries",
+    "domain": "battery",
+    "confidence": "0.96",
+    "reasoning": "Cathode degradation is a core battery research topic",
+    "keywords": "cathode, degradation, lithium batteries"
+  },
+  {
+    "query": "Optimal refrigerants for high-temperature heat pumps",
+    "domain": "heat_pump",
+    "confidence": "0.97",
+    "reasoning": "Refrigerants and heat pumps directly mentioned",
+    "keywords": "refrigerants, heat pumps, high-temperature"
+  },
+  {
+    "query": "COP improvements for residential heating systems",
+    "domain": "heat_pump",
+    "confidence": "0.92",
+    "reasoning": "COP (Coefficient of Performance) is a key heat pump metric, residential heating context",
+    "keywords": "COP, residential heating"
+  },
+  {
+    "query": "Fast charging impact on EV battery degradation",
+    "domain": "electric_vehicle",
+    "confidence": "0.98",
+    "reasoning": "EV batteries and fast charging are specific to electric vehicles",
+    "keywords": "EV, battery, fast charging, degradation"
+  },
+  {
+    "query": "Permanent magnet motor efficiency for electric cars",
+    "domain": "electric_vehicle",
+    "confidence": "0.94",
+    "reasoning": "Permanent magnet motors used in electric vehicle drivetrains",
+    "keywords": "permanent magnet, motor, electric cars"
+  },
+  {
+    "query": "Power electronics for vehicle-to-grid integration",
+    "domain": "electric_vehicle",
+    "confidence": "0.93",
+    "reasoning": "Vehicle-to-grid is an EV-specific technology",
+    "keywords": "power electronics, vehicle-to-grid, V2G"
+  },
+  {
+    "query": "PEM electrolyzer membrane durability under cycling",
+    "domain": "electrolyzer",
+    "confidence": "0.99",
+    "reasoning": "PEM electrolyzer explicitly mentioned",
+    "keywords": "PEM, electrolyzer, membrane, durability"
+  },
+  {
+    "query": "Alkaline vs SOEC efficiency for green hydrogen production",
+    "domain": "electrolyzer",
+    "confidence": "0.97",
+    "reasoning": "Alkaline and SOEC are electrolyzer types, green hydrogen context",
+    "keywords": "alkaline, SOEC, hydrogen production, electrolyzer"
+  },
+  {
+    "query": "Oxygen evolution catalysts for water splitting",
+    "domain": "electrolyzer",
+    "confidence": "0.90",
+    "reasoning": "Water splitting catalysts are core to electrolyzer technology",
+    "keywords": "oxygen evolution, catalysts, water splitting"
+  },
+  {
+    "query": "Blade pitch control optimization for offshore wind",
+    "domain": "wind_turbine",
+    "confidence": "0.96",
+    "reasoning": "Blade pitch control is specific to wind turbine technology",
+    "keywords": "blade pitch, offshore wind, turbine"
+  },
+  {
+    "query": "Fatigue analysis of wind turbine tower structures",
+    "domain": "wind_turbine",
+    "confidence": "0.94",
+    "reasoning": "Wind turbine tower fatigue is a structural wind energy topic",
+    "keywords": "fatigue, tower, wind turbine"
+  },
+  {
+    "query": "What are the key challenges in clean energy transition?",
+    "domain": "general",
+    "confidence": "0.85",
+    "reasoning": "Broad question spanning multiple technologies, no specific domain",
+    "keywords": "clean energy, transition, challenges"
+  },
+  {
+    "query": "Compare exergy efficiency across renewable technologies",
+    "domain": "general",
+    "confidence": "0.88",
+    "reasoning": "Cross-domain comparison requiring multiple specialty areas",
+    "keywords": "exergy, renewable technologies, comparison"
+  },
+  {
+    "query": "Energy storage options for grid stabilization",
+    "domain": "general",
+    "confidence": "0.80",
+    "reasoning": "Could involve batteries, thermal storage, or other technologies - too broad",
+    "keywords": "energy storage, grid stabilization"
+  },
+  {
+    "query": "What is the carbon footprint of manufacturing solar panels vs wind turbines?",
+    "domain": "general",
+    "confidence": "0.82",
+    "reasoning": "Comparative analysis across two different technology domains",
+    "keywords": "carbon footprint, solar panels, wind turbines, comparison"
+  }
+]
