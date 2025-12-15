@@ -77,84 +77,115 @@ Exergy Lab routes user queries to specialized workflows for:
 
 - **Python 3.11+** (for backend)
 - **Node.js 18+** (for frontend)
-- **PostgreSQL 16** (via Docker or local install)
+- **Docker Desktop** (for PostgreSQL)
 - **Anthropic API Key** ([Get one here](https://console.anthropic.com/))
 
-### 1. Clone Repository
+### Automated Setup (Recommended)
+
+Run the setup script to automatically configure everything:
 
 ```bash
-cd "/Users/chrisdimurro/Desktop/Exergy Lab"
-# (Already in this directory)
+./setup.sh
 ```
 
-### 2. Setup Environment Variables
+This script will:
+1. Start PostgreSQL in Docker
+2. Create backend virtual environment
+3. Install all Python dependencies
+4. Run database migrations
+5. Install frontend dependencies
+6. Create .env files from templates
 
-```bash
-cp .env.example .env
-# Edit .env and add your ANTHROPIC_API_KEY
-```
+**Important**: After running the script, edit `backend/.env` and add your `ANTHROPIC_API_KEY`.
 
-### 3. Start PostgreSQL (Docker)
+### Manual Setup
 
-```bash
-docker compose up postgres -d
-```
+<details>
+<summary>Click to expand manual setup instructions</summary>
 
-Or manually:
+#### 1. Start PostgreSQL
+
 ```bash
 docker run -d \
   --name exergy-postgres \
+  -e POSTGRES_USER=postgres \
   -e POSTGRES_PASSWORD=postgres \
   -e POSTGRES_DB=exergy_lab \
   -p 5432:5432 \
-  postgres:16-alpine
+  postgres:16
 ```
 
-### 4. Setup Backend
+#### 2. Setup Backend
 
 ```bash
 cd backend
 
-# Install dependencies with Poetry
+# Create environment file
+cp .env.example .env
+# Edit .env and add your ANTHROPIC_API_KEY
+
+# Create virtual environment
+python3 -m venv .venv
+source .venv/bin/activate
+
+# Install Poetry
+pip install poetry
+
+# Install dependencies
 poetry install
 
-# Activate virtual environment
-poetry shell
-
-# Run database migrations (coming soon)
-# alembic upgrade head
-
-# Start development server
-uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+# Run database migrations
+poetry run alembic upgrade head
 ```
 
-Backend will be available at `http://localhost:8000`
-
-### 5. Setup Frontend
+#### 3. Setup Frontend
 
 ```bash
 cd frontend
 
-# Install dependencies
-npm install
+# Create environment file
+cp .env.example .env.local
 
-# Start development server
+# Install dependencies (if not already done)
+npm install
+```
+
+</details>
+
+### Starting the Application
+
+After setup is complete:
+
+**Terminal 1 - Backend:**
+```bash
+cd backend
+source .venv/bin/activate
+poetry run uvicorn src.main:app --reload
+```
+
+Backend API: http://localhost:8000
+API Docs: http://localhost:8000/docs
+
+**Terminal 2 - Frontend:**
+```bash
+cd frontend
 npm run dev
 ```
 
-Frontend will be available at `http://localhost:3000`
+Frontend: http://localhost:3000
 
-### 6. Test Classifier
+### First Query Test
 
-```bash
-cd backend
-poetry shell
+Try asking:
+> "What are the latest efficiency records for perovskite solar cells?"
 
-# Run classifier evaluation script (coming soon)
-python scripts/test_classifier_accuracy.py
-```
-
-Expected output: **95%+ accuracy** on 25 validation examples
+You should see:
+1. Query classified as `solar_pv` domain
+2. Real-time progress indicator showing agent stages
+3. Literature search results from arXiv
+4. Material design proposals
+5. Bandgap calculations
+6. Full research report in markdown
 
 ## 📁 Project Structure
 

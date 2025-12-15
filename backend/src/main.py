@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse
 import logging
 
 from src.config import get_settings
+from src.api import chat
 
 # Configure logging
 logging.basicConfig(
@@ -38,6 +39,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# Include routers
+app.include_router(chat.router)
 
 
 @app.on_event("startup")
