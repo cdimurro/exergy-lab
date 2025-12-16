@@ -178,10 +178,10 @@ export default function DashboardPage() {
         {/* Welcome Section */}
         <div className="space-y-2">
           <h1 className="text-3xl md:text-4xl font-bold text-white">
-            Welcome to Exergy Lab
+            Welcome to the Exergy Lab
           </h1>
           <p className="text-lg text-foreground-subtle">
-            AI-powered clean energy research platform
+            A platform for accelerating clean energy R&D.
           </p>
         </div>
 
