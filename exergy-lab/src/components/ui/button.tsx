@@ -34,21 +34,21 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       'inline-flex items-center justify-center gap-2 font-medium transition-all duration-200 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50 disabled:pointer-events-none'
 
     const variants = {
-      // Primary: subtle blue, not overwhelming
+      // Primary: light green accent for CTAs
       primary:
-        'bg-primary/90 text-primary-foreground hover:bg-primary focus-visible:ring-primary/50',
-      // Secondary: subtle border, good for most actions
+        'bg-primary text-primary-foreground hover:bg-primary-hover focus-visible:ring-primary/50 shadow-sm',
+      // Secondary: subtle dark surface
       secondary:
-        'bg-background-surface/80 text-foreground-muted border border-border hover:bg-background-surface hover:text-foreground hover:border-foreground-subtle focus-visible:ring-border',
+        'bg-background-surface text-foreground border border-border hover:bg-background-hover hover:border-border-subtle focus-visible:ring-primary/30',
       // Ghost: minimal, just text
       ghost:
-        'text-foreground-muted hover:text-foreground hover:bg-background-surface/50 focus-visible:ring-border',
-      // Outline: border only, transparent background
+        'text-foreground-muted hover:text-foreground hover:bg-background-surface focus-visible:ring-primary/30',
+      // Outline: border with light green accent on hover
       outline:
-        'border border-border text-foreground-muted hover:text-foreground hover:bg-background-surface/30 hover:border-foreground-subtle focus-visible:ring-border',
+        'border border-border text-foreground hover:text-primary hover:bg-primary/10 hover:border-primary focus-visible:ring-primary/30',
       // Danger: for destructive actions
       danger:
-        'bg-error/80 text-white hover:bg-error focus-visible:ring-error/50',
+        'bg-error text-white hover:bg-error/90 focus-visible:ring-error/50 shadow-sm',
     }
 
     const sizes = {

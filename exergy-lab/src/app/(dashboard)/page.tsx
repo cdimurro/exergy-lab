@@ -78,40 +78,40 @@ export default function DashboardPage() {
       description: 'Find academic papers across multiple databases',
       icon: Search,
       href: '/search',
-      color: 'text-blue-600',
-      gradient: 'from-blue-500/10 to-blue-600/10',
+      color: 'text-accent-blue',
+      gradient: '',
     },
     {
       title: 'Design Experiment',
       description: 'Generate AI-powered experiment protocols',
       icon: FlaskConical,
       href: '/experiments',
-      color: 'text-purple-600',
-      gradient: 'from-purple-500/10 to-purple-600/10',
+      color: 'text-accent-purple',
+      gradient: '',
     },
     {
       title: 'TEA Report',
       description: 'Create techno-economic analysis reports',
       icon: Calculator,
       href: '/tea-generator',
-      color: 'text-green-600',
-      gradient: 'from-green-500/10 to-green-600/10',
+      color: 'text-primary',
+      gradient: '',
     },
     {
       title: 'Run Simulation',
       description: 'Execute 3-tier computational simulations',
       icon: Cpu,
       href: '/simulations',
-      color: 'text-orange-600',
-      gradient: 'from-orange-500/10 to-orange-600/10',
+      color: 'text-accent-orange',
+      gradient: '',
     },
     {
       title: 'Discover Ideas',
       description: 'Find novel cross-domain innovations',
       icon: Sparkles,
       href: '/discovery',
-      color: 'text-pink-600',
-      gradient: 'from-pink-500/10 to-pink-600/10',
+      color: 'text-accent-rose',
+      gradient: '',
     },
   ]
 
@@ -135,17 +135,17 @@ export default function DashboardPage() {
   const getProjectColor = (type: string) => {
     switch (type) {
       case 'search':
-        return 'text-blue-600'
+        return 'text-accent-blue'
       case 'tea':
-        return 'text-green-600'
+        return 'text-primary'
       case 'experiment':
-        return 'text-purple-600'
+        return 'text-accent-purple'
       case 'simulation':
-        return 'text-orange-600'
+        return 'text-accent-orange'
       case 'discovery':
-        return 'text-pink-600'
+        return 'text-accent-rose'
       default:
-        return 'text-gray-600'
+        return 'text-foreground-muted'
     }
   }
 
@@ -187,50 +187,50 @@ export default function DashboardPage() {
 
         {/* Stats Overview */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 border-blue-500/20">
+          <Card className="hover:border-primary/30 transition-colors">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-foreground-muted mb-1">Searches</p>
                 <p className="text-2xl font-bold text-foreground">{stats.searches}</p>
               </div>
-              <div className="p-3 rounded-xl bg-blue-500/10">
-                <Search className="w-6 h-6 text-blue-600" />
+              <div className="p-3 rounded-xl bg-accent-blue/10">
+                <Search className="w-6 h-6 text-accent-blue" />
               </div>
             </div>
           </Card>
 
-          <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/10 border-purple-500/20">
+          <Card className="hover:border-primary/30 transition-colors">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-foreground-muted mb-1">Experiments</p>
                 <p className="text-2xl font-bold text-foreground">{stats.experiments}</p>
               </div>
-              <div className="p-3 rounded-xl bg-purple-500/10">
-                <FlaskConical className="w-6 h-6 text-purple-600" />
+              <div className="p-3 rounded-xl bg-accent-purple/10">
+                <FlaskConical className="w-6 h-6 text-accent-purple" />
               </div>
             </div>
           </Card>
 
-          <Card className="bg-gradient-to-br from-green-500/10 to-green-600/10 border-green-500/20">
+          <Card className="hover:border-primary/30 transition-colors">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-foreground-muted mb-1">TEA Reports</p>
                 <p className="text-2xl font-bold text-foreground">{stats.teaReports}</p>
               </div>
-              <div className="p-3 rounded-xl bg-green-500/10">
-                <Calculator className="w-6 h-6 text-green-600" />
+              <div className="p-3 rounded-xl bg-primary/10">
+                <Calculator className="w-6 h-6 text-primary" />
               </div>
             </div>
           </Card>
 
-          <Card className="bg-gradient-to-br from-pink-500/10 to-pink-600/10 border-pink-500/20">
+          <Card className="hover:border-primary/30 transition-colors">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-foreground-muted mb-1">Discoveries</p>
                 <p className="text-2xl font-bold text-foreground">{stats.discoveries}</p>
               </div>
-              <div className="p-3 rounded-xl bg-pink-500/10">
-                <Sparkles className="w-6 h-6 text-pink-600" />
+              <div className="p-3 rounded-xl bg-accent-rose/10">
+                <Sparkles className="w-6 h-6 text-accent-rose" />
               </div>
             </div>
           </Card>
@@ -238,7 +238,7 @@ export default function DashboardPage() {
 
         {/* Onboarding Checklist - Show for new users */}
         {stats.searches === 0 && stats.experiments === 0 && stats.teaReports === 0 && stats.discoveries === 0 && (
-          <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-accent-purple/5">
+          <Card className="border-primary/30">
             <div className="flex items-start gap-4">
               <div className="p-3 rounded-xl bg-primary/10 shrink-0">
                 <Lightbulb className="w-6 h-6 text-primary" />
@@ -348,11 +348,11 @@ export default function DashboardPage() {
               return (
                 <Card
                   key={action.href}
-                  className={`bg-gradient-to-br ${action.gradient} border-opacity-20 hover:shadow-lg transition-all duration-200 cursor-pointer group`}
+                  className="hover:border-primary/50 hover:shadow-lg transition-all duration-200 cursor-pointer group"
                   onClick={() => router.push(action.href)}
                 >
                   <div className="flex items-start gap-4">
-                    <div className="p-3 rounded-xl bg-background-elevated">
+                    <div className="p-3 rounded-xl bg-background-surface">
                       <Icon className={`w-6 h-6 ${action.color}`} />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -413,7 +413,7 @@ export default function DashboardPage() {
 
         {/* Getting Started (Empty State) */}
         {recentProjects.length === 0 && (
-          <Card className="bg-gradient-to-br from-primary/5 to-accent-purple/5 border-primary/20">
+          <Card className="border-primary/30">
             <div className="text-center py-8">
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-4">
                 <Lightbulb className="w-8 h-8 text-primary" />
@@ -438,7 +438,7 @@ export default function DashboardPage() {
         )}
 
         {/* Tips Section */}
-        <Card className="bg-gradient-to-br from-accent-purple/5 to-primary/5 border-accent-purple/20">
+        <Card className="border-accent-purple/30">
           <div className="flex items-start gap-4">
             <div className="p-3 rounded-xl bg-accent-purple/10">
               <TrendingUp className="w-6 h-6 text-accent-purple" />

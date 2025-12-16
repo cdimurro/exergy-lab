@@ -106,9 +106,9 @@ export function Sidebar() {
                   key={item.name}
                   href={item.href}
                   className={cn(
-                    'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group',
+                    'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group relative',
                     isActive
-                      ? 'bg-primary/10 text-primary'
+                      ? 'bg-primary/10 text-primary border-l-2 border-primary'
                       : 'text-foreground-muted hover:bg-background-elevated hover:text-foreground'
                   )}
                 >
@@ -144,9 +144,9 @@ export function Sidebar() {
                 key={item.name}
                 href={item.href}
                 className={cn(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group',
+                  'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group relative',
                   isActive
-                    ? 'bg-primary/10 text-primary'
+                    ? 'bg-primary/10 text-primary border-l-2 border-primary'
                     : 'text-foreground-muted hover:bg-background-elevated hover:text-foreground'
                 )}
               >
