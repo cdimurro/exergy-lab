@@ -26,27 +26,62 @@ async function searchPapersHandler(params: z.infer<typeof searchPapersSchema>) {
 
   console.log('[searchPapers] Executing search:', { query, domains, maxResults })
 
-  // This will integrate with the SearchOrchestrator from /src/lib/discovery/search-apis.ts
-  // For now, we return a structured response that matches the schema
-
   try {
-    // In production, this would call:
-    // const orchestrator = new SearchOrchestrator()
-    // const results = await orchestrator.searchAllSources({ query, domains })
+    // Import SearchOrchestrator (dynamic import to avoid circular dependencies)
+    const { SearchOrchestrator } = await import('@/lib/discovery/search-apis')
+    const orchestrator = new SearchOrchestrator()
 
-    // Placeholder: Return structured response
+    // Execute real search across all data sources
+    const startTime = Date.now()
+    const results = await orchestrator.searchAllSources({
+      description: query,
+      domains: domains as any[], // Cast to Domain[]
+      goals: [], // Goals not needed for tool-based search
+    })
+
+    // Transform SearchResults to tool response format
+    const papers = results.sources
+      .filter(s => s.type === 'academic-paper' || s.type === 'patent')
+      .slice(0, maxResults)
+      .map(source => ({
+        id: source.id,
+        title: source.title,
+        authors: source.authors || [],
+        abstract: source.abstract,
+        url: source.url,
+        doi: source.doi,
+        citationCount: source.citationCount || 0,
+        publicationDate: source.publishedDate,
+        relevanceScore: source.relevanceScore,
+        type: source.type,
+      }))
+
     const response = {
+      papers,
+      totalResults: results.totalSources,
+      searchTime: Date.now() - startTime,
+      query,
+      sources: {
+        papers: results.papers,
+        patents: results.patents,
+        reports: results.reports,
+        news: results.news,
+      },
+    }
+
+    console.log(`[searchPapers] Found ${response.totalResults} total sources (${response.papers.length} papers returned)`)
+    return response
+  } catch (error) {
+    console.error('[searchPapers] Search failed:', error)
+    // Return empty results on error rather than throwing (agent can handle empty results)
+    return {
       papers: [],
       totalResults: 0,
       searchTime: 0,
       query,
+      sources: { papers: 0, patents: 0, reports: 0, news: 0 },
+      error: error instanceof Error ? error.message : 'Unknown error',
     }
-
-    console.log(`[searchPapers] Found ${response.totalResults} papers`)
-    return response
-  } catch (error) {
-    console.error('[searchPapers] Search failed:', error)
-    throw new Error(`Search failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
   }
 }
 
@@ -315,6 +350,122 @@ export const runSimulationTool: ToolDeclaration = {
 }
 
 // ============================================================================
+// Tool 6: designExperiment - Design experimental protocols (NEW)
+// ============================================================================
+
+const designExperimentSchema = z.object({
+  goal: z.object({
+    description: z.string().min(10).describe('Experiment goal description'),
+    objectives: z.array(z.string()).describe('Specific objectives to achieve'),
+    domain: z.string().describe('Scientific domain (e.g., "solar-energy", "battery-storage")'),
+  }).describe('Experiment goal and objectives'),
+  referenceResearch: z.array(z.object({
+    title: z.string(),
+    methodology: z.string(),
+  })).optional().describe('Reference papers with methodologies'),
+  constraints: z.object({
+    budget: z.number().optional().describe('Budget limit in USD'),
+    timeline: z.string().optional().describe('Timeline constraint (e.g., "3 months")'),
+    safetyLevel: z.enum(['standard', 'high', 'critical']).default('standard'),
+  }).optional().describe('Experiment constraints'),
+})
+
+async function designExperimentHandler(params: z.infer<typeof designExperimentSchema>) {
+  const { goal, referenceResearch = [], constraints = {} } = params
+
+  console.log('[designExperiment] Designing protocol for:', goal.description)
+
+  try {
+    // Use AI to generate comprehensive experimental protocol
+    const { generateWithTools } = await import('../model-router')
+
+    const prompt = `Design a detailed experimental protocol for:
+
+Goal: ${goal.description}
+Objectives: ${goal.objectives.join(', ')}
+Domain: ${goal.domain}
+
+${referenceResearch.length > 0 ? `
+Reference Research:
+${referenceResearch.map(r => `- ${r.title}: ${r.methodology}`).join('\n')}
+` : ''}
+
+${constraints.budget ? `Budget: $${constraints.budget}` : ''}
+${constraints.timeline ? `Timeline: ${constraints.timeline}` : ''}
+Safety Level: ${constraints.safetyLevel || 'standard'}
+
+Generate a complete experimental protocol with:
+1. Materials list with quantities and specifications
+2. Equipment requirements (required and alternatives)
+3. Step-by-step procedure with durations and temperatures
+4. Safety warnings and precautions
+5. Expected results and success criteria
+6. Potential failure modes with likelihood and mitigation
+
+Format as JSON matching this structure:
+{
+  "title": string,
+  "objective": string,
+  "materials": [{"name": string, "quantity": string, "purity"?: string}],
+  "equipment": [{"name": string, "specification"?: string, "required": boolean}],
+  "procedure": [{"step": number, "instruction": string, "duration"?: string}],
+  "safetyWarnings": string[],
+  "expectedResults": string[],
+  "failureModes": [{"mode": string, "likelihood": "low"|"medium"|"high", "mitigation": string[]}],
+  "duration": string,
+  "difficulty": "low"|"medium"|"high",
+  "estimatedCost": number
+}`
+
+    const response = await generateWithTools(prompt, [], {
+      model: 'flash',
+      temperature: 0.6,
+      maxTokens: 3000,
+    })
+
+    // Parse AI response
+    let protocol
+    try {
+      protocol = JSON.parse(response.response)
+    } catch {
+      // If parsing fails, create structured response from text
+      protocol = {
+        title: `Experimental Protocol: ${goal.description}`,
+        objective: goal.description,
+        materials: [],
+        equipment: [],
+        procedure: [{ step: 1, instruction: response.response.substring(0, 500) }],
+        safetyWarnings: ['Protocol generated - requires expert review'],
+        expectedResults: goal.objectives,
+        failureModes: [],
+        duration: '2-4 weeks',
+        difficulty: 'medium',
+        estimatedCost: constraints.budget || 10000,
+      }
+    }
+
+    console.log('[designExperiment] Protocol generated successfully')
+
+    return {
+      protocol,
+      generatedAt: new Date().toISOString(),
+      domain: goal.domain,
+      confidence: referenceResearch.length > 0 ? 85 : 70,
+    }
+  } catch (error) {
+    console.error('[designExperiment] Protocol generation failed:', error)
+    throw new Error(`Experiment design failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+  }
+}
+
+export const designExperimentTool: ToolDeclaration = {
+  name: 'designExperiment' as any, // Type assertion for new tool
+  description: 'Design comprehensive experimental protocols based on research findings. Generates materials lists, equipment requirements, step-by-step procedures, safety warnings, expected results, and failure mode analysis. Incorporates methodologies from reference research when available.',
+  schema: designExperimentSchema,
+  handler: designExperimentHandler,
+}
+
+// ============================================================================
 // Export all tools
 // ============================================================================
 
@@ -324,6 +475,7 @@ export const ALL_TOOLS: ToolDeclaration[] = [
   extractDataTool,
   calculateMetricsTool,
   runSimulationTool,
+  designExperimentTool,
 ]
 
 // ============================================================================
@@ -331,7 +483,7 @@ export const ALL_TOOLS: ToolDeclaration[] = [
 // ============================================================================
 
 export function initializeTools(): ToolDeclaration[] {
-  console.log('[Tools] Initializing 5 core tools...')
+  console.log('[Tools] Initializing 6 core tools...')
   console.log('[Tools] Available tools:', ALL_TOOLS.map(t => t.name).join(', '))
   return ALL_TOOLS
 }

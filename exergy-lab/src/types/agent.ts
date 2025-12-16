@@ -10,6 +10,7 @@ export type ToolName =
   | 'extractData'
   | 'calculateMetrics'
   | 'runSimulation'
+  | 'designExperiment'
 
 export interface ToolDeclaration {
   name: ToolName

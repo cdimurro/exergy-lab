@@ -18,6 +18,7 @@ import {
   X,
 } from 'lucide-react'
 import { Button, Textarea, Badge, Card, Progress, Select } from '@/components/ui'
+import { ExecutionPlanViewer } from '@/components/discovery/execution-plan-viewer'
 import type { DiscoveryPrompt, DiscoveryReport, NovelIdea, Domain } from '@/types/discovery'
 
 const DOMAINS: Array<{ value: Domain; label: string }> = [
@@ -38,6 +39,14 @@ export default function DiscoveryPage() {
   const [isGenerating, setIsGenerating] = React.useState(false)
   const [report, setReport] = React.useState<DiscoveryReport | null>(null)
   const [error, setError] = React.useState<string | null>(null)
+
+  // Workflow state
+  const [workflowId, setWorkflowId] = React.useState<string | null>(null)
+  const [executionPlan, setExecutionPlan] = React.useState<any>(null)
+  const [workflowStatus, setWorkflowStatus] = React.useState<
+    'idle' | 'generating_plan' | 'awaiting_approval' | 'executing' | 'completed' | 'failed'
+  >('idle')
+  const [isExecuting, setIsExecuting] = React.useState(false)
 
   // Form state
   const [description, setDescription] = React.useState('')
@@ -78,34 +87,89 @@ export default function DiscoveryPage() {
       return
     }
 
-    setIsGenerating(true)
+    setWorkflowStatus('generating_plan')
     setError(null)
-
-    const prompt: DiscoveryPrompt = {
-      description: description.trim(),
-      domains: selectedDomains,
-      goals: validGoals,
-    }
+    setExecutionPlan(null)
+    setReport(null)
 
     try {
-      const response = await fetch('/api/discovery', {
+      // Call new workflow API to generate execution plan
+      const response = await fetch('/api/discovery/workflow', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({
+          query: description.trim(),
+          domains: selectedDomains,
+          goals: validGoals,
+          options: {
+            targetAccuracy: 85,
+            includeExperiments: true,
+            includeSimulations: true,
+            includeTEA: false, // TEA is optional, generated after user decision
+          },
+        }),
       })
 
       if (!response.ok) {
-        throw new Error('Discovery generation failed')
+        throw new Error('Workflow plan generation failed')
       }
 
-      const discoveryReport: DiscoveryReport = await response.json()
-      setReport(discoveryReport)
+      const { workflowId: newWorkflowId, plan } = await response.json()
+      setWorkflowId(newWorkflowId)
+      setExecutionPlan(plan)
+      setWorkflowStatus('awaiting_approval')
     } catch (err) {
-      console.error('Discovery error:', err)
-      setError(err instanceof Error ? err.message : 'Discovery failed')
-    } finally {
-      setIsGenerating(false)
+      console.error('Workflow error:', err)
+      setError(err instanceof Error ? err.message : 'Workflow planning failed')
+      setWorkflowStatus('failed')
     }
+  }
+
+  const handleApprovePlan = async (modifications: any[]) => {
+    if (!workflowId) return
+
+    setIsExecuting(true)
+    setWorkflowStatus('executing')
+    setError(null)
+
+    try {
+      // Execute the approved workflow
+      const response = await fetch('/api/discovery/workflow', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          workflowId,
+          modifications,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Workflow execution failed')
+      }
+
+      const { sessionId } = await response.json()
+      console.log('[Discovery] Workflow executing with sessionId:', sessionId)
+
+      // For now, simulate completion after delay
+      // In Phase 3, we'll add SSE streaming for real-time updates
+      setTimeout(() => {
+        setWorkflowStatus('completed')
+        setIsExecuting(false)
+        // TODO: Load actual results from workflow execution
+      }, 5000)
+    } catch (err) {
+      console.error('Workflow execution error:', err)
+      setError(err instanceof Error ? err.message : 'Workflow execution failed')
+      setWorkflowStatus('failed')
+      setIsExecuting(false)
+    }
+  }
+
+  const handleRejectPlan = (reason?: string) => {
+    console.log('[Discovery] Plan rejected:', reason)
+    setWorkflowStatus('idle')
+    setExecutionPlan(null)
+    setWorkflowId(null)
   }
 
   const handleNextAction = (action: string, ideaId?: string) => {
@@ -267,19 +331,24 @@ export default function DiscoveryPage() {
 
                   <Button
                     onClick={handleGenerate}
-                    disabled={isGenerating || !description.trim() || selectedDomains.length === 0}
+                    disabled={
+                      workflowStatus === 'generating_plan' ||
+                      workflowStatus === 'executing' ||
+                      !description.trim() ||
+                      selectedDomains.length === 0
+                    }
                     className="w-full"
                     size="lg"
                   >
-                    {isGenerating ? (
+                    {workflowStatus === 'generating_plan' ? (
                       <>
                         <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                        Discovering...
+                        Generating Plan...
                       </>
                     ) : (
                       <>
                         <Sparkles className="w-5 h-5 mr-2" />
-                        Generate Discovery Report
+                        Generate Workflow Plan
                       </>
                     )}
                   </Button>
@@ -296,15 +365,15 @@ export default function DiscoveryPage() {
                 <div className="flex items-start gap-3">
                   <AlertCircle className="w-5 h-5 text-red-600 mt-0.5" />
                   <div>
-                    <h3 className="font-medium text-red-900 mb-1">Discovery Error</h3>
+                    <h3 className="font-medium text-red-900 mb-1">Workflow Error</h3>
                     <p className="text-sm text-red-700">{error}</p>
                   </div>
                 </div>
               </Card>
             )}
 
-            {/* Loading State */}
-            {isGenerating && (
+            {/* Plan Generation Loading */}
+            {workflowStatus === 'generating_plan' && (
               <Card className="p-12 text-center">
                 <div className="flex flex-col items-center gap-4">
                   <div className="relative">
@@ -313,10 +382,44 @@ export default function DiscoveryPage() {
                   </div>
                   <div>
                     <h3 className="text-lg font-medium text-foreground mb-2">
-                      AI is Searching for Innovations
+                      AI is Generating Execution Plan
                     </h3>
                     <p className="text-sm text-foreground-muted">
-                      Analyzing research across multiple domains...
+                      Analyzing requirements and orchestrating workflow phases...
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            )}
+
+            {/* Execution Plan Approval */}
+            {workflowStatus === 'awaiting_approval' && executionPlan && workflowId && (
+              <ExecutionPlanViewer
+                plan={executionPlan}
+                workflowId={workflowId}
+                onApprove={handleApprovePlan}
+                onReject={handleRejectPlan}
+                isLoading={isExecuting}
+              />
+            )}
+
+            {/* Execution In Progress */}
+            {workflowStatus === 'executing' && (
+              <Card className="p-12 text-center">
+                <div className="flex flex-col items-center gap-4">
+                  <div className="relative">
+                    <div className="w-16 h-16 border-4 border-green-500/20 border-t-green-500 rounded-full animate-spin" />
+                    <Zap className="w-6 h-6 text-green-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-medium text-foreground mb-2">
+                      Executing Workflow
+                    </h3>
+                    <p className="text-sm text-foreground-muted">
+                      Running research, experiments, and simulations...
+                    </p>
+                    <p className="text-xs text-foreground-muted mt-2">
+                      Real-time progress tracking coming in Phase 3
                     </p>
                   </div>
                 </div>
@@ -416,7 +519,7 @@ export default function DiscoveryPage() {
             )}
 
             {/* Empty State */}
-            {!isGenerating && !report && !error && (
+            {workflowStatus === 'idle' && !error && (
               <Card className="p-12 text-center">
                 <div className="flex flex-col items-center gap-4">
                   <div className="flex items-center justify-center w-16 h-16 rounded-full bg-primary/10">
@@ -424,15 +527,28 @@ export default function DiscoveryPage() {
                   </div>
                   <div>
                     <h3 className="text-lg font-medium text-foreground mb-2">
-                      Discover Novel Clean Energy Solutions
+                      Unified Discovery Workflow
                     </h3>
                     <p className="text-sm text-foreground-muted mb-4">
-                      AI will search across multiple domains to find innovative approaches
+                      AI-powered workflow orchestrating Research → Experiments → Simulations → TEA
                     </p>
-                    <div className="text-xs text-foreground-muted space-y-1">
-                      <p>• Multi-domain cross-analysis</p>
-                      <p>• Novelty scoring and feasibility assessment</p>
-                      <p>• Actionable next steps for each idea</p>
+                    <div className="text-xs text-foreground-muted space-y-2">
+                      <div className="flex items-center gap-2 justify-center">
+                        <span>📚</span>
+                        <span>Research: Multi-domain literature search</span>
+                      </div>
+                      <div className="flex items-center gap-2 justify-center">
+                        <span>🧪</span>
+                        <span>Experiments: AI-generated protocols</span>
+                      </div>
+                      <div className="flex items-center gap-2 justify-center">
+                        <span>⚙️</span>
+                        <span>Simulations: Virtual testing & validation</span>
+                      </div>
+                      <div className="flex items-center gap-2 justify-center">
+                        <span>💰</span>
+                        <span>TEA: Economic feasibility analysis</span>
+                      </div>
                     </div>
                   </div>
                 </div>

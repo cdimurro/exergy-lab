@@ -7,6 +7,7 @@ import {
   Checkpoint,
   AgentConfig,
 } from '@/types/agent'
+import { UnifiedWorkflow } from '@/types/workflow'
 import { countTokens } from '../gemini'
 
 /**
@@ -24,8 +25,10 @@ interface ConversationStore {
   // State
   sessions: Map<string, ConversationSession>
   activeSessionId: string | null
+  workflows: Map<string, UnifiedWorkflow>
+  activeWorkflowId: string | null
 
-  // Actions
+  // Session Actions
   createSession: (userId: string, initialMessage?: string, config?: Partial<AgentConfig>) => string
   getSession: (sessionId: string) => ConversationSession | undefined
   setActiveSession: (sessionId: string) => void
@@ -35,6 +38,15 @@ interface ConversationStore {
   deleteSession: (sessionId: string) => void
   listUserSessions: (userId: string) => ConversationSession[]
   clearOldSessions: (maxAge: number) => void
+
+  // Workflow Actions
+  createWorkflow: (workflow: UnifiedWorkflow) => void
+  getWorkflow: (workflowId: string) => UnifiedWorkflow | undefined
+  setActiveWorkflow: (workflowId: string) => void
+  updateWorkflow: (workflowId: string, updates: Partial<UnifiedWorkflow>) => void
+  deleteWorkflow: (workflowId: string) => void
+  listWorkflows: (userId?: string) => UnifiedWorkflow[]
+  clearOldWorkflows: (maxAge: number) => void
 }
 
 /**
@@ -45,6 +57,8 @@ export const useConversationStore = create<ConversationStore>()(
     (set, get) => ({
       sessions: new Map(),
       activeSessionId: null,
+      workflows: new Map(),
+      activeWorkflowId: null,
 
       createSession: (userId: string, initialMessage?: string, config?: Partial<AgentConfig>) => {
         const sessionId = generateSessionId()
@@ -163,6 +177,80 @@ export const useConversationStore = create<ConversationStore>()(
           return { sessions: newSessions }
         })
       },
+
+      // Workflow Actions
+      createWorkflow: (workflow: UnifiedWorkflow) => {
+        set((state) => ({
+          workflows: new Map(state.workflows).set(workflow.id, workflow),
+          activeWorkflowId: workflow.id,
+        }))
+      },
+
+      getWorkflow: (workflowId: string) => {
+        return get().workflows.get(workflowId)
+      },
+
+      setActiveWorkflow: (workflowId: string) => {
+        set({ activeWorkflowId: workflowId })
+      },
+
+      updateWorkflow: (workflowId: string, updates: Partial<UnifiedWorkflow>) => {
+        const workflow = get().workflows.get(workflowId)
+        if (!workflow) {
+          console.error(`[ConversationStore] Workflow ${workflowId} not found`)
+          return
+        }
+
+        const updatedWorkflow = {
+          ...workflow,
+          ...updates,
+          updatedAt: new Date().toISOString(),
+        }
+
+        set((state) => ({
+          workflows: new Map(state.workflows).set(workflowId, updatedWorkflow),
+        }))
+      },
+
+      deleteWorkflow: (workflowId: string) => {
+        set((state) => {
+          const newWorkflows = new Map(state.workflows)
+          newWorkflows.delete(workflowId)
+          return {
+            workflows: newWorkflows,
+            activeWorkflowId: state.activeWorkflowId === workflowId ? null : state.activeWorkflowId,
+          }
+        })
+      },
+
+      listWorkflows: (userId?: string) => {
+        const allWorkflows = Array.from(get().workflows.values())
+
+        if (!userId) {
+          return allWorkflows.sort((a, b) =>
+            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+          )
+        }
+
+        // Filter by userId if provided (workflows don't have userId yet, but could be added)
+        return allWorkflows.sort((a, b) =>
+          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+        )
+      },
+
+      clearOldWorkflows: (maxAge: number) => {
+        const now = Date.now()
+        set((state) => {
+          const newWorkflows = new Map(state.workflows)
+          for (const [workflowId, workflow] of newWorkflows.entries()) {
+            const updatedAt = new Date(workflow.updatedAt).getTime()
+            if (now - updatedAt > maxAge) {
+              newWorkflows.delete(workflowId)
+            }
+          }
+          return { workflows: newWorkflows }
+        })
+      },
     }),
     {
       name: 'conversation-store',
@@ -172,6 +260,7 @@ export const useConversationStore = create<ConversationStore>()(
         return JSON.stringify({
           ...state,
           sessions: Array.from(state.sessions.entries()),
+          workflows: Array.from(state.workflows.entries()),
         })
       },
       deserialize: (str) => {
@@ -179,6 +268,7 @@ export const useConversationStore = create<ConversationStore>()(
         return {
           ...parsed,
           sessions: new Map(parsed.sessions || []),
+          workflows: new Map(parsed.workflows || []),
         }
       },
     }
