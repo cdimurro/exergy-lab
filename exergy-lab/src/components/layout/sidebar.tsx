@@ -15,6 +15,7 @@ import {
   HelpCircle,
   Zap,
   ChevronLeft,
+  Activity,
 } from 'lucide-react'
 
 interface NavItem {
@@ -33,6 +34,7 @@ const mainNavItems: NavItem[] = [
 ]
 
 const secondaryNavItems: NavItem[] = [
+  { name: 'Activity Logs', href: '/admin/logs', icon: Activity },
   { name: 'Settings', href: '/settings', icon: Settings },
   { name: 'Help', href: '/help', icon: HelpCircle },
 ]
