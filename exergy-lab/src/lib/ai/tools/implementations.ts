@@ -377,7 +377,7 @@ async function designExperimentHandler(params: z.infer<typeof designExperimentSc
 
   try {
     // Use AI to generate comprehensive experimental protocol
-    const { generateWithTools } = await import('../model-router')
+    const { executeWithTools } = await import('../model-router')
 
     const prompt = `Design a detailed experimental protocol for:
 
@@ -417,7 +417,7 @@ Format as JSON matching this structure:
   "estimatedCost": number
 }`
 
-    const response = await generateWithTools(prompt, [], {
+    const response = await executeWithTools(prompt, [], {
       model: 'flash',
       temperature: 0.6,
       maxTokens: 3000,

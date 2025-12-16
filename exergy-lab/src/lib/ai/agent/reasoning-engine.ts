@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events'
 import { getGlobalToolRegistry } from '../tools/registry'
-import { generateWithTools, continueWithFunctionResponse } from '../model-router'
+import { executeWithTools, continueAfterFunctionCalls } from '../model-router'
 import { executeResilient } from '../error-recovery'
 import { AISchemas, validateAIOutput } from '../schemas'
 import {
@@ -297,7 +297,7 @@ Respond with a JSON object matching this structure:
 `
 
     const planResult = await executeResilient(
-      () => generateWithTools(planningPrompt, [], { model: 'fast' }),
+      () => executeWithTools(planningPrompt, [], { model: 'fast' }),
       'reasoning:plan'
     )
 
@@ -393,7 +393,7 @@ Set "confidence" 0-100 based on how well the query can be answered.
 `
 
     const analysisResult = await executeResilient(
-      () => generateWithTools(analysisPrompt, [], { model: 'fast' }),
+      () => executeWithTools(analysisPrompt, [], { model: 'fast' }),
       'reasoning:analyze'
     )
 
@@ -457,7 +457,7 @@ Respond with JSON:
 `
 
     const responseResult = await executeResilient(
-      () => generateWithTools(responsePrompt, [], { model: 'quality' }),
+      () => executeWithTools(responsePrompt, [], { model: 'quality' }),
       'reasoning:respond'
     )
 

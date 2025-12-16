@@ -15,7 +15,7 @@ import type {
 } from '@/types/workflow'
 import type { ToolName, ToolCall } from '@/types/agent'
 import type { Domain } from '@/types/discovery'
-import { generateWithTools } from '../ai/model-router'
+import { executeWithTools } from '../ai/model-router'
 
 // ============================================================================
 // Workflow Planner Class
@@ -87,7 +87,7 @@ Respond with JSON:
 }`
 
     try {
-      const response = await generateWithTools(analysisPrompt, [], {
+      const response = await executeWithTools(analysisPrompt, [], {
         model: 'flash',
         temperature: 0.3,
         maxTokens: 500,
