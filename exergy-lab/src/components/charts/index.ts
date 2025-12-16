@@ -1,7 +1,3 @@
-export { KPICard } from './kpi-card'
-export { EnergyTimeseries } from './energy-timeseries'
+// Keep only the charts needed for TEA Reports
 export { CashFlowChart } from './cash-flow-chart'
 export { CostBreakdownChart } from './cost-breakdown-chart'
-export { InteractiveEnergyExplorer } from './interactive-energy-explorer'
-export { RegionalExplorer } from './regional-explorer'
-export { SectorExplorer } from './sector-explorer'

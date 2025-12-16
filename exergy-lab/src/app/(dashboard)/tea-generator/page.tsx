@@ -2,8 +2,9 @@
 
 import * as React from 'react'
 import { Card, Metric, Text, Flex, BadgeDelta, ProgressBar } from '@tremor/react'
-import { Button, Input, Badge } from '@/components/ui'
+import { Button, Input, Badge, Tabs } from '@/components/ui'
 import { CashFlowChart, CostBreakdownChart } from '@/components/charts'
+import { FileUploader, PDFPreview } from '@/components/tea'
 import {
   Sun,
   Wind,
@@ -24,8 +25,12 @@ import {
   DollarSign,
   Clock,
   Zap,
+  FileUp,
+  Brain,
 } from 'lucide-react'
 import type { TEAInput, TEAResult, TechnologyType } from '@/types/tea'
+import type { TEAReportData } from '@/lib/pdf-generator'
+import type { ExtractedData } from '@/lib/file-upload'
 
 // Technology configuration with icons
 const TECHNOLOGIES: {
@@ -190,6 +195,13 @@ export default function TEAGeneratorPage() {
   const [insights, setInsights] = React.useState<string | null>(null)
   const [insightsLoading, setInsightsLoading] = React.useState(false)
 
+  // New state for file upload and AI analysis
+  const [uploadedFiles, setUploadedFiles] = React.useState<ExtractedData[]>([])
+  const [analysisLoading, setAnalysisLoading] = React.useState(false)
+  const [aiInsights, setAiInsights] = React.useState<any>(null)
+  const [pdfPreviewOpen, setPdfPreviewOpen] = React.useState(false)
+  const [pdfDataUrl, setPdfDataUrl] = React.useState<string | null>(null)
+
   const handleTechnologyChange = (tech: TechnologyType) => {
     const techConfig = TECHNOLOGIES.find((t) => t.type === tech)
     if (techConfig) {
@@ -303,6 +315,118 @@ export default function TEAGeneratorPage() {
     setInsightsLoading(false)
   }
 
+  // New handlers for file upload and AI analysis
+  const handleFilesUploaded = async (files: ExtractedData[]) => {
+    setUploadedFiles(files)
+
+    // Automatically trigger AI analysis
+    setAnalysisLoading(true)
+    try {
+      const response = await fetch('/api/tea/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          extractedData: files,
+          projectName: input.project_name,
+          technology: input.technology_type,
+        }),
+      })
+
+      if (response.ok) {
+        const analysis = await response.json()
+        setAiInsights(analysis)
+
+        // Auto-populate inputs from extracted parameters
+        if (analysis.parameters) {
+          const params = analysis.parameters
+          setInput((prev) => ({
+            ...prev,
+            capacity_mw: params.capacity || prev.capacity_mw,
+            project_lifetime_years: params.projectLifetime || prev.project_lifetime_years,
+            discount_rate: (params.discountRate || prev.discount_rate * 100) / 100,
+            // Add more mappings as needed
+          }))
+        }
+      }
+    } catch (error) {
+      console.error('Analysis failed:', error)
+    } finally {
+      setAnalysisLoading(false)
+    }
+  }
+
+  const handleExportPDF = async () => {
+    if (!result) return
+
+    try {
+      const tech = TECHNOLOGIES.find((t) => t.type === input.technology_type)
+
+      const reportData: TEAReportData = {
+        projectName: input.project_name,
+        technology: tech?.label || input.technology_type,
+        generatedDate: new Date().toLocaleDateString(),
+        executiveSummary: insights || `Financial analysis for ${input.project_name} using ${tech?.label} technology.`,
+        lcoe: result.lcoe,
+        npv: result.npv,
+        irr: result.irr,
+        paybackPeriod: result.payback_years,
+        roi: result.irr,
+        capitalCosts: {
+          equipment: result.capex_breakdown.equipment,
+          installation: result.capex_breakdown.installation,
+          infrastructure: result.capex_breakdown.land + result.capex_breakdown.grid_connection,
+          other: 0,
+          total: result.total_capex,
+        },
+        operationalCosts: {
+          maintenance: result.opex_breakdown.capacity_based,
+          labor: 0,
+          materials: result.opex_breakdown.variable,
+          utilities: 0,
+          other: result.opex_breakdown.fixed + result.opex_breakdown.insurance,
+          annual: result.annual_opex,
+        },
+        cashFlow: result.cash_flows.map((cf, i) => ({
+          year: i,
+          revenue: i === 0 ? 0 : result.annual_revenue,
+          expenses: i === 0 ? 0 : result.annual_opex,
+          netCashFlow: cf,
+          cumulativeCashFlow: result.cash_flows.slice(0, i + 1).reduce((a, b) => a + b, 0),
+        })),
+        assumptions: {
+          projectLifetime: input.project_lifetime_years,
+          discountRate: input.discount_rate * 100,
+          capacity: input.capacity_mw,
+          capacityUnit: 'MW',
+          annualProduction: result.annual_production_mwh,
+          productionUnit: 'MWh',
+        },
+        aiInsights: aiInsights?.insights,
+      }
+
+      const response = await fetch('/api/tea/generate-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(reportData),
+      })
+
+      if (response.ok) {
+        const blob = await response.blob()
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = `TEA_${input.project_name.replace(/\s+/g, '_')}.pdf`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(url)
+      }
+    } catch (error) {
+      console.error('PDF generation failed:', error)
+      alert('Failed to generate PDF. Please try again.')
+    }
+  }
+
   const selectedTech = TECHNOLOGIES.find((t) => t.type === input.technology_type)
 
   return (
@@ -321,15 +445,9 @@ export default function TEAGeneratorPage() {
             variant="secondary"
             leftIcon={<Download className="w-4 h-4" />}
             disabled={!result}
+            onClick={handleExportPDF}
           >
             Export PDF
-          </Button>
-          <Button
-            variant="secondary"
-            leftIcon={<Save className="w-4 h-4" />}
-            disabled={!result}
-          >
-            Save Project
           </Button>
         </div>
       </div>
@@ -337,6 +455,62 @@ export default function TEAGeneratorPage() {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         {/* Input Panel */}
         <div className="xl:col-span-2 space-y-6">
+          {/* File Upload & AI Analysis - NEW */}
+          <Card className="bg-gradient-to-br from-primary/5 to-accent-purple/5 border-primary/20">
+            <div className="flex items-center gap-2 mb-4">
+              <FileUp className="w-5 h-5 text-primary" />
+              <h3 className="text-lg font-semibold text-foreground">
+                Upload Files for AI Analysis
+              </h3>
+              <Badge variant="primary" size="sm">
+                Enhanced
+              </Badge>
+            </div>
+            <p className="text-sm text-foreground-muted mb-4">
+              Upload technical documents, spreadsheets, or images. AI will automatically extract
+              parameters and generate insights.
+            </p>
+
+            <FileUploader onFilesUploaded={handleFilesUploaded} />
+
+            {analysisLoading && (
+              <div className="mt-4 p-4 rounded-lg bg-background-elevated border border-border">
+                <div className="flex items-center gap-3">
+                  <Loader2 className="w-5 h-5 text-primary animate-spin" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      Analyzing uploaded files...
+                    </p>
+                    <p className="text-xs text-foreground-muted mt-1">
+                      AI is extracting parameters and generating insights
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {aiInsights && (
+              <div className="mt-4 p-4 rounded-lg bg-background-elevated border border-primary/20">
+                <div className="flex items-center gap-2 mb-3">
+                  <Brain className="w-5 h-5 text-primary" />
+                  <p className="text-sm font-medium text-foreground">AI Analysis Complete</p>
+                  <Badge variant="success" size="sm">
+                    {aiInsights.dataQuality?.completeness}% Complete
+                  </Badge>
+                </div>
+                <div className="text-xs text-foreground-muted space-y-1">
+                  <p>• Parameters extracted and auto-populated</p>
+                  <p>• Confidence: {aiInsights.dataQuality?.confidence}%</p>
+                  {aiInsights.dataQuality?.missingFields?.length > 0 && (
+                    <p className="text-amber-600">
+                      • Please verify: {aiInsights.dataQuality.missingFields.join(', ')}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+          </Card>
+
           {/* Technology Selection */}
           <Card className="bg-background-elevated border-border">
             <h3 className="text-lg font-semibold text-foreground mb-4">

@@ -1,31 +1,373 @@
 'use client'
 
+import * as React from 'react'
+import { useUser } from '@clerk/nextjs'
+import { useRouter } from 'next/navigation'
 import {
-  InteractiveEnergyExplorer,
-  RegionalExplorer,
-  SectorExplorer,
-} from '@/components/charts'
+  Search,
+  Calculator,
+  FlaskConical,
+  Cpu,
+  Sparkles,
+  TrendingUp,
+  FileText,
+  Clock,
+  ArrowRight,
+  Lightbulb,
+  Zap,
+} from 'lucide-react'
+import { Card, Button, Badge } from '@/components/ui'
 
-export default function GlobalEnergySystemPage() {
+interface QuickAction {
+  title: string
+  description: string
+  icon: React.ComponentType<{ className?: string }>
+  href: string
+  color: string
+  gradient: string
+}
+
+interface RecentProject {
+  id: string
+  type: 'search' | 'tea' | 'experiment' | 'simulation' | 'discovery'
+  title: string
+  timestamp: string
+  status?: string
+}
+
+export default function DashboardPage() {
+  const { user, isLoaded } = useUser()
+  const router = useRouter()
+  const [recentProjects, setRecentProjects] = React.useState<RecentProject[]>([])
+  const [stats, setStats] = React.useState({
+    searches: 0,
+    experiments: 0,
+    teaReports: 0,
+    discoveries: 0,
+  })
+
+  // Load recent projects from localStorage
+  React.useEffect(() => {
+    try {
+      const saved = localStorage.getItem('recentProjects')
+      if (saved) {
+        setRecentProjects(JSON.parse(saved).slice(0, 5))
+      }
+
+      // Load stats
+      const statsData = {
+        searches: parseInt(localStorage.getItem('searchCount') || '0'),
+        experiments: parseInt(localStorage.getItem('experimentCount') || '0'),
+        teaReports: parseInt(localStorage.getItem('teaCount') || '0'),
+        discoveries: parseInt(localStorage.getItem('discoveryCount') || '0'),
+      }
+      setStats(statsData)
+    } catch (error) {
+      console.error('Failed to load dashboard data:', error)
+    }
+  }, [])
+
+  const quickActions: QuickAction[] = [
+    {
+      title: 'Search Research',
+      description: 'Find academic papers across multiple databases',
+      icon: Search,
+      href: '/search',
+      color: 'text-blue-600',
+      gradient: 'from-blue-500/10 to-blue-600/10',
+    },
+    {
+      title: 'Design Experiment',
+      description: 'Generate AI-powered experiment protocols',
+      icon: FlaskConical,
+      href: '/experiments',
+      color: 'text-purple-600',
+      gradient: 'from-purple-500/10 to-purple-600/10',
+    },
+    {
+      title: 'TEA Report',
+      description: 'Create techno-economic analysis reports',
+      icon: Calculator,
+      href: '/tea-generator',
+      color: 'text-green-600',
+      gradient: 'from-green-500/10 to-green-600/10',
+    },
+    {
+      title: 'Run Simulation',
+      description: 'Execute 3-tier computational simulations',
+      icon: Cpu,
+      href: '/simulations',
+      color: 'text-orange-600',
+      gradient: 'from-orange-500/10 to-orange-600/10',
+    },
+    {
+      title: 'Discover Ideas',
+      description: 'Find novel cross-domain innovations',
+      icon: Sparkles,
+      href: '/discovery',
+      color: 'text-pink-600',
+      gradient: 'from-pink-500/10 to-pink-600/10',
+    },
+  ]
+
+  const getProjectIcon = (type: string) => {
+    switch (type) {
+      case 'search':
+        return Search
+      case 'tea':
+        return Calculator
+      case 'experiment':
+        return FlaskConical
+      case 'simulation':
+        return Cpu
+      case 'discovery':
+        return Sparkles
+      default:
+        return FileText
+    }
+  }
+
+  const getProjectColor = (type: string) => {
+    switch (type) {
+      case 'search':
+        return 'text-blue-600'
+      case 'tea':
+        return 'text-green-600'
+      case 'experiment':
+        return 'text-purple-600'
+      case 'simulation':
+        return 'text-orange-600'
+      case 'discovery':
+        return 'text-pink-600'
+      default:
+        return 'text-gray-600'
+    }
+  }
+
+  const formatTimestamp = (timestamp: string) => {
+    try {
+      const date = new Date(timestamp)
+      const now = new Date()
+      const diffMs = now.getTime() - date.getTime()
+      const diffMins = Math.floor(diffMs / 60000)
+      const diffHours = Math.floor(diffMins / 60)
+      const diffDays = Math.floor(diffHours / 24)
+
+      if (diffMins < 60) {
+        return `${diffMins}m ago`
+      } else if (diffHours < 24) {
+        return `${diffHours}h ago`
+      } else if (diffDays < 7) {
+        return `${diffDays}d ago`
+      } else {
+        return date.toLocaleDateString()
+      }
+    } catch {
+      return timestamp
+    }
+  }
+
   return (
-    <div className="space-y-6">
-      {/* Page Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-800">Global Energy System</h1>
-        <p className="text-gray-600 mt-1">
-          Thermodynamically accurate view of global energy flows using the three-tier framework:
-          Primary Energy, Useful Energy, and Applied Exergy. Explore 60 years of data (1965-2024).
-        </p>
+    <div className="min-h-screen bg-background p-6 md:p-8">
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Welcome Section */}
+        <div className="space-y-2">
+          <h1 className="text-3xl md:text-4xl font-bold text-foreground">
+            Welcome back{isLoaded && user ? `, ${user.firstName || user.username}` : ''}
+          </h1>
+          <p className="text-lg text-foreground-muted">
+            AI-powered clean energy research platform
+          </p>
+        </div>
+
+        {/* Stats Overview */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 border-blue-500/20">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-foreground-muted mb-1">Searches</p>
+                <p className="text-2xl font-bold text-foreground">{stats.searches}</p>
+              </div>
+              <div className="p-3 rounded-xl bg-blue-500/10">
+                <Search className="w-6 h-6 text-blue-600" />
+              </div>
+            </div>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/10 border-purple-500/20">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-foreground-muted mb-1">Experiments</p>
+                <p className="text-2xl font-bold text-foreground">{stats.experiments}</p>
+              </div>
+              <div className="p-3 rounded-xl bg-purple-500/10">
+                <FlaskConical className="w-6 h-6 text-purple-600" />
+              </div>
+            </div>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-green-500/10 to-green-600/10 border-green-500/20">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-foreground-muted mb-1">TEA Reports</p>
+                <p className="text-2xl font-bold text-foreground">{stats.teaReports}</p>
+              </div>
+              <div className="p-3 rounded-xl bg-green-500/10">
+                <Calculator className="w-6 h-6 text-green-600" />
+              </div>
+            </div>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-pink-500/10 to-pink-600/10 border-pink-500/20">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-foreground-muted mb-1">Discoveries</p>
+                <p className="text-2xl font-bold text-foreground">{stats.discoveries}</p>
+              </div>
+              <div className="p-3 rounded-xl bg-pink-500/10">
+                <Sparkles className="w-6 h-6 text-pink-600" />
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Quick Actions */}
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <Zap className="w-5 h-5 text-primary" />
+            <h2 className="text-xl font-semibold text-foreground">Quick Actions</h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {quickActions.map((action) => {
+              const Icon = action.icon
+              return (
+                <Card
+                  key={action.href}
+                  className={`bg-gradient-to-br ${action.gradient} border-opacity-20 hover:shadow-lg transition-all duration-200 cursor-pointer group`}
+                  onClick={() => router.push(action.href)}
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 rounded-xl bg-background-elevated">
+                      <Icon className={`w-6 h-6 ${action.color}`} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-foreground mb-1 group-hover:text-primary transition-colors">
+                        {action.title}
+                      </h3>
+                      <p className="text-sm text-foreground-muted">{action.description}</p>
+                    </div>
+                    <ArrowRight className="w-5 h-5 text-foreground-muted group-hover:text-primary group-hover:translate-x-1 transition-all shrink-0" />
+                  </div>
+                </Card>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Recent Projects */}
+        {recentProjects.length > 0 && (
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <Clock className="w-5 h-5 text-primary" />
+              <h2 className="text-xl font-semibold text-foreground">Recent Activity</h2>
+            </div>
+
+            <Card>
+              <div className="divide-y divide-border">
+                {recentProjects.map((project) => {
+                  const Icon = getProjectIcon(project.type)
+                  const color = getProjectColor(project.type)
+
+                  return (
+                    <div
+                      key={project.id}
+                      className="py-4 first:pt-0 last:pb-0 flex items-center gap-4 hover:bg-background-surface px-2 -mx-2 rounded-lg transition-colors"
+                    >
+                      <div className={`p-2 rounded-lg bg-background-elevated ${color}`}>
+                        <Icon className="w-5 h-5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-foreground truncate">{project.title}</p>
+                        <p className="text-sm text-foreground-muted">
+                          {project.type.charAt(0).toUpperCase() + project.type.slice(1)} •{' '}
+                          {formatTimestamp(project.timestamp)}
+                        </p>
+                      </div>
+                      {project.status && (
+                        <Badge variant="secondary" size="sm">
+                          {project.status}
+                        </Badge>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </Card>
+          </div>
+        )}
+
+        {/* Getting Started (Empty State) */}
+        {recentProjects.length === 0 && (
+          <Card className="bg-gradient-to-br from-primary/5 to-accent-purple/5 border-primary/20">
+            <div className="text-center py-8">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-4">
+                <Lightbulb className="w-8 h-8 text-primary" />
+              </div>
+              <h3 className="text-xl font-semibold text-foreground mb-2">Get Started</h3>
+              <p className="text-foreground-muted mb-6 max-w-md mx-auto">
+                Start your research journey by exploring our AI-powered tools. Search academic papers,
+                design experiments, or discover novel innovations.
+              </p>
+              <div className="flex items-center justify-center gap-3">
+                <Button variant="primary" onClick={() => router.push('/search')}>
+                  <Search className="w-4 h-4 mr-2" />
+                  Start Searching
+                </Button>
+                <Button variant="secondary" onClick={() => router.push('/discovery')}>
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Discover Ideas
+                </Button>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* Tips Section */}
+        <Card className="bg-gradient-to-br from-accent-purple/5 to-primary/5 border-accent-purple/20">
+          <div className="flex items-start gap-4">
+            <div className="p-3 rounded-xl bg-accent-purple/10">
+              <TrendingUp className="w-6 h-6 text-accent-purple" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-foreground mb-2">Pro Tips</h3>
+              <ul className="space-y-2 text-sm text-foreground-muted">
+                <li className="flex items-start gap-2">
+                  <span className="text-primary shrink-0">•</span>
+                  <span>
+                    Use the Discovery Engine to find novel cross-domain innovations and automatically
+                    generate experiments
+                  </span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-primary shrink-0">•</span>
+                  <span>
+                    Upload existing data files to TEA Reports for AI-powered parameter extraction and
+                    analysis
+                  </span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-primary shrink-0">•</span>
+                  <span>
+                    Start with Tier 1 simulations (free, fast) and upgrade to higher tiers for
+                    production accuracy
+                  </span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </Card>
       </div>
-
-      {/* Main Interactive Energy Explorer */}
-      <InteractiveEnergyExplorer />
-
-      {/* Explore by Country or Region */}
-      <RegionalExplorer />
-
-      {/* Explore by Sector or Industry */}
-      <SectorExplorer />
     </div>
   )
 }

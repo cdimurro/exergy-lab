@@ -4,14 +4,12 @@ import * as React from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import { Badge } from '@/components/ui'
 import {
-  Globe2,
+  Home,
+  Search,
   Calculator,
-  FolderOpen,
-  Atom,
-  Database,
-  Bot,
+  FlaskConical,
+  Cpu,
   Sparkles,
   Settings,
   HelpCircle,
@@ -23,18 +21,15 @@ interface NavItem {
   name: string
   href: string
   icon: React.ElementType
-  badge?: string
-  tier?: 'pro' | 'discovery'
 }
 
 const mainNavItems: NavItem[] = [
-  { name: 'Global Energy System', href: '/', icon: Globe2 },
-  { name: 'TEA Generator', href: '/tea-generator', icon: Calculator },
-  { name: 'Solutions', href: '/solutions', icon: FolderOpen },
-  { name: 'Exergy Lab', href: '/exergy-lab', icon: Atom, tier: 'pro' },
-  { name: 'Datasets', href: '/datasets', icon: Database },
-  { name: 'AI Agents', href: '/ai-agents', icon: Bot, tier: 'pro' },
-  { name: 'Discovery', href: '/discovery', icon: Sparkles, tier: 'discovery' },
+  { name: 'Dashboard', href: '/', icon: Home },
+  { name: 'Search', href: '/search', icon: Search },
+  { name: 'TEA Reports', href: '/tea-generator', icon: Calculator },
+  { name: 'Experiments', href: '/experiments', icon: FlaskConical },
+  { name: 'Simulations', href: '/simulations', icon: Cpu },
+  { name: 'Discovery', href: '/discovery', icon: Sparkles },
 ]
 
 const secondaryNavItems: NavItem[] = [
@@ -65,7 +60,7 @@ export function Sidebar() {
                 Exergy Lab
               </span>
               <span className="text-xs text-gray-500">
-                Energy Intelligence
+                Clean Energy Research
               </span>
             </div>
           )}
@@ -113,19 +108,9 @@ export function Sidebar() {
                   )}
                 />
                 {!collapsed && (
-                  <>
-                    <span className="flex-1 text-sm font-medium">
-                      {item.name}
-                    </span>
-                    {item.tier && (
-                      <Badge
-                        variant={item.tier === 'discovery' ? 'secondary' : 'primary'}
-                        size="sm"
-                      >
-                        {item.tier === 'discovery' ? 'Discovery' : 'Pro'}
-                      </Badge>
-                    )}
-                  </>
+                  <span className="flex-1 text-sm font-medium">
+                    {item.name}
+                  </span>
                 )}
               </Link>
             )
@@ -172,16 +157,10 @@ export function Sidebar() {
       {/* Footer */}
       {!collapsed && (
         <div className="p-4 border-t border-gray-200">
-          <div className="px-3 py-2 rounded-lg bg-gray-100">
-            <p className="text-xs text-gray-500">
-              Free Plan
+          <div className="px-3 py-2">
+            <p className="text-xs text-gray-400">
+              Powered by AI
             </p>
-            <Link
-              href="/pricing"
-              className="text-xs text-blue-600 hover:underline"
-            >
-              Upgrade to Pro
-            </Link>
           </div>
         </div>
       )}

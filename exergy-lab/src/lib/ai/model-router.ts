@@ -1,0 +1,334 @@
+import * as gemini from './gemini'
+import * as openai from './openai'
+import * as huggingface from './huggingface'
+import { rateLimiter, RateLimitError, AIProvider } from './rate-limiter'
+
+/**
+ * AI Task Types
+ */
+export type AITask =
+  | 'search-expand' // Expand user search query
+  | 'search-rank' // Rank search results
+  | 'tea-insights' // Generate TEA insights
+  | 'tea-extract' // Extract parameters from files
+  | 'experiment-design' // Design experiment protocol
+  | 'experiment-failure' // Analyze failure modes
+  | 'discovery' // Multi-domain discovery
+  | 'simulation-predict' // Predict simulation results
+  | 'summarize' // Summarize text
+  | 'embeddings' // Generate embeddings
+
+/**
+ * Task routing configuration
+ * Defines primary and fallback models for each task
+ */
+const TASK_ROUTING: Record<
+  AITask,
+  {
+    primary: AIProvider
+    fallbacks: AIProvider[]
+  }
+> = {
+  'search-expand': {
+    primary: 'gemini',
+    fallbacks: ['openai', 'huggingface'],
+  },
+  'search-rank': {
+    primary: 'gemini',
+    fallbacks: ['openai'],
+  },
+  'tea-insights': {
+    primary: 'gemini',
+    fallbacks: ['openai'],
+  },
+  'tea-extract': {
+    primary: 'gemini',
+    fallbacks: ['openai'],
+  },
+  'experiment-design': {
+    primary: 'gemini',
+    fallbacks: [],
+  },
+  'experiment-failure': {
+    primary: 'gemini',
+    fallbacks: [],
+  },
+  discovery: {
+    primary: 'gemini',
+    fallbacks: [],
+  },
+  'simulation-predict': {
+    primary: 'gemini',
+    fallbacks: ['huggingface'],
+  },
+  summarize: {
+    primary: 'huggingface',
+    fallbacks: ['gemini', 'openai'],
+  },
+  embeddings: {
+    primary: 'huggingface',
+    fallbacks: ['openai'],
+  },
+}
+
+/**
+ * AI Model Router with intelligent fallback
+ */
+class AIModelRouter {
+  /**
+   * Execute an AI task with automatic fallback
+   */
+  async execute(
+    task: AITask,
+    prompt: string,
+    options: {
+      temperature?: number
+      maxTokens?: number
+      model?: 'fast' | 'quality'
+    } = {}
+  ): Promise<string> {
+    const routing = TASK_ROUTING[task]
+    const providers = [routing.primary, ...routing.fallbacks]
+
+    for (const provider of providers) {
+      try {
+        // Check rate limits
+        if (!rateLimiter.canExecute(provider)) {
+          const retryAfter = rateLimiter.getRetryAfter(provider)
+          console.warn(
+            `Rate limit exceeded for ${provider}, trying fallback. Retry after ${retryAfter}ms`
+          )
+          continue
+        }
+
+        // Execute with the provider
+        const result = await this.callProvider(provider, prompt, options, task)
+
+        // Consume rate limit token on success
+        rateLimiter.consume(provider)
+
+        return result
+      } catch (error) {
+        console.error(`Error with ${provider}:`, error)
+        // Continue to next fallback
+        if (provider === providers[providers.length - 1]) {
+          // Last provider also failed
+          throw new Error(
+            `All AI providers failed for task "${task}": ${error}`
+          )
+        }
+      }
+    }
+
+    throw new Error(`No available providers for task "${task}"`)
+  }
+
+  /**
+   * Call a specific AI provider
+   */
+  private async callProvider(
+    provider: AIProvider,
+    prompt: string,
+    options: {
+      temperature?: number
+      maxTokens?: number
+      model?: 'fast' | 'quality'
+    },
+    task: AITask
+  ): Promise<string> {
+    const temperature = options.temperature ?? 0.7
+    const maxTokens = options.maxTokens ?? 2048
+
+    switch (provider) {
+      case 'gemini': {
+        const geminiModel = options.model === 'quality' ? 'pro' : 'flash'
+        return await gemini.generateText(prompt, {
+          model: geminiModel,
+          temperature,
+          maxOutputTokens: maxTokens,
+        })
+      }
+
+      case 'openai': {
+        return await openai.generateText(prompt, {
+          model: 'gpt-3.5-turbo',
+          temperature,
+          maxTokens,
+        })
+      }
+
+      case 'huggingface': {
+        // HuggingFace has specialized functions
+        if (task === 'summarize') {
+          return await huggingface.summarizeText(prompt)
+        }
+        // For other tasks, fall back to embeddings-based approach
+        // This is a simplification - in production, you'd use different models
+        throw new Error('HuggingFace not suitable for this task')
+      }
+
+      default:
+        throw new Error(`Unknown provider: ${provider}`)
+    }
+  }
+
+  /**
+   * Stream text generation with fallback
+   */
+  async *stream(
+    task: AITask,
+    prompt: string,
+    options: {
+      temperature?: number
+      maxTokens?: number
+      model?: 'fast' | 'quality'
+    } = {}
+  ): AsyncGenerator<string> {
+    const routing = TASK_ROUTING[task]
+    const provider = routing.primary
+
+    // Check rate limits
+    if (!rateLimiter.canExecute(provider)) {
+      throw new RateLimitError(provider, rateLimiter.getRetryAfter(provider))
+    }
+
+    const temperature = options.temperature ?? 0.7
+    const maxTokens = options.maxTokens ?? 2048
+
+    try {
+      if (provider === 'gemini') {
+        const geminiModel = options.model === 'quality' ? 'pro' : 'flash'
+        for await (const chunk of gemini.streamText(prompt, {
+          model: geminiModel,
+          temperature,
+          maxOutputTokens: maxTokens,
+        })) {
+          yield chunk
+        }
+      } else if (provider === 'openai') {
+        for await (const chunk of openai.streamText(prompt, {
+          model: 'gpt-3.5-turbo',
+          temperature,
+          maxTokens,
+        })) {
+          yield chunk
+        }
+      } else {
+        throw new Error('Streaming not supported for this provider')
+      }
+
+      // Consume rate limit token
+      rateLimiter.consume(provider)
+    } catch (error) {
+      console.error(`Streaming error with ${provider}:`, error)
+      throw error
+    }
+  }
+
+  /**
+   * Generate embeddings for semantic search
+   */
+  async generateEmbeddings(texts: string[]): Promise<number[][]> {
+    const task: AITask = 'embeddings'
+    const routing = TASK_ROUTING[task]
+    const providers = [routing.primary, ...routing.fallbacks]
+
+    for (const provider of providers) {
+      try {
+        if (!rateLimiter.canExecute(provider)) {
+          continue
+        }
+
+        let result: number[][]
+
+        if (provider === 'huggingface') {
+          const embeddings = await huggingface.generateEmbeddings(texts)
+          result = Array.isArray(embeddings[0])
+            ? (embeddings as number[][])
+            : [embeddings as number[]]
+        } else if (provider === 'openai') {
+          result = await openai.generateEmbeddings(texts)
+        } else {
+          continue
+        }
+
+        rateLimiter.consume(provider)
+        return result
+      } catch (error) {
+        console.error(`Embeddings error with ${provider}:`, error)
+      }
+    }
+
+    throw new Error('Failed to generate embeddings with all providers')
+  }
+
+  /**
+   * Analyze an image (only supported by Gemini)
+   */
+  async analyzeImage(
+    imageData: string | Uint8Array,
+    prompt: string
+  ): Promise<string> {
+    if (!rateLimiter.canExecute('gemini')) {
+      throw new RateLimitError(
+        'gemini',
+        rateLimiter.getRetryAfter('gemini')
+      )
+    }
+
+    try {
+      const result = await gemini.analyzeImage(imageData, prompt)
+      rateLimiter.consume('gemini')
+      return result
+    } catch (error) {
+      console.error('Image analysis error:', error)
+      throw new Error(`Image analysis failed: ${error}`)
+    }
+  }
+
+  /**
+   * Get quota information for all providers
+   */
+  getQuotas(): Record<
+    AIProvider,
+    {
+      remainingMinute: number
+      remainingDay: number
+      resetsIn: number
+    }
+  > {
+    return {
+      gemini: rateLimiter.getQuota('gemini'),
+      openai: rateLimiter.getQuota('openai'),
+      huggingface: rateLimiter.getQuota('huggingface'),
+    }
+  }
+}
+
+// Singleton instance
+export const aiRouter = new AIModelRouter()
+
+// Helper function for common tasks
+export async function generateText(
+  task: AITask,
+  prompt: string,
+  options?: {
+    temperature?: number
+    maxTokens?: number
+    model?: 'fast' | 'quality'
+  }
+): Promise<string> {
+  return aiRouter.execute(task, prompt, options)
+}
+
+export async function* streamText(
+  task: AITask,
+  prompt: string,
+  options?: {
+    temperature?: number
+    maxTokens?: number
+    model?: 'fast' | 'quality'
+  }
+): AsyncGenerator<string> {
+  yield* aiRouter.stream(task, prompt, options)
+}
