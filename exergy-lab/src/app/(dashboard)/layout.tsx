@@ -25,7 +25,7 @@ export default function DashboardLayout({
   }, [])
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-background-surface">
       <Sidebar />
       <Header sidebarCollapsed={sidebarCollapsed} />
       <main

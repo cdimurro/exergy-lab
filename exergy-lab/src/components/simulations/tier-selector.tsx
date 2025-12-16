@@ -13,10 +13,10 @@ const TIER_ICONS = {
 
 const TIER_COLORS = {
   local: {
-    bg: 'bg-blue-50',
-    border: 'border-blue-200',
-    text: 'text-blue-700',
-    icon: 'text-blue-600',
+    bg: 'bg-primary/10',
+    border: 'border-primary/20',
+    text: 'text-primary',
+    icon: 'text-primary',
   },
   browser: {
     bg: 'bg-purple-50',

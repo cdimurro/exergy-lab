@@ -58,7 +58,7 @@ export function Header({ sidebarCollapsed = false }: HeaderProps) {
   return (
     <header
       className={cn(
-        'fixed top-0 right-0 z-30 h-16 bg-white/90 backdrop-blur-md border-b border-gray-200 transition-all duration-300',
+        'fixed top-0 right-0 z-30 h-16 bg-background/90 backdrop-blur-md border-b border-border transition-all duration-300',
         sidebarCollapsed ? 'left-20' : 'left-64'
       )}
     >
@@ -66,13 +66,13 @@ export function Header({ sidebarCollapsed = false }: HeaderProps) {
         {/* Search */}
         <div className="flex-1 max-w-xl">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground-subtle" />
             <input
               type="text"
               placeholder="Search solutions, experiments, or datasets..."
-              className="w-full h-10 pl-10 pr-4 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              className="w-full h-10 pl-10 pr-4 bg-background-surface border border-border rounded-lg text-sm text-foreground placeholder:text-foreground-subtle focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
             />
-            <kbd className="absolute right-3 top-1/2 -translate-y-1/2 px-2 py-0.5 text-xs text-gray-500 bg-white rounded border border-gray-200">
+            <kbd className="absolute right-3 top-1/2 -translate-y-1/2 px-2 py-0.5 text-xs text-foreground-muted bg-background rounded border border-border">
               ⌘K
             </kbd>
           </div>
@@ -87,19 +87,19 @@ export function Header({ sidebarCollapsed = false }: HeaderProps) {
                 setShowNotifications(!showNotifications)
                 setShowUserMenu(false)
               }}
-              className="relative p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors"
+              className="relative p-2 rounded-lg hover:bg-background-elevated text-foreground-muted hover:text-foreground transition-colors"
             >
               <Bell className="w-5 h-5" />
               {unreadCount > 0 && (
-                <span className="absolute top-1 right-1 w-2 h-2 bg-blue-500 rounded-full" />
+                <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full" />
               )}
             </button>
 
             {/* Notifications dropdown */}
             {showNotifications && (
-              <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
-                <div className="px-4 py-3 border-b border-gray-200">
-                  <h3 className="text-sm font-semibold text-gray-800">
+              <div className="absolute right-0 top-full mt-2 w-80 bg-background border border-border rounded-xl shadow-lg overflow-hidden">
+                <div className="px-4 py-3 border-b border-border">
+                  <h3 className="text-sm font-semibold text-foreground">
                     Notifications
                   </h3>
                 </div>
@@ -108,22 +108,22 @@ export function Header({ sidebarCollapsed = false }: HeaderProps) {
                     <div
                       key={notification.id}
                       className={cn(
-                        'px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-0',
-                        notification.unread && 'bg-blue-50'
+                        'px-4 py-3 hover:bg-background-surface cursor-pointer border-b border-border last:border-0',
+                        notification.unread && 'bg-primary/10'
                       )}
                     >
                       <div className="flex items-start gap-3">
                         {notification.unread && (
-                          <span className="w-2 h-2 mt-1.5 bg-blue-500 rounded-full shrink-0" />
+                          <span className="w-2 h-2 mt-1.5 bg-primary rounded-full shrink-0" />
                         )}
                         <div className={cn(!notification.unread && 'ml-5')}>
-                          <p className="text-sm font-medium text-gray-800">
+                          <p className="text-sm font-medium text-foreground">
                             {notification.title}
                           </p>
-                          <p className="text-xs text-gray-600 mt-0.5">
+                          <p className="text-xs text-foreground-muted mt-0.5">
                             {notification.message}
                           </p>
-                          <p className="text-xs text-gray-400 mt-1">
+                          <p className="text-xs text-foreground-subtle mt-1">
                             {notification.time}
                           </p>
                         </div>
@@ -131,8 +131,8 @@ export function Header({ sidebarCollapsed = false }: HeaderProps) {
                     </div>
                   ))}
                 </div>
-                <div className="px-4 py-3 border-t border-gray-200">
-                  <button className="text-sm text-blue-600 hover:underline">
+                <div className="px-4 py-3 border-t border-border">
+                  <button className="text-sm text-primary hover:underline">
                     View all notifications
                   </button>
                 </div>
@@ -147,41 +147,41 @@ export function Header({ sidebarCollapsed = false }: HeaderProps) {
                 setShowUserMenu(!showUserMenu)
                 setShowNotifications(false)
               }}
-              className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              className="flex items-center gap-3 p-2 rounded-lg hover:bg-background-elevated transition-colors"
             >
               <Avatar src={user.avatar} fallback={user.name} size="sm" />
               <div className="text-left hidden lg:block">
-                <p className="text-sm font-medium text-gray-800">
+                <p className="text-sm font-medium text-foreground">
                   {user.name}
                 </p>
-                <p className="text-xs text-gray-500">{user.role}</p>
+                <p className="text-xs text-foreground-muted">{user.role}</p>
               </div>
-              <ChevronDown className="w-4 h-4 text-gray-500 hidden lg:block" />
+              <ChevronDown className="w-4 h-4 text-foreground-muted hidden lg:block" />
             </button>
 
             {/* User dropdown */}
             {showUserMenu && (
-              <div className="absolute right-0 top-full mt-2 w-56 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
-                <div className="px-4 py-3 border-b border-gray-200">
-                  <p className="text-sm font-medium text-gray-800">
+              <div className="absolute right-0 top-full mt-2 w-56 bg-background border border-border rounded-xl shadow-lg overflow-hidden">
+                <div className="px-4 py-3 border-b border-border">
+                  <p className="text-sm font-medium text-foreground">
                     {user.name}
                   </p>
-                  <p className="text-xs text-gray-500">{user.email}</p>
+                  <p className="text-xs text-foreground-muted">{user.email}</p>
                   <Badge variant="primary" size="sm" className="mt-2">
                     Free Plan
                   </Badge>
                 </div>
                 <div className="py-2">
-                  <button className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-50 transition-colors">
+                  <button className="w-full flex items-center gap-3 px-4 py-2 text-sm text-foreground-muted hover:text-foreground hover:bg-background-surface transition-colors">
                     <User className="w-4 h-4" />
                     Profile
                   </button>
-                  <button className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-50 transition-colors">
+                  <button className="w-full flex items-center gap-3 px-4 py-2 text-sm text-foreground-muted hover:text-foreground hover:bg-background-surface transition-colors">
                     <Settings className="w-4 h-4" />
                     Settings
                   </button>
                 </div>
-                <div className="py-2 border-t border-gray-200">
+                <div className="py-2 border-t border-border">
                   <button className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors">
                     <LogOut className="w-4 h-4" />
                     Sign out

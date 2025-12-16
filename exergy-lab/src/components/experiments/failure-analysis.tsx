@@ -27,7 +27,7 @@ export function FailureAnalysisComponent({ analysis }: FailureAnalysisProps) {
   const getRiskColor = (score: number) => {
     if (score >= 75) return { bg: 'bg-red-100', text: 'text-red-700', progress: 'error' as const }
     if (score >= 50) return { bg: 'bg-amber-100', text: 'text-amber-700', progress: 'warning' as const }
-    if (score >= 25) return { bg: 'bg-blue-100', text: 'text-blue-700', progress: 'default' as const }
+    if (score >= 25) return { bg: 'bg-primary/10', text: 'text-primary', progress: 'default' as const }
     return { bg: 'bg-green-100', text: 'text-green-700', progress: 'success' as const }
   }
 

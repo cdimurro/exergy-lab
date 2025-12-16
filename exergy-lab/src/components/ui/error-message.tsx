@@ -37,9 +37,9 @@ export function ErrorMessage({
     },
     info: {
       icon: Info,
-      bg: 'bg-blue-50',
-      border: 'border-blue-200',
-      iconColor: 'text-blue-600',
+      bg: 'bg-primary/10',
+      border: 'border-primary/20',
+      iconColor: 'text-primary',
       title: 'Information',
     },
   }

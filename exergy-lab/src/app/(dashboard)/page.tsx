@@ -15,6 +15,8 @@ import {
   ArrowRight,
   Lightbulb,
   Zap,
+  CheckCircle2,
+  Circle,
 } from 'lucide-react'
 import { Card, Button, Badge } from '@/components/ui'
 
@@ -230,6 +232,105 @@ export default function DashboardPage() {
             </div>
           </Card>
         </div>
+
+        {/* Onboarding Checklist - Show for new users */}
+        {stats.searches === 0 && stats.experiments === 0 && stats.teaReports === 0 && stats.discoveries === 0 && (
+          <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-accent-purple/5">
+            <div className="flex items-start gap-4">
+              <div className="p-3 rounded-xl bg-primary/10 shrink-0">
+                <Lightbulb className="w-6 h-6 text-primary" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-lg font-semibold text-foreground">Get Started with Exergy Lab</h3>
+                  <Badge variant="secondary" size="sm">
+                    New User
+                  </Badge>
+                </div>
+                <p className="text-sm text-foreground-muted mb-4">
+                  Complete these steps to unlock the full potential of our AI-powered research platform
+                </p>
+                <ul className="space-y-3">
+                  <li className="flex items-center gap-3 text-sm group">
+                    <Circle className="w-5 h-5 text-foreground-subtle shrink-0" />
+                    <span className="text-foreground-muted">
+                      Run your first <span className="font-medium text-foreground">Search</span> to find academic papers
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => router.push('/search')}
+                    >
+                      Go
+                      <ArrowRight className="w-3 h-3 ml-1" />
+                    </Button>
+                  </li>
+                  <li className="flex items-center gap-3 text-sm group">
+                    <Circle className="w-5 h-5 text-foreground-subtle shrink-0" />
+                    <span className="text-foreground-muted">
+                      Design an <span className="font-medium text-foreground">Experiment</span> with AI-generated protocols
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => router.push('/experiments')}
+                    >
+                      Go
+                      <ArrowRight className="w-3 h-3 ml-1" />
+                    </Button>
+                  </li>
+                  <li className="flex items-center gap-3 text-sm group">
+                    <Circle className="w-5 h-5 text-foreground-subtle shrink-0" />
+                    <span className="text-foreground-muted">
+                      Generate a <span className="font-medium text-foreground">TEA Report</span> for techno-economic analysis
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => router.push('/tea-generator')}
+                    >
+                      Go
+                      <ArrowRight className="w-3 h-3 ml-1" />
+                    </Button>
+                  </li>
+                  <li className="flex items-center gap-3 text-sm group">
+                    <Circle className="w-5 h-5 text-foreground-subtle shrink-0" />
+                    <span className="text-foreground-muted">
+                      Run a <span className="font-medium text-foreground">Simulation</span> using our 3-tier system
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => router.push('/simulations')}
+                    >
+                      Go
+                      <ArrowRight className="w-3 h-3 ml-1" />
+                    </Button>
+                  </li>
+                  <li className="flex items-center gap-3 text-sm group">
+                    <Circle className="w-5 h-5 text-foreground-subtle shrink-0" />
+                    <span className="text-foreground-muted">
+                      Try the <span className="font-medium text-foreground">Discovery Engine</span> to find novel innovations
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => router.push('/discovery')}
+                    >
+                      Go
+                      <ArrowRight className="w-3 h-3 ml-1" />
+                    </Button>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </Card>
+        )}
 
         {/* Quick Actions */}
         <div>

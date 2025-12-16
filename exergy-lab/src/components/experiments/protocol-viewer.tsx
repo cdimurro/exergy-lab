@@ -29,9 +29,9 @@ export function ProtocolViewer({ protocol, onExport }: ProtocolViewerProps) {
       case 'medium':
         return 'bg-amber-100 text-amber-700 border-amber-300'
       case 'low':
-        return 'bg-blue-100 text-blue-700 border-blue-300'
+        return 'bg-primary/10 text-primary border-primary/30'
       default:
-        return 'bg-gray-100 text-gray-700 border-gray-300'
+        return 'bg-background-surface text-foreground-muted border-border'
     }
   }
 
