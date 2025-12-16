@@ -22,7 +22,7 @@ const Badge = React.forwardRef<HTMLDivElement, BadgeProps>(
       error: 'bg-error/20 text-error border-error/30',
       info: 'bg-info/20 text-info border-info/30',
       primary: 'bg-primary/20 text-primary border-primary/30',
-      secondary: 'bg-accent-purple/20 text-accent-purple border-accent-purple/30',
+      secondary: 'bg-foreground-muted/10 text-foreground border-foreground-muted/30',
     }
 
     const sizes = {

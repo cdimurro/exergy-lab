@@ -3,17 +3,17 @@
 /* Exergy Lab Design System - Professional Dark Mode */
 :root {
   /* === BACKGROUNDS === */
-  /* Base/main background - brighter dark blue-grey */
-  --background: 215 25% 15%;            /* #1a2332 - brighter slate */
+  /* Base/main background - dark but visible */
+  --background: 215 25% 12%;            /* #171f2a - dark slate */
 
-  /* Elevated surfaces - lighter for more contrast */
-  --background-elevated: 217 28% 20%;   /* #28374a - slate-700 */
+  /* Elevated surfaces - clear contrast */
+  --background-elevated: 217 28% 18%;   /* #232f3e - slate-800 */
 
   /* Interactive surfaces - more prominent */
-  --background-surface: 215 25% 25%;    /* #364152 - lighter slate */
+  --background-surface: 215 25% 22%;    /* #2d3948 - medium slate */
 
   /* Hover states */
-  --background-hover: 217 28% 28%;      /* #3d4e63 - slate-600 */
+  --background-hover: 217 28% 26%;      /* #364555 - lighter slate */
 
   /* === TEXT/FOREGROUND === */
   /* Primary text - pure white for clarity */
@@ -32,22 +32,23 @@
   /* Prominent borders */
   --border-subtle: 217 25% 35%;         /* #4a5f7a - slate-500 */
 
-  /* === PRIMARY (Blue Accent) === */
-  /* Main accent color - vibrant blue */
-  --primary: 217 91% 60%;               /* #3b82f6 - blue-500 */
-  --primary-hover: 217 91% 70%;         /* #60a5fa - blue-400 */
-  --primary-foreground: 0 0% 100%;      /* White text on blue backgrounds */
+  /* === PRIMARY (Green Accent) === */
+  /* Main accent color - vibrant green for navigation/logos */
+  --primary: 160 84% 50%;               /* #22d3a2 - emerald-400 bright */
+  --primary-hover: 160 84% 55%;         /* #3be7b5 - emerald-300 */
+  --primary-foreground: 215 25% 12%;    /* Dark text on green backgrounds */
 
   /* === ACCENT COLORS === */
   /* Vibrant colors for variety, blues and greys dominant */
-  --accent-blue: 217 91% 65%;           /* #60a5fa - blue-400 brighter */
-  --accent-purple: 258 90% 70%;         /* #c4b5fd - purple-300 */
-  --accent-cyan: 189 94% 50%;           /* #22d3ee - cyan-400 */
-  --accent-amber: 38 92% 55%;           /* #fbbf24 - amber-400 */
+  --accent-blue: 217 91% 70%;           /* #60a5fa - blue-400 bright */
+  --accent-purple: 258 90% 75%;         /* #d4c5fd - purple-200 lighter */
+  --accent-cyan: 189 94% 55%;           /* #22d3ee - cyan-400 bright */
+  --accent-amber: 38 92% 60%;           /* #fbbf24 - amber-400 bright */
   --accent-rose: 351 95% 75%;           /* #fda4af - rose-300 */
-  --accent-green: 160 84% 45%;          /* #34d399 - emerald-400 subtle */
-  --accent-orange: 25 95% 60%;          /* #fb923c - orange-400 */
-  --accent-teal: 172 66% 55%;           /* #2dd4bf - teal-400 */
+  --accent-green: 160 84% 50%;          /* #34d399 - emerald-400 */
+  --accent-orange: 25 95% 65%;          /* #fb923c - orange-400 bright */
+  --accent-teal: 172 66% 60%;           /* #2dd4bf - teal-400 bright */
+  --accent-grey: 215 20% 70%;           /* #b0b8c3 - light grey for filters */
 
   /* === STATUS COLORS === */
   --success: 160 84% 45%;               /* #34d399 - emerald-400 subtle green */

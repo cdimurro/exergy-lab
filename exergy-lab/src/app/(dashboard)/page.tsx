@@ -78,7 +78,7 @@ export default function DashboardPage() {
       description: 'Find academic papers across multiple databases',
       icon: Search,
       href: '/search',
-      color: 'text-primary',
+      color: 'text-accent-blue',
       gradient: '',
     },
     {
@@ -135,7 +135,7 @@ export default function DashboardPage() {
   const getProjectColor = (type: string) => {
     switch (type) {
       case 'search':
-        return 'text-primary'
+        return 'text-accent-blue'
       case 'tea':
         return 'text-accent-cyan'
       case 'experiment':
@@ -193,8 +193,8 @@ export default function DashboardPage() {
                 <p className="text-sm text-foreground-muted mb-1">Searches</p>
                 <p className="text-2xl font-bold text-foreground">{stats.searches}</p>
               </div>
-              <div className="p-3 rounded-xl bg-primary/10">
-                <Search className="w-6 h-6 text-primary" />
+              <div className="p-3 rounded-xl bg-accent-blue/10">
+                <Search className="w-6 h-6 text-accent-blue" />
               </div>
             </div>
           </Card>
