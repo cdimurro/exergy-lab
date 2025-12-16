@@ -214,7 +214,7 @@ Respond with JSON:
       canModify: true,
       optional: false,
       estimatedDuration: 15000, // 15 seconds
-      estimatedCost: 0.10,       // API calls
+      estimatedCost: 0,          // Free - no API costs for search
     }
   }
 
@@ -261,7 +261,7 @@ Respond with JSON:
       canModify: true,
       optional: true,
       estimatedDuration: 20000, // 20 seconds
-      estimatedCost: 0.05,       // AI generation
+      estimatedCost: 0,          // Free - no API costs for experiment design
     }
   }
 
@@ -360,7 +360,7 @@ Respond with JSON:
       canModify: true,
       optional: true,
       estimatedDuration: 10000, // 10 seconds
-      estimatedCost: 0.02,       // Calculations
+      estimatedCost: 0,          // Free - calculations only
     }
   }
 
@@ -440,9 +440,11 @@ Respond with JSON:
     const toolCount = phases.reduce((sum, p) => sum + p.tools.length, 0)
     const durationMin = Math.ceil(totalDuration / 60000)
 
+    const costStr = totalCost > 0 ? ` with an estimated cost of $${totalCost.toFixed(2)}` : ''
+
     return `This workflow will ${phases.map(p => p.type.replace('_', ' ')).join(', then ')} to address: "${query}".
 
-It consists of ${phaseCount} phases with ${toolCount} tool executions, estimated to complete in ${durationMin} minutes with an estimated cost of $${totalCost.toFixed(2)}.`
+It consists of ${phaseCount} phases with ${toolCount} tool executions, estimated to complete in ${durationMin} minutes${costStr}.`
   }
 }
 

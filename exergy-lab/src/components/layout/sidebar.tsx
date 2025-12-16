@@ -26,11 +26,11 @@ interface NavItem {
 
 const mainNavItems: NavItem[] = [
   { name: 'Dashboard', href: '/', icon: Home },
+  { name: 'Discovery Engine', href: '/discovery', icon: Sparkles },
   { name: 'Search', href: '/search', icon: Search },
   { name: 'Experiments', href: '/experiments', icon: FlaskConical },
   { name: 'Simulations', href: '/simulations', icon: Cpu },
   { name: 'TEA Reports', href: '/tea-generator', icon: Calculator },
-  { name: 'Discovery Engine', href: '/discovery', icon: Sparkles },
 ]
 
 const secondaryNavItems: NavItem[] = [

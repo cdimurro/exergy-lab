@@ -61,7 +61,7 @@ export class RecommendationEngine {
           label: 'Expand Literature Search',
           description: 'Search additional sources or broaden domain coverage to increase confidence',
           estimatedTime: 5,
-          estimatedCost: 0.10,
+          estimatedCost: 0,
           parameters: {
             expandDomains: true,
             increaseMaxResults: true,
@@ -81,7 +81,7 @@ export class RecommendationEngine {
           label: 'Broaden Search Parameters',
           description: 'Adjust search query or expand date range to find more relevant sources',
           estimatedTime: 3,
-          estimatedCost: 0.05,
+          estimatedCost: 0,
         },
         estimatedImpact: 'Find 20-40 additional relevant sources',
       })
@@ -97,7 +97,7 @@ export class RecommendationEngine {
           label: 'Search Patent Databases',
           description: 'Query patent databases to understand IP landscape and commercial potential',
           estimatedTime: 4,
-          estimatedCost: 0.08,
+          estimatedCost: 0,
         },
         estimatedImpact: 'Identify 5-10 relevant patents',
       })
@@ -145,7 +145,7 @@ export class RecommendationEngine {
           label: 'Generate Experiment Protocols',
           description: 'Create detailed experimental designs based on research findings',
           estimatedTime: 8,
-          estimatedCost: 0.05,
+          estimatedCost: 0,
         },
         estimatedImpact: 'Generate 2-3 actionable protocols',
       })
@@ -161,7 +161,7 @@ export class RecommendationEngine {
           label: 'Design Alternative Protocols',
           description: 'Create backup experimental approaches with different methodologies',
           estimatedTime: 6,
-          estimatedCost: 0.03,
+          estimatedCost: 0,
         },
         estimatedImpact: 'Provide 1-2 alternative approaches',
       })
@@ -184,9 +184,9 @@ export class RecommendationEngine {
         reason: `Average simulation accuracy is ${simulations.averageAccuracy.toFixed(1)}%, below the target of 85%`,
         action: {
           label: 'Optimize Simulation Parameters',
-          description: 'Adjust parameters or increase iterations to improve accuracy',
+          description: 'Adjust parameters or increase iterations to improve accuracy (cloud GPU)',
           estimatedTime: 15,
-          estimatedCost: 0.25,
+          estimatedCost: 0.50, // Cloud GPU cost
           parameters: {
             increaseIterations: true,
             refineMesh: true,
@@ -206,7 +206,7 @@ export class RecommendationEngine {
           label: 'Run Simulations',
           description: 'Execute simulations to validate experimental designs',
           estimatedTime: 20,
-          estimatedCost: 0.15,
+          estimatedCost: 0, // Free unless using cloud GPU tier
         },
         estimatedImpact: 'Validate protocols before physical testing',
       })
@@ -237,7 +237,7 @@ export class RecommendationEngine {
           description:
             'Calculate LCOE, NPV, IRR, and create comprehensive techno-economic analysis',
           estimatedTime: 8,
-          estimatedCost: 0.02,
+          estimatedCost: 0,
         },
         estimatedImpact: 'Complete financial feasibility assessment',
       }
