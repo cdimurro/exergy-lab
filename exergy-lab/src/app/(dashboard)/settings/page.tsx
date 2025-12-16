@@ -1,8 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { Card, Text, Flex } from '@tremor/react'
-import { Button, Input, Badge } from '@/components/ui'
+import { Card, Button, Input, Badge } from '@/components/ui'
 import {
   User,
   Bell,
@@ -183,7 +182,7 @@ export default function SettingsPage() {
               </Card>
 
               <Card className="bg-background-elevated border-border">
-                <Flex justifyContent="between" alignItems="center">
+                <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-lg font-semibold text-foreground">
                       Two-Factor Authentication
@@ -195,7 +194,7 @@ export default function SettingsPage() {
                   <Button variant="secondary" leftIcon={<Shield className="w-4 h-4" />}>
                     Enable 2FA
                   </Button>
-                </Flex>
+                </div>
               </Card>
             </>
           )}
@@ -207,7 +206,7 @@ export default function SettingsPage() {
                   Current Plan
                 </h3>
                 <div className="p-4 rounded-lg bg-primary/10 border border-primary/30">
-                  <Flex justifyContent="between" alignItems="center">
+                  <div className="flex items-center justify-between">
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="text-lg font-semibold text-foreground">
@@ -222,7 +221,7 @@ export default function SettingsPage() {
                       </p>
                     </div>
                     <Button variant="secondary">Manage Subscription</Button>
-                  </Flex>
+                  </div>
                 </div>
               </Card>
 
@@ -328,7 +327,7 @@ export default function SettingsPage() {
               </Card>
 
               <Card className="bg-background-surface border-border">
-                <Flex alignItems="center" className="gap-3">
+                <div className="flex items-center gap-3">
                   <Globe className="w-5 h-5 text-foreground-subtle" />
                   <div>
                     <p className="font-medium text-foreground">API Documentation</p>
@@ -336,7 +335,7 @@ export default function SettingsPage() {
                       Learn how to integrate with the Exergy Lab API
                     </p>
                   </div>
-                </Flex>
+                </div>
               </Card>
             </>
           )}

@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import {
-  Flask Conical,
+  FlaskConical,
   Clock,
   DollarSign,
   AlertTriangle,

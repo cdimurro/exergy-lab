@@ -1,8 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { Card, Metric, Text, Flex, BadgeDelta, ProgressBar } from '@tremor/react'
-import { Button, Input, Badge, Tabs } from '@/components/ui'
+import { Card, Button, Input, Badge, Tabs } from '@/components/ui'
 import { CashFlowChart, CostBreakdownChart } from '@/components/charts'
 import { FileUploader, PDFPreview } from '@/components/tea'
 import {
@@ -679,89 +678,89 @@ export default function TEAGeneratorPage() {
                 <div className="space-y-4">
                   {/* LCOE */}
                   <div className="p-4 rounded-lg bg-background-surface">
-                    <Flex alignItems="center" justifyContent="between">
+                    <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="p-2 rounded-lg bg-primary/10">
                           <DollarSign className="w-5 h-5 text-primary" />
                         </div>
                         <div>
-                          <Text className="text-foreground-muted">LCOE</Text>
-                          <Metric className="text-foreground">
+                          <span className="text-foreground-muted">LCOE</span>
+                          <div className="text-foreground text-3xl font-bold">
                             ${result.lcoe}
                             <span className="text-sm font-normal text-foreground-muted">
                               /MWh
                             </span>
-                          </Metric>
+                          </div>
                         </div>
                       </div>
-                      <BadgeDelta
+                      <Badge
                         deltaType={result.lcoe < 50 ? 'increase' : 'decrease'}
                       >
                         {result.lcoe < 50 ? 'Competitive' : 'High'}
-                      </BadgeDelta>
-                    </Flex>
+                      </Badge>
+                    </div>
                   </div>
 
                   {/* NPV */}
                   <div className="p-4 rounded-lg bg-background-surface">
-                    <Flex alignItems="center" justifyContent="between">
+                    <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="p-2 rounded-lg bg-accent-blue/10">
                           <TrendingUp className="w-5 h-5 text-accent-blue" />
                         </div>
                         <div>
-                          <Text className="text-foreground-muted">NPV</Text>
-                          <Metric className="text-foreground">
+                          <span className="text-foreground-muted">NPV</span>
+                          <div className="text-foreground text-3xl font-bold">
                             {formatCurrency(result.npv)}
-                          </Metric>
+                          </div>
                         </div>
                       </div>
-                      <BadgeDelta
+                      <Badge
                         deltaType={result.npv > 0 ? 'increase' : 'decrease'}
                       >
                         {result.npv > 0 ? 'Profitable' : 'Unprofitable'}
-                      </BadgeDelta>
-                    </Flex>
+                      </Badge>
+                    </div>
                   </div>
 
                   {/* IRR */}
                   <div className="p-4 rounded-lg bg-background-surface">
-                    <Flex alignItems="center" justifyContent="between">
+                    <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="p-2 rounded-lg bg-accent-purple/10">
                           <Zap className="w-5 h-5 text-accent-purple" />
                         </div>
                         <div>
-                          <Text className="text-foreground-muted">IRR</Text>
-                          <Metric className="text-foreground">{result.irr}%</Metric>
+                          <span className="text-foreground-muted">IRR</span>
+                          <div className="text-foreground text-3xl font-bold">{result.irr}%</div>
                         </div>
                       </div>
-                      <BadgeDelta deltaType={result.irr > 10 ? 'increase' : 'unchanged'}>
+                      <Badge deltaType={result.irr > 10 ? 'increase' : 'unchanged'}>
                         {result.irr > 10 ? 'Strong' : 'Moderate'}
-                      </BadgeDelta>
-                    </Flex>
+                      </Badge>
+                    </div>
                   </div>
 
                   {/* Payback */}
                   <div className="p-4 rounded-lg bg-background-surface">
-                    <Flex alignItems="center" justifyContent="between">
+                    <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="p-2 rounded-lg bg-accent-amber/10">
                           <Clock className="w-5 h-5 text-accent-amber" />
                         </div>
                         <div>
-                          <Text className="text-foreground-muted">Payback</Text>
-                          <Metric className="text-foreground">
+                          <span className="text-foreground-muted">Payback</span>
+                          <div className="text-foreground text-3xl font-bold">
                             {result.payback_years}
                             <span className="text-sm font-normal text-foreground-muted">
                               {' '}
                               years
                             </span>
-                          </Metric>
+                          </div>
                         </div>
                       </div>
-                    </Flex>
-                    <ProgressBar
+                    </div>
+                    <div
                       value={(result.payback_years / input.project_lifetime_years) * 100}
                       color="amber"
                       className="mt-3"
@@ -776,30 +775,30 @@ export default function TEAGeneratorPage() {
                   Cost Summary
                 </h3>
                 <div className="space-y-3">
-                  <Flex>
-                    <Text className="text-foreground-muted">Total CAPEX</Text>
-                    <Text className="text-foreground font-medium">
+                  <div className="flex items-center justify-between">
+                    <span className="text-foreground-muted">Total CAPEX</span>
+                    <span className="text-foreground font-medium">
                       {formatCurrency(result.total_capex)}
-                    </Text>
-                  </Flex>
-                  <Flex>
-                    <Text className="text-foreground-muted">Annual OPEX</Text>
-                    <Text className="text-foreground font-medium">
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-foreground-muted">Annual OPEX</span>
+                    <span className="text-foreground font-medium">
                       {formatCurrency(result.annual_opex)}
-                    </Text>
-                  </Flex>
-                  <Flex>
-                    <Text className="text-foreground-muted">Annual Production</Text>
-                    <Text className="text-foreground font-medium">
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-foreground-muted">Annual Production</span>
+                    <span className="text-foreground font-medium">
                       {(result.annual_production_mwh / 1000).toFixed(0)} GWh
-                    </Text>
-                  </Flex>
-                  <Flex>
-                    <Text className="text-foreground-muted">Annual Revenue</Text>
-                    <Text className="text-foreground font-medium">
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-foreground-muted">Annual Revenue</span>
+                    <span className="text-foreground font-medium">
                       {formatCurrency(result.annual_revenue)}
-                    </Text>
-                  </Flex>
+                    </span>
+                  </div>
                 </div>
               </Card>
 
