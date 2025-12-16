@@ -20,7 +20,7 @@ import type {
 } from '@/types/workflow'
 import type { ToolName, ToolCall } from '@/types/agent'
 import type { Domain } from '@/types/discovery'
-import { executeWithTools } from '../ai/model-router'
+import { generateText } from '../ai/model-router'
 
 // ============================================================================
 // AI Plan Generation Types
@@ -135,14 +135,20 @@ Respond with JSON:
 }`
 
     try {
-      const response = await executeWithTools(analysisPrompt, {
+      // Use generateText (not executeWithTools) for pure JSON response
+      const content = await generateText('discovery', analysisPrompt, {
         model: 'fast',
         temperature: 0.3,
         maxTokens: 500,
       })
 
-      const content = response.type === 'text' ? response.content : ''
-      const analysis = JSON.parse(content)
+      // Clean markdown if present
+      let cleanedContent = content.trim()
+      if (cleanedContent.startsWith('```')) {
+        cleanedContent = cleanedContent.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
+      }
+
+      const analysis = JSON.parse(cleanedContent)
 
       // Apply user options overrides
       if (options?.includeExperiments !== false && analysis.needsExperiments) {
@@ -280,13 +286,12 @@ Respond ONLY with valid JSON (no markdown, no code blocks):
 }`
 
     try {
-      const response = await executeWithTools(planPrompt, {
+      // Use generateText (not executeWithTools) to get pure JSON without function calling
+      const content = await generateText('discovery', planPrompt, {
         model: 'quality',
         temperature: 0.7,
         maxTokens: 2500,
       })
-
-      const content = response.type === 'text' ? response.content : ''
 
       // Clean up response - remove any markdown code blocks if present
       let cleanedContent = content.trim()
@@ -294,10 +299,12 @@ Respond ONLY with valid JSON (no markdown, no code blocks):
         cleanedContent = cleanedContent.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
       }
 
+      console.log('[WorkflowPlanner] AI generated plan content:', cleanedContent.substring(0, 200) + '...')
+
       const aiPlan = JSON.parse(cleanedContent) as AIGeneratedPlan
       return aiPlan
     } catch (error) {
-      console.warn('[WorkflowPlanner] AI plan generation failed, using fallback:', error)
+      console.error('[WorkflowPlanner] AI plan generation failed:', error)
       return this.createFallbackPlan(query, domains, goals, requiredPhases)
     }
   }
