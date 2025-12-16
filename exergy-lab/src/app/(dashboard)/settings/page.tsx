@@ -2,6 +2,7 @@
 
 import * as React from 'react'
 import { Card, Button, Input, Badge } from '@/components/ui'
+import { useTheme, type Theme } from '@/hooks/use-theme'
 import {
   User,
   Bell,
@@ -28,6 +29,7 @@ const TABS = [
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = React.useState('profile')
+  const { theme, setTheme } = useTheme()
 
   return (
     <div className="space-y-6">
@@ -254,33 +256,35 @@ export default function SettingsPage() {
               </h3>
               <div className="grid grid-cols-3 gap-4">
                 {[
-                  { id: 'dark', label: 'Dark', icon: Moon, active: true },
-                  { id: 'light', label: 'Light', icon: Sun, active: false },
-                  { id: 'system', label: 'System', icon: Monitor, active: false },
-                ].map((theme) => {
-                  const Icon = theme.icon
+                  { id: 'dark' as Theme, label: 'Dark', icon: Moon },
+                  { id: 'light' as Theme, label: 'Light', icon: Sun },
+                  { id: 'system' as Theme, label: 'System', icon: Monitor },
+                ].map((themeOption) => {
+                  const Icon = themeOption.icon
+                  const isActive = theme === themeOption.id
                   return (
                     <button
-                      key={theme.id}
+                      key={themeOption.id}
+                      onClick={() => setTheme(themeOption.id)}
                       className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-colors ${
-                        theme.active
+                        isActive
                           ? 'border-primary bg-primary/10'
                           : 'border-border bg-background-surface hover:border-foreground-subtle'
                       }`}
                     >
                       <Icon
                         className={`w-6 h-6 ${
-                          theme.active ? 'text-primary' : 'text-foreground-muted'
+                          isActive ? 'text-primary' : 'text-foreground-muted'
                         }`}
                       />
                       <span
                         className={`text-sm font-medium ${
-                          theme.active ? 'text-primary' : 'text-foreground-muted'
+                          isActive ? 'text-primary' : 'text-foreground-muted'
                         }`}
                       >
-                        {theme.label}
+                        {themeOption.label}
                       </span>
-                      {theme.active && (
+                      {isActive && (
                         <Check className="w-4 h-4 text-primary" />
                       )}
                     </button>

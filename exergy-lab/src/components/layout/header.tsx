@@ -70,7 +70,7 @@ export function Header({ sidebarCollapsed = false }: HeaderProps) {
             <input
               type="text"
               placeholder="Search solutions, experiments, or datasets..."
-              className="w-full h-10 pl-10 pr-20 bg-white border border-border rounded-lg text-sm text-black placeholder:text-foreground-subtle focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
+              className="w-full h-10 pl-10 pr-20 bg-input-background border border-input-border rounded-lg text-sm text-foreground placeholder:text-foreground-subtle focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
             />
             <kbd className="absolute right-3 top-1/2 -translate-y-1/2 px-2 py-0.5 text-xs text-foreground-muted bg-background rounded border border-border">
               ⌘K

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter, JetBrains_Mono } from 'next/font/google'
 import { ClerkProvider } from '@clerk/nextjs'
+import { ThemeProvider } from '@/lib/theme-provider'
 import './globals.css'
 
 const inter = Inter({
@@ -37,11 +38,11 @@ export default function RootLayout({
   const hasValidClerkKey = clerkPublishableKey && !clerkPublishableKey.includes('your_key_here')
 
   const content = (
-    <html lang="en" className="dark">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased`}
       >
-        {children}
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   )
