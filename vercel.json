@@ -1,13 +1,3 @@
 {
-  "buildCommand": "cd exergy-lab && npm run build",
-  "outputDirectory": "exergy-lab/.next",
-  "installCommand": "cd exergy-lab && npm install",
-  "devCommand": "cd exergy-lab && npm run dev",
-  "framework": "nextjs",
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/exergy-lab/$1"
-    }
-  ]
+  "version": 2
 }
