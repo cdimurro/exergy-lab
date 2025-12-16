@@ -332,3 +332,132 @@ export async function* streamText(
 ): AsyncGenerator<string> {
   yield* aiRouter.stream(task, prompt, options)
 }
+
+// ============================================================================
+// Agent Support with Function Calling
+// ============================================================================
+
+import { FunctionDeclaration, GenerateResult } from '@/types/agent'
+import { getGlobalToolRegistry } from './tools/registry'
+
+/**
+ * Execute with function calling support (agent mode)
+ */
+export async function executeWithTools(
+  prompt: string,
+  options?: {
+    temperature?: number
+    maxTokens?: number
+    model?: 'fast' | 'quality'
+  }
+): Promise<GenerateResult> {
+  // Check rate limits for Gemini (primary provider for agent tasks)
+  if (!rateLimiter.canExecute('gemini')) {
+    throw new RateLimitError(
+      'gemini',
+      rateLimiter.getRetryAfter('gemini')
+    )
+  }
+
+  try {
+    // Get registered tools from global registry
+    const toolRegistry = getGlobalToolRegistry()
+    const tools = toolRegistry.toGeminiFunctionDeclarations()
+
+    // Execute with Gemini function calling
+    const geminiModel = options?.model === 'quality' ? 'pro' : 'flash'
+    const result = await gemini.generateWithTools(prompt, tools, {
+      model: geminiModel,
+      temperature: options?.temperature ?? 0.7,
+      maxOutputTokens: options?.maxTokens ?? 2048,
+    })
+
+    // Consume rate limit token
+    rateLimiter.consume('gemini')
+
+    return result
+  } catch (error) {
+    console.error('Agent execution with tools error:', error)
+    throw new Error(`Agent execution failed: ${error}`)
+  }
+}
+
+/**
+ * Continue agent conversation after function calls
+ */
+export async function continueAfterFunctionCalls(
+  prompt: string,
+  previousCalls: Array<{ name: string; args: Record<string, any> }>,
+  functionResponses: Array<{ name: string; response: any }>,
+  options?: {
+    temperature?: number
+    maxTokens?: number
+    model?: 'fast' | 'quality'
+  }
+): Promise<string> {
+  if (!rateLimiter.canExecute('gemini')) {
+    throw new RateLimitError(
+      'gemini',
+      rateLimiter.getRetryAfter('gemini')
+    )
+  }
+
+  try {
+    const toolRegistry = getGlobalToolRegistry()
+    const tools = toolRegistry.toGeminiFunctionDeclarations()
+
+    const geminiModel = options?.model === 'quality' ? 'pro' : 'flash'
+    const result = await gemini.continueWithFunctionResponse(
+      prompt,
+      tools,
+      previousCalls,
+      functionResponses,
+      {
+        model: geminiModel,
+        temperature: options?.temperature ?? 0.7,
+        maxOutputTokens: options?.maxTokens ?? 2048,
+      }
+    )
+
+    rateLimiter.consume('gemini')
+    return result
+  } catch (error) {
+    console.error('Continue after function calls error:', error)
+    throw new Error(`Failed to continue after function calls: ${error}`)
+  }
+}
+
+/**
+ * Generate structured output with schema validation
+ */
+export async function generateStructured<T = any>(
+  prompt: string,
+  schema: string,
+  options?: {
+    temperature?: number
+    maxTokens?: number
+    model?: 'fast' | 'quality'
+  }
+): Promise<T> {
+  if (!rateLimiter.canExecute('gemini')) {
+    throw new RateLimitError(
+      'gemini',
+      rateLimiter.getRetryAfter('gemini')
+    )
+  }
+
+  try {
+    const geminiModel = options?.model === 'quality' ? 'pro' : 'flash'
+    const result = await gemini.generateStructuredOutput<T>(prompt, schema, {
+      model: geminiModel,
+      temperature: options?.temperature ?? 0.3,
+      maxOutputTokens: options?.maxTokens ?? 2048,
+    })
+
+    rateLimiter.consume('gemini')
+    return result
+  } catch (error) {
+    console.error('Structured output generation error:', error)
+    throw new Error(`Structured output generation failed: ${error}`)
+  }
+}

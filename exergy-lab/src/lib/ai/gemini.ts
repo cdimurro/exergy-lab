@@ -1,4 +1,5 @@
-import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai'
+import { GoogleGenerativeAI, GenerativeModel, FunctionDeclaration as GeminiFunctionDeclaration, FunctionCallPart } from '@google/generative-ai'
+import { FunctionDeclaration, FunctionCall, GenerateResult } from '@/types/agent'
 
 // Initialize Gemini client
 const apiKey = process.env.GOOGLE_AI_API_KEY || ''
@@ -18,6 +19,8 @@ export interface GeminiOptions {
   maxOutputTokens?: number
   topP?: number
   topK?: number
+  tools?: FunctionDeclaration[] // Function declarations for tool use
+  responseMimeType?: string // For structured output (e.g., 'application/json')
 }
 
 /**
@@ -201,4 +204,204 @@ export async function countTokens(
     // Return estimate if counting fails
     return Math.ceil(text.length / 4)
   }
+}
+
+// ============================================================================
+// Function Calling Support
+// ============================================================================
+
+/**
+ * Convert our FunctionDeclaration format to Gemini's format
+ */
+function convertToGeminiFunctionDeclaration(
+  func: FunctionDeclaration
+): GeminiFunctionDeclaration {
+  return {
+    name: func.name,
+    description: func.description,
+    parameters: func.parameters,
+  }
+}
+
+/**
+ * Generate text with function calling support
+ */
+export async function generateWithTools(
+  prompt: string,
+  tools: FunctionDeclaration[],
+  options: GeminiOptions = {}
+): Promise<GenerateResult> {
+  const {
+    model = 'flash',
+    temperature = 0.7,
+    maxOutputTokens = 2048,
+    topP = 0.95,
+    topK = 40,
+    responseMimeType,
+  } = options
+
+  try {
+    // Convert tools to Gemini format
+    const geminiTools = tools.map(convertToGeminiFunctionDeclaration)
+
+    const generativeModel: GenerativeModel = genAI.getGenerativeModel({
+      model: MODELS[model],
+      tools: [{ functionDeclarations: geminiTools }],
+      generationConfig: {
+        temperature,
+        maxOutputTokens,
+        topP,
+        topK,
+        ...(responseMimeType && { responseMimeType }),
+      },
+    })
+
+    const result = await generativeModel.generateContent(prompt)
+    const response = result.response
+
+    // Check if AI decided to call functions
+    const functionCalls = response.functionCalls()
+
+    if (functionCalls && functionCalls.length > 0) {
+      // AI wants to call functions
+      const calls: FunctionCall[] = functionCalls.map((fc: FunctionCallPart) => ({
+        name: fc.name,
+        args: fc.args as Record<string, any>,
+      }))
+
+      return {
+        type: 'function_call',
+        calls,
+      }
+    }
+
+    // Regular text response
+    return {
+      type: 'text',
+      content: response.text(),
+    }
+  } catch (error) {
+    console.error('Gemini function calling error:', error)
+    throw new Error(`Gemini generation with tools failed: ${error}`)
+  }
+}
+
+/**
+ * Continue conversation after function calls with results
+ */
+export async function continueWithFunctionResponse(
+  prompt: string,
+  tools: FunctionDeclaration[],
+  previousCalls: FunctionCall[],
+  functionResponses: Array<{ name: string; response: any }>,
+  options: GeminiOptions = {}
+): Promise<string> {
+  const {
+    model = 'flash',
+    temperature = 0.7,
+    maxOutputTokens = 2048,
+  } = options
+
+  try {
+    const geminiTools = tools.map(convertToGeminiFunctionDeclaration)
+
+    const generativeModel: GenerativeModel = genAI.getGenerativeModel({
+      model: MODELS[model],
+      tools: [{ functionDeclarations: geminiTools }],
+      generationConfig: {
+        temperature,
+        maxOutputTokens,
+      },
+    })
+
+    // Build the conversation history
+    const history = [
+      {
+        role: 'user',
+        parts: [{ text: prompt }],
+      },
+      {
+        role: 'model',
+        parts: previousCalls.map((call) => ({
+          functionCall: {
+            name: call.name,
+            args: call.args,
+          },
+        })),
+      },
+      {
+        role: 'function',
+        parts: functionResponses.map((fr) => ({
+          functionResponse: {
+            name: fr.name,
+            response: fr.response,
+          },
+        })),
+      },
+    ]
+
+    // Create chat with history
+    const chat = generativeModel.startChat({
+      history: history as any,
+    })
+
+    // Get final response
+    const result = await chat.sendMessage('')
+    return result.response.text()
+  } catch (error) {
+    console.error('Gemini function response continuation error:', error)
+    throw new Error(`Failed to continue with function response: ${error}`)
+  }
+}
+
+/**
+ * Generate structured JSON output
+ */
+export async function generateStructuredOutput<T = any>(
+  prompt: string,
+  schema: string, // JSON schema description
+  options: GeminiOptions = {}
+): Promise<T> {
+  const {
+    model = 'flash',
+    temperature = 0.3, // Lower temperature for structured output
+    maxOutputTokens = 2048,
+  } = options
+
+  try {
+    const fullPrompt = `${prompt}\n\nRespond with valid JSON matching this schema:\n${schema}`
+
+    const generativeModel: GenerativeModel = genAI.getGenerativeModel({
+      model: MODELS[model],
+      generationConfig: {
+        temperature,
+        maxOutputTokens,
+        responseMimeType: 'application/json',
+      },
+    })
+
+    const result = await generativeModel.generateContent(fullPrompt)
+    const response = result.response
+    const text = response.text()
+
+    // Parse JSON
+    return JSON.parse(text) as T
+  } catch (error) {
+    console.error('Gemini structured output error:', error)
+    throw new Error(`Structured output generation failed: ${error}`)
+  }
+}
+
+/**
+ * Helper to extract function calls from response (if any)
+ */
+export function extractFunctionCalls(response: any): FunctionCall[] | null {
+  if (!response.functionCalls || response.functionCalls().length === 0) {
+    return null
+  }
+
+  return response.functionCalls().map((fc: FunctionCallPart) => ({
+    name: fc.name,
+    args: fc.args as Record<string, any>,
+  }))
 }
