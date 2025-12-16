@@ -4,6 +4,7 @@ import * as React from 'react'
 import { AlertCircle, Sparkles } from 'lucide-react'
 import { SearchBar, PaperCard, FilterPanel } from '@/components/search'
 import { Skeleton } from '@/components/ui'
+import { useActivityTracking } from '@/hooks/use-activity-tracking'
 import type { SearchQuery, SearchResult, SearchFilters, Paper, SavedPaper } from '@/types/search'
 
 export default function SearchPage() {
@@ -12,6 +13,7 @@ export default function SearchPage() {
   const [error, setError] = React.useState<string | null>(null)
   const [filters, setFilters] = React.useState<SearchFilters>({})
   const [savedPapers, setSavedPapers] = React.useState<Set<string>>(new Set())
+  const { trackSearch, trackError, trackFieldInput } = useActivityTracking()
 
   // Load saved papers from localStorage on mount
   React.useEffect(() => {
@@ -29,6 +31,11 @@ export default function SearchPage() {
   const handleSearch = async (query: string) => {
     setIsLoading(true)
     setError(null)
+
+    // Track the search query input
+    trackFieldInput('search_query', query, { filters })
+
+    const startTime = Date.now()
 
     try {
       const searchQuery: SearchQuery = {
@@ -51,9 +58,16 @@ export default function SearchPage() {
 
       const result: SearchResult = await response.json()
       setSearchResult(result)
+
+      // Track successful search with results
+      await trackSearch(query, filters, result.papers)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred during search')
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred during search'
+      setError(errorMessage)
       setSearchResult(null)
+
+      // Track search error
+      await trackError('search_execute', err instanceof Error ? err : new Error(errorMessage), { query, filters })
     } finally {
       setIsLoading(false)
     }
