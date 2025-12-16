@@ -48,7 +48,7 @@ export function TierSelector({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-foreground">Select Computational Tier</h3>
+        <h3 className="text-lg font-semibold text-white">Select Computational Tier</h3>
         {recommendation && (
           <Badge variant="primary" size="sm">
             Recommended: {tiers.find((t) => t.tier === recommendation)?.name}
@@ -72,7 +72,7 @@ export function TierSelector({
                 ${
                   isSelected
                     ? `${colors.border} ${colors.bg} shadow-md scale-105`
-                    : 'border-border bg-background-elevated hover:border-primary/30'
+                    : 'border-border bg-card-dark hover:border-primary/30'
                 }
               `}
             >
@@ -97,38 +97,38 @@ export function TierSelector({
               {/* Icon */}
               <div
                 className={`flex items-center justify-center w-12 h-12 rounded-lg mb-3 ${
-                  isSelected ? colors.bg : 'bg-background-surface'
+                  isSelected ? colors.bg : 'bg-page-background'
                 }`}
               >
-                <Icon className={`w-6 h-6 ${isSelected ? colors.icon : 'text-foreground-muted'}`} />
+                <Icon className={`w-6 h-6 ${isSelected ? colors.icon : 'text-white'}`} />
               </div>
 
               {/* Title */}
               <h4
-                className={`font-semibold mb-1 ${isSelected ? colors.text : 'text-foreground'}`}
+                className={`font-semibold mb-1 ${isSelected ? colors.text : 'text-white'}`}
               >
                 {tier.name}
               </h4>
 
               {/* Description */}
-              <p className="text-xs text-foreground-muted mb-3">{tier.description}</p>
+              <p className="text-xs text-foreground-subtle mb-3">{tier.description}</p>
 
               {/* Stats */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-xs">
-                  <Clock className="w-3.5 h-3.5 text-foreground-muted" />
-                  <span className="text-foreground-muted">{tier.estimatedTime}</span>
+                  <Clock className="w-3.5 h-3.5 text-foreground-subtle" />
+                  <span className="text-foreground-subtle">{tier.estimatedTime}</span>
                 </div>
 
                 <div className="flex items-center gap-2 text-xs">
-                  <Target className="w-3.5 h-3.5 text-foreground-muted" />
-                  <span className="text-foreground-muted">Accuracy: {tier.accuracy}</span>
+                  <Target className="w-3.5 h-3.5 text-foreground-subtle" />
+                  <span className="text-foreground-subtle">Accuracy: {tier.accuracy}</span>
                 </div>
 
                 <div className="flex items-center gap-2 text-xs">
-                  <DollarSign className="w-3.5 h-3.5 text-foreground-muted" />
+                  <DollarSign className="w-3.5 h-3.5 text-foreground-subtle" />
                   <span
-                    className={`font-medium ${tier.cost === 'FREE' ? 'text-green-600' : 'text-foreground-muted'}`}
+                    className={`font-medium ${tier.cost === 'FREE' ? 'text-primary' : 'text-foreground-subtle'}`}
                   >
                     {tier.cost}
                   </span>
@@ -140,9 +140,9 @@ export function TierSelector({
       </div>
 
       {/* Comparison Note */}
-      <div className="p-4 rounded-lg bg-background-surface border border-border">
-        <p className="text-xs text-foreground-muted">
-          <strong className="text-foreground">💡 Choosing a tier:</strong> Local is fastest for
+      <div className="p-4 rounded-lg bg-card-dark border border-border">
+        <p className="text-xs text-foreground-subtle">
+          <strong className="text-white">💡 Choosing a tier:</strong> Local is fastest for
           quick estimates. Browser AI provides better accuracy with ML predictions. Cloud GPU
           delivers production-grade results for critical applications.
         </p>

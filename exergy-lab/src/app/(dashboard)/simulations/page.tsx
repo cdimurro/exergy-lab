@@ -124,7 +124,7 @@ export default function SimulationsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-6">
+    <div className="min-h-screen p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -134,8 +134,8 @@ export default function SimulationsPage() {
                 <Cpu className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-foreground">Simulations</h1>
-                <p className="text-sm text-foreground-muted mt-1">
+                <h1 className="text-3xl font-bold text-white">Simulations</h1>
+                <p className="text-sm text-foreground-subtle mt-1">
                   3-tier computational system for clean energy simulations
                 </p>
               </div>

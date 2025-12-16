@@ -15,6 +15,9 @@
   /* Content cards - white */
   --card-background: 0 0% 100%;         /* #ffffff - white cards */
 
+  /* Dark card background - for cards on dark pages */
+  --card-dark: 217 33% 22%;             /* #283647 - slightly lighter than page bg */
+
   /* === TEXT/FOREGROUND === */
   /* Sidebar text - white on light blue-grey */
   --foreground: 0 0% 100%;              /* #ffffff - white */
@@ -100,6 +103,7 @@
   --color-background-surface: hsl(var(--background-surface));
   --color-page-background: hsl(var(--page-background));
   --color-card-background: hsl(var(--card-background));
+  --color-card-dark: hsl(var(--card-dark));
   --color-foreground: hsl(var(--foreground));
   --color-foreground-selected: hsl(var(--foreground-selected));
   --color-foreground-dark: hsl(var(--foreground-dark));
