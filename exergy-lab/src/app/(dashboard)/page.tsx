@@ -78,7 +78,7 @@ export default function DashboardPage() {
       description: 'Find academic papers across multiple databases',
       icon: Search,
       href: '/search',
-      color: 'text-accent-blue',
+      color: 'text-primary',
       gradient: '',
     },
     {
@@ -94,7 +94,7 @@ export default function DashboardPage() {
       description: 'Create techno-economic analysis reports',
       icon: Calculator,
       href: '/tea-generator',
-      color: 'text-primary',
+      color: 'text-accent-cyan',
       gradient: '',
     },
     {
@@ -102,7 +102,7 @@ export default function DashboardPage() {
       description: 'Execute 3-tier computational simulations',
       icon: Cpu,
       href: '/simulations',
-      color: 'text-accent-orange',
+      color: 'text-accent-amber',
       gradient: '',
     },
     {
@@ -135,13 +135,13 @@ export default function DashboardPage() {
   const getProjectColor = (type: string) => {
     switch (type) {
       case 'search':
-        return 'text-accent-blue'
-      case 'tea':
         return 'text-primary'
+      case 'tea':
+        return 'text-accent-cyan'
       case 'experiment':
         return 'text-accent-purple'
       case 'simulation':
-        return 'text-accent-orange'
+        return 'text-accent-amber'
       case 'discovery':
         return 'text-accent-rose'
       default:
@@ -193,8 +193,8 @@ export default function DashboardPage() {
                 <p className="text-sm text-foreground-muted mb-1">Searches</p>
                 <p className="text-2xl font-bold text-foreground">{stats.searches}</p>
               </div>
-              <div className="p-3 rounded-xl bg-accent-blue/10">
-                <Search className="w-6 h-6 text-accent-blue" />
+              <div className="p-3 rounded-xl bg-primary/10">
+                <Search className="w-6 h-6 text-primary" />
               </div>
             </div>
           </Card>
@@ -217,8 +217,8 @@ export default function DashboardPage() {
                 <p className="text-sm text-foreground-muted mb-1">TEA Reports</p>
                 <p className="text-2xl font-bold text-foreground">{stats.teaReports}</p>
               </div>
-              <div className="p-3 rounded-xl bg-primary/10">
-                <Calculator className="w-6 h-6 text-primary" />
+              <div className="p-3 rounded-xl bg-accent-cyan/10">
+                <Calculator className="w-6 h-6 text-accent-cyan" />
               </div>
             </div>
           </Card>
@@ -240,8 +240,8 @@ export default function DashboardPage() {
         {stats.searches === 0 && stats.experiments === 0 && stats.teaReports === 0 && stats.discoveries === 0 && (
           <Card className="border-primary/30">
             <div className="flex items-start gap-4">
-              <div className="p-3 rounded-xl bg-primary/10 shrink-0">
-                <Lightbulb className="w-6 h-6 text-primary" />
+              <div className="p-3 rounded-xl bg-accent-amber/10 shrink-0">
+                <Lightbulb className="w-6 h-6 text-accent-amber" />
               </div>
               <div className="flex-1">
                 <div className="flex items-center justify-between mb-3">
@@ -338,7 +338,7 @@ export default function DashboardPage() {
         {/* Quick Actions */}
         <div>
           <div className="flex items-center gap-2 mb-4">
-            <Zap className="w-5 h-5 text-primary" />
+            <Zap className="w-5 h-5 text-accent-amber" />
             <h2 className="text-xl font-semibold text-foreground">Quick Actions</h2>
           </div>
 
@@ -373,7 +373,7 @@ export default function DashboardPage() {
         {recentProjects.length > 0 && (
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <Clock className="w-5 h-5 text-primary" />
+              <Clock className="w-5 h-5 text-accent-cyan" />
               <h2 className="text-xl font-semibold text-foreground">Recent Activity</h2>
             </div>
 
@@ -415,8 +415,8 @@ export default function DashboardPage() {
         {recentProjects.length === 0 && (
           <Card className="border-primary/30">
             <div className="text-center py-8">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-4">
-                <Lightbulb className="w-8 h-8 text-primary" />
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-accent-amber/10 mb-4">
+                <Lightbulb className="w-8 h-8 text-accent-amber" />
               </div>
               <h3 className="text-xl font-semibold text-foreground mb-2">Get Started</h3>
               <p className="text-foreground-muted mb-6 max-w-md mx-auto">
@@ -447,21 +447,21 @@ export default function DashboardPage() {
               <h3 className="font-semibold text-foreground mb-2">Pro Tips</h3>
               <ul className="space-y-2 text-sm text-foreground-muted">
                 <li className="flex items-start gap-2">
-                  <span className="text-primary shrink-0">•</span>
+                  <span className="text-accent-cyan shrink-0">•</span>
                   <span>
                     Use the Discovery Engine to find novel cross-domain innovations and automatically
                     generate experiments
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-primary shrink-0">•</span>
+                  <span className="text-accent-cyan shrink-0">•</span>
                   <span>
                     Upload existing data files to TEA Reports for AI-powered parameter extraction and
                     analysis
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-primary shrink-0">•</span>
+                  <span className="text-accent-cyan shrink-0">•</span>
                   <span>
                     Start with Tier 1 simulations (free, fast) and upgrade to higher tiers for
                     production accuracy

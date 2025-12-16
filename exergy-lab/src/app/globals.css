@@ -3,74 +3,74 @@
 /* Exergy Lab Design System - Professional Dark Mode */
 :root {
   /* === BACKGROUNDS === */
-  /* Base/main background - deep dark blue-grey */
-  --background: 222 47% 11%;            /* #0f172a - slate-900 */
+  /* Base/main background - brighter dark blue-grey */
+  --background: 215 25% 15%;            /* #1a2332 - brighter slate */
 
-  /* Elevated surfaces - slightly lighter */
-  --background-elevated: 217 33% 17%;   /* #1e293b - slate-800 */
+  /* Elevated surfaces - lighter for more contrast */
+  --background-elevated: 217 28% 20%;   /* #28374a - slate-700 */
 
   /* Interactive surfaces - more prominent */
-  --background-surface: 215 25% 20%;    /* #252f3f - slate-800 lighter */
+  --background-surface: 215 25% 25%;    /* #364152 - lighter slate */
 
   /* Hover states */
-  --background-hover: 217 33% 23%;      /* #2d3e50 - slate-700 */
+  --background-hover: 217 28% 28%;      /* #3d4e63 - slate-600 */
 
   /* === TEXT/FOREGROUND === */
-  /* Primary text - white/near-white */
-  --foreground: 210 20% 98%;            /* #f8fafc - slate-50 */
+  /* Primary text - pure white for clarity */
+  --foreground: 0 0% 100%;              /* #ffffff - white */
 
-  /* Secondary text - light grey */
-  --foreground-muted: 215 16% 65%;      /* #94a3b8 - slate-400 */
+  /* Secondary text - brighter grey */
+  --foreground-muted: 215 20% 75%;      /* #b4bcc8 - slate-300 */
 
   /* Tertiary text - medium grey */
-  --foreground-subtle: 215 20% 50%;     /* #64748b - slate-500 */
+  --foreground-subtle: 215 16% 60%;     /* #8896a8 - slate-400 */
 
   /* === BORDERS === */
-  /* Standard borders - subtle grey */
-  --border: 217 33% 25%;                /* #334155 - slate-700 */
+  /* Standard borders - lighter for visibility */
+  --border: 217 28% 30%;                /* #3f5166 - slate-600 */
 
   /* Prominent borders */
-  --border-subtle: 217 33% 30%;         /* #475569 - slate-600 */
+  --border-subtle: 217 25% 35%;         /* #4a5f7a - slate-500 */
 
-  /* === PRIMARY (Light Green Accent) === */
-  /* Main accent color - subtle emerald/teal */
-  --primary: 160 84% 39%;               /* #10b981 - emerald-500 */
-  --primary-hover: 160 84% 45%;         /* #34d399 - emerald-400 */
-  --primary-foreground: 222 47% 11%;    /* Dark text on green backgrounds */
+  /* === PRIMARY (Blue Accent) === */
+  /* Main accent color - vibrant blue */
+  --primary: 217 91% 60%;               /* #3b82f6 - blue-500 */
+  --primary-hover: 217 91% 70%;         /* #60a5fa - blue-400 */
+  --primary-foreground: 0 0% 100%;      /* White text on blue backgrounds */
 
   /* === ACCENT COLORS === */
-  /* Keep some variety but adjusted for dark mode */
-  --accent-blue: 217 91% 60%;           /* #3b82f6 - blue-500 */
-  --accent-purple: 258 90% 66%;         /* #a78bfa - purple-400 */
-  --accent-cyan: 189 94% 43%;           /* #06b6d4 - cyan-500 */
-  --accent-amber: 38 92% 50%;           /* #f59e0b - amber-500 */
-  --accent-rose: 351 95% 71%;           /* #fb7185 - rose-400 */
-  --accent-green: 160 84% 39%;          /* #10b981 - emerald-500 (primary) */
-  --accent-orange: 25 95% 53%;          /* #f97316 - orange-500 */
-  --accent-teal: 172 66% 50%;           /* #14b8a6 - teal-500 */
+  /* Vibrant colors for variety, blues and greys dominant */
+  --accent-blue: 217 91% 65%;           /* #60a5fa - blue-400 brighter */
+  --accent-purple: 258 90% 70%;         /* #c4b5fd - purple-300 */
+  --accent-cyan: 189 94% 50%;           /* #22d3ee - cyan-400 */
+  --accent-amber: 38 92% 55%;           /* #fbbf24 - amber-400 */
+  --accent-rose: 351 95% 75%;           /* #fda4af - rose-300 */
+  --accent-green: 160 84% 45%;          /* #34d399 - emerald-400 subtle */
+  --accent-orange: 25 95% 60%;          /* #fb923c - orange-400 */
+  --accent-teal: 172 66% 55%;           /* #2dd4bf - teal-400 */
 
   /* === STATUS COLORS === */
-  --success: 160 84% 39%;               /* #10b981 - emerald-500 (matches primary) */
-  --warning: 38 92% 50%;                /* #f59e0b - amber-500 */
-  --error: 0 84% 60%;                   /* #ef4444 - red-500 */
-  --info: 217 91% 60%;                  /* #3b82f6 - blue-500 */
+  --success: 160 84% 45%;               /* #34d399 - emerald-400 subtle green */
+  --warning: 38 92% 55%;                /* #fbbf24 - amber-400 */
+  --error: 0 84% 65%;                   /* #f87171 - red-400 */
+  --info: 217 91% 65%;                  /* #60a5fa - blue-400 */
 
   /* === CHART COLORS === */
-  /* Energy source colors - adjusted for dark mode visibility */
-  --chart-coal: 215 25% 40%;            /* #475569 darker slate */
-  --chart-oil: 25 95% 53%;              /* #f97316 orange */
-  --chart-gas: 189 94% 43%;             /* #06b6d4 cyan */
-  --chart-nuclear: 258 90% 66%;         /* #a78bfa purple */
-  --chart-hydro: 217 91% 60%;           /* #3b82f6 blue */
-  --chart-wind: 172 66% 50%;            /* #14b8a6 teal */
-  --chart-solar: 38 92% 50%;            /* #f59e0b amber */
-  --chart-biomass: 160 84% 39%;         /* #10b981 emerald */
-  --chart-geothermal: 351 95% 71%;      /* #fb7185 rose */
-  --chart-other: 142 76% 36%;           /* #16a34a green */
+  /* Energy source colors - brighter for better visibility */
+  --chart-coal: 215 25% 50%;            /* #6b7989 brighter slate */
+  --chart-oil: 25 95% 60%;              /* #fb923c orange-400 */
+  --chart-gas: 189 94% 50%;             /* #22d3ee cyan-400 */
+  --chart-nuclear: 258 90% 70%;         /* #c4b5fd purple-300 */
+  --chart-hydro: 217 91% 65%;           /* #60a5fa blue-400 */
+  --chart-wind: 172 66% 55%;            /* #2dd4bf teal-400 */
+  --chart-solar: 38 92% 55%;            /* #fbbf24 amber-400 */
+  --chart-biomass: 160 84% 45%;         /* #34d399 emerald-400 */
+  --chart-geothermal: 351 95% 75%;      /* #fda4af rose-300 */
+  --chart-other: 142 76% 45%;           /* #4ade80 green-400 */
 
   /* Fossil vs Clean */
-  --chart-fossil: 0 84% 60%;            /* #ef4444 - red */
-  --chart-clean: 160 84% 39%;           /* #10b981 - emerald */
+  --chart-fossil: 0 84% 65%;            /* #f87171 - red-400 */
+  --chart-clean: 160 84% 45%;           /* #34d399 - emerald-400 */
 
   /* Radius */
   --radius-sm: 0.375rem;
