@@ -1,0 +1,13 @@
+# Robots.txt for Exergy Lab
+# https://www.robotstxt.org/robotstxt.html
+
+User-agent: *
+Allow: /
+
+# Disallow authentication pages
+Disallow: /sign-in
+Disallow: /sign-up
+Disallow: /api/
+
+# Sitemap
+Sitemap: https://your-app.vercel.app/sitemap.xml
