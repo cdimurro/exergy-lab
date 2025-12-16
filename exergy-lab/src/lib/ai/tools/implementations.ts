@@ -43,15 +43,15 @@ async function searchPapersHandler(params: z.infer<typeof searchPapersSchema>) {
     const papers = results.sources
       .filter(s => s.type === 'academic-paper' || s.type === 'patent')
       .slice(0, maxResults)
-      .map(source => ({
+      .map((source: any) => ({
         id: source.id,
         title: source.title,
         authors: source.authors || [],
         abstract: source.abstract,
         url: source.url,
-        doi: source.doi,
+        doi: source.doi || undefined,
         citationCount: source.citationCount || 0,
-        publicationDate: source.publishedDate,
+        publicationDate: source.publishedDate || source.publicationDate,
         relevanceScore: source.relevanceScore,
         type: source.type,
       }))
@@ -197,7 +197,7 @@ export const extractDataTool: ToolDeclaration = {
 
 const calculateMetricsSchema = z.object({
   type: z.enum(['tea', 'efficiency', 'emissions', 'cost', 'energy']).describe('Type of calculation'),
-  data: z.record(z.any()).describe('Input data for calculation'),
+  data: z.record(z.string(), z.any()).describe('Input data for calculation'),
   parameters: z.object({
     discountRate: z.number().optional(),
     projectLifetime: z.number().optional(),
@@ -284,7 +284,7 @@ export const calculateMetricsTool: ToolDeclaration = {
 const runSimulationSchema = z.object({
   tier: z.enum(['tier1', 'tier2', 'tier3']).default('tier1').describe('Simulation tier (tier1=local, tier2=browser ML, tier3=cloud GPU)'),
   simulationType: z.string().describe('Type of simulation (e.g., "solar_panel", "battery_storage", "wind_turbine")'),
-  parameters: z.record(z.any()).describe('Simulation parameters'),
+  parameters: z.record(z.string(), z.any()).describe('Simulation parameters'),
   duration: z.number().optional().describe('Simulation duration in time units'),
 })
 
@@ -371,7 +371,7 @@ const designExperimentSchema = z.object({
 })
 
 async function designExperimentHandler(params: z.infer<typeof designExperimentSchema>) {
-  const { goal, referenceResearch = [], constraints = {} } = params
+  const { goal, referenceResearch = [], constraints = {} as z.infer<typeof designExperimentSchema>['constraints'] } = params
 
   console.log('[designExperiment] Designing protocol for:', goal.description)
 
@@ -390,9 +390,9 @@ Reference Research:
 ${referenceResearch.map(r => `- ${r.title}: ${r.methodology}`).join('\n')}
 ` : ''}
 
-${constraints.budget ? `Budget: $${constraints.budget}` : ''}
-${constraints.timeline ? `Timeline: ${constraints.timeline}` : ''}
-Safety Level: ${constraints.safetyLevel || 'standard'}
+${constraints?.budget ? `Budget: $${constraints.budget}` : ''}
+${constraints?.timeline ? `Timeline: ${constraints.timeline}` : ''}
+Safety Level: ${constraints?.safetyLevel || 'standard'}
 
 Generate a complete experimental protocol with:
 1. Materials list with quantities and specifications
@@ -417,8 +417,8 @@ Format as JSON matching this structure:
   "estimatedCost": number
 }`
 
-    const response = await executeWithTools(prompt, [], {
-      model: 'flash',
+    const response = await executeWithTools(prompt, {
+      model: 'fast',
       temperature: 0.6,
       maxTokens: 3000,
     })
@@ -426,21 +426,23 @@ Format as JSON matching this structure:
     // Parse AI response
     let protocol
     try {
-      protocol = JSON.parse(response.response)
+      const content = response.type === 'text' ? response.content : ''
+      protocol = JSON.parse(content)
     } catch {
       // If parsing fails, create structured response from text
+      const textContent = response.type === 'text' ? response.content : ''
       protocol = {
         title: `Experimental Protocol: ${goal.description}`,
         objective: goal.description,
         materials: [],
         equipment: [],
-        procedure: [{ step: 1, instruction: response.response.substring(0, 500) }],
+        procedure: [{ step: 1, instruction: textContent.substring(0, 500) }],
         safetyWarnings: ['Protocol generated - requires expert review'],
         expectedResults: goal.objectives,
         failureModes: [],
         duration: '2-4 weeks',
         difficulty: 'medium',
-        estimatedCost: constraints.budget || 10000,
+        estimatedCost: constraints?.budget || 10000,
       }
     }
 

@@ -61,14 +61,13 @@ export class GooglePatentsAdapter extends BaseAdapter {
     'solar-energy',
     'wind-energy',
     'battery-storage',
-    'hydrogen-fuel-cells',
-    'nuclear-energy',
+    'hydrogen-fuel',
     'carbon-capture',
-    'bioenergy',
+    'biomass',
     'geothermal',
-    'electric-vehicles',
     'grid-optimization',
     'energy-efficiency',
+    'materials-science',
   ]
 
   private useSerpAPI: boolean

@@ -219,7 +219,8 @@ function convertToGeminiFunctionDeclaration(
   return {
     name: func.name,
     description: func.description,
-    parameters: func.parameters,
+    // Cast parameters to any to handle type differences between our schema and Gemini's
+    parameters: func.parameters as any,
   }
 }
 
@@ -263,10 +264,10 @@ export async function generateWithTools(
     const functionCalls = response.functionCalls()
 
     if (functionCalls && functionCalls.length > 0) {
-      // AI wants to call functions
-      const calls: FunctionCall[] = functionCalls.map((fc: FunctionCallPart) => ({
-        name: fc.name,
-        args: fc.args as Record<string, any>,
+      // AI wants to call functions - FunctionCallPart has functionCall.name and functionCall.args
+      const calls: FunctionCall[] = (functionCalls as any[]).map((fc) => ({
+        name: fc.functionCall?.name || fc.name,
+        args: (fc.functionCall?.args || fc.args) as Record<string, any>,
       }))
 
       return {
@@ -400,8 +401,8 @@ export function extractFunctionCalls(response: any): FunctionCall[] | null {
     return null
   }
 
-  return response.functionCalls().map((fc: FunctionCallPart) => ({
-    name: fc.name,
-    args: fc.args as Record<string, any>,
+  return (response.functionCalls() as any[]).map((fc) => ({
+    name: fc.functionCall?.name || fc.name,
+    args: (fc.functionCall?.args || fc.args) as Record<string, any>,
   }))
 }

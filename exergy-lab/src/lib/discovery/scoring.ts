@@ -31,7 +31,6 @@ export interface ScoringFactors {
  * Source quality weights by type
  */
 const SOURCE_QUALITY_WEIGHTS: Record<DataSourceType, number> = {
-  'peer-reviewed': 15,
   'academic-paper': 15,
   'preprint': 12,
   'patent': 13,
@@ -243,29 +242,14 @@ function getDomainKeywords(domain: Domain): string[] {
     'solar-energy': ['solar', 'photovoltaic', 'pv', 'solar cell', 'solar panel'],
     'wind-energy': ['wind', 'wind turbine', 'wind power', 'wind farm'],
     'battery-storage': ['battery', 'energy storage', 'lithium', 'electrochemical'],
-    'hydrogen-fuel-cells': ['hydrogen', 'fuel cell', 'electrolysis', 'h2'],
-    'nuclear-energy': ['nuclear', 'fission', 'fusion', 'reactor'],
-    'carbon-capture': ['carbon capture', 'ccs', 'co2', 'sequestration'],
-    'bioenergy': ['bioenergy', 'biomass', 'biofuel', 'biogas'],
+    'hydrogen-fuel': ['hydrogen', 'fuel cell', 'electrolysis', 'h2'],
     'geothermal': ['geothermal', 'ground source', 'heat pump'],
-    'hydropower': ['hydropower', 'hydro', 'dam', 'turbine'],
-    'grid-optimization': ['grid', 'smart grid', 'distribution', 'transmission'],
+    'biomass': ['biomass', 'biofuel', 'biogas', 'bioenergy'],
+    'carbon-capture': ['carbon capture', 'ccs', 'co2', 'sequestration'],
     'energy-efficiency': ['efficiency', 'optimization', 'performance'],
-    'electric-vehicles': ['electric vehicle', 'ev', 'charging', 'battery'],
-    'heat-storage': ['thermal storage', 'heat', 'latent', 'sensible'],
-    'building-efficiency': ['building', 'hvac', 'insulation', 'retrofit'],
-    'industrial-process': ['industrial', 'process', 'manufacturing'],
-    'sustainable-transport': ['transport', 'mobility', 'transit'],
-    'marine-energy': ['marine', 'ocean', 'tidal', 'wave'],
-    'energy-policy': ['policy', 'regulation', 'carbon', 'emissions'],
-    'smart-city': ['smart city', 'urban', 'iot', 'sensors'],
-    'demand-response': ['demand response', 'load', 'flexibility'],
-    'microgrids': ['microgrid', 'distributed', 'islanding'],
-    'power-electronics': ['power electronics', 'inverter', 'converter'],
-    'energy-markets': ['energy market', 'trading', 'pricing'],
-    'circular-economy': ['circular economy', 'recycling', 'lifecycle'],
-    'green-hydrogen': ['green hydrogen', 'renewable', 'electrolysis'],
-    'power-to-x': ['power-to-x', 'p2x', 'e-fuels'],
+    'grid-optimization': ['grid', 'smart grid', 'distribution', 'transmission'],
+    'materials-science': ['materials', 'nanomaterials', 'catalyst', 'semiconductor'],
+    'other': ['energy', 'renewable', 'clean', 'sustainability'],
   }
 
   return keywords[domain] || []

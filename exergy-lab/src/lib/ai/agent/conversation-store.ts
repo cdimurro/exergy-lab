@@ -3,10 +3,12 @@ import { persist, createJSONStorage } from 'zustand/middleware'
 import {
   ConversationSession,
   Message,
-  MessageRole,
   Checkpoint,
   AgentConfig,
+  ToolCall,
 } from '@/types/agent'
+
+type MessageRole = 'user' | 'assistant' | 'system' | 'tool'
 import { UnifiedWorkflow } from '@/types/workflow'
 import { countTokens } from '../gemini'
 
@@ -67,6 +69,7 @@ export const useConversationStore = create<ConversationStore>()(
         const messages: Message[] = []
         if (initialMessage) {
           messages.push({
+            id: `msg_${now}_initial`,
             role: 'user',
             content: initialMessage,
             timestamp: now,
@@ -83,8 +86,8 @@ export const useConversationStore = create<ConversationStore>()(
           metadata: {
             domain: 'general',
             complexity: 5,
-            totalTokens: 0,
-            config,
+            estimatedTokens: 0,
+            actualTokens: 0,
           },
         }
 
@@ -254,23 +257,21 @@ export const useConversationStore = create<ConversationStore>()(
     }),
     {
       name: 'conversation-store',
-      storage: createJSONStorage(() => localStorage),
-      // Custom serialization to handle Map
-      serialize: (state) => {
-        return JSON.stringify({
-          ...state,
-          sessions: Array.from(state.sessions.entries()),
-          workflows: Array.from(state.workflows.entries()),
-        })
-      },
-      deserialize: (str) => {
-        const parsed = JSON.parse(str)
-        return {
-          ...parsed,
-          sessions: new Map(parsed.sessions || []),
-          workflows: new Map(parsed.workflows || []),
-        }
-      },
+      storage: createJSONStorage(() => localStorage, {
+        // Custom serialization to handle Map
+        reviver: (key: string, value: unknown) => {
+          if (key === 'sessions' || key === 'workflows') {
+            return new Map(Array.isArray(value) ? value : [])
+          }
+          return value
+        },
+        replacer: (key: string, value: unknown) => {
+          if (value instanceof Map) {
+            return Array.from(value.entries())
+          }
+          return value
+        },
+      }),
     }
   )
 )
@@ -319,6 +320,7 @@ export class ContextManager {
     if (olderMessages.length > 0) {
       const summary = await this.summarizeMessages(olderMessages)
       const summaryMessage: Message = {
+        id: `msg_${Date.now()}_summary`,
         role: 'system',
         content: `[Previous conversation summary]: ${summary}`,
         timestamp: olderMessages[0].timestamp,
@@ -354,7 +356,6 @@ export class ContextManager {
       user: 3,
       assistant: 2,
       tool: 1,
-      function: 1,
     }
 
     return messages.sort((a, b) => {
@@ -407,9 +408,15 @@ export class ContextManager {
  */
 export class MessageBuilder {
   private messages: Message[] = []
+  private counter = 0
+
+  private generateId(role: string): string {
+    return `msg_${Date.now()}_${role}_${this.counter++}`
+  }
 
   addSystem(content: string): this {
     this.messages.push({
+      id: this.generateId('system'),
       role: 'system',
       content,
       timestamp: Date.now(),
@@ -419,6 +426,7 @@ export class MessageBuilder {
 
   addUser(content: string): this {
     this.messages.push({
+      id: this.generateId('user'),
       role: 'user',
       content,
       timestamp: Date.now(),
@@ -428,6 +436,7 @@ export class MessageBuilder {
 
   addAssistant(content: string): this {
     this.messages.push({
+      id: this.generateId('assistant'),
       role: 'assistant',
       content,
       timestamp: Date.now(),
@@ -435,21 +444,13 @@ export class MessageBuilder {
     return this
   }
 
-  addTool(content: string, toolName?: string): this {
+  addTool(content: string, toolCalls?: ToolCall[]): this {
     this.messages.push({
+      id: this.generateId('tool'),
       role: 'tool',
       content,
       timestamp: Date.now(),
-      metadata: toolName ? { toolName } : undefined,
-    })
-    return this
-  }
-
-  addFunction(name: string, args: Record<string, any>): this {
-    this.messages.push({
-      role: 'function',
-      content: JSON.stringify({ name, args }),
-      timestamp: Date.now(),
+      toolCalls,
     })
     return this
   }
@@ -460,6 +461,7 @@ export class MessageBuilder {
 
   reset(): this {
     this.messages = []
+    this.counter = 0
     return this
   }
 }

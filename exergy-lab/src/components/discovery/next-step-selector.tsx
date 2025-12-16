@@ -58,14 +58,14 @@ export function NextStepSelector({
   }
 
   // Get priority badge variant
-  const getPriorityVariant = (priority: string): 'default' | 'secondary' | 'outline' => {
+  const getPriorityVariant = (priority: string): 'default' | 'secondary' | 'info' => {
     switch (priority) {
       case 'high':
         return 'default'
       case 'medium':
         return 'secondary'
       default:
-        return 'outline'
+        return 'info'
     }
   }
 
@@ -168,7 +168,7 @@ export function NextStepSelector({
                   </div>
 
                   <Button
-                    variant="outline"
+                    variant="secondary"
                     size="sm"
                     onClick={() => onSelectAction(suggestion.type, suggestion.action.parameters)}
                   >
@@ -207,10 +207,10 @@ export function NextStepSelector({
           </div>
 
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => onSelectAction('export_results')}>
+            <Button variant="secondary" size="sm" onClick={() => onSelectAction('export_results')}>
               📄 PDF
             </Button>
-            <Button variant="outline" size="sm" onClick={() => onSelectAction('export_results')}>
+            <Button variant="secondary" size="sm" onClick={() => onSelectAction('export_results')}>
               📊 JSON
             </Button>
           </div>

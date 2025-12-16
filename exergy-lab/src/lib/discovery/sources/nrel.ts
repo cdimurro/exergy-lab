@@ -59,12 +59,11 @@ export class NRELAdapter extends BaseAdapter {
     'solar-energy',
     'wind-energy',
     'battery-storage',
-    'building-efficiency',
-    'electric-vehicles',
-    'hydrogen-fuel-cells',
-    'bioenergy',
+    'hydrogen-fuel',
+    'biomass',
     'geothermal',
     'energy-efficiency',
+    'grid-optimization',
   ]
 
   constructor(apiKey?: string) {

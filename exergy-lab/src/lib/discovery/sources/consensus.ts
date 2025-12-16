@@ -52,10 +52,10 @@ export class ConsensusAdapter extends BaseAdapter {
     'solar-energy',
     'wind-energy',
     'battery-storage',
-    'hydrogen-fuel-cells',
-    'nuclear-energy',
+    'hydrogen-fuel',
     'carbon-capture',
-    'bioenergy',
+    'biomass',
+    'geothermal',
     'grid-optimization',
     'energy-efficiency',
   ]

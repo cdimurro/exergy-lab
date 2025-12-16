@@ -64,15 +64,13 @@ export class IEEEAdapter extends BaseAdapter {
   readonly name: DataSourceName = 'ieee'
   readonly domains: Domain[] = [
     'grid-optimization',
-    'smart-city',
-    'power-electronics',
-    'electric-vehicles',
     'battery-storage',
     'solar-energy',
     'wind-energy',
     'energy-efficiency',
-    'microgrids',
-    'demand-response',
+    'hydrogen-fuel',
+    'geothermal',
+    'materials-science',
   ]
 
   constructor(apiKey?: string) {

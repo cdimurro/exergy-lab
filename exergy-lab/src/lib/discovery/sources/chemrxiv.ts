@@ -54,7 +54,7 @@ export class ChemRxivAdapter extends BaseAdapter {
   readonly name: DataSourceName = 'chemrxiv'
   readonly domains: Domain[] = [
     'battery-storage',
-    'hydrogen-fuel-cells',
+    'hydrogen-fuel',
     'carbon-capture',
     'solar-energy', // For materials science
     'energy-efficiency', // For catalysis

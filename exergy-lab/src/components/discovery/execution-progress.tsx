@@ -310,7 +310,7 @@ export function ExecutionProgress({
       {/* Cancel Button */}
       {status?.status === 'executing' && (
         <div className="flex justify-center">
-          <Button variant="outline" onClick={handleCancel} className="text-red-600">
+          <Button variant="secondary" onClick={handleCancel} className="text-red-600">
             ⏹️ Cancel Execution
           </Button>
         </div>

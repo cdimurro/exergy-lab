@@ -150,6 +150,7 @@ export async function POST(request: NextRequest) {
 
       // Add user message
       store.addMessage(finalSessionId, {
+        id: `msg_${startTime}_user`,
         role: 'user',
         content: query,
         timestamp: startTime,
@@ -157,13 +158,10 @@ export async function POST(request: NextRequest) {
 
       // Add assistant response
       store.addMessage(finalSessionId, {
+        id: `msg_${Date.now()}_assistant`,
         role: 'assistant',
         content: result.response,
         timestamp: Date.now(),
-        metadata: {
-          iterations: result.metadata?.iterations,
-          toolCalls: result.metadata?.totalToolCalls,
-        },
       })
     }
 

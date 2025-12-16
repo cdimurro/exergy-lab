@@ -117,7 +117,7 @@ export function PhaseCard({
                   PHASE {index + 1}
                 </span>
                 {phase.optional && (
-                  <Badge variant="outline" className="text-xs">
+                  <Badge variant="secondary" className="text-xs">
                     Optional
                   </Badge>
                 )}
@@ -174,7 +174,7 @@ export function PhaseCard({
               <h4 className="text-sm font-semibold">Parameters</h4>
               {phase.canModify && showModifyControls && !isEditing && (
                 <Button
-                  variant="outline"
+                  variant="secondary"
                   size="sm"
                   onClick={() => setIsEditing(true)}
                 >
@@ -218,7 +218,7 @@ export function PhaseCard({
                 <Button size="sm" onClick={handleSaveModifications}>
                   Save Changes
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleCancelEdit}>
+                <Button variant="secondary" size="sm" onClick={handleCancelEdit}>
                   Cancel
                 </Button>
               </div>

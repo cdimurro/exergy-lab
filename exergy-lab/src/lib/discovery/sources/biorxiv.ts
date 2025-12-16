@@ -55,10 +55,9 @@ interface BioRxivAPIResponse {
 export class BioRxivAdapter extends BaseAdapter {
   readonly name: DataSourceName = 'biorxiv'
   readonly domains: Domain[] = [
-    'bioenergy',
     'biomass',
     'carbon-capture', // For biological carbon capture
-    'circular-economy', // For biomass lifecycle
+    'materials-science', // For bio-based materials
   ]
 
   constructor() {

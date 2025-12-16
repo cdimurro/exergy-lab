@@ -87,22 +87,23 @@ Respond with JSON:
 }`
 
     try {
-      const response = await executeWithTools(analysisPrompt, [], {
-        model: 'flash',
+      const response = await executeWithTools(analysisPrompt, {
+        model: 'fast',
         temperature: 0.3,
         maxTokens: 500,
       })
 
-      const analysis = JSON.parse(response.response)
+      const content = response.type === 'text' ? response.content : ''
+      const analysis = JSON.parse(content)
 
       // Apply user options overrides
-      if (options.includeExperiments !== false && analysis.needsExperiments) {
+      if (options?.includeExperiments !== false && analysis.needsExperiments) {
         phases.push('experiment_design')
       }
-      if (options.includeSimulations !== false && analysis.needsSimulations) {
+      if (options?.includeSimulations !== false && analysis.needsSimulations) {
         phases.push('simulation')
       }
-      if (options.includeTEA !== false && analysis.needsTEA) {
+      if (options?.includeTEA !== false && analysis.needsTEA) {
         phases.push('tea_analysis')
       }
     } catch (error) {
@@ -173,7 +174,7 @@ Respond with JSON:
     domains: Domain[],
     options: WorkflowInput['options']
   ): PlanPhase {
-    const maxResults = options.budgetLimit ? Math.min(50, Math.floor(options.budgetLimit * 10)) : 20
+    const maxResults = options?.budgetLimit ? Math.min(50, Math.floor(options.budgetLimit * 10)) : 20
 
     return {
       id: phaseId,
@@ -273,8 +274,8 @@ Respond with JSON:
     domains: Domain[],
     options: WorkflowInput['options']
   ): PlanPhase {
-    const tier = options.simulationTier || 'browser'
-    const targetAccuracy = options.targetAccuracy || 85
+    const tier = options?.simulationTier || 'browser'
+    const targetAccuracy = options?.targetAccuracy || 85
 
     return {
       id: phaseId,

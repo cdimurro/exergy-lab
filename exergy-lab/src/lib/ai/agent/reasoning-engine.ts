@@ -13,6 +13,7 @@ import {
   AgentConfig,
   StatusUpdate,
   ToolCall,
+  ToolName,
   ToolResult,
   FunctionCall,
   DEFAULT_AGENT_CONFIG,
@@ -93,7 +94,7 @@ export class ReasoningEngine extends EventEmitter {
       // ===================================================================
       const toolResults = await this.executeTools(plan.tools)
       toolCalls.push(...plan.tools.map((tool, index) => ({
-        toolName: tool.name,
+        toolName: tool.name as ToolName,
         params: tool.params,
         callId: `${this.currentSessionId}_${index}`,
       })))
@@ -263,6 +264,7 @@ export class ReasoningEngine extends EventEmitter {
           sessionId: this.currentSessionId,
           iterations: this.iterationCount,
           totalToolCalls: toolCalls.length,
+          confidence: 0,
         },
       }
     }
@@ -297,7 +299,7 @@ Respond with a JSON object matching this structure:
 `
 
     const planResult = await executeResilient(
-      () => executeWithTools(planningPrompt, [], { model: 'fast' }),
+      () => executeWithTools(planningPrompt, { model: 'fast' }),
       'reasoning:plan'
     )
 
@@ -393,7 +395,7 @@ Set "confidence" 0-100 based on how well the query can be answered.
 `
 
     const analysisResult = await executeResilient(
-      () => executeWithTools(analysisPrompt, [], { model: 'fast' }),
+      () => executeWithTools(analysisPrompt, { model: 'fast' }),
       'reasoning:analyze'
     )
 
@@ -410,7 +412,7 @@ Set "confidence" 0-100 based on how well the query can be answered.
       synthesis: 'Tool execution completed',
       gaps: [],
       needsMoreInfo: false,
-      refinedQuery: null,
+      refinedQuery: undefined,
       confidence: 70,
       keyFindings: [],
     }
@@ -457,7 +459,7 @@ Respond with JSON:
 `
 
     const responseResult = await executeResilient(
-      () => executeWithTools(responsePrompt, [], { model: 'quality' }),
+      () => executeWithTools(responsePrompt, { model: 'quality' }),
       'reasoning:respond'
     )
 

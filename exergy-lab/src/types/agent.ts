@@ -39,17 +39,33 @@ export interface ToolCall {
 
 export type AgentPhase = 'plan' | 'execute' | 'analyze' | 'iterate' | 'respond'
 
+export interface PlannedToolCall {
+  name: string
+  params: any
+  rationale: string
+}
+
 export interface AgentPlan {
-  goals: string[]
-  tools: ToolCall[]
+  steps: string[]
+  tools: PlannedToolCall[]
+  expectedGaps: string[]
+  complexity: number
   estimatedDuration: number
 }
 
 export interface AgentAnalysis {
-  summary: string
-  findings: string[]
+  synthesis: string
+  keyFindings: string[]
+  gaps: string[]
   needsMoreInfo: boolean
   refinedQuery?: string
+  confidence: number
+}
+
+export interface AgentResultMetadata {
+  sessionId: string | null
+  iterations: number
+  totalToolCalls: number
   confidence: number
 }
 
@@ -61,6 +77,7 @@ export interface AgentResult {
   steps: AgentStep[]
   duration: number
   error?: string
+  metadata?: AgentResultMetadata
 }
 
 export interface AgentStep {
@@ -77,7 +94,15 @@ export interface AgentSource {
   authors?: string[]
   year?: number
   relevance: number
-  type: 'paper' | 'patent' | 'dataset' | 'news' | 'report'
+  type?: 'paper' | 'patent' | 'dataset' | 'news' | 'report'
+}
+
+export interface AgentResponse {
+  answer: string
+  sources: AgentSource[]
+  keyFindings: string[]
+  recommendations: string[]
+  confidence: number
 }
 
 // ============================================================================
@@ -146,6 +171,9 @@ export interface CheckpointContext {
   analysis?: AgentAnalysis
   intermediateResults: any[]
   messagesSnapshot: Message[]
+  iterationCount?: number
+  steps?: AgentStep[]
+  toolCalls?: ToolCall[]
 }
 
 // ============================================================================

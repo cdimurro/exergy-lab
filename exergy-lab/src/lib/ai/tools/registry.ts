@@ -87,7 +87,7 @@ export class ToolRegistry {
       return { valid: true }
     } catch (error) {
       if (error instanceof z.ZodError) {
-        const errorMessages = error.errors
+        const errorMessages = error.issues
           .map((err) => `${err.path.join('.')}: ${err.message}`)
           .join(', ')
         return {
@@ -265,15 +265,16 @@ export class ToolRegistry {
     const required: string[] = []
 
     if (schema instanceof z.ZodObject) {
-      const shape = schema._def.shape()
+      // In Zod v4, shape is a property, not a function
+      const shape = (schema as any).shape || (schema._def as any).shape
 
       for (const [key, value] of Object.entries(shape)) {
         const zodField = value as z.ZodTypeAny
 
         properties[key] = this.zodTypeToParameterSchema(zodField)
 
-        // Check if field is required (not optional)
-        if (!zodField.isOptional()) {
+        // Check if field is required (not optional) - use safe method
+        if (!(zodField as any).isOptional?.() && !(zodField as any)._def?.typeName?.includes('Optional')) {
           required.push(key)
         }
       }
@@ -317,16 +318,26 @@ export class ToolRegistry {
     }
 
     if (zodType instanceof z.ZodArray) {
-      const itemType = zodType._def.type
+      // In Zod v4, element type is accessed via element property or _def.element
+      const itemType = (zodType as any).element || (zodType._def as any).element || (zodType._def as any).type
+      if (itemType && typeof itemType !== 'string') {
+        return {
+          type: 'array',
+          description: zodType.description || 'Array parameter',
+          items: this.zodTypeToParameterSchema(itemType),
+        }
+      }
       return {
         type: 'array',
         description: zodType.description || 'Array parameter',
-        items: this.zodTypeToParameterSchema(itemType),
       }
     }
 
     if (zodType instanceof z.ZodObject) {
-      const shape = zodType._def.shape()
+      // In Zod v4, shape might be a property or a function
+      const shape = typeof (zodType._def as any).shape === 'function'
+        ? (zodType._def as any).shape()
+        : (zodType as any).shape || (zodType._def as any).shape || {}
       const properties: Record<string, ParameterSchema> = {}
 
       for (const [key, value] of Object.entries(shape)) {

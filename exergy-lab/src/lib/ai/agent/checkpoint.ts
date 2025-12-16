@@ -1,6 +1,6 @@
 import {
   Checkpoint,
-  CheckpointPhase,
+  AgentPhase,
   ConversationSession,
   AgentResult,
   AgentStep,
@@ -34,7 +34,7 @@ export class CheckpointManager {
   async createCheckpoint(
     sessionId: string,
     step: number,
-    phase: CheckpointPhase,
+    phase: AgentPhase,
     context: {
       query: string
       plan?: any
@@ -43,6 +43,8 @@ export class CheckpointManager {
       iterationCount?: number
       steps?: AgentStep[]
       toolCalls?: ToolCall[]
+      intermediateResults?: any[]
+      messagesSnapshot?: any[]
     }
   ): Promise<Checkpoint> {
     const checkpointId = this.generateCheckpointId(sessionId, step)
@@ -53,7 +55,13 @@ export class CheckpointManager {
       sessionId,
       step,
       phase,
-      context,
+      context: {
+        query: context.query,
+        plan: context.plan,
+        analysis: context.analysis,
+        intermediateResults: context.intermediateResults || [],
+        messagesSnapshot: context.messagesSnapshot || [],
+      },
       toolResults: context.toolResults || [],
       timestamp: now,
       ttl: now + this.defaultTTL,
@@ -227,9 +235,9 @@ export class CheckpointStrategy {
   /**
    * Should create checkpoint for this phase?
    */
-  shouldCheckpoint(phase: CheckpointPhase, step: number): boolean {
+  shouldCheckpoint(phase: AgentPhase, step: number): boolean {
     // Always checkpoint at phase boundaries
-    const phaseCheckpoints: CheckpointPhase[] = ['plan', 'execute', 'analyze', 'respond']
+    const phaseCheckpoints: AgentPhase[] = ['plan', 'execute', 'analyze', 'respond']
 
     if (phaseCheckpoints.includes(phase)) {
       return true
@@ -246,8 +254,8 @@ export class CheckpointStrategy {
   /**
    * Get checkpoint interval for a phase
    */
-  getCheckpointInterval(phase: CheckpointPhase): number {
-    const intervals: Record<CheckpointPhase, number> = {
+  getCheckpointInterval(phase: AgentPhase): number {
+    const intervals: Record<AgentPhase, number> = {
       plan: 1, // Every plan
       execute: 1, // After each tool execution batch
       analyze: 1, // After each analysis
@@ -458,7 +466,7 @@ export class CheckpointedAgent {
  */
 export type CheckpointCallback = (
   step: number,
-  phase: CheckpointPhase,
+  phase: AgentPhase,
   context: any
 ) => Promise<void>
 

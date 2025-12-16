@@ -174,7 +174,7 @@ export async function PUT(request: NextRequest) {
     const engine = new ReasoningEngine({
       maxIterations: 5,
       enableStreaming: true,
-      contextWindow: 8000,
+      maxTokens: 8000,
     })
 
     // Build agent query from execution plan
@@ -183,8 +183,7 @@ export async function PUT(request: NextRequest) {
     // Create conversation session for this workflow
     const sessionId = useConversationStore.getState().createSession(
       'workflow-user', // TODO: Replace with actual user ID
-      agentQuery,
-      { domain: 'discovery', workflowId }
+      agentQuery
     )
 
     console.log('[Workflow API] Executing workflow:', {

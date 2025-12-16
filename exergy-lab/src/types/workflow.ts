@@ -367,28 +367,4 @@ export interface WorkflowOptions {
   maxDuration?: number          // Maximum allowed duration in ms
 }
 
-// ============================================================================
-// Export all workflow-related types
-// ============================================================================
-
-export type {
-  UnifiedWorkflow,
-  ExecutionPlan,
-  PlanPhase,
-  PhaseParameters,
-  PhaseDependency,
-  WorkflowResults,
-  ResearchResults,
-  ExperimentResults,
-  ExperimentProtocol,
-  SimulationResults,
-  TEAResults,
-  Insight,
-  UserDecision,
-  WorkflowCheckpoint,
-  WorkflowState,
-  NextStepSuggestion,
-  WorkflowStatusUpdate,
-  WorkflowInput,
-  WorkflowOptions,
-}
+// All types are exported inline via 'export interface' declarations above

@@ -106,10 +106,10 @@ export function ExecutionPlanViewer({
 
         {/* Plan Actions */}
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={expandAll}>
+          <Button variant="secondary" size="sm" onClick={expandAll}>
             Expand All
           </Button>
-          <Button variant="outline" size="sm" onClick={collapseAll}>
+          <Button variant="secondary" size="sm" onClick={collapseAll}>
             Collapse All
           </Button>
         </div>
@@ -168,7 +168,7 @@ export function ExecutionPlanViewer({
           </div>
           <div className="flex flex-wrap gap-2">
             {plan.requiredTools.map((tool) => (
-              <Badge key={tool} variant="outline" className="font-mono text-xs">
+              <Badge key={tool} variant="secondary" className="font-mono text-xs">
                 {tool}
               </Badge>
             ))}
@@ -254,7 +254,7 @@ export function ExecutionPlanViewer({
           </div>
 
           <div className="flex gap-3">
-            <Button variant="outline" onClick={handleReject} disabled={isLoading}>
+            <Button variant="secondary" onClick={handleReject} disabled={isLoading}>
               Reject Plan
             </Button>
 

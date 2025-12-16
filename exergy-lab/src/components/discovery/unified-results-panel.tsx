@@ -156,7 +156,7 @@ function OverviewTab({ results }: { results: WorkflowResults }) {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
                       <h4 className="font-semibold">{insight.title}</h4>
-                      <Badge variant="outline" className="text-xs capitalize">
+                      <Badge variant="secondary" className="text-xs capitalize">
                         {insight.priority}
                       </Badge>
                     </div>
@@ -248,7 +248,7 @@ function ExperimentsTab({ results }: { results: WorkflowResults['experiments'] }
               <h3 className="text-lg font-semibold mb-1">{protocol.title}</h3>
               <p className="text-sm text-muted-foreground">{protocol.objective}</p>
             </div>
-            <Badge variant="outline" className="capitalize">
+            <Badge variant="secondary" className="capitalize">
               {protocol.difficulty}
             </Badge>
           </div>
@@ -306,7 +306,7 @@ function SimulationsTab({ results }: { results: WorkflowResults['simulations'] }
                 {run.tier} tier
               </Badge>
             </div>
-            <Badge variant={run.status === 'completed' ? 'default' : 'outline'}>
+            <Badge variant={run.status === 'completed' ? 'success' : 'secondary'}>
               {run.status}
             </Badge>
           </div>

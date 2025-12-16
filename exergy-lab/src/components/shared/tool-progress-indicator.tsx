@@ -63,14 +63,14 @@ export function ToolProgressIndicator({
   }
 
   // Get status badge variant
-  const getStatusBadgeVariant = (status: string): 'default' | 'secondary' | 'outline' => {
+  const getStatusBadgeVariant = (status: string): 'default' | 'secondary' | 'error' => {
     switch (status) {
       case 'completed':
         return 'default'
       case 'running':
         return 'default'
       case 'failed':
-        return 'outline'
+        return 'error'
       default:
         return 'secondary'
     }

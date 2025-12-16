@@ -212,7 +212,7 @@ export const SimulationResultSchema = z.object({
     energyOutput: z.number().optional(),
     efficiency: z.number().optional(),
     cost: z.number().optional(),
-    performanceMetrics: z.record(z.number()).optional(),
+    performanceMetrics: z.record(z.string(), z.number()).optional(),
   }),
   charts: z.array(z.object({
     type: z.string(),
@@ -235,7 +235,7 @@ export const ExtractedDataSchema = z.object({
       headers: z.array(z.string()),
       rows: z.array(z.array(z.any())),
     })).optional(),
-    metadata: z.record(z.any()).optional(),
+    metadata: z.record(z.string(), z.any()).optional(),
     sections: z.array(z.object({
       title: z.string(),
       content: z.string(),
@@ -251,26 +251,42 @@ export const ExtractedDataSchema = z.object({
 // ============================================================================
 
 export const AgentPlanSchema = z.object({
-  goals: z.array(z.string()).min(1),
+  steps: z.array(z.string()).min(1),
   tools: z.array(z.object({
-    toolName: z.string(),
+    name: z.string(),
     params: z.any(),
-    callId: z.string(),
+    rationale: z.string(),
   })),
+  expectedGaps: z.array(z.string()),
+  complexity: z.number().min(1).max(10),
   estimatedDuration: z.number().min(0),
-  confidence: z.number().min(0).max(100).optional(),
 })
 
 export const AgentAnalysisSchema = z.object({
-  summary: z.string().min(20),
-  findings: z.array(z.string()).min(1),
+  synthesis: z.string().min(20),
+  keyFindings: z.array(z.string()).min(1),
+  gaps: z.array(z.string()),
   needsMoreInfo: z.boolean(),
   refinedQuery: z.string().optional(),
   confidence: z.number().min(0).max(100),
-  suggestedNextSteps: z.array(z.string()).optional(),
 })
 
 export const AgentResponseSchema = z.object({
+  answer: z.string().min(20),
+  sources: z.array(z.object({
+    title: z.string(),
+    url: z.string().url().optional(),
+    authors: z.array(z.string()).optional(),
+    year: z.number().int().optional(),
+    relevance: z.number().min(0).max(100),
+    type: z.enum(['paper', 'patent', 'dataset', 'news', 'report']).optional(),
+  })),
+  keyFindings: z.array(z.string()),
+  recommendations: z.array(z.string()),
+  confidence: z.number().min(0).max(100),
+})
+
+export const AgentResultSchema = z.object({
   success: z.boolean(),
   response: z.string().min(20),
   sources: z.array(z.object({
@@ -376,7 +392,7 @@ export function createCorrectivePrompt(
   output: string,
   error: z.ZodError
 ): string {
-  const errorMessages = error.errors.map((err) => {
+  const errorMessages = error.issues.map((err) => {
     const path = err.path.join('.')
     return `- ${path ? `Field "${path}"` : 'Root'}: ${err.message}`
   }).join('\n')
@@ -414,7 +430,7 @@ export function safeParseAIOutput<T>(
  * Get human-readable validation error messages
  */
 export function formatValidationErrors(error: z.ZodError): string[] {
-  return error.errors.map((err) => {
+  return error.issues.map((err) => {
     const path = err.path.length > 0 ? `${err.path.join('.')}: ` : ''
     return `${path}${err.message}`
   })
