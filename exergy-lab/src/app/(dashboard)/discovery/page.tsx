@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import { Button, Textarea, Badge, Card, Progress, Select } from '@/components/ui'
 import { ExecutionPlanViewer } from '@/components/discovery/execution-plan-viewer'
+import { ExecutionProgress } from '@/components/discovery/execution-progress'
 import type { DiscoveryPrompt, DiscoveryReport, NovelIdea, Domain } from '@/types/discovery'
 
 const DOMAINS: Array<{ value: Domain; label: string }> = [
@@ -404,26 +405,26 @@ export default function DiscoveryPage() {
             )}
 
             {/* Execution In Progress */}
-            {workflowStatus === 'executing' && (
-              <Card className="p-12 text-center">
-                <div className="flex flex-col items-center gap-4">
-                  <div className="relative">
-                    <div className="w-16 h-16 border-4 border-green-500/20 border-t-green-500 rounded-full animate-spin" />
-                    <Zap className="w-6 h-6 text-green-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-medium text-foreground mb-2">
-                      Executing Workflow
-                    </h3>
-                    <p className="text-sm text-foreground-muted">
-                      Running research, experiments, and simulations...
-                    </p>
-                    <p className="text-xs text-foreground-muted mt-2">
-                      Real-time progress tracking coming in Phase 3
-                    </p>
-                  </div>
-                </div>
-              </Card>
+            {workflowStatus === 'executing' && workflowId && (
+              <ExecutionProgress
+                workflowId={workflowId}
+                onComplete={() => {
+                  setWorkflowStatus('completed')
+                  setIsExecuting(false)
+                  // TODO: Load and display workflow results
+                }}
+                onError={(error) => {
+                  setError(error)
+                  setWorkflowStatus('failed')
+                  setIsExecuting(false)
+                }}
+                onCancel={() => {
+                  setWorkflowStatus('idle')
+                  setWorkflowId(null)
+                  setExecutionPlan(null)
+                  setIsExecuting(false)
+                }}
+              />
             )}
 
             {/* Results */}
