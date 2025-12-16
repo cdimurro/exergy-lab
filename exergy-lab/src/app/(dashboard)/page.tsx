@@ -173,14 +173,14 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-6 md:p-8">
+    <div className="min-h-screen p-6 md:p-8">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Welcome Section */}
         <div className="space-y-2">
-          <h1 className="text-3xl md:text-4xl font-bold text-foreground">
+          <h1 className="text-3xl md:text-4xl font-bold text-white">
             Welcome to Exergy Lab
           </h1>
-          <p className="text-lg text-foreground-muted">
+          <p className="text-lg text-foreground-subtle">
             AI-powered clean energy research platform
           </p>
         </div>
@@ -339,7 +339,7 @@ export default function DashboardPage() {
         <div>
           <div className="flex items-center gap-2 mb-4">
             <Zap className="w-5 h-5 text-accent-amber" />
-            <h2 className="text-xl font-semibold text-foreground">Quick Actions</h2>
+            <h2 className="text-xl font-semibold text-white">Quick Actions</h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -374,7 +374,7 @@ export default function DashboardPage() {
           <div>
             <div className="flex items-center gap-2 mb-4">
               <Clock className="w-5 h-5 text-accent-cyan" />
-              <h2 className="text-xl font-semibold text-foreground">Recent Activity</h2>
+              <h2 className="text-xl font-semibold text-white">Recent Activity</h2>
             </div>
 
             <Card>

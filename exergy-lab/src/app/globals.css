@@ -1,42 +1,48 @@
 @import "tailwindcss";
 
-/* Exergy Lab Design System - Professional Dark Mode */
+/* Exergy Lab Design System - Light Sidebar, Dark Pages */
 :root {
   /* === BACKGROUNDS === */
-  /* Base/main background - dark but visible */
-  --background: 215 25% 12%;            /* #171f2a - dark slate */
+  /* Sidebar/UI - light blue-grey */
+  --background: 215 25% 85%;            /* #d0d8e0 - light blue-grey */
+  --background-elevated: 215 20% 92%;   /* #e8ecf0 - lighter blue-grey */
+  --background-surface: 215 15% 88%;    /* #dde2e8 - medium light grey */
+  --background-hover: 215 20% 80%;      /* #c0cad8 - darker on hover */
 
-  /* Elevated surfaces - clear contrast */
-  --background-elevated: 217 28% 18%;   /* #232f3e - slate-800 */
+  /* Page background - dark blue */
+  --page-background: 217 33% 17%;       /* #1e293b - dark blue for pages */
 
-  /* Interactive surfaces - more prominent */
-  --background-surface: 215 25% 22%;    /* #2d3948 - medium slate */
-
-  /* Hover states */
-  --background-hover: 217 28% 26%;      /* #364555 - lighter slate */
+  /* Content cards - white */
+  --card-background: 0 0% 100%;         /* #ffffff - white cards */
 
   /* === TEXT/FOREGROUND === */
-  /* Primary text - pure white for clarity */
+  /* Sidebar text - white on light blue-grey */
   --foreground: 0 0% 100%;              /* #ffffff - white */
 
-  /* Secondary text - brighter grey */
-  --foreground-muted: 215 20% 75%;      /* #b4bcc8 - slate-300 */
+  /* Selected item text - green */
+  --foreground-selected: 160 84% 39%;   /* #10b981 - emerald green */
 
-  /* Tertiary text - medium grey */
-  --foreground-subtle: 215 16% 60%;     /* #8896a8 - slate-400 */
+  /* Dark text for content cards */
+  --foreground-dark: 222 47% 11%;       /* #0f172a - dark text */
+
+  /* Grey text for placeholders */
+  --foreground-muted: 215 16% 47%;      /* #697a8f - medium grey */
+
+  /* Subtle grey */
+  --foreground-subtle: 215 16% 60%;     /* #8896a8 - light grey */
 
   /* === BORDERS === */
-  /* Standard borders - lighter for visibility */
-  --border: 217 28% 30%;                /* #3f5166 - slate-600 */
+  /* Standard borders */
+  --border: 215 20% 75%;                /* #b8c2d0 - light grey border */
 
   /* Prominent borders */
-  --border-subtle: 217 25% 35%;         /* #4a5f7a - slate-500 */
+  --border-subtle: 217 91% 60%;         /* #3b82f6 - light blue accent */
 
   /* === PRIMARY (Green Accent) === */
-  /* Main accent color - vibrant green for navigation/logos */
-  --primary: 160 84% 50%;               /* #22d3a2 - emerald-400 bright */
-  --primary-hover: 160 84% 55%;         /* #3be7b5 - emerald-300 */
-  --primary-foreground: 215 25% 12%;    /* Dark text on green backgrounds */
+  /* Green for selected navigation */
+  --primary: 160 84% 39%;               /* #10b981 - emerald-500 */
+  --primary-hover: 160 84% 45%;         /* #34d399 - emerald-400 */
+  --primary-foreground: 0 0% 100%;      /* White text on green */
 
   /* === ACCENT COLORS === */
   /* Vibrant colors for variety, blues and greys dominant */
@@ -92,7 +98,11 @@
   --color-background: hsl(var(--background));
   --color-background-elevated: hsl(var(--background-elevated));
   --color-background-surface: hsl(var(--background-surface));
+  --color-page-background: hsl(var(--page-background));
+  --color-card-background: hsl(var(--card-background));
   --color-foreground: hsl(var(--foreground));
+  --color-foreground-selected: hsl(var(--foreground-selected));
+  --color-foreground-dark: hsl(var(--foreground-dark));
   --color-foreground-muted: hsl(var(--foreground-muted));
   --color-foreground-subtle: hsl(var(--foreground-subtle));
   --color-border: hsl(var(--border));

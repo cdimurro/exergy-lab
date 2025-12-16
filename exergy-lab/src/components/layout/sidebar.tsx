@@ -55,7 +55,7 @@ export function Sidebar() {
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed left-0 top-0 z-40 h-screen bg-background border-r border-border transition-all duration-300',
+          'fixed left-0 top-0 z-40 h-screen bg-background-surface border-r border-border transition-all duration-300',
           collapsed ? 'w-20' : 'w-72',
           // Mobile: slide from left
           mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
@@ -108,8 +108,8 @@ export function Sidebar() {
                   className={cn(
                     'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group relative',
                     isActive
-                      ? 'bg-primary/10 text-primary border-l-2 border-primary'
-                      : 'text-foreground-muted hover:bg-background-elevated hover:text-foreground'
+                      ? 'bg-primary/10 text-primary'
+                      : 'text-foreground hover:bg-background-hover'
                   )}
                 >
                   <Icon
@@ -117,7 +117,7 @@ export function Sidebar() {
                       'w-5 h-5 shrink-0',
                       isActive
                         ? 'text-primary'
-                        : 'text-foreground-subtle group-hover:text-foreground-muted'
+                        : 'text-foreground'
                     )}
                   />
                   {!collapsed && (
@@ -146,8 +146,8 @@ export function Sidebar() {
                 className={cn(
                   'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group relative',
                   isActive
-                    ? 'bg-primary/10 text-primary border-l-2 border-primary'
-                    : 'text-foreground-muted hover:bg-background-elevated hover:text-foreground'
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-foreground hover:bg-background-hover'
                 )}
               >
                 <Icon
@@ -155,7 +155,7 @@ export function Sidebar() {
                     'w-5 h-5 shrink-0',
                     isActive
                       ? 'text-primary'
-                      : 'text-foreground-subtle group-hover:text-foreground-muted'
+                      : 'text-foreground'
                   )}
                 />
                 {!collapsed && (

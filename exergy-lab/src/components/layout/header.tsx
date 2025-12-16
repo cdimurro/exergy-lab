@@ -58,7 +58,7 @@ export function Header({ sidebarCollapsed = false }: HeaderProps) {
   return (
     <header
       className={cn(
-        'fixed top-0 right-0 z-30 h-16 bg-background/90 backdrop-blur-md border-b border-border transition-all duration-300',
+        'fixed top-0 right-0 z-30 h-16 bg-background-surface/95 backdrop-blur-md border-b border-border transition-all duration-300',
         sidebarCollapsed ? 'left-20' : 'left-72'
       )}
     >
