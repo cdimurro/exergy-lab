@@ -1,17 +1,14 @@
-import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 
-// Define public routes that don't require authentication
-// TODO: Update this when Clerk is fully configured
-const isPublicRoute = createRouteMatcher([
-  '/(.*)',  // Temporarily allow all routes until Clerk is configured
-])
+// Temporarily disabled Clerk middleware until authentication is configured
+// TODO: Re-enable when Clerk keys are configured
+// import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 
-export default clerkMiddleware(async (auth, request) => {
-  // Protect all routes except public ones
-  if (!isPublicRoute(request)) {
-    await auth.protect()
-  }
-})
+export function middleware(request: NextRequest) {
+  // For now, just pass through all requests
+  return NextResponse.next()
+}
 
 export const config = {
   matcher: [
