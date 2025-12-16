@@ -46,7 +46,7 @@ export function FilterPanel({
   const [isExpanded, setIsExpanded] = React.useState(true)
 
   const currentYear = new Date().getFullYear()
-  const defaultYearRange: [number, number] = [currentYear - 10, currentYear]
+  const defaultYearRange = { start: currentYear - 10, end: currentYear }
 
   const handleDomainToggle = (domain: string) => {
     const currentDomains = filters.domains || []
@@ -71,8 +71,12 @@ export function FilterPanel({
     if (isNaN(year)) return
 
     const currentRange = filters.yearRange || defaultYearRange
-    const newRange: [number, number] = [...currentRange] as [number, number]
-    newRange[index] = year
+    const newRange = { start: currentRange.start, end: currentRange.end }
+    if (index === 0) {
+      newRange.start = year
+    } else {
+      newRange.end = year
+    }
 
     onFiltersChange({ ...filters, yearRange: newRange })
   }
@@ -162,7 +166,7 @@ export function FilterPanel({
               <Input
                 type="number"
                 placeholder="From"
-                value={filters.yearRange?.[0] || defaultYearRange[0]}
+                value={filters.yearRange?.start || defaultYearRange.start}
                 onChange={(e) => handleYearRangeChange(0, e.target.value)}
                 min={1900}
                 max={currentYear}
@@ -172,7 +176,7 @@ export function FilterPanel({
               <Input
                 type="number"
                 placeholder="To"
-                value={filters.yearRange?.[1] || defaultYearRange[1]}
+                value={filters.yearRange?.end || defaultYearRange.end}
                 onChange={(e) => handleYearRangeChange(1, e.target.value)}
                 min={1900}
                 max={currentYear}
@@ -233,7 +237,7 @@ export function FilterPanel({
                 )}
                 {filters.yearRange && (
                   <p>
-                    • Year: {filters.yearRange[0]} - {filters.yearRange[1]}
+                    • Year: {filters.yearRange.start} - {filters.yearRange.end}
                   </p>
                 )}
                 {filters.minCitations !== undefined && (

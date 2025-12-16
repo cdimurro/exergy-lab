@@ -43,12 +43,13 @@ export async function generateEmbeddings(
     const inputs = Array.isArray(text) ? text : [text]
 
     const results = await Promise.all(
-      inputs.map((input) =>
-        hf.featureExtraction({
+      inputs.map(async (input) => {
+        const output = await hf.featureExtraction({
           model: 'sentence-transformers/all-MiniLM-L6-v2',
           inputs: input,
         })
-      )
+        return output as number[]
+      })
     )
 
     // Return single array if single input, array of arrays if multiple
@@ -110,11 +111,11 @@ export async function zeroShotClassify(
   labels: string[]
 ): Promise<Array<{ label: string; score: number }>> {
   try {
-    const result = await hf.zeroShotClassification({
+    const result = (await hf.zeroShotClassification({
       model: 'facebook/bart-large-mnli',
       inputs: text,
       parameters: { candidate_labels: labels },
-    })
+    })) as unknown as { labels: string[]; scores: number[] }
 
     return result.labels.map((label, i) => ({
       label,

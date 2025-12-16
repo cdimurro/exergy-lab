@@ -15,6 +15,7 @@ import type {
   SimulationParameter,
   SimulationMetric,
   SimulationVisualization,
+  SimulationDataPoint,
   TierComparison,
   CloudGPUProvider,
 } from '@/types/simulation'

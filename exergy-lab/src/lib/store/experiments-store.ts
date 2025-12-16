@@ -53,7 +53,7 @@ export const useExperimentsStore = create<ExperimentsState>()(
               id: savedProtocol.id,
               title: savedProtocol.title,
               createdAt: new Date().toISOString(),
-              status: 'completed'
+              status: 'completed' as const
             },
             ...state.history
           ].slice(0, 100),

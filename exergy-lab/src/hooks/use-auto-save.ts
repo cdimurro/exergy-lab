@@ -28,7 +28,7 @@ export function useAutoSave<T>(
     onSave
   } = options
 
-  const timeoutRef = useRef<NodeJS.Timeout>()
+  const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
   const previousDataRef = useRef<T>(data)
   const lastSaveTimeRef = useRef<number>(Date.now())
 

@@ -74,7 +74,7 @@ export function ExperimentForm({ onSubmit, isLoading }: ExperimentFormProps) {
         <Select
           label="Research Domain"
           value={domain}
-          onChange={setDomain}
+          onChange={(value) => setDomain(value as Domain)}
           options={DOMAINS}
           hint="Select the primary research domain for your experiment"
         />

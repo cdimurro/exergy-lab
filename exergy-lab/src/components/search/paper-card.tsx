@@ -133,39 +133,27 @@ export function PaperCard({ paper, onSave, isSaved }: PaperCardProps) {
 
           {/* Links */}
           <div className="flex items-center gap-2 shrink-0">
-            <Button
-              variant="ghost"
-              size="sm"
-              asChild
+            <a
+              href={paper.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-foreground-muted hover:text-foreground hover:bg-background-elevated rounded-md transition-colors"
             >
-              <a
-                href={paper.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2"
-              >
-                <FileText className="w-4 h-4" />
-                View Paper
-                <ExternalLink className="w-3 h-3" />
-              </a>
-            </Button>
+              <FileText className="w-4 h-4" />
+              View Paper
+              <ExternalLink className="w-3 h-3" />
+            </a>
 
             {paper.pdfUrl && (
-              <Button
-                variant="ghost"
-                size="sm"
-                asChild
+              <a
+                href={paper.pdfUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-foreground-muted hover:text-foreground hover:bg-background-elevated rounded-md transition-colors"
               >
-                <a
-                  href={paper.pdfUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2"
-                >
-                  <Download className="w-4 h-4" />
-                  PDF
-                </a>
-              </Button>
+                <Download className="w-4 h-4" />
+                PDF
+              </a>
             )}
           </div>
         </div>

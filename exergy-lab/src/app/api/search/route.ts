@@ -389,7 +389,7 @@ function applyFilters(papers: Paper[], filters?: SearchQuery['filters']): Paper[
 
   // Year range filter
   if (filters.yearRange) {
-    const [minYear, maxYear] = filters.yearRange
+    const { start: minYear, end: maxYear } = filters.yearRange
     filtered = filtered.filter((paper) => {
       const year = new Date(paper.publicationDate).getFullYear()
       return year >= minYear && year <= maxYear

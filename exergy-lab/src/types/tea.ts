@@ -62,7 +62,11 @@ export interface TEAResult {
   // Detailed breakdown
   capex_breakdown: CAPEXBreakdown
   opex_breakdown: OPEXBreakdown
-  cash_flows: number[]
+  cash_flows: Array<{
+    year: number
+    cashFlow: number
+    cumulativeCashFlow: number
+  }>
 }
 
 export interface CAPEXBreakdown {

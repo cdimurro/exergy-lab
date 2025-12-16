@@ -287,9 +287,20 @@ export default function TEAGeneratorPage() {
           variable: Math.round(annualProduction * input.variable_opex_per_mwh),
           insurance: Math.round(totalCapex * input.insurance_rate),
         },
-        cash_flows: Array.from({ length: n + 1 }, (_, i) =>
-          i === 0 ? -totalCapex : Math.round(annualCashFlow)
-        ),
+        cash_flows: (() => {
+          const flows = Array.from({ length: n + 1 }, (_, i) =>
+            i === 0 ? -totalCapex : Math.round(annualCashFlow)
+          )
+          let cumulative = 0
+          return flows.map((flow, i) => {
+            cumulative += flow
+            return {
+              year: i,
+              cashFlow: flow,
+              cumulativeCashFlow: cumulative,
+            }
+          })
+        })(),
       })
     } finally {
       setLoading(false)
@@ -385,12 +396,12 @@ export default function TEAGeneratorPage() {
           other: result.opex_breakdown.fixed + result.opex_breakdown.insurance,
           annual: result.annual_opex,
         },
-        cashFlow: result.cash_flows.map((cf, i) => ({
-          year: i,
-          revenue: i === 0 ? 0 : result.annual_revenue,
-          expenses: i === 0 ? 0 : result.annual_opex,
-          netCashFlow: cf,
-          cumulativeCashFlow: result.cash_flows.slice(0, i + 1).reduce((a, b) => a + b, 0),
+        cashFlow: result.cash_flows.map((cf) => ({
+          year: cf.year,
+          revenue: cf.year === 0 ? 0 : result.annual_revenue,
+          expenses: cf.year === 0 ? 0 : result.annual_opex,
+          netCashFlow: cf.cashFlow,
+          cumulativeCashFlow: cf.cumulativeCashFlow,
         })),
         assumptions: {
           projectLifetime: input.project_lifetime_years,
@@ -693,9 +704,7 @@ export default function TEAGeneratorPage() {
                           </div>
                         </div>
                       </div>
-                      <Badge
-                        deltaType={result.lcoe < 50 ? 'increase' : 'decrease'}
-                      >
+                      <Badge variant={result.lcoe < 50 ? 'success' : 'secondary'}>
                         {result.lcoe < 50 ? 'Competitive' : 'High'}
                       </Badge>
                     </div>
@@ -716,7 +725,7 @@ export default function TEAGeneratorPage() {
                         </div>
                       </div>
                       <Badge
-                        deltaType={result.npv > 0 ? 'increase' : 'decrease'}
+                        variant={result.npv > 0 ? 'success' : 'secondary'}
                       >
                         {result.npv > 0 ? 'Profitable' : 'Unprofitable'}
                       </Badge>
@@ -735,7 +744,7 @@ export default function TEAGeneratorPage() {
                           <div className="text-foreground text-3xl font-bold">{result.irr}%</div>
                         </div>
                       </div>
-                      <Badge deltaType={result.irr > 10 ? 'increase' : 'unchanged'}>
+                      <Badge variant={result.irr > 10 ? 'success' : 'secondary'}>
                         {result.irr > 10 ? 'Strong' : 'Moderate'}
                       </Badge>
                     </div>
@@ -760,11 +769,14 @@ export default function TEAGeneratorPage() {
                         </div>
                       </div>
                     </div>
-                    <div
-                      value={(result.payback_years / input.project_lifetime_years) * 100}
-                      color="amber"
-                      className="mt-3"
-                    />
+                    <div className="mt-3">
+                      <div className="w-full bg-background-surface rounded-full h-2">
+                        <div
+                          className="h-2 rounded-full bg-amber-500"
+                          style={{ width: `${Math.min((result.payback_years / input.project_lifetime_years) * 100, 100)}%` }}
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </Card>
@@ -852,7 +864,7 @@ export default function TEAGeneratorPage() {
       {/* Cash Flow Chart */}
       {result && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <CashFlowChart cashFlows={result.cash_flows} />
+          <CashFlowChart data={result.cash_flows} />
           <CostBreakdownChart capex={result.capex_breakdown} type="capex" />
         </div>
       )}
