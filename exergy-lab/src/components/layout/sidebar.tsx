@@ -56,7 +56,7 @@ export function Sidebar() {
       <aside
         className={cn(
           'fixed left-0 top-0 z-40 h-screen bg-background border-r border-border transition-all duration-300',
-          collapsed ? 'w-20' : 'w-64',
+          collapsed ? 'w-20' : 'w-72',
           // Mobile: slide from left
           mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         )}

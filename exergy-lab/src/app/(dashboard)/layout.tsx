@@ -29,11 +29,11 @@ export default function DashboardLayout({
       <Sidebar />
       <Header sidebarCollapsed={sidebarCollapsed} />
       <main
-        className={`pt-16 transition-all duration-300 ${
-          sidebarCollapsed ? 'pl-20' : 'pl-64'
+        className={`pt-16 transition-all duration-300 min-h-screen ${
+          sidebarCollapsed ? 'pl-20' : 'pl-72'
         }`}
       >
-        <div className="p-6">{children}</div>
+        <div className="p-8 h-full">{children}</div>
       </main>
     </div>
   )
