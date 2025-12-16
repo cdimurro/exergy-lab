@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { FlaskConical } from 'lucide-react'
-import { ChatInterface } from '@/components/chat'
+import { FeatureWizard } from '@/components/feature-wizard'
 import type { Domain } from '@/types/discovery'
 
 const DOMAINS: Domain[] = [
@@ -20,15 +20,13 @@ const DOMAINS: Domain[] = [
 
 export default function ExperimentsPage() {
   return (
-    <div className="h-[calc(100vh-64px)] flex flex-col">
-      <ChatInterface
+    <div className="h-full flex flex-col">
+      <FeatureWizard
+        pageType="experiments"
         pageTitle="Experiment Designer"
         pageSubtitle="AI-powered experiment protocol generation with failure analysis"
         pageIcon={<FlaskConical className="h-5 w-5" />}
-        pageType="experiments"
-        showDomainSelector
         domains={DOMAINS}
-        placeholder="Describe the experiment you want to design..."
       />
     </div>
   )

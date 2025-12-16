@@ -139,9 +139,31 @@ export interface ChatInterfaceProps {
   initialMessages?: ChatMessage[]
   workflowId?: string
 
+  // Form data from wizard (auto-start support)
+  initialFormData?: {
+    domain?: string | null
+    description?: string
+    goals?: string[]
+    objectives?: string[]
+    constraints?: string[]
+    focusAreas?: string[]
+    query?: string
+    sourceTypes?: string[]
+    dateRange?: { from: string; to: string } | null
+    tier?: string
+    systemType?: string
+    parameters?: Record<string, any>
+    files?: File[]
+    scale?: string
+    region?: string
+    projectLifespan?: number
+  }
+  autoStart?: boolean
+
   // Optional callbacks
   onWorkflowComplete?: (results: any) => void
   onError?: (error: any) => void
+  onBack?: () => void
 }
 
 export interface ChatSubmitContext {
@@ -149,6 +171,7 @@ export interface ChatSubmitContext {
   goals?: string[]
   files?: File[]
   parameters?: Record<string, any>
+  formData?: Record<string, any>
 }
 
 // ============================================================================

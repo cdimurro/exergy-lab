@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { Search } from 'lucide-react'
-import { ChatInterface } from '@/components/chat'
+import { FeatureWizard } from '@/components/feature-wizard'
 import type { Domain } from '@/types/discovery'
 
 const DOMAINS: Domain[] = [
@@ -20,15 +20,13 @@ const DOMAINS: Domain[] = [
 
 export default function SearchPage() {
   return (
-    <div className="h-[calc(100vh-64px)] flex flex-col">
-      <ChatInterface
+    <div className="h-full flex flex-col">
+      <FeatureWizard
+        pageType="search"
         pageTitle="Academic Search"
         pageSubtitle="AI-powered search across multiple research databases"
         pageIcon={<Search className="h-5 w-5" />}
-        pageType="search"
-        showDomainSelector
         domains={DOMAINS}
-        placeholder="Search for papers, patents, or datasets..."
       />
     </div>
   )

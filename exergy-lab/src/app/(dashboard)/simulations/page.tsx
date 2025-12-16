@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { Cpu } from 'lucide-react'
-import { ChatInterface } from '@/components/chat'
+import { FeatureWizard } from '@/components/feature-wizard'
 import type { Domain } from '@/types/discovery'
 
 const DOMAINS: Domain[] = [
@@ -20,15 +20,13 @@ const DOMAINS: Domain[] = [
 
 export default function SimulationsPage() {
   return (
-    <div className="h-[calc(100vh-64px)] flex flex-col">
-      <ChatInterface
+    <div className="h-full flex flex-col">
+      <FeatureWizard
+        pageType="simulations"
         pageTitle="Simulations"
         pageSubtitle="3-tier computational system for clean energy simulations"
         pageIcon={<Cpu className="h-5 w-5" />}
-        pageType="simulations"
-        showDomainSelector
         domains={DOMAINS}
-        placeholder="What system or process would you like to simulate?"
       />
     </div>
   )

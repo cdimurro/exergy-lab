@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { Sparkles } from 'lucide-react'
-import { ChatInterface } from '@/components/chat'
+import { FeatureWizard } from '@/components/feature-wizard'
 import type { Domain } from '@/types/discovery'
 
 const DOMAINS: Domain[] = [
@@ -20,15 +20,13 @@ const DOMAINS: Domain[] = [
 
 export default function DiscoveryPage() {
   return (
-    <div className="h-[calc(100vh-64px)] flex flex-col">
-      <ChatInterface
+    <div className="h-full flex flex-col">
+      <FeatureWizard
+        pageType="discovery"
         pageTitle="Discovery Engine"
         pageSubtitle="AI-powered multi-domain innovation discovery"
         pageIcon={<Sparkles className="h-5 w-5" />}
-        pageType="discovery"
-        showDomainSelector
         domains={DOMAINS}
-        placeholder="What would you like to discover? Describe your research goal..."
       />
     </div>
   )

@@ -1,12 +1,16 @@
 'use client'
 
 import * as React from 'react'
+import { ArrowLeft } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { MessageList } from './MessageList'
 import { ChatInput } from './ChatInput'
+import { Button } from '@/components/ui/button'
 import { useChatWorkflow } from '@/hooks/use-chat-workflow'
+import { buildPromptFromFormData } from '@/types/wizard'
 import type { ChatInterfaceProps, QuickAction } from '@/types/chat'
 import type { Domain } from '@/types/discovery'
+import type { PageType } from '@/types/wizard'
 
 const DEFAULT_PLACEHOLDERS: Record<string, string> = {
   discovery: 'What would you like to discover? Describe your research goal...',
@@ -55,10 +59,14 @@ export function ChatInterface({
   quickActions,
   placeholder,
   initialMessages = [],
+  initialFormData,
+  autoStart = false,
   onWorkflowComplete,
   onError,
+  onBack,
 }: ChatInterfaceProps) {
   const [selectedDomains, setSelectedDomains] = React.useState<Domain[]>([])
+  const [hasAutoStarted, setHasAutoStarted] = React.useState(false)
 
   const {
     messages,
@@ -83,10 +91,19 @@ export function ChatInterface({
     },
   })
 
-  // Initialize with initial messages
+  // Auto-start with form data when autoStart is true
   React.useEffect(() => {
-    // Could add initial messages here if needed
-  }, [initialMessages])
+    if (autoStart && initialFormData && !hasAutoStarted) {
+      setHasAutoStarted(true)
+      // Build prompt from form data
+      const prompt = buildPromptFromFormData(pageType as PageType, initialFormData)
+      // Send the initial message
+      sendMessage(prompt, {
+        formData: initialFormData,
+        domains: initialFormData.domain ? [initialFormData.domain as Domain] : [],
+      })
+    }
+  }, [autoStart, initialFormData, hasAutoStarted, pageType, sendMessage])
 
   const handleDomainToggle = (domain: Domain) => {
     setSelectedDomains((prev) =>
@@ -109,14 +126,24 @@ export function ChatInterface({
   const effectiveQuickActions = quickActions || DEFAULT_QUICK_ACTIONS[pageType] || []
   const effectivePlaceholder = placeholder || DEFAULT_PLACEHOLDERS[pageType] || 'Type your message...'
 
-  // Determine if we should show quick actions (only in idle state with no messages)
-  const showQuickActions = workflowState === 'idle' && messages.length === 0
+  // Determine if we should show quick actions (only in idle state with no messages and no autoStart)
+  const showQuickActions = workflowState === 'idle' && messages.length === 0 && !autoStart
 
   return (
     <div className="flex flex-col h-full bg-background">
       {/* Header */}
       <div className="shrink-0 border-b border-border px-6 py-4">
         <div className="flex items-center gap-3">
+          {onBack && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onBack}
+              className="h-10 w-10 p-0 mr-1"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          )}
           {pageIcon && (
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
               {pageIcon}
