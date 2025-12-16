@@ -1,10 +1,9 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 
 // Define public routes that don't require authentication
+// TODO: Update this when Clerk is fully configured
 const isPublicRoute = createRouteMatcher([
-  '/sign-in(.*)',
-  '/sign-up(.*)',
-  '/',  // Allow homepage access (we'll redirect authenticated users)
+  '/(.*)',  // Temporarily allow all routes until Clerk is configured
 ])
 
 export default clerkMiddleware(async (auth, request) => {

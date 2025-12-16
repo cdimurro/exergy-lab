@@ -1,7 +1,6 @@
 'use client'
 
 import * as React from 'react'
-import { useUser } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
 import {
   Search,
@@ -38,7 +37,11 @@ interface RecentProject {
 }
 
 export default function DashboardPage() {
-  const { user, isLoaded } = useUser()
+  // TODO: Re-enable Clerk authentication when configured
+  // const { user, isLoaded } = useUser()
+  const user = null
+  const isLoaded = true
+
   const router = useRouter()
   const [recentProjects, setRecentProjects] = React.useState<RecentProject[]>([])
   const [stats, setStats] = React.useState({
@@ -175,7 +178,7 @@ export default function DashboardPage() {
         {/* Welcome Section */}
         <div className="space-y-2">
           <h1 className="text-3xl md:text-4xl font-bold text-foreground">
-            Welcome back{isLoaded && user ? `, ${user.firstName || user.username}` : ''}
+            Welcome to Exergy Lab
           </h1>
           <p className="text-lg text-foreground-muted">
             AI-powered clean energy research platform
