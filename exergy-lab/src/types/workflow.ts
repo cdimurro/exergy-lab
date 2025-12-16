@@ -64,6 +64,99 @@ export interface PlanPhase {
   optional: boolean             // Is this phase optional?
   estimatedDuration: number     // milliseconds
   estimatedCost: number         // USD
+  details?: PlanPhaseDetails    // AI-generated detailed plan content
+}
+
+// ============================================================================
+// AI-Generated Plan Details (Phase 7)
+// ============================================================================
+
+/**
+ * Union type for all phase-specific details
+ */
+export type PlanPhaseDetails =
+  | ResearchPlanDetails
+  | ExperimentPlanDetails
+  | SimulationPlanDetails
+  | TEAPlanDetails
+
+/**
+ * Detailed plan for Research phase
+ * Contains specific search terms, databases, and key areas tailored to user query
+ */
+export interface ResearchPlanDetails {
+  type: 'research'
+  searchTerms: string[]           // Specific search queries derived from user input
+  databases: string[]             // Relevant databases to search
+  keyAreas: string[]              // Key research areas to investigate
+  expectedPapers: number          // Estimated number of papers
+  expectedPatents: number         // Estimated number of patents
+  rationale: string               // Why these searches were chosen
+}
+
+/**
+ * Detailed plan for Experiment Design phase
+ * Contains domain-specific experimental protocols
+ */
+export interface ExperimentPlanDetails {
+  type: 'experiment_design'
+  protocols: ExperimentPlanProtocol[]  // Planned experimental protocols
+  rationale: string                     // Why these experiments were chosen
+}
+
+/**
+ * Individual experiment protocol in the plan
+ */
+export interface ExperimentPlanProtocol {
+  name: string                    // Protocol name
+  objective: string               // What this experiment tests
+  materials: string[]             // Required materials
+  equipment: string[]             // Required equipment
+  procedure: string[]             // Step-by-step procedure
+  metrics: string[]               // Success metrics to measure
+  safetyNotes?: string[]          // Safety considerations
+  estimatedDuration?: string      // e.g., "2-3 hours"
+}
+
+/**
+ * Detailed plan for Simulation phase
+ * Contains simulation type and parameters specific to the domain
+ */
+export interface SimulationPlanDetails {
+  type: 'simulation'
+  simulationType: SimulationMethodType  // DFT, MD, GCMC, CFD, etc.
+  system: string                        // Description of simulated system
+  parameters: Record<string, string | number>  // Simulation parameters
+  expectedOutputs: string[]             // What the simulation will produce
+  rationale: string                     // Why this simulation approach
+}
+
+/**
+ * Common simulation method types in clean energy research
+ */
+export type SimulationMethodType =
+  | 'DFT'       // Density Functional Theory (materials properties)
+  | 'MD'        // Molecular Dynamics (thermal, mechanical)
+  | 'GCMC'      // Grand Canonical Monte Carlo (adsorption)
+  | 'CFD'       // Computational Fluid Dynamics (flow, heat transfer)
+  | 'FEA'       // Finite Element Analysis (structural)
+  | 'KMC'       // Kinetic Monte Carlo (reaction kinetics)
+  | 'PV'        // Photovoltaic performance simulation
+  | 'battery'   // Battery electrochemistry simulation
+  | 'process'   // Process simulation (chemical engineering)
+  | 'other'     // Other simulation types
+
+/**
+ * Detailed plan for TEA phase
+ * Contains analysis approach and key assumptions
+ */
+export interface TEAPlanDetails {
+  type: 'tea_analysis'
+  analysisScope: string           // What costs/revenue to analyze
+  keyAssumptions: string[]        // Critical assumptions for the analysis
+  dataRequirements: string[]      // Data needed from previous phases
+  outputMetrics: string[]         // Financial metrics to calculate
+  rationale: string               // Why this analysis approach
 }
 
 export interface PhaseParameters {

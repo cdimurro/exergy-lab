@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { workflowPlanner } from '@/lib/discovery/workflow-planner'
 import { ReasoningEngine } from '@/lib/ai/agent/reasoning-engine'
+import { serverWorkflowStore } from '@/lib/discovery/workflow-store'
 import { useConversationStore } from '@/lib/ai/agent/conversation-store'
 import type {
   UnifiedWorkflow,
@@ -77,8 +78,8 @@ export async function POST(request: NextRequest) {
       updatedAt: new Date().toISOString(),
     }
 
-    // Store in ConversationStore
-    useConversationStore.getState().createWorkflow(workflow)
+    // Store in server-side workflow store (persists across API requests)
+    serverWorkflowStore.create(workflow)
 
     console.log('[Workflow API] Plan generated:', {
       workflowId,
@@ -132,9 +133,10 @@ export async function PUT(request: NextRequest) {
       modifications?: PhaseModification[]
     }
 
-    // Get workflow from store
-    const workflow = useConversationStore.getState().getWorkflow(workflowId)
+    // Get workflow from server-side store
+    const workflow = serverWorkflowStore.get(workflowId)
     if (!workflow) {
+      console.error('[Workflow API] Workflow not found:', workflowId)
       return NextResponse.json({ error: 'Workflow not found' }, { status: 404 })
     }
 
@@ -166,8 +168,9 @@ export async function PUT(request: NextRequest) {
     }
 
     // Update workflow status to executing
-    useConversationStore.getState().updateWorkflow(workflowId, {
+    serverWorkflowStore.update(workflowId, {
       status: 'executing',
+      userDecisions: workflow.userDecisions,
     })
 
     // Create ReasoningEngine instance for execution
@@ -195,7 +198,7 @@ export async function PUT(request: NextRequest) {
     // Execute workflow in background (non-blocking)
     executeWorkflowAsync(workflow, engine, sessionId).catch((error) => {
       console.error('[Workflow API] Async execution failed:', error)
-      useConversationStore.getState().updateWorkflow(workflowId, {
+      serverWorkflowStore.update(workflowId, {
         status: 'failed',
       })
     })
@@ -237,8 +240,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'workflowId required' }, { status: 400 })
   }
 
-  // Get workflow from store
-  const workflow = useConversationStore.getState().getWorkflow(workflowId)
+  // Get workflow from server-side store
+  const workflow = serverWorkflowStore.get(workflowId)
   if (!workflow) {
     return NextResponse.json({ error: 'Workflow not found' }, { status: 404 })
   }
@@ -250,7 +253,7 @@ export async function GET(request: NextRequest) {
 
   // Start streaming status updates
   const streamInterval = setInterval(() => {
-    const currentWorkflow = useConversationStore.getState().getWorkflow(workflowId)
+    const currentWorkflow = serverWorkflowStore.get(workflowId)
 
     if (!currentWorkflow) {
       clearInterval(streamInterval)
@@ -403,14 +406,14 @@ async function executeWorkflowAsync(
       status: result.success ? 'completed' : 'failed',
     })
 
-    // Update workflow with results
-    useConversationStore.getState().updateWorkflow(workflow.id, {
+    // Update workflow with results in server-side store
+    serverWorkflowStore.update(workflow.id, {
       status: result.success ? 'completed' : 'failed',
       duration: Date.now() - new Date(workflow.createdAt).getTime(),
     })
   } catch (error) {
     console.error('[Workflow API] Workflow execution error:', error)
-    useConversationStore.getState().updateWorkflow(workflow.id, {
+    serverWorkflowStore.update(workflow.id, {
       status: 'failed',
     })
   }
