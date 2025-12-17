@@ -1,22 +1,34 @@
 /**
  * Search API Orchestrator for Discovery Engine
  *
- * Integrates with multiple real APIs:
+ * Integrates with multiple real APIs via the DataSourceRegistry:
  * - Semantic Scholar (academic papers)
+ * - OpenAlex (academic papers, free)
+ * - PubMed (biomedical literature)
+ * - Crossref (DOI metadata)
+ * - CORE (open access papers)
  * - arXiv (preprints)
- * - USPTO (patents)
+ * - USPTO PatentsView (US patents)
+ * - IEEE (engineering papers)
+ * - NREL (energy datasets)
  * - NewsAPI (industry news)
  */
 
-import type { DiscoveryPrompt } from '@/types/discovery'
+import type { DiscoveryPrompt, Domain } from '@/types/discovery'
+import {
+  getDataSourceRegistry,
+  initializeDataSourceRegistry,
+  type AggregatedSearchResult
+} from './data-sources/registry'
 
 export interface Source {
   id: string
-  type: 'academic-paper' | 'patent' | 'technical-report' | 'news'
+  type: 'academic-paper' | 'patent' | 'technical-report' | 'news' | 'dataset'
   title: string
   authors?: string[]
   abstract?: string
   url?: string
+  doi?: string
   publishedDate?: string
   citationCount?: number
   relevanceScore: number
@@ -28,40 +40,61 @@ export interface SearchResults {
   patents: number
   reports: number
   news: number
+  datasets: number
   sources: Source[]
+  searchTimeMs: number
+  bySource?: Record<string, { count: number; success: boolean; error?: string }>
 }
+
+// Track if registry is initialized
+let registryInitialized = false
 
 export class SearchOrchestrator {
   /**
-   * Search across all sources in parallel
+   * Initialize the data source registry
+   */
+  private async ensureRegistryInitialized(): Promise<void> {
+    if (!registryInitialized) {
+      await initializeDataSourceRegistry()
+      registryInitialized = true
+    }
+  }
+
+  /**
+   * Search across all sources in parallel using the registry
    */
   async searchAllSources(prompt: DiscoveryPrompt): Promise<SearchResults> {
     console.log('[Discovery] Starting parallel search across all APIs...')
+    const startTime = Date.now()
 
-    // Execute all searches in parallel
+    // Ensure registry is initialized
+    await this.ensureRegistryInitialized()
+
+    // Execute searches in parallel:
+    // 1. Direct API calls (Semantic Scholar, OpenAlex) - these work well as-is
+    // 2. Registry-based searches (new adapters)
+    const cleanQuery = this.cleanSearchQuery(prompt.description)
+
     const [
       semanticScholarResult,
       openAlexResult,
-      patentsResult,
+      registryResult,
       preprintsResult,
       newsResult
     ] = await Promise.allSettled([
-      this.searchSemanticScholar(prompt.description, prompt.domains),
-      this.searchOpenAlex(prompt.description, prompt.domains),
-      this.searchUSPTO(prompt.description),
-      this.searchArxiv(prompt.domains, prompt.description),
-      this.searchNews(prompt.description)
+      this.searchSemanticScholar(cleanQuery, prompt.domains),
+      this.searchOpenAlex(cleanQuery, prompt.domains),
+      this.searchViaRegistry(cleanQuery, prompt.domains),
+      this.searchArxiv(prompt.domains, cleanQuery),
+      this.searchNews(cleanQuery)
     ])
 
     // Extract successful results
     const semanticScholarPapers = semanticScholarResult.status === 'fulfilled' ? semanticScholarResult.value : []
     const openAlexPapers = openAlexResult.status === 'fulfilled' ? openAlexResult.value : []
-    const patents = patentsResult.status === 'fulfilled' ? patentsResult.value : []
+    const registrySources = registryResult.status === 'fulfilled' ? registryResult.value : { sources: [], bySource: {} }
     const preprints = preprintsResult.status === 'fulfilled' ? preprintsResult.value : []
     const news = newsResult.status === 'fulfilled' ? newsResult.value : []
-
-    // Combine papers from both sources (dedupe by title similarity)
-    const allPapers = this.deduplicatePapers([...semanticScholarPapers, ...openAlexPapers])
 
     // Log any failures
     if (semanticScholarResult.status === 'rejected') {
@@ -70,8 +103,8 @@ export class SearchOrchestrator {
     if (openAlexResult.status === 'rejected') {
       console.error('[Discovery] OpenAlex search failed:', openAlexResult.reason)
     }
-    if (patentsResult.status === 'rejected') {
-      console.error('[Discovery] USPTO search failed:', patentsResult.reason)
+    if (registryResult.status === 'rejected') {
+      console.error('[Discovery] Registry search failed:', registryResult.reason)
     }
     if (preprintsResult.status === 'rejected') {
       console.error('[Discovery] arXiv search failed:', preprintsResult.reason)
@@ -80,8 +113,27 @@ export class SearchOrchestrator {
       console.error('[Discovery] NewsAPI search failed:', newsResult.reason)
     }
 
+    // Combine all papers and deduplicate
+    const allPapers = this.deduplicatePapers([
+      ...semanticScholarPapers,
+      ...openAlexPapers,
+      ...this.convertRegistryToSources(registrySources.sources, 'academic-paper')
+    ])
+
+    // Extract patents from registry results
+    const patents = this.convertRegistryToSources(
+      registrySources.sources.filter((s: any) => s.metadata?.sourceType === 'patent'),
+      'patent'
+    )
+
+    // Extract datasets from registry results
+    const datasets = this.convertRegistryToSources(
+      registrySources.sources.filter((s: any) => s.metadata?.sourceType === 'dataset'),
+      'dataset'
+    )
+
     // Combine all sources
-    const allSources = [...allPapers, ...patents, ...preprints, ...news]
+    const allSources = [...allPapers, ...patents, ...datasets, ...preprints, ...news]
 
     // Sort by relevance score
     allSources.sort((a, b) => b.relevanceScore - a.relevanceScore)
@@ -92,13 +144,77 @@ export class SearchOrchestrator {
       patents: patents.length,
       reports: preprints.length,
       news: news.length,
-      sources: allSources.slice(0, 100) // Limit to top 100
+      datasets: datasets.length,
+      sources: allSources.slice(0, 100), // Limit to top 100
+      searchTimeMs: Date.now() - startTime,
+      bySource: registrySources.bySource as any
     }
 
-    console.log(`[Discovery] Search complete: ${results.totalSources} total sources`)
-    console.log(`  Papers: ${results.papers}, Patents: ${results.patents}, Reports: ${results.reports}, News: ${results.news}`)
+    console.log(`[Discovery] Search complete in ${results.searchTimeMs}ms: ${results.totalSources} total sources`)
+    console.log(`  Papers: ${results.papers}, Patents: ${results.patents}, Reports: ${results.reports}, News: ${results.news}, Datasets: ${results.datasets}`)
 
     return results
+  }
+
+  /**
+   * Search via the data source registry (PubMed, Crossref, CORE, USPTO, etc.)
+   */
+  private async searchViaRegistry(
+    query: string,
+    domains: string[]
+  ): Promise<{ sources: any[]; bySource: Record<string, any> }> {
+    try {
+      const registry = getDataSourceRegistry()
+
+      const result = await registry.smartSearch(
+        query,
+        domains as Domain[],
+        { limit: 50 }
+      )
+
+      console.log(`[Registry] Found ${result.total} sources across ${Object.keys(result.bySource).length} adapters`)
+
+      return {
+        sources: result.sources,
+        bySource: result.bySource
+      }
+    } catch (error) {
+      console.error('[Registry] Search failed:', error)
+      return { sources: [], bySource: {} }
+    }
+  }
+
+  /**
+   * Convert registry sources to our Source format
+   */
+  private convertRegistryToSources(sources: any[], defaultType: Source['type']): Source[] {
+    return sources.map((s: any) => ({
+      id: s.id,
+      type: this.mapSourceType(s.metadata?.sourceType) || defaultType,
+      title: s.title,
+      authors: s.authors,
+      abstract: s.abstract,
+      url: s.url,
+      doi: s.doi,
+      publishedDate: s.metadata?.publicationDate,
+      citationCount: s.metadata?.citationCount || s.citedByCount,
+      relevanceScore: s.relevanceScore || 50
+    }))
+  }
+
+  /**
+   * Map registry source type to our type
+   */
+  private mapSourceType(sourceType: string): Source['type'] | null {
+    const mapping: Record<string, Source['type']> = {
+      'academic-paper': 'academic-paper',
+      'preprint': 'technical-report',
+      'patent': 'patent',
+      'dataset': 'dataset',
+      'news': 'news',
+      'report': 'technical-report'
+    }
+    return mapping[sourceType] || null
   }
 
   /**
@@ -312,22 +428,13 @@ export class SearchOrchestrator {
 
   /**
    * USPTO - Patents
-   * API: https://developer.uspto.gov/ds-api/patents/v1/search
-   * No strict rate limit
+   * Note: USPTO PatentsView is now handled via the DataSourceRegistry
+   * This method is deprecated - patents come from registry.smartSearch()
    */
-  private async searchUSPTO(query: string): Promise<Source[]> {
-    try {
-      // USPTO API is complex - using simpler approach with patent search
-      // For production, you'd want to use their official API with proper authentication
-
-      // Fallback: Return empty for now since USPTO API requires more complex setup
-      // In production, integrate with USPTO PatentsView or Google Patents API
-      console.warn('[USPTO] Patent search not yet implemented - requires API setup')
-      return []
-    } catch (error) {
-      console.error('[USPTO] Search failed:', error)
-      throw error
-    }
+  private async searchUSPTO(_query: string): Promise<Source[]> {
+    // Patents are now searched via the registry (USPTO adapter)
+    // This method returns empty as it's handled by searchViaRegistry()
+    return []
   }
 
   /**
