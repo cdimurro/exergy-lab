@@ -655,14 +655,14 @@ function PhaseItem({
             </div>
           )}
 
-          {/* Editable parameters - collapsed by default since details show most info */}
+          {/* Editable parameters - shown by default for user customization */}
           {phase.canModify && Object.keys(phase.parameters).length > 0 && (
-            <details className="group">
-              <summary className="text-base font-medium text-muted-foreground mb-3 cursor-pointer list-none flex items-center gap-2 hover:text-foreground transition-colors">
-                <ChevronRight className="h-5 w-5 transition-transform group-open:rotate-90" />
-                Advanced Parameters
-              </summary>
-              <div className="space-y-3 pt-3">
+            <div className="mt-4">
+              <h4 className="text-base font-medium text-muted-foreground mb-3 flex items-center gap-2">
+                <Edit2 className="h-4 w-4" />
+                Parameters
+              </h4>
+              <div className="space-y-3">
                 {Object.entries(phase.parameters).map(([key, value]) => {
                   if (value === undefined || value === null) return null
                   // Skip array/object parameters in the editable section
@@ -673,6 +673,14 @@ function PhaseItem({
                     modification?.parameter === key
                       ? modification.newValue
                       : value
+
+                  // Determine if this is a count/quantity parameter that should have max=5
+                  const isCountParam = key.toLowerCase().includes('hypotheses') ||
+                    key.toLowerCase().includes('experiments') ||
+                    key.toLowerCase().includes('simulations') ||
+                    key.toLowerCase().includes('protocols') ||
+                    key.toLowerCase().includes('count') ||
+                    key.toLowerCase().includes('max')
 
                   return (
                     <div
@@ -689,6 +697,8 @@ function PhaseItem({
                             value={editValue}
                             onChange={(e) => setEditValue(e.target.value)}
                             className="h-10 w-32 text-base"
+                            min={typeof value === 'number' && isCountParam ? 1 : undefined}
+                            max={typeof value === 'number' && isCountParam ? 5 : undefined}
                             onKeyDown={(e) => {
                               if (e.key === 'Enter') handleEditSave()
                               if (e.key === 'Escape') handleEditCancel()
@@ -731,7 +741,7 @@ function PhaseItem({
                   )
                 })}
               </div>
-            </details>
+            </div>
           )}
         </div>
       )}

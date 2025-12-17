@@ -182,11 +182,12 @@ Respond with JSON:
       // Clean and parse JSON response
       const analysis = this.parseJSONResponse(content)
 
-      // Apply user options overrides for optional phases
-      if (options?.includeExperiments !== false && analysis.needsExperiments) {
+      // Include experiment_design and simulation by default unless explicitly disabled
+      // Only TEA depends on AI analysis since it requires specific economic data
+      if (options?.includeExperiments !== false) {
         phases.push('experiment_design')
       }
-      if (options?.includeSimulations !== false && analysis.needsSimulations) {
+      if (options?.includeSimulations !== false) {
         phases.push('simulation')
       }
       if (options?.includeTEA !== false && analysis.needsTEA) {
@@ -757,7 +758,7 @@ Respond with ONLY the JSON object below. Start directly with { and end with }. D
             'Failure mode analysis',
           ],
       parameters: {
-        protocolCount: protocols.length || 3,
+        protocolCount: protocols.length || 1,
         difficultyLevel: 'medium',
         includeSafety: true,
         includeFailureAnalysis: true,
@@ -925,7 +926,7 @@ Respond with ONLY the JSON object below. Start directly with { and end with }. D
     const details: HypothesisPlanDetails = {
       type: 'hypothesis',
       focusAreas: hypothesisDetails?.focusAreas || [`${query.substring(0, 50)} mechanisms`, 'Performance optimization', 'Novel approaches'],
-      expectedHypotheses: hypothesisDetails?.expectedHypotheses || 3,
+      expectedHypotheses: hypothesisDetails?.expectedHypotheses || 1,
       evaluationCriteria: hypothesisDetails?.evaluationCriteria || ['Novelty', 'Feasibility', 'Impact potential'],
       rationale: hypothesisDetails?.rationale || 'Generate testable hypotheses based on research findings',
     }

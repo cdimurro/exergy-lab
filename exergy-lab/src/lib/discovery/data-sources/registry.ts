@@ -516,7 +516,8 @@ export async function initializeDataSourceRegistry(): Promise<DataSourceRegistry
     safeRegister(() => import('../sources/pubmed'), 'pubmed'),
     safeRegister(() => import('../sources/crossref'), 'crossref'),
     safeRegister(() => import('../sources/core'), 'core'),
-    safeRegister(() => import('../sources/uspto'), 'uspto'),
+    // USPTO disabled until API key is obtained - see https://patentsview.org/
+    // safeRegister(() => import('../sources/uspto'), 'uspto'),
   ])
 
   console.log(`[DataSourceRegistry] Initialized with ${registry.getAll().length} adapters:`,
