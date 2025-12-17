@@ -130,7 +130,17 @@ export class ToolRegistry {
     // Validate parameters
     const validation = this.validate(toolName, params)
     if (!validation.valid) {
-      console.error(`[ToolRegistry] Validation failed for ${toolName}:`, validation.error)
+      console.error(`[ToolRegistry] === Validation Failed ===`)
+      console.error(`[ToolRegistry] Tool: ${toolName}`)
+      console.error(`[ToolRegistry] Params received:`, JSON.stringify(params, null, 2))
+      console.error(`[ToolRegistry] Param types:`, Object.entries(params || {}).map(([k, v]) => `${k}: ${typeof v}`).join(', '))
+      console.error(`[ToolRegistry] Validation error:`, validation.error)
+
+      // Log expected schema for debugging
+      const tool = this.tools.get(toolName)
+      if (tool) {
+        console.error(`[ToolRegistry] Expected schema:`, tool.schema.description || 'See tool definition')
+      }
 
       const result: ToolResult = {
         success: false,

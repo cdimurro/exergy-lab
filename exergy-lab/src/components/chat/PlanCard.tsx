@@ -793,24 +793,36 @@ function PhaseItem({
                       {isEditing ? (
                         <div className="flex items-center gap-2">
                           {dropdownOptions ? (
-                            // Render dropdown for enum parameters
-                            <Select
-                              value={editValue}
-                              onChange={(val) => {
-                                setEditValue(val)
-                                // Auto-save on dropdown change
-                                if (onModify) {
-                                  onModify(phase.id, editingParam!, val)
-                                }
-                                // Delay clearing edit state to allow parent state to update first
-                                setTimeout(() => {
-                                  setEditingParam(null)
-                                  setEditValue('')
-                                }, 50)
-                              }}
-                              options={dropdownOptions}
-                              className="h-10 w-64"
-                            />
+                            // Render dropdown for enum parameters with save/cancel buttons
+                            <>
+                              <Select
+                                value={editValue}
+                                onChange={(val) => {
+                                  // Only update local state, don't save yet
+                                  setEditValue(val)
+                                }}
+                                options={dropdownOptions}
+                                className="h-10 w-64"
+                              />
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={handleEditSave}
+                                className="h-10 w-10 p-0"
+                                title="Save"
+                              >
+                                <CheckCircle2 className="h-5 w-5" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={handleEditCancel}
+                                className="h-10 w-10 p-0"
+                                title="Cancel"
+                              >
+                                <X className="h-5 w-5" />
+                              </Button>
+                            </>
                           ) : (
                             // Render input for text/number
                             <>

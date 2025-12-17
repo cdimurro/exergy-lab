@@ -41,19 +41,36 @@ export class ReasoningEngine extends EventEmitter {
   private toolRegistry = getGlobalToolRegistry()
   private currentSessionId: string | null = null
   private iterationCount = 0
+  private consecutiveToolFailures = 0
+  private startTime = 0
 
   constructor(config: Partial<AgentConfig> = {}) {
     super()
     this.config = { ...DEFAULT_AGENT_CONFIG, ...config }
+    console.log('[ReasoningEngine] Initialized with config:', {
+      maxIterations: this.config.maxIterations,
+      enableStreaming: this.config.enableStreaming,
+      maxTokens: this.config.maxTokens,
+      timeout: this.config.timeout,
+    })
   }
 
   /**
    * Main execution method - runs the complete 5-phase agent loop
    */
   async execute(userQuery: string, sessionId?: string): Promise<AgentResult> {
-    const startTime = Date.now()
+    // Only reset startTime on first call (not recursive iterations)
+    if (this.iterationCount === 0) {
+      this.startTime = Date.now()
+      this.consecutiveToolFailures = 0
+    }
     this.currentSessionId = sessionId || this.generateSessionId()
-    this.iterationCount = 0
+
+    console.log('[ReasoningEngine] === Execute Start ===')
+    console.log('[ReasoningEngine] Session ID:', this.currentSessionId)
+    console.log('[ReasoningEngine] Query:', userQuery.substring(0, 100) + (userQuery.length > 100 ? '...' : ''))
+    console.log('[ReasoningEngine] Iteration:', this.iterationCount)
+    console.log('[ReasoningEngine] Elapsed time:', Date.now() - this.startTime, 'ms')
 
     const steps: AgentStep[] = []
     const toolCalls: ToolCall[] = []
@@ -159,8 +176,31 @@ export class ReasoningEngine extends EventEmitter {
       // ===================================================================
       // PHASE 4: ITERATE - Decide if more information is needed
       // ===================================================================
+      console.log('[ReasoningEngine] === Iteration Decision ===')
+      console.log('[ReasoningEngine] needsMoreInfo:', analysis.needsMoreInfo)
+      console.log('[ReasoningEngine] confidence:', analysis.confidence)
+      console.log('[ReasoningEngine] iterationCount:', this.iterationCount, '/', this.config.maxIterations)
+      console.log('[ReasoningEngine] consecutiveToolFailures:', this.consecutiveToolFailures)
+
+      // Check elapsed time before iterating
+      const elapsedTime = Date.now() - this.startTime
+      const remainingTime = (this.config.timeout || 120000) - elapsedTime
+      console.log('[ReasoningEngine] Elapsed time:', elapsedTime, 'ms, Remaining:', remainingTime, 'ms')
+
+      // Check for conditions that should prevent iteration
+      if (this.consecutiveToolFailures >= 3) {
+        console.warn('[ReasoningEngine] Breaking iteration - too many consecutive tool failures:', this.consecutiveToolFailures)
+        return this.generateFallbackResult(userQuery, toolResults, steps, toolCalls, sources, 'Too many tool failures')
+      }
+
+      if (remainingTime < 15000) {
+        console.warn('[ReasoningEngine] Breaking iteration - insufficient time remaining:', remainingTime, 'ms')
+        return this.generateFallbackResult(userQuery, toolResults, steps, toolCalls, sources, 'Timeout approaching')
+      }
+
       if (analysis.needsMoreInfo && this.iterationCount < this.config.maxIterations) {
         this.iterationCount++
+        console.log('[ReasoningEngine] Will iterate. New iteration count:', this.iterationCount)
 
         this.emitStatus({
           step: 'iterating',
@@ -195,8 +235,10 @@ export class ReasoningEngine extends EventEmitter {
           steps: [...steps, ...iterationResult.steps],
           toolCalls: [...toolCalls, ...iterationResult.toolCalls],
           sources: [...sources, ...iterationResult.sources],
-          duration: Date.now() - startTime,
+          duration: Date.now() - this.startTime,
         }
+      } else {
+        console.log('[ReasoningEngine] Not iterating. Proceeding to response generation.')
       }
 
       // ===================================================================
@@ -233,7 +275,7 @@ export class ReasoningEngine extends EventEmitter {
         sources: finalSources,
         toolCalls,
         steps,
-        duration: Date.now() - startTime,
+        duration: Date.now() - this.startTime,
         metadata: {
           sessionId: this.currentSessionId,
           iterations: this.iterationCount,
@@ -266,7 +308,7 @@ export class ReasoningEngine extends EventEmitter {
         sources: [],
         toolCalls,
         steps,
-        duration: Date.now() - startTime,
+        duration: Date.now() - this.startTime,
         error: error instanceof Error ? error.message : 'Unknown error',
         metadata: {
           sessionId: this.currentSessionId,
@@ -296,6 +338,11 @@ Create a plan with:
 3. Expected information gaps
 4. Estimated complexity (1-10)
 
+CRITICAL TYPE REQUIREMENTS:
+- "maxResults" MUST be a NUMBER (e.g., 20), NOT a string (NOT "20")
+- "iterations", "targetAccuracy" MUST be NUMBERS
+- Boolean fields like "includePapers" MUST be true/false (NOT "true"/"false")
+
 IMPORTANT: Respond with ONLY valid JSON, no markdown or explanation. Use this exact structure:
 {
   "steps": ["step 1", "step 2"],
@@ -304,6 +351,8 @@ IMPORTANT: Respond with ONLY valid JSON, no markdown or explanation. Use this ex
   "complexity": 5,
   "estimatedDuration": 15000
 }
+
+Note: maxResults in the example above is the number 20, NOT the string "20".
 `
 
     // Try up to 2 times before falling back to default plan
@@ -339,13 +388,71 @@ IMPORTANT: Respond with ONLY valid JSON, no markdown or explanation. Use this ex
   }
 
   /**
+   * Coerce AI-generated tool params to correct types
+   * The AI often returns strings for numeric fields - this fixes that
+   */
+  private coerceToolParams(toolName: string, params: any): any {
+    if (!params || typeof params !== 'object') return params
+
+    const coerced = { ...params }
+
+    // Known numeric fields for each tool
+    const numericFields: Record<string, string[]> = {
+      searchPapers: ['maxResults'],
+      runSimulation: ['iterations', 'targetAccuracy'],
+      designExperiment: ['duration', 'sampleSize'],
+      calculateMetrics: ['timeHorizon', 'discountRate'],
+    }
+
+    // Known boolean fields
+    const booleanFields: Record<string, string[]> = {
+      searchPapers: ['includePapers', 'includePatents', 'includeDatasets'],
+      runSimulation: ['generateVisualizations'],
+      designExperiment: ['includeSafety', 'includeFailureAnalysis'],
+      calculateMetrics: ['includeSensitivity', 'includeRecommendations'],
+    }
+
+    // Coerce numeric fields
+    const numFields = numericFields[toolName] || []
+    for (const field of numFields) {
+      if (field in coerced && typeof coerced[field] === 'string') {
+        const parsed = parseFloat(coerced[field])
+        coerced[field] = isNaN(parsed) ? (field === 'maxResults' ? 20 : 0) : parsed
+        console.log(`[ReasoningEngine] Coerced ${toolName}.${field}: "${params[field]}" -> ${coerced[field]} (number)`)
+      }
+    }
+
+    // Coerce boolean fields
+    const boolFields = booleanFields[toolName] || []
+    for (const field of boolFields) {
+      if (field in coerced && typeof coerced[field] === 'string') {
+        coerced[field] = coerced[field] === 'true' || coerced[field] === '1'
+        console.log(`[ReasoningEngine] Coerced ${toolName}.${field}: "${params[field]}" -> ${coerced[field]} (boolean)`)
+      }
+    }
+
+    return coerced
+  }
+
+  /**
    * PHASE 2: EXECUTE
    * Run tool calls to gather information
    */
   private async executeTools(toolCalls: Array<{ name: string; params: any; rationale?: string }>): Promise<ToolResult[]> {
+    console.log('[ReasoningEngine] === Execute Tools ===')
+    console.log('[ReasoningEngine] Tool calls count:', toolCalls.length)
+    console.log('[ReasoningEngine] Tools to execute:', toolCalls.map(t => t.name).join(', '))
+
     const results: ToolResult[] = []
+    let failureCountThisIteration = 0
 
     for (const toolCall of toolCalls) {
+      // Coerce AI-generated params to correct types BEFORE executing
+      const coercedParams = this.coerceToolParams(toolCall.name, toolCall.params)
+
+      console.log(`[ReasoningEngine] Executing tool: ${toolCall.name}`)
+      console.log(`[ReasoningEngine] Tool params (coerced):`, JSON.stringify(coercedParams, null, 2))
+
       try {
         this.emitStatus({
           step: `executing_${toolCall.name}`,
@@ -358,13 +465,34 @@ IMPORTANT: Respond with ONLY valid JSON, no markdown or explanation. Use this ex
 
         const result = await this.toolRegistry.execute({
           toolName: toolCall.name as any,
-          params: toolCall.params,
+          params: coercedParams,  // Use coerced params
           callId: `${this.currentSessionId}_${toolCall.name}_${Date.now()}`,
         })
 
+        console.log(`[ReasoningEngine] Tool ${toolCall.name} result:`, {
+          success: result.success,
+          hasData: !!result.data,
+          error: result.error,
+          duration: result.duration,
+        })
+
+        if (result.success) {
+          // Reset consecutive failures on success
+          this.consecutiveToolFailures = 0
+        } else {
+          failureCountThisIteration++
+          this.consecutiveToolFailures++
+          console.warn(`[ReasoningEngine] Tool ${toolCall.name} FAILED:`, result.error)
+          console.warn(`[ReasoningEngine] Consecutive failures: ${this.consecutiveToolFailures}`)
+        }
+
         results.push(result)
       } catch (error) {
-        console.error(`[ReasoningEngine] Tool ${toolCall.name} failed:`, error)
+        failureCountThisIteration++
+        this.consecutiveToolFailures++
+        console.error(`[ReasoningEngine] Tool ${toolCall.name} threw exception:`, error)
+        console.error(`[ReasoningEngine] Consecutive failures: ${this.consecutiveToolFailures}`)
+
         results.push({
           success: false,
           error: error instanceof Error ? error.message : 'Unknown error',
@@ -373,6 +501,12 @@ IMPORTANT: Respond with ONLY valid JSON, no markdown or explanation. Use this ex
         })
       }
     }
+
+    console.log('[ReasoningEngine] === Tool Execution Summary ===')
+    console.log('[ReasoningEngine] Total tools:', results.length)
+    console.log('[ReasoningEngine] Successful:', results.filter(r => r.success).length)
+    console.log('[ReasoningEngine] Failed this iteration:', failureCountThisIteration)
+    console.log('[ReasoningEngine] Consecutive failures total:', this.consecutiveToolFailures)
 
     return results
   }
@@ -386,6 +520,23 @@ IMPORTANT: Respond with ONLY valid JSON, no markdown or explanation. Use this ex
     toolResults: ToolResult[],
     plan: AgentPlan
   ): Promise<AgentAnalysis> {
+    console.log('[ReasoningEngine] === Analyze Results ===')
+    console.log('[ReasoningEngine] Tool results summary:', toolResults.map(r => ({
+      success: r.success,
+      error: r.error,
+      hasData: !!r.data,
+    })))
+
+    const successfulResults = toolResults.filter(r => r.success)
+    const failedResults = toolResults.filter(r => !r.success)
+
+    console.log('[ReasoningEngine] Successful results:', successfulResults.length)
+    console.log('[ReasoningEngine] Failed results:', failedResults.length)
+
+    if (failedResults.length > 0) {
+      console.log('[ReasoningEngine] Failed tool errors:', failedResults.map(r => r.error))
+    }
+
     const analysisPrompt = `You are an analysis agent. Synthesize the tool results and determine if more information is needed.
 
 Original Query: "${originalQuery}"
@@ -422,19 +573,32 @@ Set "confidence" 0-100 based on how well the query can be answered.
       const validated = await validateAIOutput(analysisResult.content, AISchemas.AgentAnalysis)
 
       if (validated.success) {
+        console.log('[ReasoningEngine] Analysis validation succeeded')
+        console.log('[ReasoningEngine] Analysis result:', {
+          confidence: validated.data.confidence,
+          needsMoreInfo: validated.data.needsMoreInfo,
+          gapsCount: validated.data.gaps.length,
+          keyFindingsCount: validated.data.keyFindings.length,
+        })
         return validated.data
+      } else {
+        console.warn('[ReasoningEngine] Analysis validation FAILED:', validated.error?.message)
+        console.warn('[ReasoningEngine] Raw analysis response:', analysisResult.content.substring(0, 500))
       }
     }
 
-    // Fallback analysis
-    return {
-      synthesis: 'Tool execution completed',
-      gaps: [],
-      needsMoreInfo: false,
+    // Fallback analysis - don't iterate on validation failure
+    console.log('[ReasoningEngine] Using fallback analysis (no iteration)')
+    const fallbackAnalysis: AgentAnalysis = {
+      synthesis: `Analysis completed with ${successfulResults.length}/${toolResults.length} successful tool executions`,
+      gaps: failedResults.map(r => `Tool error: ${r.error}`),
+      needsMoreInfo: false,  // Don't iterate on validation failure
       refinedQuery: undefined,
-      confidence: 70,
+      confidence: successfulResults.length > 0 ? 60 : 30,
       keyFindings: [],
     }
+    console.log('[ReasoningEngine] Fallback analysis:', fallbackAnalysis)
+    return fallbackAnalysis
   }
 
   /**
@@ -558,6 +722,78 @@ Respond with JSON:
   }
 
   /**
+   * Generate a fallback result when execution cannot continue
+   * Used for timeout, too many failures, etc.
+   */
+  private generateFallbackResult(
+    query: string,
+    toolResults: ToolResult[],
+    steps: AgentStep[],
+    toolCalls: ToolCall[],
+    sources: any[],
+    reason: string
+  ): AgentResult {
+    console.warn(`[ReasoningEngine] === Generating Fallback Result ===`)
+    console.warn(`[ReasoningEngine] Reason: ${reason}`)
+    console.warn(`[ReasoningEngine] Iterations completed: ${this.iterationCount}`)
+    console.warn(`[ReasoningEngine] Total tool calls: ${toolCalls.length}`)
+
+    const successfulResults = toolResults.filter(r => r.success)
+    const failedResults = toolResults.filter(r => !r.success)
+
+    // Extract any sources we did manage to get
+    const extractedSources: any[] = [...sources]
+    successfulResults.forEach(result => {
+      if (result.data) {
+        if (Array.isArray(result.data.papers)) {
+          extractedSources.push(...result.data.papers)
+        }
+        if (Array.isArray(result.data.sources)) {
+          extractedSources.push(...result.data.sources)
+        }
+      }
+    })
+
+    const confidence = successfulResults.length > 0 ? 50 : 20
+
+    const result: AgentResult = {
+      success: true, // Still mark as success to return partial results
+      response: `Research completed with ${successfulResults.length}/${toolResults.length} successful queries. ${reason}. Retrieved ${extractedSources.length} sources.`,
+      sources: extractedSources,
+      toolCalls,
+      steps: [
+        ...steps,
+        {
+          phase: 'respond',
+          description: `Fallback response generated: ${reason}`,
+          data: { reason, successfulTools: successfulResults.length, failedTools: failedResults.length },
+          timestamp: Date.now(),
+          duration: 0,
+        },
+      ],
+      duration: Date.now() - this.startTime,
+      metadata: {
+        sessionId: this.currentSessionId,
+        iterations: this.iterationCount,
+        totalToolCalls: toolCalls.length,
+        confidence,
+        keyFindings: [],
+        synthesis: `Partial results: ${successfulResults.length} data sources retrieved. ${reason}.`,
+        recommendations: ['Review search parameters', 'Check parameter types', 'Retry with simplified query'],
+      },
+    }
+
+    console.log('[ReasoningEngine] Fallback result generated:', {
+      success: result.success,
+      sourcesCount: result.sources.length,
+      confidence,
+      reason,
+    })
+
+    return result
+  }
+
+  /**
    * Get current session ID
    */
   getSessionId(): string | null {
@@ -577,6 +813,8 @@ Respond with JSON:
   reset(): void {
     this.currentSessionId = null
     this.iterationCount = 0
+    this.consecutiveToolFailures = 0
+    this.startTime = 0
     this.removeAllListeners()
   }
 }

@@ -96,18 +96,23 @@ export function ChatInterface({
     },
   })
 
+  // Ref to store sendMessage - prevents useEffect re-runs when sendMessage function reference changes
+  // This is the key fix for the "Auto-start blocked" console spam
+  const sendMessageRef = React.useRef(sendMessage)
+  React.useEffect(() => {
+    sendMessageRef.current = sendMessage
+  }, [sendMessage])
+
   // Auto-start with form data when autoStart is true
   // The ref persists across StrictMode remounts, preventing double-execution
   React.useEffect(() => {
     // Skip if conditions aren't met
     if (!autoStart || !initialFormData) {
-      console.log('[ChatInterface] Auto-start skipped:', { autoStart, hasFormData: !!initialFormData })
       return
     }
 
     // Check ref to prevent double-execution (ref persists across StrictMode remounts)
     if (hasSentInitialMessageRef.current) {
-      console.log('[ChatInterface] Auto-start blocked - already sent')
       return
     }
 
@@ -121,9 +126,9 @@ export function ChatInterface({
     const prompt = buildPromptFromFormData(pageType as PageType, initialFormData)
     console.log('[ChatInterface] Built prompt:', prompt.substring(0, 100) + '...')
 
-    // Call sendMessage directly - no timeout needed since ref guards against double-execution
-    // The ref check above ensures this only runs once even in StrictMode
-    sendMessage(prompt, {
+    // Use sendMessageRef.current to avoid dependency on sendMessage
+    // This prevents the effect from re-running when sendMessage function reference changes
+    sendMessageRef.current(prompt, {
       formData: initialFormData,
       domains: initialFormData.domain ? [initialFormData.domain as Domain] : [],
     }).then(() => {
@@ -133,7 +138,7 @@ export function ChatInterface({
     })
 
     // No cleanup needed - the ref guard handles StrictMode
-  }, [autoStart, initialFormData, pageType, sendMessage])
+  }, [autoStart, initialFormData, pageType])  // Removed sendMessage from deps - using ref instead
 
   const handleDomainToggle = (domain: Domain) => {
     setSelectedDomains((prev) =>
