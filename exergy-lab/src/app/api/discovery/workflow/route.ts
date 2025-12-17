@@ -12,6 +12,8 @@ import { workflowPlanner } from '@/lib/discovery/workflow-planner'
 import { ReasoningEngine } from '@/lib/ai/agent/reasoning-engine'
 import { serverWorkflowStore } from '@/lib/discovery/workflow-store'
 import { useConversationStore } from '@/lib/ai/agent/conversation-store'
+import { initializeTools } from '@/lib/ai/tools/implementations'
+import { registerGlobalTools } from '@/lib/ai/tools/registry'
 import type {
   UnifiedWorkflow,
   WorkflowInput,
@@ -20,6 +22,11 @@ import type {
   PhaseModification,
 } from '@/types/workflow'
 import type { Domain } from '@/types/discovery'
+
+// Initialize tools at module load time (runs once when module is first imported)
+const tools = initializeTools()
+registerGlobalTools(tools)
+console.log('[Workflow API] Registered', tools.length, 'tools')
 
 // ============================================================================
 // POST - Generate Execution Plan

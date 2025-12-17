@@ -114,32 +114,32 @@ export function ExperimentsForm({
   return (
     <div className="h-full flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="shrink-0 border-b border-border px-6 py-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+      <div className="shrink-0 border-b border-border px-8 py-6">
+        <div className="flex items-center gap-4">
+          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10 text-primary">
             {pageIcon}
           </div>
           <div>
-            <h1 className="text-2xl font-semibold text-foreground">{pageTitle}</h1>
-            <p className="text-base text-muted-foreground">{pageSubtitle}</p>
+            <h1 className="text-3xl font-semibold text-foreground">{pageTitle}</h1>
+            <p className="text-lg text-muted-foreground">{pageSubtitle}</p>
           </div>
         </div>
       </div>
 
       {/* Form Content */}
-      <div className="flex-1 overflow-y-auto p-6">
-        <form onSubmit={handleSubmit} className="max-w-2xl mx-auto space-y-8">
+      <div className="flex-1 overflow-y-auto p-8">
+        <form onSubmit={handleSubmit} className="w-full space-y-10">
           {/* Domain Selection */}
-          <div className="space-y-3">
-            <label className="text-base font-medium text-foreground">
+          <div className="space-y-4">
+            <label className="text-lg font-medium text-foreground">
               Research Domain
             </label>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-3">
               {domains.map((domain) => (
                 <Badge
                   key={domain}
                   variant={selectedDomain === domain ? 'primary' : 'secondary'}
-                  className="cursor-pointer transition-colors"
+                  className="cursor-pointer transition-colors text-base px-4 py-2"
                   onClick={() => setSelectedDomain(domain)}
                 >
                   {formatDomainLabel(domain)}
@@ -147,41 +147,41 @@ export function ExperimentsForm({
               ))}
             </div>
             {errors.domain && (
-              <p className="text-sm text-error">{errors.domain}</p>
+              <p className="text-base text-error">{errors.domain}</p>
             )}
           </div>
 
           {/* Experiment Description */}
-          <div className="space-y-3">
-            <label className="text-base font-medium text-foreground">
+          <div className="space-y-4">
+            <label className="text-lg font-medium text-foreground">
               Experiment Description
             </label>
             <Textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Describe what you want to investigate. Include materials, processes, or phenomena you want to study..."
-              className="min-h-[120px] text-base"
+              className="min-h-[160px] text-lg"
               error={errors.description}
             />
-            <p className="text-sm text-foreground-subtle">
+            <p className="text-base text-foreground-subtle">
               Be specific about the hypothesis, materials, and expected outcomes
             </p>
           </div>
 
           {/* Objectives */}
-          <div className="space-y-3">
-            <label className="text-base font-medium text-foreground">
+          <div className="space-y-4">
+            <label className="text-lg font-medium text-foreground">
               Experiment Objectives
             </label>
-            <div className="space-y-2">
+            <div className="space-y-3">
               {objectives.map((objective, index) => (
-                <div key={index} className="flex gap-2">
+                <div key={index} className="flex gap-3">
                   <input
                     type="text"
                     value={objective}
                     onChange={(e) => handleObjectiveChange(index, e.target.value)}
                     placeholder={`Objective ${index + 1}: What do you want to measure or achieve?`}
-                    className="flex-1 h-10 px-3 rounded-lg border border-border bg-background-elevated text-base text-foreground placeholder:text-foreground-subtle focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    className="flex-1 h-14 px-4 rounded-lg border border-border bg-background-elevated text-lg text-foreground placeholder:text-foreground-subtle focus:outline-none focus:ring-2 focus:ring-primary/50"
                   />
                   {objectives.length > 1 && (
                     <Button
@@ -189,9 +189,9 @@ export function ExperimentsForm({
                       variant="ghost"
                       size="sm"
                       onClick={() => handleRemoveObjective(index)}
-                      className="h-10 w-10 p-0"
+                      className="h-14 w-14 p-0"
                     >
-                      <X className="h-4 w-4" />
+                      <X className="h-5 w-5" />
                     </Button>
                   )}
                 </div>
@@ -200,61 +200,61 @@ export function ExperimentsForm({
             <Button
               type="button"
               variant="outline"
-              size="sm"
+              size="default"
               onClick={handleAddObjective}
-              className="gap-1"
+              className="gap-2 text-base"
             >
-              <Plus className="h-3 w-3" />
+              <Plus className="h-4 w-4" />
               Add Objective
             </Button>
             {errors.objectives && (
-              <p className="text-sm text-error">{errors.objectives}</p>
+              <p className="text-base text-error">{errors.objectives}</p>
             )}
           </div>
 
           {/* Safety Requirements */}
-          <div className="space-y-3">
-            <label className="text-base font-medium text-foreground">
+          <div className="space-y-4">
+            <label className="text-lg font-medium text-foreground">
               Safety Requirements (Optional)
             </label>
             <Textarea
               value={safetyRequirements}
               onChange={(e) => setSafetyRequirements(e.target.value)}
               placeholder="Any specific safety protocols, PPE requirements, or hazardous materials to consider..."
-              className="min-h-[80px] text-base"
+              className="min-h-[120px] text-lg"
             />
           </div>
 
           {/* Constraints */}
-          <div className="space-y-3">
-            <label className="text-base font-medium text-foreground">
+          <div className="space-y-4">
+            <label className="text-lg font-medium text-foreground">
               Constraints (Optional)
             </label>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-3">
               {COMMON_CONSTRAINTS.map((constraint) => (
                 <Badge
                   key={constraint}
                   variant={constraints.includes(constraint) ? 'primary' : 'secondary'}
-                  className="cursor-pointer transition-colors text-base"
+                  className="cursor-pointer transition-colors text-base px-4 py-2"
                   onClick={() => handleConstraintToggle(constraint)}
                 >
                   {constraint}
                 </Badge>
               ))}
             </div>
-            <p className="text-sm text-foreground-subtle">
+            <p className="text-base text-foreground-subtle">
               Select any constraints that apply to your experiment
             </p>
           </div>
 
           {/* Tips Card */}
           <Card variant="elevated" className="bg-primary/5 border-primary/20">
-            <CardContent className="p-4">
-              <div className="flex gap-3">
-                <FlaskConical className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                <div className="space-y-1">
-                  <p className="text-base font-medium text-foreground">Design better experiments</p>
-                  <ul className="text-sm text-foreground-muted space-y-1">
+            <CardContent className="p-6">
+              <div className="flex gap-4">
+                <FlaskConical className="h-6 w-6 text-primary shrink-0 mt-0.5" />
+                <div className="space-y-2">
+                  <p className="text-lg font-medium text-foreground">Design better experiments</p>
+                  <ul className="text-base text-foreground-muted space-y-2">
                     <li>Define clear, measurable objectives</li>
                     <li>Include control variables and expected ranges</li>
                     <li>Consider failure modes and safety protocols</li>
@@ -265,15 +265,15 @@ export function ExperimentsForm({
           </Card>
 
           {/* Submit Button */}
-          <div className="pt-4">
+          <div className="pt-6">
             <Button
               type="submit"
               variant="primary"
               size="lg"
-              className="w-full"
+              className="w-full h-14 text-lg"
               loading={isSubmitting}
             >
-              <FlaskConical className="h-4 w-4 mr-2" />
+              <FlaskConical className="h-5 w-5 mr-2" />
               {ACTION_BUTTON_LABELS.experiments}
             </Button>
           </div>

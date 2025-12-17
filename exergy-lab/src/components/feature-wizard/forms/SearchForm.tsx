@@ -90,32 +90,32 @@ export function SearchForm({
   return (
     <div className="h-full flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="shrink-0 border-b border-border px-6 py-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+      <div className="shrink-0 border-b border-border px-8 py-6">
+        <div className="flex items-center gap-4">
+          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10 text-primary">
             {pageIcon}
           </div>
           <div>
-            <h1 className="text-2xl font-semibold text-foreground">{pageTitle}</h1>
-            <p className="text-base text-muted-foreground">{pageSubtitle}</p>
+            <h1 className="text-3xl font-semibold text-foreground">{pageTitle}</h1>
+            <p className="text-lg text-muted-foreground">{pageSubtitle}</p>
           </div>
         </div>
       </div>
 
       {/* Form Content */}
-      <div className="flex-1 overflow-y-auto p-6">
-        <form onSubmit={handleSubmit} className="max-w-2xl mx-auto space-y-8">
+      <div className="flex-1 overflow-y-auto p-8">
+        <form onSubmit={handleSubmit} className="w-full space-y-10">
           {/* Domain Selection */}
-          <div className="space-y-3">
-            <label className="text-base font-medium text-foreground">
+          <div className="space-y-4">
+            <label className="text-lg font-medium text-foreground">
               Research Domain
             </label>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-3">
               {domains.map((domain) => (
                 <Badge
                   key={domain}
                   variant={selectedDomain === domain ? 'primary' : 'secondary'}
-                  className="cursor-pointer transition-colors"
+                  className="cursor-pointer transition-colors text-base px-4 py-2"
                   onClick={() => setSelectedDomain(domain)}
                 >
                   {formatDomainLabel(domain)}
@@ -123,13 +123,13 @@ export function SearchForm({
               ))}
             </div>
             {errors.domain && (
-              <p className="text-sm text-error">{errors.domain}</p>
+              <p className="text-base text-error">{errors.domain}</p>
             )}
           </div>
 
           {/* Search Query */}
-          <div className="space-y-3">
-            <label className="text-base font-medium text-foreground">
+          <div className="space-y-4">
+            <label className="text-lg font-medium text-foreground">
               Search Query
             </label>
             <Textarea
@@ -139,25 +139,25 @@ export function SearchForm({
                 if (!description) setDescription(e.target.value)
               }}
               placeholder="Enter keywords, phrases, or a natural language query..."
-              className="min-h-[100px] text-base"
+              className="min-h-[140px] text-lg"
               error={errors.query}
             />
-            <p className="text-sm text-foreground-subtle">
+            <p className="text-base text-foreground-subtle">
               Try: "perovskite solar cell efficiency 2024" or "solid-state battery thermal management"
             </p>
           </div>
 
           {/* Source Types */}
-          <div className="space-y-3">
-            <label className="text-base font-medium text-foreground">
+          <div className="space-y-4">
+            <label className="text-lg font-medium text-foreground">
               Source Types
             </label>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-3">
               {SOURCE_TYPES.map((source) => (
                 <Badge
                   key={source.id}
                   variant={sourceTypes.includes(source.id) ? 'primary' : 'secondary'}
-                  className="cursor-pointer transition-colors"
+                  className="cursor-pointer transition-colors text-base px-4 py-2"
                   onClick={() => handleSourceTypeToggle(source.id)}
                 >
                   {source.label}
@@ -165,42 +165,42 @@ export function SearchForm({
               ))}
             </div>
             {errors.sourceTypes && (
-              <p className="text-sm text-error">{errors.sourceTypes}</p>
+              <p className="text-base text-error">{errors.sourceTypes}</p>
             )}
           </div>
 
           {/* Date Range */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
               <input
                 type="checkbox"
                 id="useDateRange"
                 checked={useDateRange}
                 onChange={(e) => setUseDateRange(e.target.checked)}
-                className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+                className="h-5 w-5 rounded border-border text-primary focus:ring-primary"
               />
-              <label htmlFor="useDateRange" className="text-base font-medium text-foreground">
+              <label htmlFor="useDateRange" className="text-lg font-medium text-foreground">
                 Filter by date range
               </label>
             </div>
             {useDateRange && (
-              <div className="flex gap-4">
+              <div className="flex gap-6">
                 <div className="flex-1">
-                  <label className="text-xs text-foreground-subtle mb-1 block">From</label>
+                  <label className="text-base text-foreground-subtle mb-2 block">From</label>
                   <input
                     type="date"
                     value={dateFrom}
                     onChange={(e) => setDateFrom(e.target.value)}
-                    className="w-full h-10 px-3 rounded-lg border border-border bg-background-elevated text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    className="w-full h-14 px-4 rounded-lg border border-border bg-background-elevated text-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                   />
                 </div>
                 <div className="flex-1">
-                  <label className="text-xs text-foreground-subtle mb-1 block">To</label>
+                  <label className="text-base text-foreground-subtle mb-2 block">To</label>
                   <input
                     type="date"
                     value={dateTo}
                     onChange={(e) => setDateTo(e.target.value)}
-                    className="w-full h-10 px-3 rounded-lg border border-border bg-background-elevated text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    className="w-full h-14 px-4 rounded-lg border border-border bg-background-elevated text-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                   />
                 </div>
               </div>
@@ -209,12 +209,12 @@ export function SearchForm({
 
           {/* Tips Card */}
           <Card variant="elevated" className="bg-primary/5 border-primary/20">
-            <CardContent className="p-4">
-              <div className="flex gap-3">
-                <Search className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                <div className="space-y-1">
-                  <p className="text-base font-medium text-foreground">Search tips</p>
-                  <ul className="text-sm text-foreground-muted space-y-1">
+            <CardContent className="p-6">
+              <div className="flex gap-4">
+                <Search className="h-6 w-6 text-primary shrink-0 mt-0.5" />
+                <div className="space-y-2">
+                  <p className="text-lg font-medium text-foreground">Search tips</p>
+                  <ul className="text-base text-foreground-muted space-y-2">
                     <li>Use specific technical terms for better results</li>
                     <li>Include year ranges for recent research</li>
                     <li>Combine domain keywords with application areas</li>
@@ -225,15 +225,15 @@ export function SearchForm({
           </Card>
 
           {/* Submit Button */}
-          <div className="pt-4">
+          <div className="pt-6">
             <Button
               type="submit"
               variant="primary"
               size="lg"
-              className="w-full"
+              className="w-full h-14 text-lg"
               loading={isSubmitting}
             >
-              <Search className="h-4 w-4 mr-2" />
+              <Search className="h-5 w-5 mr-2" />
               {ACTION_BUTTON_LABELS.search}
             </Button>
           </div>

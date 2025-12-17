@@ -109,32 +109,32 @@ export function SimulationsForm({
   return (
     <div className="h-full flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="shrink-0 border-b border-border px-6 py-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+      <div className="shrink-0 border-b border-border px-8 py-6">
+        <div className="flex items-center gap-4">
+          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10 text-primary">
             {pageIcon}
           </div>
           <div>
-            <h1 className="text-2xl font-semibold text-foreground">{pageTitle}</h1>
-            <p className="text-base text-muted-foreground">{pageSubtitle}</p>
+            <h1 className="text-3xl font-semibold text-foreground">{pageTitle}</h1>
+            <p className="text-lg text-muted-foreground">{pageSubtitle}</p>
           </div>
         </div>
       </div>
 
       {/* Form Content */}
-      <div className="flex-1 overflow-y-auto p-6">
-        <form onSubmit={handleSubmit} className="max-w-2xl mx-auto space-y-8">
+      <div className="flex-1 overflow-y-auto p-8">
+        <form onSubmit={handleSubmit} className="w-full space-y-10">
           {/* Domain Selection */}
-          <div className="space-y-3">
-            <label className="text-base font-medium text-foreground">
+          <div className="space-y-4">
+            <label className="text-lg font-medium text-foreground">
               Simulation Domain
             </label>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-3">
               {domains.map((domain) => (
                 <Badge
                   key={domain}
                   variant={selectedDomain === domain ? 'primary' : 'secondary'}
-                  className="cursor-pointer transition-colors"
+                  className="cursor-pointer transition-colors text-base px-4 py-2"
                   onClick={() => setSelectedDomain(domain)}
                 >
                   {formatDomainLabel(domain)}
@@ -142,21 +142,21 @@ export function SimulationsForm({
               ))}
             </div>
             {errors.domain && (
-              <p className="text-sm text-error">{errors.domain}</p>
+              <p className="text-base text-error">{errors.domain}</p>
             )}
           </div>
 
           {/* System Type */}
-          <div className="space-y-3">
-            <label className="text-base font-medium text-foreground">
+          <div className="space-y-4">
+            <label className="text-lg font-medium text-foreground">
               System Type (Optional)
             </label>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-3">
               {SYSTEM_TYPES.map((type) => (
                 <Badge
                   key={type}
                   variant={systemType === type ? 'primary' : 'secondary'}
-                  className="cursor-pointer transition-colors"
+                  className="cursor-pointer transition-colors text-base px-4 py-2"
                   onClick={() => setSystemType(systemType === type ? '' : type)}
                 >
                   {type}
@@ -166,28 +166,28 @@ export function SimulationsForm({
           </div>
 
           {/* System Description */}
-          <div className="space-y-3">
-            <label className="text-base font-medium text-foreground">
+          <div className="space-y-4">
+            <label className="text-lg font-medium text-foreground">
               System Description
             </label>
             <Textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Describe the system you want to simulate. Include key parameters, operating conditions, and what metrics you want to analyze..."
-              className="min-h-[120px] text-base"
+              className="min-h-[160px] text-lg"
               error={errors.description}
             />
-            <p className="text-sm text-foreground-subtle">
+            <p className="text-base text-foreground-subtle">
               Include dimensions, materials, operating conditions, and target outputs
             </p>
           </div>
 
           {/* Simulation Tier */}
-          <div className="space-y-3">
-            <label className="text-base font-medium text-foreground">
+          <div className="space-y-4">
+            <label className="text-lg font-medium text-foreground">
               Simulation Tier
             </label>
-            <div className="grid gap-3">
+            <div className="grid gap-4">
               {SIMULATION_TIERS.map((tierOption) => {
                 const Icon = tierOption.icon
                 const isSelected = tier === tierOption.id
@@ -196,7 +196,7 @@ export function SimulationsForm({
                     key={tierOption.id}
                     onClick={() => setTier(tierOption.id)}
                     className={`
-                      flex items-start gap-4 p-4 rounded-lg border cursor-pointer transition-all
+                      flex items-start gap-5 p-5 rounded-xl border cursor-pointer transition-all
                       ${
                         isSelected
                           ? 'border-primary bg-primary/5'
@@ -206,35 +206,35 @@ export function SimulationsForm({
                   >
                     <div
                       className={`
-                        flex h-10 w-10 items-center justify-center rounded-lg shrink-0
+                        flex h-12 w-12 items-center justify-center rounded-xl shrink-0
                         ${isSelected ? 'bg-primary/10 text-primary' : 'bg-background-surface text-foreground-muted'}
                       `}
                     >
-                      <Icon className="h-5 w-5" />
+                      <Icon className="h-6 w-6" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <span className="font-medium text-foreground">{tierOption.label}</span>
-                        <div className="flex items-center gap-2 text-xs">
+                        <span className="font-medium text-lg text-foreground">{tierOption.label}</span>
+                        <div className="flex items-center gap-3 text-base">
                           <span className={tierOption.cost === '$0.00' ? 'text-success' : 'text-warning'}>
                             {tierOption.cost}
                           </span>
                           <span className="text-foreground-subtle">{tierOption.time}</span>
                         </div>
                       </div>
-                      <p className="text-sm text-foreground-muted mt-1">
+                      <p className="text-base text-foreground-muted mt-1">
                         {tierOption.description}
                       </p>
                     </div>
                     <div
                       className={`
-                        h-5 w-5 rounded-full border-2 shrink-0 mt-1 transition-colors
+                        h-6 w-6 rounded-full border-2 shrink-0 mt-1 transition-colors
                         ${isSelected ? 'border-primary bg-primary' : 'border-border'}
                       `}
                     >
                       {isSelected && (
                         <div className="h-full w-full flex items-center justify-center">
-                          <div className="h-2 w-2 rounded-full bg-white" />
+                          <div className="h-2.5 w-2.5 rounded-full bg-white" />
                         </div>
                       )}
                     </div>
@@ -246,12 +246,12 @@ export function SimulationsForm({
 
           {/* Tips Card */}
           <Card variant="elevated" className="bg-primary/5 border-primary/20">
-            <CardContent className="p-4">
-              <div className="flex gap-3">
-                <Cpu className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                <div className="space-y-1">
-                  <p className="text-base font-medium text-foreground">Simulation tips</p>
-                  <ul className="text-sm text-foreground-muted space-y-1">
+            <CardContent className="p-6">
+              <div className="flex gap-4">
+                <Cpu className="h-6 w-6 text-primary shrink-0 mt-0.5" />
+                <div className="space-y-2">
+                  <p className="text-lg font-medium text-foreground">Simulation tips</p>
+                  <ul className="text-base text-foreground-muted space-y-2">
                     <li>Start with Browser tier for quick feasibility checks</li>
                     <li>Use Cloud GPU for detailed parameter sweeps</li>
                     <li>Include boundary conditions and constraints</li>
@@ -262,15 +262,15 @@ export function SimulationsForm({
           </Card>
 
           {/* Submit Button */}
-          <div className="pt-4">
+          <div className="pt-6">
             <Button
               type="submit"
               variant="primary"
               size="lg"
-              className="w-full"
+              className="w-full h-14 text-lg"
               loading={isSubmitting}
             >
-              <Cpu className="h-4 w-4 mr-2" />
+              <Cpu className="h-5 w-5 mr-2" />
               {ACTION_BUTTON_LABELS.simulations}
             </Button>
           </div>

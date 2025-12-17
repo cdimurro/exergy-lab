@@ -104,32 +104,32 @@ export function TEAForm({
   return (
     <div className="h-full flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="shrink-0 border-b border-border px-6 py-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+      <div className="shrink-0 border-b border-border px-8 py-6">
+        <div className="flex items-center gap-4">
+          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10 text-primary">
             {pageIcon}
           </div>
           <div>
-            <h1 className="text-2xl font-semibold text-foreground">{pageTitle}</h1>
-            <p className="text-base text-muted-foreground">{pageSubtitle}</p>
+            <h1 className="text-3xl font-semibold text-foreground">{pageTitle}</h1>
+            <p className="text-lg text-muted-foreground">{pageSubtitle}</p>
           </div>
         </div>
       </div>
 
       {/* Form Content */}
-      <div className="flex-1 overflow-y-auto p-6">
-        <form onSubmit={handleSubmit} className="max-w-2xl mx-auto space-y-8">
+      <div className="flex-1 overflow-y-auto p-8">
+        <form onSubmit={handleSubmit} className="w-full space-y-10">
           {/* Domain Selection */}
-          <div className="space-y-3">
-            <label className="text-base font-medium text-foreground">
+          <div className="space-y-4">
+            <label className="text-lg font-medium text-foreground">
               Technology Domain
             </label>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-3">
               {domains.map((domain) => (
                 <Badge
                   key={domain}
                   variant={selectedDomain === domain ? 'primary' : 'secondary'}
-                  className="cursor-pointer transition-colors"
+                  className="cursor-pointer transition-colors text-base px-4 py-2"
                   onClick={() => setSelectedDomain(domain)}
                 >
                   {formatDomainLabel(domain)}
@@ -137,30 +137,30 @@ export function TEAForm({
               ))}
             </div>
             {errors.domain && (
-              <p className="text-sm text-error">{errors.domain}</p>
+              <p className="text-base text-error">{errors.domain}</p>
             )}
           </div>
 
           {/* Technology Description */}
-          <div className="space-y-3">
-            <label className="text-base font-medium text-foreground">
+          <div className="space-y-4">
+            <label className="text-lg font-medium text-foreground">
               Technology Description
             </label>
             <Textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Describe the technology for economic analysis. Include key specifications, capacity, and any cost assumptions..."
-              className="min-h-[120px] text-base"
+              className="min-h-[160px] text-lg"
               error={errors.description}
             />
-            <p className="text-sm text-foreground-subtle">
+            <p className="text-base text-foreground-subtle">
               Include capacity, efficiency, and any known cost parameters
             </p>
           </div>
 
           {/* File Upload */}
-          <div className="space-y-3">
-            <label className="text-base font-medium text-foreground">
+          <div className="space-y-4">
+            <label className="text-lg font-medium text-foreground">
               Supporting Documents (Optional)
             </label>
             <input
@@ -173,28 +173,28 @@ export function TEAForm({
             />
             <div
               onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"
+              className="border-2 border-dashed border-border rounded-xl p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
             >
-              <Upload className="h-8 w-8 mx-auto text-foreground-subtle mb-2" />
-              <p className="text-sm text-foreground-muted">
+              <Upload className="h-10 w-10 mx-auto text-foreground-subtle mb-3" />
+              <p className="text-base text-foreground-muted">
                 Click to upload cost data, specifications, or reports
               </p>
-              <p className="text-xs text-foreground-subtle mt-1">
+              <p className="text-sm text-foreground-subtle mt-2">
                 PDF, Excel, CSV, Word files supported
               </p>
             </div>
             {files.length > 0 && (
-              <div className="space-y-2 mt-3">
+              <div className="space-y-3 mt-4">
                 {files.map((file, index) => (
                   <div
                     key={index}
-                    className="flex items-center gap-2 p-2 rounded-lg bg-background-elevated border border-border"
+                    className="flex items-center gap-3 p-3 rounded-lg bg-background-elevated border border-border"
                   >
-                    <FileText className="h-4 w-4 text-foreground-muted" />
-                    <span className="flex-1 text-sm text-foreground truncate">
+                    <FileText className="h-5 w-5 text-foreground-muted" />
+                    <span className="flex-1 text-base text-foreground truncate">
                       {file.name}
                     </span>
-                    <span className="text-xs text-foreground-subtle">
+                    <span className="text-sm text-foreground-subtle">
                       {(file.size / 1024).toFixed(0)} KB
                     </span>
                     <Button
@@ -202,9 +202,9 @@ export function TEAForm({
                       variant="ghost"
                       size="sm"
                       onClick={() => handleRemoveFile(index)}
-                      className="h-6 w-6 p-0"
+                      className="h-8 w-8 p-0"
                     >
-                      <X className="h-3 w-3" />
+                      <X className="h-4 w-4" />
                     </Button>
                   </div>
                 ))}
@@ -213,17 +213,17 @@ export function TEAForm({
           </div>
 
           {/* Scale Selection */}
-          <div className="space-y-3">
-            <label className="text-base font-medium text-foreground">
+          <div className="space-y-4">
+            <label className="text-lg font-medium text-foreground">
               Project Scale
             </label>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-4">
               {SCALE_OPTIONS.map((option) => (
                 <div
                   key={option.id}
                   onClick={() => setScale(option.id)}
                   className={`
-                    p-4 rounded-lg border cursor-pointer text-center transition-all
+                    p-5 rounded-xl border cursor-pointer text-center transition-all
                     ${
                       scale === option.id
                         ? 'border-primary bg-primary/5'
@@ -231,38 +231,38 @@ export function TEAForm({
                     }
                   `}
                 >
-                  <p className="font-medium text-foreground text-sm">{option.label}</p>
-                  <p className="text-xs text-foreground-muted mt-1">{option.description}</p>
+                  <p className="font-medium text-foreground text-base">{option.label}</p>
+                  <p className="text-sm text-foreground-muted mt-2">{option.description}</p>
                 </div>
               ))}
             </div>
           </div>
 
           {/* Region */}
-          <div className="space-y-3">
-            <label className="text-base font-medium text-foreground">
+          <div className="space-y-4">
+            <label className="text-lg font-medium text-foreground">
               Target Region (Optional)
             </label>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-3">
               {REGIONS.map((r) => (
                 <Badge
                   key={r}
                   variant={region === r ? 'primary' : 'secondary'}
-                  className="cursor-pointer transition-colors text-base"
+                  className="cursor-pointer transition-colors text-base px-4 py-2"
                   onClick={() => setRegion(region === r ? '' : r)}
                 >
                   {r}
                 </Badge>
               ))}
             </div>
-            <p className="text-sm text-foreground-subtle">
+            <p className="text-base text-foreground-subtle">
               Region affects electricity prices, labor costs, and incentives
             </p>
           </div>
 
           {/* Project Lifespan */}
-          <div className="space-y-3">
-            <label className="text-base font-medium text-foreground">
+          <div className="space-y-4">
+            <label className="text-lg font-medium text-foreground">
               Project Lifespan: {projectLifespan} years
             </label>
             <input
@@ -271,9 +271,9 @@ export function TEAForm({
               max="40"
               value={projectLifespan}
               onChange={(e) => setProjectLifespan(parseInt(e.target.value))}
-              className="w-full h-2 bg-background-surface rounded-lg appearance-none cursor-pointer accent-primary"
+              className="w-full h-3 bg-background-surface rounded-lg appearance-none cursor-pointer accent-primary"
             />
-            <div className="flex justify-between text-xs text-foreground-subtle">
+            <div className="flex justify-between text-sm text-foreground-subtle">
               <span>5 years</span>
               <span>40 years</span>
             </div>
@@ -281,12 +281,12 @@ export function TEAForm({
 
           {/* Tips Card */}
           <Card variant="elevated" className="bg-primary/5 border-primary/20">
-            <CardContent className="p-4">
-              <div className="flex gap-3">
-                <Calculator className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                <div className="space-y-1">
-                  <p className="text-base font-medium text-foreground">TEA analysis includes</p>
-                  <ul className="text-sm text-foreground-muted space-y-1">
+            <CardContent className="p-6">
+              <div className="flex gap-4">
+                <Calculator className="h-6 w-6 text-primary shrink-0 mt-0.5" />
+                <div className="space-y-2">
+                  <p className="text-lg font-medium text-foreground">TEA analysis includes</p>
+                  <ul className="text-base text-foreground-muted space-y-2">
                     <li>LCOE (Levelized Cost of Energy)</li>
                     <li>NPV and IRR calculations</li>
                     <li>Sensitivity analysis on key parameters</li>
@@ -298,15 +298,15 @@ export function TEAForm({
           </Card>
 
           {/* Submit Button */}
-          <div className="pt-4">
+          <div className="pt-6">
             <Button
               type="submit"
               variant="primary"
               size="lg"
-              className="w-full"
+              className="w-full h-14 text-lg"
               loading={isSubmitting}
             >
-              <Calculator className="h-4 w-4 mr-2" />
+              <Calculator className="h-5 w-5 mr-2" />
               {ACTION_BUTTON_LABELS.tea}
             </Button>
           </div>
