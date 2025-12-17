@@ -90,8 +90,14 @@ export function useChatWorkflow(options: UseChatWorkflowOptions): UseChatWorkflo
   // Send message and generate plan
   const sendMessage = useCallback(
     async (content: string, submitContext?: ChatSubmitContext) => {
-      if (!content.trim()) return
+      console.log('[useChatWorkflow] sendMessage called with:', { content: content?.substring(0, 50), hasContext: !!submitContext })
 
+      if (!content.trim()) {
+        console.log('[useChatWorkflow] sendMessage returning early - empty content')
+        return
+      }
+
+      console.log('[useChatWorkflow] sendMessage proceeding with message')
       lastQueryRef.current = content
       lastContextRef.current = submitContext
 
@@ -107,8 +113,11 @@ export function useChatWorkflow(options: UseChatWorkflowOptions): UseChatWorkflo
       setIsLoading(true)
       setModifications([])
 
+      console.log('[useChatWorkflow] About to call API...')
+
       try {
         // Call API to generate plan
+        console.log('[useChatWorkflow] Fetching /api/discovery/workflow...')
         const response = await fetch('/api/discovery/workflow', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -125,11 +134,14 @@ export function useChatWorkflow(options: UseChatWorkflowOptions): UseChatWorkflo
           }),
         })
 
+        console.log('[useChatWorkflow] API response status:', response.status)
+
         if (!response.ok) {
           throw new Error(`Failed to generate plan: ${response.statusText}`)
         }
 
         const data = await response.json()
+        console.log('[useChatWorkflow] API response data:', { workflowId: data.workflowId, hasPlan: !!data.plan })
         workflowIdRef.current = data.workflowId
         planRef.current = data.plan
 

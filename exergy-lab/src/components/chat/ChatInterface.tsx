@@ -96,21 +96,29 @@ export function ChatInterface({
   React.useEffect(() => {
     // Skip if conditions aren't met
     if (!autoStart || !initialFormData || hasAutoStarted) {
+      console.log('[ChatInterface] Auto-start skipped:', { autoStart, hasFormData: !!initialFormData, hasAutoStarted })
       return
     }
 
-    console.log('[ChatInterface] Auto-start conditions met, sending message')
+    console.log('[ChatInterface] Auto-start conditions met, preparing to send message')
     setHasAutoStarted(true)
 
     // Build prompt from form data
     const prompt = buildPromptFromFormData(pageType as PageType, initialFormData)
     console.log('[ChatInterface] Built prompt:', prompt)
 
-    // Call sendMessage directly - no need for timeout since we're using state to prevent double-calls
-    // The hasAutoStarted state update will prevent this from running again
-    sendMessage(prompt, {
-      formData: initialFormData,
-      domains: initialFormData.domain ? [initialFormData.domain as Domain] : [],
+    // Use a microtask to ensure state has settled before calling sendMessage
+    // This prevents issues with React 18's automatic batching
+    queueMicrotask(() => {
+      console.log('[ChatInterface] Microtask executing, calling sendMessage now')
+      sendMessage(prompt, {
+        formData: initialFormData,
+        domains: initialFormData.domain ? [initialFormData.domain as Domain] : [],
+      }).then(() => {
+        console.log('[ChatInterface] sendMessage completed')
+      }).catch((err) => {
+        console.error('[ChatInterface] sendMessage error:', err)
+      })
     })
   }, [autoStart, initialFormData, hasAutoStarted, pageType, sendMessage])
 
