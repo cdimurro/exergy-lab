@@ -20,7 +20,7 @@ import type {
 } from '@/types/workflow'
 import type { ToolName, ToolCall } from '@/types/agent'
 import type { Domain } from '@/types/discovery'
-import { generateText } from '../ai/model-router'
+import * as gemini from '../ai/gemini'
 
 // ============================================================================
 // AI Plan Generation Types
@@ -135,12 +135,15 @@ Respond with JSON:
 }`
 
     try {
-      // Use generateText (not executeWithTools) for pure JSON response
-      const content = await generateText('discovery', analysisPrompt, {
-        model: 'fast',
+      // Use Gemini directly for JSON response
+      console.log('[WorkflowPlanner] Analyzing required phases...')
+      const content = await gemini.generateText(analysisPrompt, {
+        model: 'flash',
         temperature: 0.3,
-        maxTokens: 500,
+        maxOutputTokens: 500,
       })
+
+      console.log('[WorkflowPlanner] Phase analysis response:', content.substring(0, 100))
 
       // Clean markdown if present
       let cleanedContent = content.trim()
@@ -286,12 +289,15 @@ Respond ONLY with valid JSON (no markdown, no code blocks):
 }`
 
     try {
-      // Use generateText (not executeWithTools) to get pure JSON without function calling
-      const content = await generateText('discovery', planPrompt, {
-        model: 'quality',
+      // Use Gemini directly for JSON response (bypass router for better debugging)
+      console.log('[WorkflowPlanner] Generating AI plan for query:', query.substring(0, 50))
+      const content = await gemini.generateText(planPrompt, {
+        model: 'pro', // Use pro for higher quality
         temperature: 0.7,
-        maxTokens: 2500,
+        maxOutputTokens: 2500,
       })
+
+      console.log('[WorkflowPlanner] AI response length:', content.length)
 
       // Clean up response - remove any markdown code blocks if present
       let cleanedContent = content.trim()
@@ -299,12 +305,14 @@ Respond ONLY with valid JSON (no markdown, no code blocks):
         cleanedContent = cleanedContent.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
       }
 
-      console.log('[WorkflowPlanner] AI generated plan content:', cleanedContent.substring(0, 200) + '...')
+      console.log('[WorkflowPlanner] AI generated plan content:', cleanedContent.substring(0, 300) + '...')
 
       const aiPlan = JSON.parse(cleanedContent) as AIGeneratedPlan
+      console.log('[WorkflowPlanner] Successfully parsed AI plan with', aiPlan.research?.searchTerms?.length || 0, 'search terms')
       return aiPlan
     } catch (error) {
       console.error('[WorkflowPlanner] AI plan generation failed:', error)
+      console.error('[WorkflowPlanner] Error details:', error instanceof Error ? error.message : String(error))
       return this.createFallbackPlan(query, domains, goals, requiredPhases)
     }
   }

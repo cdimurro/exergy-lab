@@ -9,9 +9,20 @@
 
 import type { UnifiedWorkflow } from '@/types/workflow'
 
-// Simple in-memory store that persists across API requests
-// Using a module-level Map ensures data persists within the Node.js process
-const workflowStore = new Map<string, UnifiedWorkflow>()
+// Use global object to persist across hot reloads in development
+// In production, this should be replaced with Redis or a database
+declare global {
+  // eslint-disable-next-line no-var
+  var __workflowStore: Map<string, UnifiedWorkflow> | undefined
+}
+
+// Initialize the store on the global object to survive hot reloads
+const workflowStore = globalThis.__workflowStore ?? new Map<string, UnifiedWorkflow>()
+
+// Save reference to global
+if (process.env.NODE_ENV === 'development') {
+  globalThis.__workflowStore = workflowStore
+}
 
 // Cleanup old workflows after 1 hour
 const WORKFLOW_TTL = 60 * 60 * 1000
@@ -22,7 +33,7 @@ export const serverWorkflowStore = {
    */
   create(workflow: UnifiedWorkflow): void {
     workflowStore.set(workflow.id, workflow)
-    console.log(`[WorkflowStore] Created workflow: ${workflow.id}`)
+    console.log(`[WorkflowStore] Created workflow: ${workflow.id} (total: ${workflowStore.size})`)
 
     // Schedule cleanup
     setTimeout(() => {
@@ -41,11 +52,13 @@ export const serverWorkflowStore = {
    * Get a workflow by ID
    */
   get(workflowId: string): UnifiedWorkflow | undefined {
+    console.log(`[WorkflowStore] Getting workflow: ${workflowId} (store has ${workflowStore.size} workflows)`)
     const workflow = workflowStore.get(workflowId)
     if (workflow) {
-      console.log(`[WorkflowStore] Found workflow: ${workflowId}`)
+      console.log(`[WorkflowStore] Found workflow: ${workflowId}, status: ${workflow.status}`)
     } else {
       console.log(`[WorkflowStore] Workflow not found: ${workflowId}`)
+      console.log(`[WorkflowStore] Available IDs:`, Array.from(workflowStore.keys()))
     }
     return workflow
   },
