@@ -91,79 +91,28 @@ export function ChatInterface({
     },
   })
 
-  // Stable reference to sendMessage to avoid effect re-triggering
-  const sendMessageRef = React.useRef(sendMessage)
-  React.useEffect(() => {
-    sendMessageRef.current = sendMessage
-  }, [sendMessage])
-
   // Auto-start with form data when autoStart is true
-  // Track initialization to prevent duplicate submissions
-  const hasInitializedRef = React.useRef(false)
-
-  // Log component mount/unmount for debugging
+  // Use state (not ref) to track initialization - this survives StrictMode remounts properly
   React.useEffect(() => {
-    console.log('[ChatInterface] Component mounted', {
-      autoStart,
-      hasFormData: !!initialFormData,
-      hasAutoStarted,
-      hasInitializedRef: hasInitializedRef.current,
-      pageType,
-    })
-    return () => {
-      console.log('[ChatInterface] Component unmounting')
-    }
-  }, [])
-
-  // Auto-start effect - runs when form data is provided
-  React.useEffect(() => {
-    console.log('[ChatInterface] Auto-start effect running', {
-      autoStart,
-      hasFormData: !!initialFormData,
-      hasAutoStarted,
-      hasInitializedRef: hasInitializedRef.current,
-    })
-
-    // Check all conditions for auto-start
-    if (!autoStart) {
-      console.log('[ChatInterface] autoStart is false, skipping')
-      return
-    }
-    if (!initialFormData) {
-      console.log('[ChatInterface] no initialFormData, skipping')
-      return
-    }
-    if (hasAutoStarted) {
-      console.log('[ChatInterface] already auto-started, skipping')
-      return
-    }
-    if (hasInitializedRef.current) {
-      console.log('[ChatInterface] already initialized via ref, skipping')
+    // Skip if conditions aren't met
+    if (!autoStart || !initialFormData || hasAutoStarted) {
       return
     }
 
-    console.log('[ChatInterface] All conditions met, triggering auto-start')
-    hasInitializedRef.current = true
+    console.log('[ChatInterface] Auto-start conditions met, sending message')
     setHasAutoStarted(true)
 
     // Build prompt from form data
     const prompt = buildPromptFromFormData(pageType as PageType, initialFormData)
     console.log('[ChatInterface] Built prompt:', prompt)
 
-    // Send the initial message after a short delay to ensure all state is settled
-    const timer = setTimeout(() => {
-      console.log('[ChatInterface] Executing sendMessage')
-      sendMessageRef.current(prompt, {
-        formData: initialFormData,
-        domains: initialFormData.domain ? [initialFormData.domain as Domain] : [],
-      })
-    }, 200)
-
-    return () => {
-      console.log('[ChatInterface] Clearing auto-start timer')
-      clearTimeout(timer)
-    }
-  }, [autoStart, initialFormData, hasAutoStarted, pageType])
+    // Call sendMessage directly - no need for timeout since we're using state to prevent double-calls
+    // The hasAutoStarted state update will prevent this from running again
+    sendMessage(prompt, {
+      formData: initialFormData,
+      domains: initialFormData.domain ? [initialFormData.domain as Domain] : [],
+    })
+  }, [autoStart, initialFormData, hasAutoStarted, pageType, sendMessage])
 
   const handleDomainToggle = (domain: Domain) => {
     setSelectedDomains((prev) =>
