@@ -68,8 +68,8 @@ export function ChatInterface({
   const [selectedDomains, setSelectedDomains] = React.useState<Domain[]>([])
   const [hasAutoStarted, setHasAutoStarted] = React.useState(false)
 
-  // Ref to synchronously prevent double-execution in React 18 StrictMode
-  // State updates are batched/async, but refs update synchronously
+  // Ref to track if we've already sent the initial message
+  // This persists across StrictMode remounts and prevents double-execution
   const hasSentInitialMessageRef = React.useRef(false)
 
   const {
@@ -96,49 +96,43 @@ export function ChatInterface({
   })
 
   // Auto-start with form data when autoStart is true
-  // Use ref + state to prevent double execution in React 18 StrictMode
+  // The ref persists across StrictMode remounts, preventing double-execution
   React.useEffect(() => {
     // Skip if conditions aren't met
-    if (!autoStart || !initialFormData || hasAutoStarted) {
-      console.log('[ChatInterface] Auto-start skipped:', { autoStart, hasFormData: !!initialFormData, hasAutoStarted })
+    if (!autoStart || !initialFormData) {
+      console.log('[ChatInterface] Auto-start skipped:', { autoStart, hasFormData: !!initialFormData })
       return
     }
 
-    // CRITICAL: Check ref synchronously to prevent StrictMode double-execution
-    // React 18 StrictMode runs effects twice, and state updates are async
-    // The ref check happens synchronously before any async operations
+    // Check ref to prevent double-execution (ref persists across StrictMode remounts)
     if (hasSentInitialMessageRef.current) {
-      console.log('[ChatInterface] Auto-start blocked by ref guard (StrictMode double-run)')
+      console.log('[ChatInterface] Auto-start blocked - already sent')
       return
     }
 
-    // Set ref immediately (synchronous) to block any concurrent execution
+    // Mark as sent BEFORE any async operations
     hasSentInitialMessageRef.current = true
     setHasAutoStarted(true)
 
-    console.log('[ChatInterface] Auto-start conditions met, preparing to send message')
+    console.log('[ChatInterface] Auto-start executing, sending message')
 
     // Build prompt from form data
     const prompt = buildPromptFromFormData(pageType as PageType, initialFormData)
-    console.log('[ChatInterface] Built prompt:', prompt)
+    console.log('[ChatInterface] Built prompt:', prompt.substring(0, 100) + '...')
 
-    // Use setTimeout instead of queueMicrotask for cleaner cleanup
-    const timer = setTimeout(() => {
-      console.log('[ChatInterface] Timer executing, calling sendMessage now')
-      sendMessage(prompt, {
-        formData: initialFormData,
-        domains: initialFormData.domain ? [initialFormData.domain as Domain] : [],
-      }).then(() => {
-        console.log('[ChatInterface] sendMessage completed')
-      }).catch((err) => {
-        console.error('[ChatInterface] sendMessage error:', err)
-      })
-    }, 50) // Small delay to ensure React state is settled
+    // Call sendMessage directly - no timeout needed since ref guards against double-execution
+    // The ref check above ensures this only runs once even in StrictMode
+    sendMessage(prompt, {
+      formData: initialFormData,
+      domains: initialFormData.domain ? [initialFormData.domain as Domain] : [],
+    }).then(() => {
+      console.log('[ChatInterface] sendMessage completed')
+    }).catch((err) => {
+      console.error('[ChatInterface] sendMessage error:', err)
+    })
 
-    return () => {
-      clearTimeout(timer)
-    }
-  }, [autoStart, initialFormData, hasAutoStarted, pageType, sendMessage])
+    // No cleanup needed - the ref guard handles StrictMode
+  }, [autoStart, initialFormData, pageType, sendMessage])
 
   const handleDomainToggle = (domain: Domain) => {
     setSelectedDomains((prev) =>
