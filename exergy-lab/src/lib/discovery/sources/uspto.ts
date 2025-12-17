@@ -1,8 +1,10 @@
 /**
  * USPTO PatentsView Adapter
  *
- * Searches USPTO PatentsView API for US patent data.
- * API: https://patentsview.org/apis/api-query-language
+ * Searches USPTO PatentsView API v2 for US patent data.
+ * API: https://search.patentsview.org/api/v1/patent/
+ * (Note: The old api.patentsview.org endpoint returned HTTP 410 Gone)
+ *
  * Rate: No strict limit, be polite
  *
  * Features:
@@ -24,12 +26,12 @@ import {
 import { Domain } from '@/types/discovery'
 
 /**
- * PatentsView API response types
+ * PatentsView API v2 response types
  */
 interface PatentsViewResponse {
   patents: PatentsViewPatent[]
   count: number
-  total_patent_count: number
+  total_hits: number
 }
 
 interface PatentsViewPatent {
@@ -96,7 +98,8 @@ export class USPTOAdapter extends BaseAdapter {
 
   constructor() {
     super({
-      baseUrl: 'https://api.patentsview.org/patents',
+      // New PatentsView API v1 endpoint (the old api.patentsview.org is deprecated with HTTP 410)
+      baseUrl: 'https://search.patentsview.org/api/v1/patent',
       requestsPerMinute: 30,
       requestsPerDay: 10000,
       cacheTTL: 24 * 60 * 60 * 1000, // 24 hours (patents don't change)
@@ -104,7 +107,8 @@ export class USPTOAdapter extends BaseAdapter {
   }
 
   /**
-   * Execute search query
+   * Execute search query using the new PatentsView API v1
+   * The new API uses POST with JSON body instead of GET with query params
    */
   protected async executeSearch(
     query: string,
@@ -115,46 +119,43 @@ export class USPTOAdapter extends BaseAdapter {
     try {
       const limit = Math.min(filters.limit || 20, 100)
 
-      // Build PatentsView query
-      const queryObj = this.buildPatentsViewQuery(query, filters)
-
-      // Build fields to retrieve
-      const fields = [
-        'patent_id',
-        'patent_number',
-        'patent_title',
-        'patent_abstract',
-        'patent_date',
-        'patent_type',
-        'patent_num_claims',
-        'inventor_first_name',
-        'inventor_last_name',
-        'inventor_country',
-        'assignee_organization',
-        'assignee_type',
-        'app_number',
-        'app_date',
-        'cpc_section',
-        'cpc_subsection',
-        'cpc_group',
-      ]
-
-      const params = {
-        q: JSON.stringify(queryObj),
-        f: JSON.stringify(fields),
-        o: JSON.stringify({
-          page: 1,
-          per_page: limit,
-        }),
+      // Build the request body for the new API
+      const requestBody = {
+        q: this.buildPatentsViewQuery(query, filters),
+        f: [
+          'patent_id',
+          'patent_number',
+          'patent_title',
+          'patent_abstract',
+          'patent_date',
+          'patent_type',
+          'patent_num_claims',
+          'inventors',
+          'assignees',
+          'applications',
+          'cpcs',
+        ],
+        o: {
+          size: limit,
+          from: 0,
+        },
+        s: [{ patent_date: 'desc' }], // Sort by date descending
       }
-
-      const url = `/query?${this.buildQueryString(params)}`
 
       console.log(`[${this.name}] Searching: ${query}`)
 
-      const response = await fetch(`${this.baseUrl}${url}`)
+      const response = await fetch(`${this.baseUrl}/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      })
 
       if (!response.ok) {
+        const errorText = await response.text()
+        console.error(`[${this.name}] API error response:`, errorText)
         throw new Error(`USPTO search failed: HTTP ${response.status}`)
       }
 
@@ -162,11 +163,11 @@ export class USPTOAdapter extends BaseAdapter {
 
       const patents = (data.patents || []).map(patent => this.transformPatent(patent, query))
 
-      console.log(`[${this.name}] Found ${patents.length} patents (total: ${data.total_patent_count})`)
+      console.log(`[${this.name}] Found ${patents.length} patents (total: ${data.total_hits || data.count})`)
 
       return {
         sources: patents,
-        total: data.total_patent_count,
+        total: data.total_hits || data.count || patents.length,
         searchTime: Date.now() - startTime,
         query,
         filters,
@@ -179,17 +180,18 @@ export class USPTOAdapter extends BaseAdapter {
   }
 
   /**
-   * Build PatentsView query object
+   * Build PatentsView query object for the new API v1
+   * Uses Elasticsearch-style query syntax
    */
   private buildPatentsViewQuery(query: string, filters: SearchFilters): Record<string, any> {
-    const conditions: Record<string, any>[] = []
+    const must: Record<string, any>[] = []
 
-    // Full text search on title and abstract
-    conditions.push({
-      _or: [
-        { _text_any: { patent_title: query } },
-        { _text_any: { patent_abstract: query } },
-      ],
+    // Full text search using multi_match query
+    must.push({
+      _text_any: {
+        _fields: ['patent_title', 'patent_abstract'],
+        _value: query,
+      },
     })
 
     // Date filter
@@ -197,50 +199,57 @@ export class USPTOAdapter extends BaseAdapter {
       const from = filters.yearFrom || 2000
       const to = filters.yearTo || new Date().getFullYear()
 
-      conditions.push({
+      must.push({
         _and: [
           { _gte: { patent_date: `${from}-01-01` } },
           { _lte: { patent_date: `${to}-12-31` } },
         ],
       })
+    } else {
+      // Default to last 10 years if no filter specified
+      const tenYearsAgo = new Date().getFullYear() - 10
+      must.push({
+        _gte: { patent_date: `${tenYearsAgo}-01-01` },
+      })
     }
 
-    // Energy-related CPC classes for better results
-    // Y02E: Reduction of greenhouse gas emissions in energy generation
-    // H01M: Batteries, fuel cells
-    // H02S: Solar electric generation
-    // F03D: Wind motors
-    const energyCPCs = ['Y02E', 'H01M', 'H02S', 'F03D', 'Y02B', 'C01B', 'B01D']
-
-    // Add CPC filter for energy relevance (optional, makes results more specific)
-    // conditions.push({
-    //   _or: energyCPCs.map(cpc => ({ _begins: { cpc_subgroup_id: cpc } }))
-    // })
-
-    return { _and: conditions }
+    return must.length === 1 ? must[0] : { _and: must }
   }
 
   /**
    * Transform PatentsView patent to our Patent type
+   * Handles both old and new API response formats
    */
   private transformPatent(patent: PatentsViewPatent, query: string): Patent {
-    // Extract inventors
+    // Extract inventors - handle both flat and nested formats
     const inventors = (patent.inventors || []).map(inv => {
-      const name = [inv.inventor_first_name, inv.inventor_last_name].filter(Boolean).join(' ')
+      // New API format has inventor_name_first/inventor_name_last
+      // Old format has inventor_first_name/inventor_last_name
+      const firstName = inv.inventor_first_name || (inv as any).inventor_name_first || ''
+      const lastName = inv.inventor_last_name || (inv as any).inventor_name_last || ''
+      const name = [firstName, lastName].filter(Boolean).join(' ')
       return name || 'Unknown'
     })
 
     // Extract assignee
-    const assignee = patent.assignees?.[0]?.assignee_organization ||
-                     [patent.assignees?.[0]?.assignee_first_name, patent.assignees?.[0]?.assignee_last_name]
-                       .filter(Boolean).join(' ')
+    const firstAssignee = patent.assignees?.[0]
+    const assignee = firstAssignee?.assignee_organization ||
+                     (firstAssignee as any)?.assignee_name ||
+                     [firstAssignee?.assignee_first_name, firstAssignee?.assignee_last_name]
+                       .filter(Boolean).join(' ') ||
+                     'Unknown'
 
     // Extract CPC classifications
-    const cpc = (patent.cpcs || []).map(c =>
-      [c.cpc_section, c.cpc_subsection, c.cpc_group, c.cpc_subgroup].filter(Boolean).join('/')
-    )
+    const cpc = (patent.cpcs || []).map(c => {
+      // Handle both formats
+      const section = c.cpc_section || (c as any).cpc_class
+      const subsection = c.cpc_subsection || (c as any).cpc_subclass
+      const group = c.cpc_group
+      const subgroup = c.cpc_subgroup
+      return [section, subsection, group, subgroup].filter(Boolean).join('/')
+    })
 
-    // Extract USPC classifications
+    // Extract USPC classifications (may not be present in new API)
     const uspc = (patent.uspcs || []).map(u =>
       [u.uspc_mainclass, u.uspc_subclass].filter(Boolean).join('/')
     )
@@ -319,44 +328,38 @@ export class USPTOAdapter extends BaseAdapter {
   }
 
   /**
-   * Get details for a specific patent
+   * Get details for a specific patent using the new API
    */
   protected async executeGetDetails(id: string): Promise<Source | null> {
     try {
       // Extract patent number from our ID format
       const patentNumber = id.replace('uspto:', '').replace('US', '')
 
-      const queryObj = { patent_number: patentNumber }
-      const fields = [
-        'patent_id',
-        'patent_number',
-        'patent_title',
-        'patent_abstract',
-        'patent_date',
-        'patent_type',
-        'patent_num_claims',
-        'inventor_first_name',
-        'inventor_last_name',
-        'inventor_country',
-        'assignee_organization',
-        'assignee_type',
-        'app_number',
-        'app_date',
-        'cpc_section',
-        'cpc_subsection',
-        'cpc_group',
-        'cpc_subgroup',
-        'uspc_mainclass',
-        'uspc_subclass',
-      ]
-
-      const params = {
-        q: JSON.stringify(queryObj),
-        f: JSON.stringify(fields),
+      const requestBody = {
+        q: { patent_number: patentNumber },
+        f: [
+          'patent_id',
+          'patent_number',
+          'patent_title',
+          'patent_abstract',
+          'patent_date',
+          'patent_type',
+          'patent_num_claims',
+          'inventors',
+          'assignees',
+          'applications',
+          'cpcs',
+        ],
       }
 
-      const url = `/query?${this.buildQueryString(params)}`
-      const response = await fetch(`${this.baseUrl}${url}`)
+      const response = await fetch(`${this.baseUrl}/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      })
 
       if (!response.ok) {
         throw new Error(`USPTO fetch failed: HTTP ${response.status}`)
@@ -376,19 +379,25 @@ export class USPTOAdapter extends BaseAdapter {
   }
 
   /**
-   * Test if API is available
+   * Test if API is available using the new API
    */
   async isAvailable(): Promise<boolean> {
     try {
-      // Test with a simple query
-      const params = {
-        q: JSON.stringify({ _gte: { patent_date: '2024-01-01' } }),
-        f: JSON.stringify(['patent_number']),
-        o: JSON.stringify({ page: 1, per_page: 1 }),
+      // Test with a simple query to the new API
+      const requestBody = {
+        q: { _gte: { patent_date: '2024-01-01' } },
+        f: ['patent_number'],
+        o: { size: 1, from: 0 },
       }
 
-      const url = `/query?${this.buildQueryString(params)}`
-      const response = await fetch(`${this.baseUrl}${url}`)
+      const response = await fetch(`${this.baseUrl}/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      })
 
       return response.ok
     } catch (error) {

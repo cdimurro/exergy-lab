@@ -162,12 +162,16 @@ export function ExecutionProgress({
     return `${hours}h ${minutes % 60}m`
   }
 
-  // Get phase icon
+  // Get phase icon (7-phase workflow)
   const getPhaseIcon = (phase: string): string => {
-    if (phase.toLowerCase().includes('research')) return '📚'
-    if (phase.toLowerCase().includes('experiment')) return '🧪'
-    if (phase.toLowerCase().includes('simulation')) return '⚙️'
-    if (phase.toLowerCase().includes('tea')) return '💰'
+    const phaseLower = phase.toLowerCase()
+    if (phaseLower.includes('research')) return '📚'
+    if (phaseLower.includes('hypothesis') || phaseLower.includes('hypothes')) return '💡'
+    if (phaseLower.includes('experiment')) return '🧪'
+    if (phaseLower.includes('simulation')) return '⚙️'
+    if (phaseLower.includes('tea') || phaseLower.includes('techno-economic')) return '💰'
+    if (phaseLower.includes('validation') || phaseLower.includes('validat')) return '✅'
+    if (phaseLower.includes('quality') || phaseLower.includes('gate')) return '🛡️'
     return '📋'
   }
 

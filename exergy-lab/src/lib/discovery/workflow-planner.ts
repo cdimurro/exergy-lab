@@ -2,7 +2,8 @@
  * Workflow Planner - Generates execution plans for unified discovery workflows
  *
  * This is the "brain" that analyzes user queries and creates comprehensive
- * execution plans across Research → Experiments → Simulations → TEA phases.
+ * execution plans across the 7-phase workflow:
+ * Research → Hypothesis → Experiment Design → Simulation → TEA → Validation → Quality Gates
  */
 
 import type {
@@ -13,9 +14,12 @@ import type {
   PhaseType,
   PhaseParameters,
   ResearchPlanDetails,
+  HypothesisPlanDetails,
   ExperimentPlanDetails,
   SimulationPlanDetails,
   TEAPlanDetails,
+  ValidationPlanDetails,
+  QualityGatesPlanDetails,
   SimulationMethodType,
 } from '@/types/workflow'
 import type { ToolName, ToolCall } from '@/types/agent'
@@ -33,6 +37,12 @@ interface AIGeneratedPlan {
     keyAreas: string[]
     expectedPapers: number
     expectedPatents: number
+    rationale: string
+  }
+  hypothesis?: {
+    focusAreas: string[]
+    expectedHypotheses: number
+    evaluationCriteria: string[]
     rationale: string
   }
   experiments?: {
@@ -60,6 +70,22 @@ interface AIGeneratedPlan {
     keyAssumptions: string[]
     dataRequirements: string[]
     outputMetrics: string[]
+    rationale: string
+  }
+  validation?: {
+    validationMethods: string[]
+    literatureComparison: string[]
+    acceptanceCriteria: string[]
+    rationale: string
+  }
+  qualityGates?: {
+    qualityChecks: Array<{
+      name: string
+      description: string
+      weight: number
+      threshold: number
+    }>
+    overallThreshold: number
     rationale: string
   }
   overview: string
@@ -106,24 +132,32 @@ export class WorkflowPlanner {
 
   /**
    * Analyze which phases are needed for this workflow
+   * Always includes: research, hypothesis, validation, quality_gates
+   * Optional: experiment_design, simulation, tea_analysis
    */
   private async analyzeRequiredPhases(
     query: string,
     goals: string[],
     options: WorkflowInput['options']
   ): Promise<PhaseType[]> {
-    // Always include research phase
-    const phases: PhaseType[] = ['research']
+    // Always include core phases: research → hypothesis → validation → quality_gates
+    const phases: PhaseType[] = ['research', 'hypothesis']
 
     // Use AI to determine if experiments, simulations, or TEA are needed
-    const analysisPrompt = `Analyze this query and determine which workflow phases are needed:
+    const analysisPrompt = `Analyze this query and determine which OPTIONAL workflow phases are needed:
 
 Query: "${query}"
 Goals: ${goals.join(', ')}
 
-Available phases:
+REQUIRED phases (always included):
+- research: Literature search & analysis
+- hypothesis: Generate testable hypotheses from research
+- validation: Validate results against literature
+- quality_gates: Quality assurance checks
+
+OPTIONAL phases (you decide):
 - experiment_design: Design laboratory experiments or field tests
-- simulation: Run computational simulations
+- simulation: Run computational simulations (DFT, MD, CFD, etc.)
 - tea_analysis: Perform techno-economic analysis (costs, ROI, LCOE)
 
 Respond with JSON:
@@ -148,7 +182,7 @@ Respond with JSON:
       // Clean and parse JSON response
       const analysis = this.parseJSONResponse(content)
 
-      // Apply user options overrides
+      // Apply user options overrides for optional phases
       if (options?.includeExperiments !== false && analysis.needsExperiments) {
         phases.push('experiment_design')
       }
@@ -160,9 +194,12 @@ Respond with JSON:
       }
     } catch (error) {
       console.warn('[WorkflowPlanner] Phase analysis failed, using defaults:', error)
-      // Default: include all phases except TEA
+      // Default: include all optional phases except TEA
       phases.push('experiment_design', 'simulation')
     }
+
+    // Always add validation and quality gates at the end
+    phases.push('validation', 'quality_gates')
 
     return phases
   }
@@ -565,6 +602,9 @@ Respond with ONLY the JSON object below. Start directly with { and end with }. D
       case 'research':
         return this.createResearchPhaseWithDetails(phaseId, query, domains, options, aiPlan.research)
 
+      case 'hypothesis':
+        return this.createHypothesisPhaseWithDetails(phaseId, query, domains, goals, aiPlan.hypothesis)
+
       case 'experiment_design':
         return this.createExperimentPhaseWithDetails(phaseId, query, domains, goals, aiPlan.experiments)
 
@@ -573,6 +613,12 @@ Respond with ONLY the JSON object below. Start directly with { and end with }. D
 
       case 'tea_analysis':
         return this.createTEAPhaseWithDetails(phaseId, query, domains, aiPlan.tea)
+
+      case 'validation':
+        return this.createValidationPhaseWithDetails(phaseId, query, domains, aiPlan.validation)
+
+      case 'quality_gates':
+        return this.createQualityGatesPhaseWithDetails(phaseId, query, domains, aiPlan.qualityGates)
 
       default:
         throw new Error(`Unknown phase type: ${phaseType}`)
@@ -867,33 +913,259 @@ Respond with ONLY the JSON object below. Start directly with { and end with }. D
   }
 
   /**
-   * Analyze dependencies between phases
+   * Create Hypothesis Phase plan with AI-generated details
+   */
+  private createHypothesisPhaseWithDetails(
+    phaseId: string,
+    query: string,
+    domains: Domain[],
+    goals: string[],
+    hypothesisDetails?: AIGeneratedPlan['hypothesis']
+  ): PlanPhase {
+    const details: HypothesisPlanDetails = {
+      type: 'hypothesis',
+      focusAreas: hypothesisDetails?.focusAreas || [`${query.substring(0, 50)} mechanisms`, 'Performance optimization', 'Novel approaches'],
+      expectedHypotheses: hypothesisDetails?.expectedHypotheses || 3,
+      evaluationCriteria: hypothesisDetails?.evaluationCriteria || ['Novelty', 'Feasibility', 'Impact potential'],
+      rationale: hypothesisDetails?.rationale || 'Generate testable hypotheses based on research findings',
+    }
+
+    return {
+      id: phaseId,
+      type: 'hypothesis',
+      title: 'Generate Hypotheses',
+      description: hypothesisDetails?.rationale || 'Analyze research findings to generate testable hypotheses',
+      tools: [
+        {
+          toolName: 'generateHypotheses' as ToolName,
+          params: {
+            researchContext: {
+              query,
+              domains,
+              goals,
+            },
+            focusAreas: details.focusAreas,
+            maxHypotheses: details.expectedHypotheses,
+          },
+          callId: `hypothesis_${Date.now()}`,
+        },
+      ],
+      expectedOutputs: [
+        `${details.expectedHypotheses} testable hypotheses`,
+        'Supporting evidence from research',
+        'Novelty and feasibility scores',
+        'Testable predictions for each hypothesis',
+      ],
+      parameters: {
+        focusAreas: details.focusAreas,
+        maxHypotheses: details.expectedHypotheses,
+        evaluationCriteria: details.evaluationCriteria,
+      },
+      canModify: true,
+      optional: false, // Hypothesis is required
+      estimatedDuration: 15000,
+      estimatedCost: 0,
+      details,
+    }
+  }
+
+  /**
+   * Create Validation Phase plan with AI-generated details
+   */
+  private createValidationPhaseWithDetails(
+    phaseId: string,
+    query: string,
+    domains: Domain[],
+    validationDetails?: AIGeneratedPlan['validation']
+  ): PlanPhase {
+    const details: ValidationPlanDetails = {
+      type: 'validation',
+      validationMethods: validationDetails?.validationMethods || ['Literature cross-reference', 'Physical plausibility check', 'Benchmark comparison'],
+      literatureComparison: validationDetails?.literatureComparison || ['Recent peer-reviewed studies', 'Industry benchmarks', 'Established theoretical limits'],
+      acceptanceCriteria: validationDetails?.acceptanceCriteria || ['Within 20% of literature values', 'No physical impossibilities', 'Consistent with domain knowledge'],
+      rationale: validationDetails?.rationale || 'Validate results against literature and physical constraints',
+    }
+
+    return {
+      id: phaseId,
+      type: 'validation',
+      title: 'Validate Results',
+      description: validationDetails?.rationale || 'Cross-reference results with literature and validate against physical constraints',
+      tools: [
+        {
+          toolName: 'validateResults' as ToolName,
+          params: {
+            validationMethods: details.validationMethods,
+            literatureComparison: details.literatureComparison,
+            acceptanceCriteria: details.acceptanceCriteria,
+          },
+          callId: `validation_${Date.now()}`,
+        },
+      ],
+      expectedOutputs: [
+        'Validation score (0-100)',
+        'Literature comparison results',
+        'Identified discrepancies and issues',
+        'Recommendations for refinement',
+      ],
+      parameters: {
+        validationMethods: details.validationMethods,
+        literatureComparison: details.literatureComparison,
+        acceptanceCriteria: details.acceptanceCriteria,
+      },
+      canModify: true,
+      optional: false, // Validation is required
+      estimatedDuration: 12000,
+      estimatedCost: 0,
+      details,
+    }
+  }
+
+  /**
+   * Create Quality Gates Phase plan with AI-generated details
+   */
+  private createQualityGatesPhaseWithDetails(
+    phaseId: string,
+    query: string,
+    domains: Domain[],
+    qualityGatesDetails?: AIGeneratedPlan['qualityGates']
+  ): PlanPhase {
+    const defaultChecks = [
+      { name: 'Research Coverage', description: 'Sufficient sources found and analyzed', weight: 0.2, threshold: 70 },
+      { name: 'Hypothesis Quality', description: 'Hypotheses are testable and well-supported', weight: 0.2, threshold: 70 },
+      { name: 'Scientific Validity', description: 'Results are physically plausible', weight: 0.25, threshold: 80 },
+      { name: 'Literature Consistency', description: 'Results align with established knowledge', weight: 0.2, threshold: 75 },
+      { name: 'Completeness', description: 'All required outputs generated', weight: 0.15, threshold: 90 },
+    ]
+
+    const details: QualityGatesPlanDetails = {
+      type: 'quality_gates',
+      qualityChecks: qualityGatesDetails?.qualityChecks || defaultChecks,
+      overallThreshold: qualityGatesDetails?.overallThreshold || 75,
+      rationale: qualityGatesDetails?.rationale || 'Final quality assurance before presenting results',
+    }
+
+    return {
+      id: phaseId,
+      type: 'quality_gates',
+      title: 'Quality Assurance',
+      description: qualityGatesDetails?.rationale || 'Run quality checks to ensure results meet standards',
+      tools: [
+        {
+          toolName: 'runQualityGates' as ToolName,
+          params: {
+            qualityChecks: details.qualityChecks,
+            overallThreshold: details.overallThreshold,
+          },
+          callId: `quality_${Date.now()}`,
+        },
+      ],
+      expectedOutputs: [
+        'Overall quality score',
+        'Individual check results',
+        'Pass/fail determination',
+        'Recommendations for improvement',
+      ],
+      parameters: {
+        qualityChecks: details.qualityChecks,
+        overallThreshold: details.overallThreshold,
+      },
+      canModify: true,
+      optional: false, // Quality gates are required
+      estimatedDuration: 8000,
+      estimatedCost: 0,
+      details,
+    }
+  }
+
+  /**
+   * Analyze dependencies between phases for the 7-phase workflow
+   *
+   * Dependency chain:
+   * Research → Hypothesis → Experiment Design → Simulation → TEA → Validation → Quality Gates
    */
   private analyzeDependencies(phases: PlanPhase[]): PhaseDependency[] {
     const dependencies: PhaseDependency[] = []
-    const phaseIds = phases.map(p => p.id)
-    const researchPhaseId = phases.find(p => p.type === 'research')?.id
 
-    // All phases depend on research
+    // Get phase IDs
+    const phaseMap = new Map<PhaseType, string>()
     for (const phase of phases) {
-      if (phase.type !== 'research' && researchPhaseId) {
+      phaseMap.set(phase.type, phase.id)
+    }
+
+    const researchId = phaseMap.get('research')
+    const hypothesisId = phaseMap.get('hypothesis')
+    const experimentId = phaseMap.get('experiment_design')
+    const simulationId = phaseMap.get('simulation')
+    const teaId = phaseMap.get('tea_analysis')
+    const validationId = phaseMap.get('validation')
+    const qualityGatesId = phaseMap.get('quality_gates')
+
+    // Hypothesis depends on Research
+    if (hypothesisId && researchId) {
+      dependencies.push({
+        phaseId: hypothesisId,
+        dependsOn: [researchId],
+        dataFlow: 'Research findings feed into hypothesis generation',
+      })
+    }
+
+    // Experiment Design depends on Research and Hypothesis
+    if (experimentId) {
+      const deps = [researchId, hypothesisId].filter(Boolean) as string[]
+      if (deps.length > 0) {
         dependencies.push({
-          phaseId: phase.id,
-          dependsOn: [researchPhaseId],
-          dataFlow: `Research findings feed into ${phase.type}`,
+          phaseId: experimentId,
+          dependsOn: deps,
+          dataFlow: 'Research findings and hypotheses guide experiment design',
         })
       }
+    }
 
-      // TEA depends on simulation and experiment results
-      if (phase.type === 'tea_analysis') {
-        const simPhaseId = phases.find(p => p.type === 'simulation')?.id
-        const expPhaseId = phases.find(p => p.type === 'experiment_design')?.id
-
-        const deps = [researchPhaseId, simPhaseId, expPhaseId].filter(Boolean) as string[]
+    // Simulation depends on Research, Hypothesis, and optionally Experiments
+    if (simulationId) {
+      const deps = [researchId, hypothesisId, experimentId].filter(Boolean) as string[]
+      if (deps.length > 0) {
         dependencies.push({
-          phaseId: phase.id,
+          phaseId: simulationId,
+          dependsOn: deps,
+          dataFlow: 'Research and experiment designs inform simulation parameters',
+        })
+      }
+    }
+
+    // TEA depends on all prior analytical phases
+    if (teaId) {
+      const deps = [researchId, experimentId, simulationId].filter(Boolean) as string[]
+      if (deps.length > 0) {
+        dependencies.push({
+          phaseId: teaId,
           dependsOn: deps,
           dataFlow: 'Cost and performance data from experiments and simulations',
+        })
+      }
+    }
+
+    // Validation depends on all content-generating phases
+    if (validationId) {
+      const deps = [researchId, hypothesisId, experimentId, simulationId, teaId].filter(Boolean) as string[]
+      if (deps.length > 0) {
+        dependencies.push({
+          phaseId: validationId,
+          dependsOn: deps,
+          dataFlow: 'All results need validation against literature and physical constraints',
+        })
+      }
+    }
+
+    // Quality Gates depends on Validation and all prior phases
+    if (qualityGatesId) {
+      const deps = [validationId, researchId, hypothesisId].filter(Boolean) as string[]
+      if (deps.length > 0) {
+        dependencies.push({
+          phaseId: qualityGatesId,
+          dependsOn: deps,
+          dataFlow: 'Quality assessment of all workflow outputs',
         })
       }
     }

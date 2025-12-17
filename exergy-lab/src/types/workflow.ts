@@ -1,8 +1,8 @@
 /**
  * Unified Workflow Types
  *
- * Defines types for orchestrating the complete workflow:
- * Research → Experiment Design → Simulations → TEA Analysis
+ * Defines types for orchestrating the complete 7-phase workflow:
+ * Research → Hypothesis → Experiment Design → Simulation → TEA → Validation → Quality Gates
  */
 
 import type { ToolName, ToolCall, ToolResult } from './agent'
@@ -21,10 +21,13 @@ export type WorkflowStatus =
   | 'cancelled'          // User cancelled
 
 export type PhaseType =
-  | 'research'           // Literature search & analysis
-  | 'experiment_design'  // Design experimental protocols
-  | 'simulation'         // Run simulations
-  | 'tea_analysis'       // Techno-economic analysis
+  | 'research'           // Phase 1: Literature search & analysis
+  | 'hypothesis'         // Phase 2: Generate testable hypotheses
+  | 'experiment_design'  // Phase 3: Design experimental protocols
+  | 'simulation'         // Phase 4: Run simulations
+  | 'tea_analysis'       // Phase 5: Techno-economic analysis
+  | 'validation'         // Phase 6: Validate results against literature
+  | 'quality_gates'      // Phase 7: Quality assurance checks
 
 export interface UnifiedWorkflow {
   id: string
@@ -76,9 +79,12 @@ export interface PlanPhase {
  */
 export type PlanPhaseDetails =
   | ResearchPlanDetails
+  | HypothesisPlanDetails
   | ExperimentPlanDetails
   | SimulationPlanDetails
   | TEAPlanDetails
+  | ValidationPlanDetails
+  | QualityGatesPlanDetails
 
 /**
  * Detailed plan for Research phase
@@ -92,6 +98,18 @@ export interface ResearchPlanDetails {
   expectedPapers: number          // Estimated number of papers
   expectedPatents: number         // Estimated number of patents
   rationale: string               // Why these searches were chosen
+}
+
+/**
+ * Detailed plan for Hypothesis phase
+ * Contains hypothesis generation approach and expected outputs
+ */
+export interface HypothesisPlanDetails {
+  type: 'hypothesis'
+  focusAreas: string[]            // Key areas to generate hypotheses for
+  expectedHypotheses: number      // Number of hypotheses to generate
+  evaluationCriteria: string[]    // How hypotheses will be evaluated
+  rationale: string               // Why this approach was chosen
 }
 
 /**
@@ -159,6 +177,39 @@ export interface TEAPlanDetails {
   rationale: string               // Why this analysis approach
 }
 
+/**
+ * Detailed plan for Validation phase
+ * Contains validation approach and literature comparison strategy
+ */
+export interface ValidationPlanDetails {
+  type: 'validation'
+  validationMethods: string[]     // Methods to validate results
+  literatureComparison: string[]  // Key papers/benchmarks to compare against
+  acceptanceCriteria: string[]    // Criteria for accepting results
+  rationale: string               // Why this validation approach
+}
+
+/**
+ * Detailed plan for Quality Gates phase
+ * Contains quality assurance checks and thresholds
+ */
+export interface QualityGatesPlanDetails {
+  type: 'quality_gates'
+  qualityChecks: QualityCheck[]   // Specific quality checks to perform
+  overallThreshold: number        // Minimum score to pass (0-100)
+  rationale: string               // Why these checks were chosen
+}
+
+/**
+ * Individual quality check in the plan
+ */
+export interface QualityCheck {
+  name: string                    // Check name
+  description: string             // What this check validates
+  weight: number                  // Importance weight (0-1)
+  threshold: number               // Minimum score to pass (0-100)
+}
+
 export interface PhaseParameters {
   [key: string]: any
   // Common parameters
@@ -184,9 +235,12 @@ export interface WorkflowResults {
   // Optional summary field for AI-generated overviews
   summary?: string
   research: ResearchResults
+  hypotheses: HypothesisResults
   experiments: ExperimentResults
   simulations: SimulationResults
   tea: TEAResults
+  validation: ValidationResults
+  qualityGates: QualityGatesResults
   crossFeatureInsights: Insight[] | string[]  // Can be full Insights or simple strings
 }
 
@@ -198,6 +252,27 @@ export interface ResearchResults {
   keyFindings: string[]
   confidenceScore: number  // 0-100
   searchTime: number       // milliseconds
+}
+
+export interface HypothesisResults {
+  hypotheses: Hypothesis[]
+  totalHypotheses: number
+  topRanked: Hypothesis[]     // Top 3 hypotheses by score
+  generationTime: number      // milliseconds
+}
+
+export interface Hypothesis {
+  id: string
+  title: string
+  statement: string           // The hypothesis statement
+  rationale: string           // Why this hypothesis was generated
+  supportingEvidence: string[] // References from research phase
+  testablePredicitions: string[] // What can be tested
+  noveltyScore: number        // 0-100
+  feasibilityScore: number    // 0-100
+  impactScore: number         // 0-100
+  overallScore: number        // Weighted combination
+  status: 'proposed' | 'testing' | 'supported' | 'refuted' | 'inconclusive'
 }
 
 export interface ExperimentResults {
@@ -329,6 +404,59 @@ export interface SensitivityResult {
   baseValue: number
   change: number         // percentage
   impact: number         // impact on NPV/LCOE
+}
+
+export interface ValidationResults {
+  validationChecks: ValidationCheck[]
+  literatureComparisons: LiteratureComparison[]
+  overallScore: number            // 0-100
+  passed: boolean
+  issues: ValidationIssue[]
+  validationTime: number          // milliseconds
+}
+
+export interface ValidationCheck {
+  name: string
+  description: string
+  result: 'pass' | 'fail' | 'warning'
+  score: number                   // 0-100
+  details: string
+}
+
+export interface LiteratureComparison {
+  metric: string
+  ourValue: number
+  literatureValue: number
+  source: string                  // Reference paper/benchmark
+  deviation: number               // percentage
+  acceptable: boolean
+}
+
+export interface ValidationIssue {
+  severity: 'critical' | 'major' | 'minor'
+  phase: PhaseType
+  description: string
+  recommendation: string
+}
+
+export interface QualityGatesResults {
+  gates: QualityGateResult[]
+  overallScore: number            // 0-100
+  passed: boolean
+  summary: string
+  recommendations: string[]
+  evaluationTime: number          // milliseconds
+}
+
+export interface QualityGateResult {
+  name: string
+  description: string
+  weight: number                  // 0-1
+  score: number                   // 0-100
+  threshold: number               // Minimum to pass
+  passed: boolean
+  details: string
+  affectedPhases: PhaseType[]
 }
 
 // ============================================================================

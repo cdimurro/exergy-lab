@@ -12,6 +12,9 @@ import {
   CheckCircle2,
   Edit2,
   X,
+  Lightbulb,
+  ClipboardCheck,
+  ShieldCheck,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button, Card, Badge, Input, Textarea } from '@/components/ui'
@@ -20,23 +23,32 @@ import type {
   PlanPhase,
   PhaseType,
   ResearchPlanDetails,
+  HypothesisPlanDetails,
   ExperimentPlanDetails,
   SimulationPlanDetails,
   TEAPlanDetails,
+  ValidationPlanDetails,
+  QualityGatesPlanDetails,
 } from '@/types/workflow'
 
 const PHASE_ICONS: Record<PhaseType, React.ReactNode> = {
   research: <Search className="h-4 w-4" />,
+  hypothesis: <Lightbulb className="h-4 w-4" />,
   experiment_design: <FlaskConical className="h-4 w-4" />,
   simulation: <Cpu className="h-4 w-4" />,
   tea_analysis: <Calculator className="h-4 w-4" />,
+  validation: <ClipboardCheck className="h-4 w-4" />,
+  quality_gates: <ShieldCheck className="h-4 w-4" />,
 }
 
 const PHASE_LABELS: Record<PhaseType, string> = {
   research: 'Research',
+  hypothesis: 'Hypothesis Generation',
   experiment_design: 'Experiment Design',
   simulation: 'Simulation',
   tea_analysis: 'TEA Analysis',
+  validation: 'Validation',
+  quality_gates: 'Quality Gates',
 }
 
 // ============================================================================
@@ -355,6 +367,138 @@ function TEADetails({ details }: { details: TEAPlanDetails }) {
   )
 }
 
+function HypothesisDetails({ details }: { details: HypothesisPlanDetails }) {
+  return (
+    <div className="space-y-5 pt-4 border-t border-border/50">
+      {/* Focus Areas */}
+      {details.focusAreas.length > 0 && (
+        <div>
+          <h5 className="text-base font-medium text-muted-foreground mb-3 flex items-center gap-2">
+            <Lightbulb className="h-5 w-5" />
+            Focus Areas
+          </h5>
+          <ul className="space-y-2">
+            {details.focusAreas.map((area, idx) => (
+              <li key={idx} className="text-lg text-foreground flex items-start gap-2">
+                <span className="text-primary mt-1">•</span>
+                {area}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Expected Output */}
+      <div className="text-base text-muted-foreground">
+        <strong className="text-foreground text-lg">{details.expectedHypotheses}</strong> hypotheses will be generated
+      </div>
+
+      {/* Evaluation Criteria */}
+      {details.evaluationCriteria.length > 0 && (
+        <div>
+          <h5 className="text-base font-medium text-muted-foreground mb-3">Evaluation Criteria</h5>
+          <div className="flex flex-wrap gap-2.5">
+            {details.evaluationCriteria.map((criteria, idx) => (
+              <Badge key={idx} variant="secondary" className="text-base font-normal py-1.5 px-3">
+                {criteria}
+              </Badge>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ValidationDetails({ details }: { details: ValidationPlanDetails }) {
+  return (
+    <div className="space-y-5 pt-4 border-t border-border/50">
+      {/* Validation Methods */}
+      {details.validationMethods.length > 0 && (
+        <div>
+          <h5 className="text-base font-medium text-muted-foreground mb-3 flex items-center gap-2">
+            <ClipboardCheck className="h-5 w-5" />
+            Validation Methods
+          </h5>
+          <ul className="space-y-2">
+            {details.validationMethods.map((method, idx) => (
+              <li key={idx} className="flex items-center gap-2 text-lg">
+                <CheckCircle2 className="h-5 w-5 text-primary" />
+                {method}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Literature Comparison */}
+      {details.literatureComparison.length > 0 && (
+        <div>
+          <h5 className="text-base font-medium text-muted-foreground mb-3">Compare Against</h5>
+          <div className="flex flex-wrap gap-2.5">
+            {details.literatureComparison.map((lit, idx) => (
+              <Badge key={idx} variant="secondary" className="text-base font-normal py-1.5 px-3">
+                {lit}
+              </Badge>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Acceptance Criteria */}
+      {details.acceptanceCriteria.length > 0 && (
+        <div>
+          <h5 className="text-base font-medium text-muted-foreground mb-3">Acceptance Criteria</h5>
+          <ul className="space-y-2 text-base">
+            {details.acceptanceCriteria.map((criteria, idx) => (
+              <li key={idx} className="flex items-start gap-2">
+                <span className="text-muted-foreground">•</span>
+                {criteria}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function QualityGatesDetails({ details }: { details: QualityGatesPlanDetails }) {
+  return (
+    <div className="space-y-5 pt-4 border-t border-border/50">
+      {/* Overall Threshold */}
+      <div className="flex items-center gap-3">
+        <ShieldCheck className="h-5 w-5 text-muted-foreground" />
+        <h5 className="text-base font-medium text-muted-foreground">Minimum Pass Score</h5>
+        <Badge variant="secondary" className="text-base py-1.5 px-3">
+          {details.overallThreshold}/100
+        </Badge>
+      </div>
+
+      {/* Quality Checks */}
+      {details.qualityChecks.length > 0 && (
+        <div>
+          <h5 className="text-base font-medium text-muted-foreground mb-3">Quality Checks</h5>
+          <div className="space-y-3">
+            {details.qualityChecks.map((check, idx) => (
+              <div key={idx} className="flex items-center justify-between text-base border-b border-border/30 pb-2">
+                <div>
+                  <span className="font-medium">{check.name}</span>
+                  <p className="text-muted-foreground text-sm">{check.description}</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-muted-foreground">Weight: {(check.weight * 100).toFixed(0)}%</span>
+                  <Badge variant="secondary">{check.threshold}/100</Badge>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // Helper to render phase details based on type
 function PhaseDetails({ phase }: { phase: PlanPhase }) {
   if (!phase.details) return null
@@ -362,12 +506,18 @@ function PhaseDetails({ phase }: { phase: PlanPhase }) {
   switch (phase.details.type) {
     case 'research':
       return <ResearchDetails details={phase.details as ResearchPlanDetails} />
+    case 'hypothesis':
+      return <HypothesisDetails details={phase.details as HypothesisPlanDetails} />
     case 'experiment_design':
       return <ExperimentDetails details={phase.details as ExperimentPlanDetails} />
     case 'simulation':
       return <SimulationDetails details={phase.details as SimulationPlanDetails} />
     case 'tea_analysis':
       return <TEADetails details={phase.details as TEAPlanDetails} />
+    case 'validation':
+      return <ValidationDetails details={phase.details as ValidationPlanDetails} />
+    case 'quality_gates':
+      return <QualityGatesDetails details={phase.details as QualityGatesPlanDetails} />
     default:
       return null
   }

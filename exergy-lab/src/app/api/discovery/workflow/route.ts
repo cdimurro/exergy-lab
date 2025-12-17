@@ -388,7 +388,7 @@ function generateWorkflowId(): string {
 }
 
 /**
- * Create empty workflow results structure
+ * Create empty workflow results structure for 7-phase workflow
  */
 function createEmptyResults(): WorkflowResults {
   return {
@@ -400,6 +400,12 @@ function createEmptyResults(): WorkflowResults {
       keyFindings: [],
       confidenceScore: 0,
       searchTime: 0,
+    },
+    hypotheses: {
+      hypotheses: [],
+      totalHypotheses: 0,
+      topRanked: [],
+      generationTime: 0,
     },
     experiments: {
       protocols: [],
@@ -429,6 +435,22 @@ function createEmptyResults(): WorkflowResults {
       },
       sensitivityAnalysis: [],
       recommendations: [],
+    },
+    validation: {
+      validationChecks: [],
+      literatureComparisons: [],
+      overallScore: 0,
+      passed: false,
+      issues: [],
+      validationTime: 0,
+    },
+    qualityGates: {
+      gates: [],
+      overallScore: 0,
+      passed: false,
+      summary: '',
+      recommendations: [],
+      evaluationTime: 0,
     },
     crossFeatureInsights: [],
   }

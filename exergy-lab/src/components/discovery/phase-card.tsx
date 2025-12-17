@@ -49,33 +49,45 @@ export function PhaseCard({
     return `~${hours}h ${minutes % 60}m`
   }
 
-  // Get phase icon based on type
+  // Get phase icon based on type (7-phase workflow)
   const getPhaseIcon = (type: PlanPhase['type']): string => {
     switch (type) {
       case 'research':
         return '📚'
+      case 'hypothesis':
+        return '💡'
       case 'experiment_design':
         return '🧪'
       case 'simulation':
         return '⚙️'
       case 'tea_analysis':
         return '💰'
+      case 'validation':
+        return '✅'
+      case 'quality_gates':
+        return '🛡️'
       default:
         return '📋'
     }
   }
 
-  // Get phase color based on type
+  // Get phase color based on type (7-phase workflow)
   const getPhaseColor = (type: PlanPhase['type']): string => {
     switch (type) {
       case 'research':
         return 'bg-blue-500/10 text-blue-600 border-blue-500/20'
+      case 'hypothesis':
+        return 'bg-amber-500/10 text-amber-600 border-amber-500/20'
       case 'experiment_design':
         return 'bg-purple-500/10 text-purple-600 border-purple-500/20'
       case 'simulation':
         return 'bg-green-500/10 text-green-600 border-green-500/20'
       case 'tea_analysis':
         return 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20'
+      case 'validation':
+        return 'bg-cyan-500/10 text-cyan-600 border-cyan-500/20'
+      case 'quality_gates':
+        return 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
       default:
         return 'bg-gray-500/10 text-gray-600 border-gray-500/20'
     }
