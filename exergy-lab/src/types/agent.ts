@@ -42,15 +42,15 @@ export type AgentPhase = 'plan' | 'execute' | 'analyze' | 'iterate' | 'respond'
 export interface PlannedToolCall {
   name: string
   params: any
-  rationale: string
+  rationale?: string  // Made optional to match relaxed schema
 }
 
 export interface AgentPlan {
   steps: string[]
   tools: PlannedToolCall[]
-  expectedGaps: string[]
-  complexity: number
-  estimatedDuration: number
+  expectedGaps?: string[]  // Made optional to match relaxed schema
+  complexity?: number  // Made optional to match relaxed schema
+  estimatedDuration?: number  // Made optional to match relaxed schema
 }
 
 export interface AgentAnalysis {

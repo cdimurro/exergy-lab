@@ -224,10 +224,13 @@ export class ReasoningEngine extends EventEmitter {
       })
 
       // Build final result
+      // Use sources from tool results if available, fallback to AI-generated sources
+      const finalSources = sources.length > 0 ? sources : response.sources
+
       const result: AgentResult = {
         success: true,
         response: response.answer,
-        sources: response.sources,
+        sources: finalSources,
         toolCalls,
         steps,
         duration: Date.now() - startTime,
@@ -236,6 +239,7 @@ export class ReasoningEngine extends EventEmitter {
           iterations: this.iterationCount,
           totalToolCalls: toolCalls.length,
           confidence: analysis.confidence,
+          keyFindings: analysis.keyFindings,  // Pass key findings to metadata
         },
       }
 
@@ -288,34 +292,45 @@ Create a plan with:
 3. Expected information gaps
 4. Estimated complexity (1-10)
 
-Respond with a JSON object matching this structure:
+IMPORTANT: Respond with ONLY valid JSON, no markdown or explanation. Use this exact structure:
 {
-  "steps": ["step 1", "step 2", ...],
-  "tools": [{"name": "toolName", "params": {...}, "rationale": "why needed"}],
-  "expectedGaps": ["potential gap 1", ...],
+  "steps": ["step 1", "step 2"],
+  "tools": [{"name": "searchPapers", "params": {"query": "search terms", "maxResults": 20}, "rationale": "why needed"}],
+  "expectedGaps": ["potential gap 1"],
   "complexity": 5,
   "estimatedDuration": 15000
 }
 `
 
-    const planResult = await executeResilient(
-      () => executeWithTools(planningPrompt, { model: 'quality' }),
-      'reasoning:plan'
-    )
+    // Try up to 2 times before falling back to default plan
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const planResult = await executeResilient(
+          () => executeWithTools(planningPrompt, { model: 'quality' }),
+          'reasoning:plan'
+        )
 
-    if (planResult.type === 'text') {
-      // Parse and validate the plan
-      const validated = await validateAIOutput(planResult.content, AISchemas.AgentPlan)
+        if (planResult.type === 'text') {
+          // Parse and validate the plan
+          const validated = await validateAIOutput(planResult.content, AISchemas.AgentPlan)
 
-      if (validated.success) {
-        return validated.data
-      } else {
-        // Fallback plan if validation fails
-        console.warn('[ReasoningEngine] Plan validation failed, using default plan')
-        return this.createDefaultPlan(userQuery)
+          if (validated.success) {
+            console.log('[ReasoningEngine] Plan validation succeeded on attempt', attempt + 1)
+            return validated.data
+          }
+
+          // Log validation error details for debugging
+          console.warn(`[ReasoningEngine] Plan validation attempt ${attempt + 1} failed:`,
+            validated.error?.message || 'Unknown validation error')
+          console.warn('[ReasoningEngine] Raw response preview:', planResult.content.substring(0, 200))
+        }
+      } catch (error) {
+        console.warn(`[ReasoningEngine] Plan execution attempt ${attempt + 1} error:`, error)
       }
     }
 
+    // Fallback after retries exhausted
+    console.warn('[ReasoningEngine] Plan validation failed after retries, using default plan')
     return this.createDefaultPlan(userQuery)
   }
 
@@ -323,7 +338,7 @@ Respond with a JSON object matching this structure:
    * PHASE 2: EXECUTE
    * Run tool calls to gather information
    */
-  private async executeTools(toolCalls: Array<{ name: string; params: any; rationale: string }>): Promise<ToolResult[]> {
+  private async executeTools(toolCalls: Array<{ name: string; params: any; rationale?: string }>): Promise<ToolResult[]> {
     const results: ToolResult[] = []
 
     for (const toolCall of toolCalls) {
@@ -333,7 +348,7 @@ Respond with a JSON object matching this structure:
           phase: 'execute',
           progress: 40 + (results.length / toolCalls.length) * 20,
           message: `Running ${toolCall.name}...`,
-          details: { tool: toolCall.name, rationale: toolCall.rationale },
+          details: { tool: toolCall.name, rationale: toolCall.rationale || 'Execute tool' },
           timestamp: Date.now(),
         })
 
@@ -377,7 +392,7 @@ Tool ${i + 1}: ${result.success ? 'SUCCESS' : 'FAILED'}
 ${result.success ? JSON.stringify(result.data, null, 2) : `Error: ${result.error}`}
 `).join('\n')}
 
-Expected Gaps from Plan: ${plan.expectedGaps.join(', ')}
+Expected Gaps from Plan: ${(plan.expectedGaps || []).join(', ')}
 
 Analyze the results and respond with JSON:
 {
@@ -501,25 +516,40 @@ Respond with JSON:
 
   /**
    * Create a default plan when AI planning fails
+   * Extracts key terms from query to improve search quality
    */
   private createDefaultPlan(query: string): AgentPlan {
+    // Extract meaningful terms from query for better search
+    const queryTerms = query
+      .split(/\s+/)
+      .filter(w => w.length > 3 && !['what', 'which', 'that', 'this', 'with', 'from', 'have', 'been'].includes(w.toLowerCase()))
+      .slice(0, 6)
+    const searchQuery = queryTerms.length > 0 ? queryTerms.join(' ') : query.slice(0, 100)
+
     return {
       steps: [
-        'Analyze user query',
-        'Search for relevant information',
-        'Synthesize findings',
-        'Generate response',
+        `Analyze query: "${query.slice(0, 60)}${query.length > 60 ? '...' : ''}"`,
+        'Search academic databases for relevant papers and patents',
+        'Analyze and synthesize key findings from sources',
+        'Generate comprehensive response with citations',
       ],
       tools: [
         {
           name: 'searchPapers',
-          params: { query, maxResults: 20 },
-          rationale: 'Find relevant research papers',
+          params: {
+            query: searchQuery,
+            maxResults: 20,
+            domains: [],  // Search all domains
+          },
+          rationale: `Search for papers related to: ${query.slice(0, 80)}`,
         },
       ],
-      expectedGaps: ['May need additional domain-specific sources'],
+      expectedGaps: [
+        'May need follow-up searches for specific subtopics',
+        'Some specialized databases may require additional API access',
+      ],
       complexity: 5,
-      estimatedDuration: 10000,
+      estimatedDuration: 15000,
     }
   }
 

@@ -251,20 +251,20 @@ export const ExtractedDataSchema = z.object({
 // ============================================================================
 
 export const AgentPlanSchema = z.object({
-  steps: z.array(z.string()).min(1),
+  steps: z.array(z.string()),  // Removed .min(1) - AI sometimes returns empty initially
   tools: z.array(z.object({
     name: z.string(),
     params: z.any(),
-    rationale: z.string(),
+    rationale: z.string().optional(),  // Made optional - AI sometimes omits this
   })),
-  expectedGaps: z.array(z.string()),
-  complexity: z.number().min(1).max(10),
-  estimatedDuration: z.number().min(0),
+  expectedGaps: z.array(z.string()).optional().default([]),  // Made optional with default
+  complexity: z.number().min(1).max(10).optional().default(5),  // Made optional with default
+  estimatedDuration: z.number().min(0).optional().default(10000),  // Made optional with default
 })
 
 export const AgentAnalysisSchema = z.object({
-  synthesis: z.string().min(20),
-  keyFindings: z.array(z.string()).min(1),
+  synthesis: z.string().min(10),  // Reduced from 20 to 10 - AI sometimes writes short syntheses
+  keyFindings: z.array(z.string()),  // Removed .min(1) - AI sometimes finds nothing notable
   gaps: z.array(z.string()),
   needsMoreInfo: z.boolean(),
   refinedQuery: z.string().optional(),
