@@ -67,7 +67,10 @@ export interface AgentResultMetadata {
   iterations: number
   totalToolCalls: number
   confidence: number
-  keyFindings?: string[]  // Key findings from the agent execution
+  keyFindings?: string[]           // Key findings from the agent execution
+  synthesis?: string               // Full synthesis text from analysis
+  recommendations?: string[]       // AI recommendations
+  responseKeyFindings?: string[]   // Key findings from final response
 }
 
 export interface AgentResult {

@@ -318,6 +318,29 @@ export const AgentResultSchema = z.object({
 // ============================================================================
 
 /**
+ * Clean AI output by stripping markdown code blocks and extracting JSON
+ */
+function cleanAIOutput(output: string): string {
+  let cleaned = output.trim()
+
+  // Remove markdown code blocks (various formats)
+  cleaned = cleaned
+    .replace(/^```json\s*\n?/i, '')
+    .replace(/^```\s*\n?/, '')
+    .replace(/\n?```\s*$/g, '')
+    .trim()
+
+  // Extract JSON if wrapped in other text
+  const firstBrace = cleaned.indexOf('{')
+  const lastBrace = cleaned.lastIndexOf('}')
+  if (firstBrace !== -1 && lastBrace > firstBrace) {
+    cleaned = cleaned.substring(firstBrace, lastBrace + 1)
+  }
+
+  return cleaned
+}
+
+/**
  * Validate AI output against a schema with retry on failure
  */
 export async function validateAIOutput<T>(
@@ -332,8 +355,11 @@ export async function validateAIOutput<T>(
 
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
+      // Clean the output by stripping markdown and extracting JSON
+      const cleanedOutput = cleanAIOutput(output)
+
       // Try to parse JSON
-      const parsed = JSON.parse(output)
+      const parsed = JSON.parse(cleanedOutput)
 
       // Validate against schema
       const validated = schema.parse(parsed)

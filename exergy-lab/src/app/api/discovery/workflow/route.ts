@@ -642,11 +642,17 @@ async function executeWorkflowPhases(
       const papers = sources.filter((s: any) => s.type === 'academic-paper' || !s.type)
       const patents = sources.filter((s: any) => s.type === 'patent')
 
+      // Get comprehensive analysis from metadata
+      const synthesis = agentResult.metadata?.synthesis
+      const recommendations = agentResult.metadata?.recommendations || []
+      const keyFindings = agentResult.metadata?.keyFindings || []
+      const confidence = agentResult.metadata?.confidence || 75
+
       return {
         success: true,
         results: {
-          // Summary for display
-          summary: agentResult.response,
+          // Use the full synthesis as summary, fallback to short answer
+          summary: synthesis || agentResult.response,
 
           // Research results in the format UI expects
           research: {
@@ -654,13 +660,21 @@ async function executeWorkflowPhases(
             patents: patents,
             datasets: [],
             totalSources: sources.length,
-            keyFindings: agentResult.metadata?.keyFindings || [],
-            confidenceScore: agentResult.metadata?.confidence || 75,
+            keyFindings: keyFindings,
+            confidenceScore: confidence,
             searchTime: agentResult.duration || 0,
           },
 
+          // Comprehensive AI analysis section for rich display
+          analysis: {
+            synthesis: synthesis,
+            keyFindings: keyFindings,
+            recommendations: recommendations,
+            confidence: confidence,
+          },
+
           // Cross-feature insights from the AI
-          crossFeatureInsights: agentResult.metadata?.keyFindings || [],
+          crossFeatureInsights: keyFindings,
 
           // Raw agent data for debugging
           _agent: {

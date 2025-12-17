@@ -65,6 +65,7 @@ export interface PlanPhase {
   parameters: PhaseParameters   // Configurable parameters
   canModify: boolean            // Can user edit parameters?
   optional: boolean             // Is this phase optional?
+  enabled: boolean              // Is this phase enabled? (default true)
   estimatedDuration: number     // milliseconds
   estimatedCost: number         // USD
   details?: PlanPhaseDetails    // AI-generated detailed plan content
@@ -234,6 +235,13 @@ export interface PhaseDependency {
 export interface WorkflowResults {
   // Optional summary field for AI-generated overviews
   summary?: string
+  // Comprehensive AI analysis (synthesis, findings, recommendations)
+  analysis?: {
+    synthesis?: string
+    keyFindings?: string[]
+    recommendations?: string[]
+    confidence?: number
+  }
   research: ResearchResults
   hypotheses: HypothesisResults
   experiments: ExperimentResults

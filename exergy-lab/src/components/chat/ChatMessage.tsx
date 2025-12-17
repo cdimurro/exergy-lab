@@ -131,27 +131,69 @@ export function ChatMessage({
             </Card>
           )}
 
-          {/* Results - shows workflow results */}
+          {/* Results - shows workflow results with comprehensive analysis */}
           {message.contentType === 'results' && message.results && (
             <Card className="p-4 border-border">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h4 className="font-medium text-lg">Results</h4>
+                  <h4 className="font-medium text-lg">Research Results</h4>
                   <span className="text-sm text-primary font-medium">Complete</span>
                 </div>
 
-                {/* Summary */}
-                {message.results.summary && (
-                  <div className="text-base text-foreground whitespace-pre-wrap">
-                    {message.results.summary}
+                {/* AI Synthesis - the main comprehensive summary */}
+                {(message.results.analysis?.synthesis || message.results.summary) && (
+                  <div className="prose prose-sm max-w-none">
+                    <p className="text-base text-foreground whitespace-pre-wrap">
+                      {message.results.analysis?.synthesis || message.results.summary}
+                    </p>
+                  </div>
+                )}
+
+                {/* Confidence score */}
+                {message.results.analysis?.confidence && message.results.analysis.confidence > 0 && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-muted-foreground">Confidence:</span>
+                    <span className="font-medium text-foreground">
+                      {message.results.analysis.confidence}%
+                    </span>
+                  </div>
+                )}
+
+                {/* Key Findings from AI analysis */}
+                {message.results.analysis?.keyFindings && message.results.analysis.keyFindings.length > 0 && (
+                  <div className="space-y-2">
+                    <h5 className="text-sm font-medium text-muted-foreground">Key Findings</h5>
+                    <ul className="space-y-1.5">
+                      {message.results.analysis.keyFindings.map((finding: string, idx: number) => (
+                        <li key={idx} className="flex gap-2 text-base">
+                          <span className="text-primary shrink-0">•</span>
+                          <span>{finding}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Recommendations from AI analysis */}
+                {message.results.analysis?.recommendations && message.results.analysis.recommendations.length > 0 && (
+                  <div className="space-y-2">
+                    <h5 className="text-sm font-medium text-muted-foreground">Recommendations</h5>
+                    <ul className="space-y-1.5">
+                      {message.results.analysis.recommendations.map((rec: string, idx: number) => (
+                        <li key={idx} className="flex gap-2 text-base">
+                          <span className="text-primary shrink-0">{idx + 1}.</span>
+                          <span>{rec}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 )}
 
                 {/* Research stats */}
                 {message.results.research && (
-                  <div className="flex flex-wrap gap-4 text-base">
+                  <div className="flex flex-wrap gap-4 text-base border-t border-border pt-3">
                     <span className="text-muted-foreground">
-                      <strong className="text-foreground">{message.results.research.totalSources || 0}</strong> sources found
+                      <strong className="text-foreground">{message.results.research.totalSources || 0}</strong> sources
                     </span>
                     {message.results.research.papers?.length > 0 && (
                       <span className="text-muted-foreground">
@@ -163,26 +205,6 @@ export function ChatMessage({
                         <strong className="text-foreground">{message.results.research.patents.length}</strong> patents
                       </span>
                     )}
-                    {message.results.research.confidenceScore > 0 && (
-                      <span className="text-muted-foreground">
-                        <strong className="text-foreground">{message.results.research.confidenceScore}%</strong> confidence
-                      </span>
-                    )}
-                  </div>
-                )}
-
-                {/* Key insights */}
-                {message.results.crossFeatureInsights && message.results.crossFeatureInsights.length > 0 && (
-                  <div className="space-y-2">
-                    <h5 className="text-sm font-medium text-muted-foreground">Key Insights</h5>
-                    <ul className="space-y-1 text-base">
-                      {message.results.crossFeatureInsights.slice(0, 5).map((insight: any, idx: number) => (
-                        <li key={idx} className="flex gap-2">
-                          <span className="text-primary">•</span>
-                          <span>{typeof insight === 'string' ? insight : insight.title || insight.description}</span>
-                        </li>
-                      ))}
-                    </ul>
                   </div>
                 )}
 

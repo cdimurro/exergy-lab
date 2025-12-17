@@ -653,9 +653,32 @@ function PhaseItem({
           <div className="flex items-center gap-3">
             <span className="font-medium text-lg truncate">{phase.title}</span>
             {phase.optional && (
-              <Badge variant="secondary" className="text-base">
-                Optional
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="text-base">
+                  Optional
+                </Badge>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    if (onModify) {
+                      onModify(phase.id, 'enabled', phase.enabled === false ? true : false)
+                    }
+                  }}
+                  className={cn(
+                    "relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer",
+                    phase.enabled !== false ? "bg-primary" : "bg-gray-300"
+                  )}
+                  title={phase.enabled !== false ? "Click to disable this phase" : "Click to enable this phase"}
+                >
+                  <span
+                    className={cn(
+                      "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
+                      phase.enabled !== false ? "translate-x-6" : "translate-x-1"
+                    )}
+                  />
+                </button>
+              </div>
             )}
             {hasModifications && (
               <Badge variant="default" className="text-base">

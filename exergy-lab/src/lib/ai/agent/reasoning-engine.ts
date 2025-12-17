@@ -239,7 +239,11 @@ export class ReasoningEngine extends EventEmitter {
           iterations: this.iterationCount,
           totalToolCalls: toolCalls.length,
           confidence: analysis.confidence,
-          keyFindings: analysis.keyFindings,  // Pass key findings to metadata
+          keyFindings: analysis.keyFindings,
+          // Include full analysis for comprehensive results display
+          synthesis: analysis.synthesis,
+          recommendations: response.recommendations,
+          responseKeyFindings: response.keyFindings,
         },
       }
 
