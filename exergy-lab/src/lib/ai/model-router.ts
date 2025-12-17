@@ -342,6 +342,7 @@ import { getGlobalToolRegistry } from './tools/registry'
 
 /**
  * Execute with function calling support (agent mode)
+ * Uses OpenAI as primary provider since Gemini API key is expired
  */
 export async function executeWithTools(
   prompt: string,
@@ -351,11 +352,11 @@ export async function executeWithTools(
     model?: 'fast' | 'quality'
   }
 ): Promise<GenerateResult> {
-  // Check rate limits for Gemini (primary provider for agent tasks)
-  if (!rateLimiter.canExecute('gemini')) {
+  // Check rate limits for OpenAI (primary provider - Gemini API key expired)
+  if (!rateLimiter.canExecute('openai')) {
     throw new RateLimitError(
-      'gemini',
-      rateLimiter.getRetryAfter('gemini')
+      'openai',
+      rateLimiter.getRetryAfter('openai')
     )
   }
 
@@ -364,16 +365,16 @@ export async function executeWithTools(
     const toolRegistry = getGlobalToolRegistry()
     const tools = toolRegistry.toGeminiFunctionDeclarations()
 
-    // Execute with Gemini function calling
-    const geminiModel = options?.model === 'quality' ? 'pro' : 'flash'
-    const result = await gemini.generateWithTools(prompt, tools, {
-      model: geminiModel,
+    // Execute with OpenAI function calling (Gemini API key expired)
+    const openaiModel = options?.model === 'quality' ? 'gpt-4o' : 'gpt-3.5-turbo'
+    const result = await openai.generateWithTools(prompt, tools, {
+      model: openaiModel,
       temperature: options?.temperature ?? 0.7,
-      maxOutputTokens: options?.maxTokens ?? 2048,
+      maxTokens: options?.maxTokens ?? 2048,
     })
 
     // Consume rate limit token
-    rateLimiter.consume('gemini')
+    rateLimiter.consume('openai')
 
     return result
   } catch (error) {
@@ -384,6 +385,7 @@ export async function executeWithTools(
 
 /**
  * Continue agent conversation after function calls
+ * Uses OpenAI as primary provider since Gemini API key is expired
  */
 export async function continueAfterFunctionCalls(
   prompt: string,
@@ -395,10 +397,10 @@ export async function continueAfterFunctionCalls(
     model?: 'fast' | 'quality'
   }
 ): Promise<string> {
-  if (!rateLimiter.canExecute('gemini')) {
+  if (!rateLimiter.canExecute('openai')) {
     throw new RateLimitError(
-      'gemini',
-      rateLimiter.getRetryAfter('gemini')
+      'openai',
+      rateLimiter.getRetryAfter('openai')
     )
   }
 
@@ -406,20 +408,20 @@ export async function continueAfterFunctionCalls(
     const toolRegistry = getGlobalToolRegistry()
     const tools = toolRegistry.toGeminiFunctionDeclarations()
 
-    const geminiModel = options?.model === 'quality' ? 'pro' : 'flash'
-    const result = await gemini.continueWithFunctionResponse(
+    const openaiModel = options?.model === 'quality' ? 'gpt-4o' : 'gpt-3.5-turbo'
+    const result = await openai.continueWithFunctionResponse(
       prompt,
       tools,
       previousCalls,
       functionResponses,
       {
-        model: geminiModel,
+        model: openaiModel,
         temperature: options?.temperature ?? 0.7,
-        maxOutputTokens: options?.maxTokens ?? 2048,
+        maxTokens: options?.maxTokens ?? 2048,
       }
     )
 
-    rateLimiter.consume('gemini')
+    rateLimiter.consume('openai')
     return result
   } catch (error) {
     console.error('Continue after function calls error:', error)
@@ -429,6 +431,7 @@ export async function continueAfterFunctionCalls(
 
 /**
  * Generate structured output with schema validation
+ * Uses OpenAI as primary provider since Gemini API key is expired
  */
 export async function generateStructured<T = any>(
   prompt: string,
@@ -439,23 +442,32 @@ export async function generateStructured<T = any>(
     model?: 'fast' | 'quality'
   }
 ): Promise<T> {
-  if (!rateLimiter.canExecute('gemini')) {
+  if (!rateLimiter.canExecute('openai')) {
     throw new RateLimitError(
-      'gemini',
-      rateLimiter.getRetryAfter('gemini')
+      'openai',
+      rateLimiter.getRetryAfter('openai')
     )
   }
 
   try {
-    const geminiModel = options?.model === 'quality' ? 'pro' : 'flash'
-    const result = await gemini.generateStructuredOutput<T>(prompt, schema, {
-      model: geminiModel,
+    const openaiModel = options?.model === 'quality' ? 'gpt-4o' : 'gpt-3.5-turbo'
+    const fullPrompt = `${prompt}\n\nRespond with valid JSON matching this schema:\n${schema}`
+
+    const response = await openai.generateText(fullPrompt, {
+      model: openaiModel as any,
       temperature: options?.temperature ?? 0.3,
-      maxOutputTokens: options?.maxTokens ?? 2048,
+      maxTokens: options?.maxTokens ?? 2048,
     })
 
-    rateLimiter.consume('gemini')
-    return result
+    rateLimiter.consume('openai')
+
+    // Parse JSON response
+    let cleaned = response.trim()
+    if (cleaned.startsWith('```')) {
+      cleaned = cleaned.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?```\s*$/, '')
+    }
+
+    return JSON.parse(cleaned) as T
   } catch (error) {
     console.error('Structured output generation error:', error)
     throw new Error(`Structured output generation failed: ${error}`)

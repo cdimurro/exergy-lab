@@ -92,16 +92,24 @@ export function ChatInterface({
   })
 
   // Auto-start with form data when autoStart is true
+  // Use a ref to prevent duplicate submissions from StrictMode double-mounting
+  const hasInitializedRef = React.useRef(false)
+
   React.useEffect(() => {
-    if (autoStart && initialFormData && !hasAutoStarted) {
+    // Only run once: check both ref and state to prevent double execution
+    if (autoStart && initialFormData && !hasAutoStarted && !hasInitializedRef.current) {
+      hasInitializedRef.current = true
       setHasAutoStarted(true)
       // Build prompt from form data
       const prompt = buildPromptFromFormData(pageType as PageType, initialFormData)
-      // Send the initial message
-      sendMessage(prompt, {
-        formData: initialFormData,
-        domains: initialFormData.domain ? [initialFormData.domain as Domain] : [],
-      })
+      // Send the initial message with a small delay to ensure state is settled
+      const timer = setTimeout(() => {
+        sendMessage(prompt, {
+          formData: initialFormData,
+          domains: initialFormData.domain ? [initialFormData.domain as Domain] : [],
+        })
+      }, 0)
+      return () => clearTimeout(timer)
     }
   }, [autoStart, initialFormData, hasAutoStarted, pageType, sendMessage])
 

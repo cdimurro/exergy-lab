@@ -145,13 +145,8 @@ Respond with JSON:
 
       console.log('[WorkflowPlanner] Phase analysis response:', content.substring(0, 100))
 
-      // Clean markdown if present
-      let cleanedContent = content.trim()
-      if (cleanedContent.startsWith('```')) {
-        cleanedContent = cleanedContent.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
-      }
-
-      const analysis = JSON.parse(cleanedContent)
+      // Clean and parse JSON response
+      const analysis = this.parseJSONResponse(content)
 
       // Apply user options overrides
       if (options?.includeExperiments !== false && analysis.needsExperiments) {
@@ -299,22 +294,89 @@ Respond ONLY with valid JSON (no markdown, no code blocks):
 
       console.log('[WorkflowPlanner] AI response length:', content.length)
 
-      // Clean up response - remove any markdown code blocks if present
-      let cleanedContent = content.trim()
-      if (cleanedContent.startsWith('```')) {
-        cleanedContent = cleanedContent.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
+      // Parse JSON with robust error handling
+      const aiPlan = this.parseJSONResponse(content) as AIGeneratedPlan
+
+      // Validate that we got required fields
+      if (!aiPlan.research || !aiPlan.research.searchTerms) {
+        console.warn('[WorkflowPlanner] AI plan missing required research fields, using fallback')
+        return this.createFallbackPlan(query, domains, goals, requiredPhases)
       }
 
-      console.log('[WorkflowPlanner] AI generated plan content:', cleanedContent.substring(0, 300) + '...')
-
-      const aiPlan = JSON.parse(cleanedContent) as AIGeneratedPlan
-      console.log('[WorkflowPlanner] Successfully parsed AI plan with', aiPlan.research?.searchTerms?.length || 0, 'search terms')
+      console.log('[WorkflowPlanner] Successfully parsed AI plan with', aiPlan.research.searchTerms.length, 'search terms')
       return aiPlan
     } catch (error) {
       console.error('[WorkflowPlanner] AI plan generation failed:', error)
       console.error('[WorkflowPlanner] Error details:', error instanceof Error ? error.message : String(error))
       return this.createFallbackPlan(query, domains, goals, requiredPhases)
     }
+  }
+
+  /**
+   * Parse JSON response with robust error handling
+   * Handles markdown code blocks, trailing commas, and other common issues
+   */
+  private parseJSONResponse(content: string): any {
+    let cleanedContent = content.trim()
+
+    // Remove markdown code blocks
+    if (cleanedContent.startsWith('```')) {
+      cleanedContent = cleanedContent.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?```\s*$/, '')
+    }
+
+    // Try direct parse first
+    try {
+      return JSON.parse(cleanedContent)
+    } catch (firstError) {
+      console.log('[WorkflowPlanner] First JSON parse failed, attempting cleanup...')
+    }
+
+    // Common fixes for malformed JSON
+    try {
+      // Fix trailing commas before closing braces/brackets
+      cleanedContent = cleanedContent.replace(/,\s*}/g, '}').replace(/,\s*]/g, ']')
+
+      // Fix unescaped quotes in strings (common LLM issue)
+      // This is a simple heuristic - look for quotes that break the structure
+      cleanedContent = cleanedContent.replace(/:\s*"([^"]*)"([^,}\]]*)"([^"]*?)"/g, (match, p1, p2, p3) => {
+        // If there are internal quotes, escape them
+        return `: "${p1}${p2.replace(/"/g, '\\"')}${p3}"`
+      })
+
+      // Remove any trailing content after the main JSON object
+      const lastBrace = cleanedContent.lastIndexOf('}')
+      if (lastBrace !== -1 && lastBrace < cleanedContent.length - 1) {
+        cleanedContent = cleanedContent.substring(0, lastBrace + 1)
+      }
+
+      return JSON.parse(cleanedContent)
+    } catch (secondError) {
+      console.log('[WorkflowPlanner] Second JSON parse failed, attempting to extract JSON object...')
+    }
+
+    // Last resort: try to extract JSON from the content
+    try {
+      // Find the first { and last }
+      const firstBrace = cleanedContent.indexOf('{')
+      const lastBrace = cleanedContent.lastIndexOf('}')
+
+      if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+        const jsonCandidate = cleanedContent.substring(firstBrace, lastBrace + 1)
+        // Fix common issues
+        const fixed = jsonCandidate
+          .replace(/,\s*}/g, '}')
+          .replace(/,\s*]/g, ']')
+          .replace(/\n/g, ' ')
+          .replace(/\t/g, ' ')
+
+        return JSON.parse(fixed)
+      }
+    } catch (thirdError) {
+      console.error('[WorkflowPlanner] All JSON parse attempts failed')
+      console.error('[WorkflowPlanner] Raw content:', content.substring(0, 500))
+    }
+
+    throw new Error('Failed to parse JSON response from AI')
   }
 
   /**
