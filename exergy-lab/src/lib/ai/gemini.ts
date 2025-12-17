@@ -3,6 +3,14 @@ import { FunctionDeclaration, FunctionCall, GenerateResult } from '@/types/agent
 
 // Initialize Gemini client
 const apiKey = process.env.GOOGLE_AI_API_KEY || ''
+
+// Log API key status (without exposing the key)
+if (!apiKey) {
+  console.error('[Gemini] WARNING: GOOGLE_AI_API_KEY is not set!')
+} else {
+  console.log('[Gemini] API key configured (length:', apiKey.length, ', starts with:', apiKey.substring(0, 10) + '...)')
+}
+
 const genAI = new GoogleGenerativeAI(apiKey)
 
 // Model selection
