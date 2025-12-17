@@ -203,7 +203,16 @@ Respond with JSON:
     const domainContext = this.getDomainContext(domains)
     const phasesNeeded = requiredPhases.filter(p => p !== 'research').map(p => p.replace('_', ' '))
 
-    const planPrompt = `You are an expert research planner for clean energy technology. Generate a DETAILED, SPECIFIC execution plan tailored to the user's exact query.
+    const planPrompt = `You are an expert research planner for clean energy technology.
+
+CRITICAL JSON REQUIREMENTS:
+- Your response must be ONLY valid JSON - no markdown, no code blocks, no explanations
+- Escape quotes inside strings with backslash: \\"
+- NO trailing commas before } or ]
+- NO comments in JSON
+- NO line breaks within string values
+
+Generate a DETAILED, SPECIFIC execution plan tailored to the user's exact query.
 
 USER REQUEST:
 Domain: ${domains.join(', ')}
@@ -241,7 +250,8 @@ ${requiredPhases.includes('tea_analysis') ? `For TEA phase:
 - List key assumptions and data requirements
 - Specify output metrics (LCOE, NPV, IRR, payback)` : ''}
 
-Respond ONLY with valid JSON (no markdown, no code blocks):
+OUTPUT FORMAT:
+Respond with ONLY the JSON object below. Start directly with { and end with }. Do not wrap in markdown or add any text before/after:
 {
   "research": {
     "searchTerms": ["term1", "term2", "term3", "term4"],
@@ -314,15 +324,17 @@ Respond ONLY with valid JSON (no markdown, no code blocks):
 
   /**
    * Parse JSON response with robust error handling
-   * Handles markdown code blocks, trailing commas, and other common issues
+   * Handles markdown code blocks, trailing commas, unescaped quotes, and other common LLM issues
    */
   private parseJSONResponse(content: string): any {
     let cleanedContent = content.trim()
 
-    // Remove markdown code blocks
-    if (cleanedContent.startsWith('```')) {
-      cleanedContent = cleanedContent.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?```\s*$/, '')
-    }
+    // Remove markdown code blocks (various formats)
+    cleanedContent = cleanedContent
+      .replace(/^```json\s*\n?/i, '')
+      .replace(/^```\s*\n?/, '')
+      .replace(/\n?```\s*$/g, '')
+      .trim()
 
     // Try direct parse first
     try {
@@ -331,49 +343,93 @@ Respond ONLY with valid JSON (no markdown, no code blocks):
       console.log('[WorkflowPlanner] First JSON parse failed, attempting cleanup...')
     }
 
-    // Common fixes for malformed JSON
-    try {
-      // Fix trailing commas before closing braces/brackets
-      cleanedContent = cleanedContent.replace(/,\s*}/g, '}').replace(/,\s*]/g, ']')
+    // Find the JSON object boundaries first
+    const firstBrace = cleanedContent.indexOf('{')
+    const lastBrace = cleanedContent.lastIndexOf('}')
 
-      // Fix unescaped quotes in strings (common LLM issue)
-      // This is a simple heuristic - look for quotes that break the structure
-      cleanedContent = cleanedContent.replace(/:\s*"([^"]*)"([^,}\]]*)"([^"]*?)"/g, (match, p1, p2, p3) => {
-        // If there are internal quotes, escape them
-        return `: "${p1}${p2.replace(/"/g, '\\"')}${p3}"`
-      })
-
-      // Remove any trailing content after the main JSON object
-      const lastBrace = cleanedContent.lastIndexOf('}')
-      if (lastBrace !== -1 && lastBrace < cleanedContent.length - 1) {
-        cleanedContent = cleanedContent.substring(0, lastBrace + 1)
-      }
-
-      return JSON.parse(cleanedContent)
-    } catch (secondError) {
-      console.log('[WorkflowPlanner] Second JSON parse failed, attempting to extract JSON object...')
+    if (firstBrace === -1 || lastBrace === -1 || lastBrace <= firstBrace) {
+      console.error('[WorkflowPlanner] No JSON object found in response')
+      throw new Error('No JSON object found in AI response')
     }
 
-    // Last resort: try to extract JSON from the content
+    // Extract just the JSON portion
+    let jsonStr = cleanedContent.substring(firstBrace, lastBrace + 1)
+
+    // Apply fixes in sequence
     try {
-      // Find the first { and last }
-      const firstBrace = cleanedContent.indexOf('{')
-      const lastBrace = cleanedContent.lastIndexOf('}')
+      // 1. Fix trailing commas
+      jsonStr = jsonStr.replace(/,(\s*[}\]])/g, '$1')
 
-      if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-        const jsonCandidate = cleanedContent.substring(firstBrace, lastBrace + 1)
-        // Fix common issues
-        const fixed = jsonCandidate
-          .replace(/,\s*}/g, '}')
-          .replace(/,\s*]/g, ']')
-          .replace(/\n/g, ' ')
-          .replace(/\t/g, ' ')
+      // 2. Fix line breaks within strings (replace with space)
+      // This handles multi-line string values
+      jsonStr = jsonStr.replace(/"([^"]*)\n([^"]*)"/g, (match, p1, p2) => {
+        return `"${p1} ${p2}"`
+      })
 
-        return JSON.parse(fixed)
+      // 3. Normalize whitespace
+      jsonStr = jsonStr.replace(/\r\n/g, ' ').replace(/\t/g, ' ')
+
+      // Try parsing after basic fixes
+      try {
+        return JSON.parse(jsonStr)
+      } catch (e) {
+        console.log('[WorkflowPlanner] Parse after basic fixes failed, trying more aggressive cleanup...')
       }
+
+      // 4. More aggressive: escape unescaped quotes in string values
+      // This is tricky - we look for patterns like "value with "inner" quotes"
+      // and try to fix them to "value with \"inner\" quotes"
+      let inString = false
+      let result = ''
+      let i = 0
+
+      while (i < jsonStr.length) {
+        const char = jsonStr[i]
+
+        if (char === '"' && (i === 0 || jsonStr[i - 1] !== '\\')) {
+          if (!inString) {
+            inString = true
+            result += char
+          } else {
+            // Check if this quote should end the string
+            // Look ahead to see if next non-whitespace char is : , } or ]
+            let j = i + 1
+            while (j < jsonStr.length && /\s/.test(jsonStr[j])) j++
+
+            const nextChar = jsonStr[j]
+            if (nextChar === ':' || nextChar === ',' || nextChar === '}' || nextChar === ']' || j >= jsonStr.length) {
+              // This is a closing quote
+              inString = false
+              result += char
+            } else {
+              // This is a quote inside a string - escape it
+              result += '\\"'
+            }
+          }
+        } else {
+          result += char
+        }
+        i++
+      }
+
+      return JSON.parse(result)
+    } catch (secondError) {
+      console.log('[WorkflowPlanner] Second JSON parse failed, attempting final extraction...')
+    }
+
+    // Last resort: try a very aggressive cleanup
+    try {
+      // Remove all control characters and try again
+      const aggressive = jsonStr
+        .replace(/[\x00-\x1F\x7F]/g, ' ')
+        .replace(/,(\s*[}\]])/g, '$1')
+        .replace(/\s+/g, ' ')
+
+      return JSON.parse(aggressive)
     } catch (thirdError) {
       console.error('[WorkflowPlanner] All JSON parse attempts failed')
-      console.error('[WorkflowPlanner] Raw content:', content.substring(0, 500))
+      console.error('[WorkflowPlanner] Raw content (first 500 chars):', content.substring(0, 500))
+      console.error('[WorkflowPlanner] Extracted JSON (first 500 chars):', jsonStr.substring(0, 500))
     }
 
     throw new Error('Failed to parse JSON response from AI')

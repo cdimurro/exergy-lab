@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Store in server-side workflow store (persists across API requests)
-    serverWorkflowStore.create(workflow)
+    await serverWorkflowStore.create(workflow)
 
     console.log('[Workflow API] Plan generated:', {
       workflowId,
@@ -134,7 +134,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Get workflow from server-side store
-    const workflow = serverWorkflowStore.get(workflowId)
+    const workflow = await serverWorkflowStore.get(workflowId)
     if (!workflow) {
       console.error('[Workflow API] Workflow not found:', workflowId)
       return NextResponse.json({ error: 'Workflow not found' }, { status: 404 })
@@ -168,7 +168,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Update workflow status to executing
-    serverWorkflowStore.update(workflowId, {
+    await serverWorkflowStore.update(workflowId, {
       status: 'executing',
       userDecisions: workflow.userDecisions,
     })
@@ -196,9 +196,9 @@ export async function PUT(request: NextRequest) {
     })
 
     // Execute workflow in background (non-blocking)
-    executeWorkflowAsync(workflow, engine, sessionId).catch((error) => {
+    executeWorkflowAsync(workflow, engine, sessionId).catch(async (error) => {
       console.error('[Workflow API] Async execution failed:', error)
-      serverWorkflowStore.update(workflowId, {
+      await serverWorkflowStore.update(workflowId, {
         status: 'failed',
       })
     })
@@ -241,7 +241,7 @@ export async function GET(request: NextRequest) {
   }
 
   // Get workflow from server-side store
-  const workflow = serverWorkflowStore.get(workflowId)
+  const workflow = await serverWorkflowStore.get(workflowId)
   if (!workflow) {
     return NextResponse.json({ error: 'Workflow not found' }, { status: 404 })
   }
@@ -252,36 +252,36 @@ export async function GET(request: NextRequest) {
   const writer = stream.writable.getWriter()
 
   // Start streaming status updates
-  const streamInterval = setInterval(() => {
-    const currentWorkflow = serverWorkflowStore.get(workflowId)
+  const streamInterval = setInterval(async () => {
+    try {
+      const currentWorkflow = await serverWorkflowStore.get(workflowId)
 
-    if (!currentWorkflow) {
-      clearInterval(streamInterval)
-      writer.close()
-      return
-    }
-
-    // Send status update
-    const statusUpdate = {
-      workflowId,
-      status: currentWorkflow.status,
-      currentPhase: getCurrentPhase(currentWorkflow),
-      overallProgress: calculateProgress(currentWorkflow),
-      timestamp: Date.now(),
-      message: getStatusMessage(currentWorkflow),
-    }
-
-    writer
-      .write(encoder.encode(`data: ${JSON.stringify(statusUpdate)}\n\n`))
-      .catch((error) => {
-        console.error('[Workflow API] Stream write error:', error)
+      if (!currentWorkflow) {
         clearInterval(streamInterval)
-      })
+        writer.close()
+        return
+      }
 
-    // Close stream when workflow completes or fails
-    if (currentWorkflow.status === 'completed' || currentWorkflow.status === 'failed') {
+      // Send status update
+      const statusUpdate = {
+        workflowId,
+        status: currentWorkflow.status,
+        currentPhase: getCurrentPhase(currentWorkflow),
+        overallProgress: calculateProgress(currentWorkflow),
+        timestamp: Date.now(),
+        message: getStatusMessage(currentWorkflow),
+      }
+
+      await writer.write(encoder.encode(`data: ${JSON.stringify(statusUpdate)}\n\n`))
+
+      // Close stream when workflow completes or fails
+      if (currentWorkflow.status === 'completed' || currentWorkflow.status === 'failed') {
+        clearInterval(streamInterval)
+        setTimeout(() => writer.close(), 1000) // Allow final message to send
+      }
+    } catch (error) {
+      console.error('[Workflow API] Stream error:', error)
       clearInterval(streamInterval)
-      setTimeout(() => writer.close(), 1000) // Allow final message to send
     }
   }, 1000) // Update every second
 
@@ -407,13 +407,13 @@ async function executeWorkflowAsync(
     })
 
     // Update workflow with results in server-side store
-    serverWorkflowStore.update(workflow.id, {
+    await serverWorkflowStore.update(workflow.id, {
       status: result.success ? 'completed' : 'failed',
       duration: Date.now() - new Date(workflow.createdAt).getTime(),
     })
   } catch (error) {
     console.error('[Workflow API] Workflow execution error:', error)
-    serverWorkflowStore.update(workflow.id, {
+    await serverWorkflowStore.update(workflow.id, {
       status: 'failed',
     })
   }
