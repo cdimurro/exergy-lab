@@ -56,13 +56,26 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate execution plan using WorkflowPlanner
-    console.log('[Workflow API] Generating plan for query:', query)
+    console.log('[Workflow API] === Generating Plan ===')
+    console.log('[Workflow API] Query:', query)
+    console.log('[Workflow API] Domains:', domains)
+    console.log('[Workflow API] Goals:', goals)
+
     const plan = await workflowPlanner.generatePlan({
       query,
       domains: domains as Domain[],
       goals,
       options,
     })
+
+    console.log('[Workflow API] === Plan Generated ===')
+    console.log('[Workflow API] Plan overview:', plan.overview)
+    console.log('[Workflow API] Phases count:', plan.phases.length)
+    if (plan.phases[0]?.details) {
+      console.log('[Workflow API] First phase has details:', Object.keys(plan.phases[0].details))
+    } else {
+      console.log('[Workflow API] First phase has NO details (fallback plan)')
+    }
 
     // Create workflow object
     const workflowId = generateWorkflowId()
