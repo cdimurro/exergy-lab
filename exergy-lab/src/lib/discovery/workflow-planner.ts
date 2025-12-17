@@ -1211,15 +1211,56 @@ Respond with ONLY the JSON object below. Start directly with { and end with }. D
     totalDuration: number,
     totalCost: number
   ): string {
+    // Phase label mapping for readable names
+    const PHASE_LABELS: Record<PhaseType, string> = {
+      research: 'Research',
+      hypothesis: 'Hypothesis Generation',
+      experiment_design: 'Experiment Design',
+      simulation: 'Simulation',
+      tea_analysis: 'TEA Analysis',
+      validation: 'Validation',
+      quality_gates: 'Quality Gates',
+    }
+
     const phaseCount = phases.length
     const toolCount = phases.reduce((sum, p) => sum + p.tools.length, 0)
     const durationMin = Math.ceil(totalDuration / 60000)
 
-    const costStr = totalCost > 0 ? ` with an estimated cost of $${totalCost.toFixed(2)}` : ''
+    // Extract key details from phases
+    const researchPhase = phases.find(p => p.type === 'research')
+    const hypothesisPhase = phases.find(p => p.type === 'hypothesis')
+    const simulationPhase = phases.find(p => p.type === 'simulation')
 
-    return `This workflow will ${phases.map(p => p.type.replace('_', ' ')).join(', then ')} to address: "${query}".
+    // Get details if available
+    const searchTerms = (researchPhase?.details as any)?.searchTerms?.slice(0, 3) || []
+    const expectedHypotheses = (hypothesisPhase?.details as any)?.expectedHypotheses || 1
+    const simulationType = (simulationPhase?.details as any)?.simulationType || ''
 
-It consists of ${phaseCount} phases with ${toolCount} tool executions, estimated to complete in ${durationMin} minutes${costStr}.`
+    // Build workflow steps as readable flow
+    const workflowSteps = phases.map(p => PHASE_LABELS[p.type] || p.type.replace('_', ' ')).join(' → ')
+
+    // Build clean summary
+    const lines: string[] = []
+
+    // Main description
+    lines.push(`A ${phaseCount}-phase research workflow to investigate: "${query}"`)
+    lines.push('')
+    lines.push(`**Workflow:** ${workflowSteps}`)
+
+    // Key details (if available)
+    if (searchTerms.length > 0) {
+      lines.push(`**Key Search Areas:** ${searchTerms.join(', ')}`)
+    }
+    if (simulationType) {
+      lines.push(`**Simulation:** ${simulationType}`)
+    }
+
+    // Summary stats
+    const costStr = totalCost > 0 ? `, estimated cost $${totalCost.toFixed(2)}` : ''
+    lines.push('')
+    lines.push(`${toolCount} tool executions across ${phaseCount} phases, ~${durationMin} min${costStr}`)
+
+    return lines.join('\n')
   }
 }
 

@@ -17,7 +17,7 @@ import {
   ShieldCheck,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { Button, Card, Badge, Input, Textarea } from '@/components/ui'
+import { Button, Card, Badge, Input, Textarea, Select } from '@/components/ui'
 import type { PlanCardProps } from '@/types/chat'
 import type {
   PlanPhase,
@@ -49,6 +49,32 @@ const PHASE_LABELS: Record<PhaseType, string> = {
   tea_analysis: 'TEA Analysis',
   validation: 'Validation',
   quality_gates: 'Quality Gates',
+}
+
+// Dropdown options for enum parameters
+const DROPDOWN_OPTIONS: Record<string, Array<{ value: string; label: string }>> = {
+  difficultyLevel: [
+    { value: 'low', label: 'Low' },
+    { value: 'medium', label: 'Medium' },
+    { value: 'high', label: 'High' },
+  ],
+  simulationType: [
+    { value: 'DFT', label: 'Density Functional Theory (DFT)' },
+    { value: 'MD', label: 'Molecular Dynamics (MD)' },
+    { value: 'GCMC', label: 'Monte Carlo (GCMC)' },
+    { value: 'CFD', label: 'Computational Fluid Dynamics (CFD)' },
+    { value: 'FEA', label: 'Finite Element Analysis (FEA)' },
+    { value: 'KMC', label: 'Kinetic Monte Carlo (KMC)' },
+    { value: 'PV', label: 'Photovoltaic Simulation' },
+    { value: 'battery', label: 'Battery Electrochemistry' },
+    { value: 'process', label: 'Process Simulation' },
+    { value: 'other', label: 'Other / Custom' },
+  ],
+  simulationTier: [
+    { value: 'browser', label: 'Browser (Quick, ~1 min)' },
+    { value: 'local', label: 'Local GPU (5-15 min)' },
+    { value: 'cloud', label: 'Cloud GPU (15-60 min)' },
+  ],
 }
 
 // ============================================================================
@@ -529,7 +555,7 @@ interface PhaseItemProps {
   isExpanded: boolean
   onToggle: () => void
   onModify?: (phaseId: string, parameter: string, value: any) => void
-  modification?: { parameter: string; newValue: any }
+  modifications?: Array<{ parameter: string; newValue: any }>
 }
 
 function PhaseItem({
@@ -538,7 +564,7 @@ function PhaseItem({
   isExpanded,
   onToggle,
   onModify,
-  modification,
+  modifications = [],
 }: PhaseItemProps) {
   const [editingParam, setEditingParam] = React.useState<string | null>(null)
   const [editValue, setEditValue] = React.useState<string>('')
@@ -553,14 +579,36 @@ function PhaseItem({
       // Parse value based on original type
       const originalValue = phase.parameters[editingParam]
       let parsedValue: any = editValue
+
       if (typeof originalValue === 'number') {
-        parsedValue = parseFloat(editValue) || 0
+        const parsed = parseFloat(editValue)
+        // If parsing fails, keep original value
+        if (isNaN(parsed)) {
+          parsedValue = originalValue
+        } else {
+          // Enforce min/max for count parameters
+          const isCountParam = editingParam.toLowerCase().includes('hypotheses') ||
+            editingParam.toLowerCase().includes('experiments') ||
+            editingParam.toLowerCase().includes('simulations') ||
+            editingParam.toLowerCase().includes('protocols') ||
+            editingParam.toLowerCase().includes('count') ||
+            editingParam.toLowerCase().includes('max')
+
+          if (isCountParam) {
+            parsedValue = Math.max(1, Math.min(5, parsed))
+          } else {
+            parsedValue = parsed
+          }
+        }
       } else if (typeof originalValue === 'boolean') {
         parsedValue = editValue === 'true'
       }
+
+      // Always call onModify to update the value
       onModify(phase.id, editingParam, parsedValue)
     }
     setEditingParam(null)
+    setEditValue('')
   }
 
   const handleEditCancel = () => {
@@ -574,7 +622,13 @@ function PhaseItem({
     return `${Math.round(ms / 60000)}min`
   }
 
-  const hasModifications = modification !== undefined
+  const hasModifications = modifications.length > 0
+
+  // Helper to get modified value for a specific parameter
+  const getModifiedValue = (key: string) => {
+    const mod = modifications.find(m => m.parameter === key)
+    return mod?.newValue
+  }
 
   return (
     <div
@@ -609,28 +663,38 @@ function PhaseItem({
               </Badge>
             )}
           </div>
-        </div>
-        <div className="flex items-center gap-5 text-base text-muted-foreground">
-          <span className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
-            {formatDuration(phase.estimatedDuration)}
-          </span>
-          {phase.estimatedCost > 0 && (
-            <span>${phase.estimatedCost.toFixed(2)}</span>
+          {/* Preview text when collapsed */}
+          {!isExpanded && phase.description && (
+            <p className="text-sm text-muted-foreground mt-1 truncate max-w-[500px]">
+              {phase.description.length > 80
+                ? `${phase.description.substring(0, 80)}...`
+                : phase.description}
+            </p>
           )}
         </div>
-        {isExpanded ? (
-          <ChevronDown className="h-5 w-5 text-muted-foreground" />
-        ) : (
-          <ChevronRight className="h-5 w-5 text-muted-foreground" />
-        )}
+        <ChevronDown className={cn(
+          "h-5 w-5 text-muted-foreground transition-transform shrink-0",
+          !isExpanded && "-rotate-90"
+        )} />
       </button>
 
       {/* Expanded content */}
       {isExpanded && (
         <div className="px-5 pb-5 space-y-5 border-t border-border">
+          {/* Estimated time and cost */}
+          <div className="flex items-center gap-4 pt-4 text-sm text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              <Clock className="h-4 w-4" />
+              Est. {formatDuration(phase.estimatedDuration)}
+            </span>
+            {phase.estimatedCost > 0 && (
+              <span className="flex items-center gap-1">
+                ${phase.estimatedCost.toFixed(2)}
+              </span>
+            )}
+          </div>
           {/* Description */}
-          <p className="text-lg text-muted-foreground pt-5">{phase.description}</p>
+          <p className="text-lg text-muted-foreground">{phase.description}</p>
 
           {/* AI-Generated Details - Rich content based on phase type */}
           <PhaseDetails phase={phase} />
@@ -669,10 +733,11 @@ function PhaseItem({
                   if (typeof value === 'object') return null
 
                   const isEditing = editingParam === key
-                  const displayValue =
-                    modification?.parameter === key
-                      ? modification.newValue
-                      : value
+                  const modifiedValue = getModifiedValue(key)
+                  const displayValue = modifiedValue !== undefined ? modifiedValue : value
+
+                  // Check if this parameter has dropdown options
+                  const dropdownOptions = DROPDOWN_OPTIONS[key]
 
                   // Determine if this is a count/quantity parameter that should have max=5
                   const isCountParam = key.toLowerCase().includes('hypotheses') ||
@@ -681,6 +746,13 @@ function PhaseItem({
                     key.toLowerCase().includes('protocols') ||
                     key.toLowerCase().includes('count') ||
                     key.toLowerCase().includes('max')
+
+                  // Get label for dropdown value
+                  const getDropdownLabel = (val: any) => {
+                    if (!dropdownOptions) return String(val)
+                    const option = dropdownOptions.find(o => o.value === val)
+                    return option?.label || String(val)
+                  }
 
                   return (
                     <div
@@ -692,39 +764,60 @@ function PhaseItem({
                       </span>
                       {isEditing ? (
                         <div className="flex items-center gap-2">
-                          <Input
-                            type={typeof value === 'number' ? 'number' : 'text'}
-                            value={editValue}
-                            onChange={(e) => setEditValue(e.target.value)}
-                            className="h-10 w-32 text-base"
-                            min={typeof value === 'number' && isCountParam ? 1 : undefined}
-                            max={typeof value === 'number' && isCountParam ? 5 : undefined}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') handleEditSave()
-                              if (e.key === 'Escape') handleEditCancel()
-                            }}
-                            autoFocus
-                          />
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={handleEditSave}
-                            className="h-10 w-10 p-0"
-                          >
-                            <CheckCircle2 className="h-5 w-5" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={handleEditCancel}
-                            className="h-10 w-10 p-0"
-                          >
-                            <X className="h-5 w-5" />
-                          </Button>
+                          {dropdownOptions ? (
+                            // Render dropdown for enum parameters
+                            <Select
+                              value={editValue}
+                              onChange={(val) => {
+                                setEditValue(val)
+                                // Auto-save on dropdown change
+                                if (onModify) {
+                                  onModify(phase.id, editingParam!, val)
+                                }
+                                setEditingParam(null)
+                                setEditValue('')
+                              }}
+                              options={dropdownOptions}
+                              className="h-10 w-48"
+                            />
+                          ) : (
+                            // Render input for text/number
+                            <>
+                              <Input
+                                type={typeof value === 'number' ? 'number' : 'text'}
+                                value={editValue}
+                                onChange={(e) => setEditValue(e.target.value)}
+                                className="h-10 w-32 text-base"
+                                min={typeof value === 'number' && isCountParam ? 1 : undefined}
+                                max={typeof value === 'number' && isCountParam ? 5 : undefined}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') handleEditSave()
+                                  if (e.key === 'Escape') handleEditCancel()
+                                }}
+                                autoFocus
+                              />
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={handleEditSave}
+                                className="h-10 w-10 p-0"
+                              >
+                                <CheckCircle2 className="h-5 w-5" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={handleEditCancel}
+                                className="h-10 w-10 p-0"
+                              >
+                                <X className="h-5 w-5" />
+                              </Button>
+                            </>
+                          )}
                         </div>
                       ) : (
                         <div className="flex items-center gap-2">
-                          <span className="font-medium">{String(displayValue)}</span>
+                          <span className="font-medium">{getDropdownLabel(displayValue)}</span>
                           {onModify && (
                             <Button
                               size="sm"
@@ -758,9 +851,9 @@ export function PlanCard({
   modifications = [],
   isLoading = false,
 }: PlanCardProps) {
-  // Initialize with ALL phases expanded by default
+  // Initialize with all phases COLLAPSED by default for cleaner view
   const [expandedPhases, setExpandedPhases] = React.useState<Set<string>>(
-    () => new Set(plan.phases.map(p => p.id))
+    () => new Set()
   )
 
   // Feedback state for "Make Changes" flow
@@ -779,8 +872,9 @@ export function PlanCard({
     })
   }
 
-  const getPhaseModification = (phaseId: string) => {
-    return modifications.find((m) => m.phaseId === phaseId)
+  // Get ALL modifications for a phase (not just the first one)
+  const getPhaseModifications = (phaseId: string) => {
+    return modifications.filter((m) => m.phaseId === phaseId)
   }
 
   const formatDuration = (ms: number): string => {
@@ -821,7 +915,7 @@ export function PlanCard({
               isExpanded={expandedPhases.has(phase.id)}
               onToggle={() => togglePhase(phase.id)}
               onModify={onModify}
-              modification={getPhaseModification(phase.id)}
+              modifications={getPhaseModifications(phase.id)}
             />
           ))}
         </div>
