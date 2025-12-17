@@ -641,7 +641,7 @@ function PhaseItem({
       <button
         type="button"
         onClick={onToggle}
-        className="w-full flex items-center gap-4 p-5 text-left hover:bg-background-elevated/50 transition-colors"
+        className="w-full flex items-center gap-4 p-5 text-left hover:bg-background-elevated/50 transition-colors cursor-pointer"
       >
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-foreground/10 text-base font-medium">
           {index + 1}
@@ -665,17 +665,18 @@ function PhaseItem({
           </div>
           {/* Preview text when collapsed */}
           {!isExpanded && phase.description && (
-            <p className="text-sm text-muted-foreground mt-1 truncate max-w-[500px]">
-              {phase.description.length > 80
-                ? `${phase.description.substring(0, 80)}...`
-                : phase.description}
+            <p className="text-sm text-muted-foreground mt-1 line-clamp-2 max-w-full">
+              {phase.description}
             </p>
           )}
         </div>
-        <ChevronDown className={cn(
-          "h-5 w-5 text-muted-foreground transition-transform shrink-0",
-          !isExpanded && "-rotate-90"
-        )} />
+        <div className="flex items-center gap-1.5 text-sm text-muted-foreground shrink-0">
+          <span>{isExpanded ? 'Hide Details' : 'Show Details'}</span>
+          <ChevronDown className={cn(
+            "h-4 w-4 transition-transform",
+            !isExpanded && "-rotate-90"
+          )} />
+        </div>
       </button>
 
       {/* Expanded content */}
@@ -740,12 +741,16 @@ function PhaseItem({
                   const dropdownOptions = DROPDOWN_OPTIONS[key]
 
                   // Determine if this is a count/quantity parameter that should have max=5
-                  const isCountParam = key.toLowerCase().includes('hypotheses') ||
+                  // Exclude maxResults - users should be able to set higher values for search results
+                  const isCountParam = (key.toLowerCase().includes('hypotheses') ||
                     key.toLowerCase().includes('experiments') ||
                     key.toLowerCase().includes('simulations') ||
                     key.toLowerCase().includes('protocols') ||
-                    key.toLowerCase().includes('count') ||
-                    key.toLowerCase().includes('max')
+                    key.toLowerCase().includes('count')) &&
+                    !key.toLowerCase().includes('maxresults')
+
+                  // maxResults has different constraints (1-100)
+                  const isMaxResults = key.toLowerCase() === 'maxresults'
 
                   // Get label for dropdown value
                   const getDropdownLabel = (val: any) => {
@@ -774,11 +779,14 @@ function PhaseItem({
                                 if (onModify) {
                                   onModify(phase.id, editingParam!, val)
                                 }
-                                setEditingParam(null)
-                                setEditValue('')
+                                // Delay clearing edit state to allow parent state to update first
+                                setTimeout(() => {
+                                  setEditingParam(null)
+                                  setEditValue('')
+                                }, 50)
                               }}
                               options={dropdownOptions}
-                              className="h-10 w-48"
+                              className="h-10 w-64"
                             />
                           ) : (
                             // Render input for text/number
@@ -788,8 +796,8 @@ function PhaseItem({
                                 value={editValue}
                                 onChange={(e) => setEditValue(e.target.value)}
                                 className="h-10 w-32 text-base"
-                                min={typeof value === 'number' && isCountParam ? 1 : undefined}
-                                max={typeof value === 'number' && isCountParam ? 5 : undefined}
+                                min={typeof value === 'number' && (isCountParam || isMaxResults) ? 1 : undefined}
+                                max={typeof value === 'number' ? (isCountParam ? 5 : (isMaxResults ? 100 : undefined)) : undefined}
                                 onKeyDown={(e) => {
                                   if (e.key === 'Enter') handleEditSave()
                                   if (e.key === 'Escape') handleEditCancel()

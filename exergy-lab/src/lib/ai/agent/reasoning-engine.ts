@@ -299,7 +299,7 @@ Respond with a JSON object matching this structure:
 `
 
     const planResult = await executeResilient(
-      () => executeWithTools(planningPrompt, { model: 'fast' }),
+      () => executeWithTools(planningPrompt, { model: 'quality' }),
       'reasoning:plan'
     )
 

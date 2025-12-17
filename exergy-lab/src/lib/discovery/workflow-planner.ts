@@ -105,8 +105,8 @@ export class WorkflowPlanner {
     // Step 1: Analyze query to determine required phases
     const requiredPhases = await this.analyzeRequiredPhases(query, goals, options)
 
-    // Step 2: Generate detailed plan for each phase
-    const phases = await this.generatePhases(query, domains, goals, requiredPhases, options)
+    // Step 2: Generate detailed plan for each phase (includes AI-generated overview)
+    const { phases, aiOverview } = await this.generatePhases(query, domains, goals, requiredPhases, options)
 
     // Step 3: Determine phase dependencies
     const dependencies = this.analyzeDependencies(phases)
@@ -117,8 +117,8 @@ export class WorkflowPlanner {
     // Step 5: Extract all required tools
     const requiredTools = this.extractRequiredTools(phases)
 
-    // Step 6: Generate overview
-    const overview = this.generateOverview(query, phases, totalDuration, totalCost)
+    // Step 6: Use AI-generated overview if available, otherwise generate one
+    const overview = aiOverview || this.generateOverview(query, phases, totalDuration, totalCost)
 
     return {
       overview,
@@ -214,7 +214,7 @@ Respond with JSON:
     goals: string[],
     requiredPhases: PhaseType[],
     options: WorkflowInput['options']
-  ): Promise<PlanPhase[]> {
+  ): Promise<{ phases: PlanPhase[]; aiOverview: string | undefined }> {
     // Generate AI-powered detailed plan
     const aiPlan = await this.generateDetailedPlanWithAI(query, domains, goals, requiredPhases, options)
 
@@ -225,7 +225,7 @@ Respond with JSON:
       phases.push(phase)
     }
 
-    return phases
+    return { phases, aiOverview: aiPlan.overview }
   }
 
   /**

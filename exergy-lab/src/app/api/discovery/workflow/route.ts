@@ -476,49 +476,53 @@ function applyModifications(plan: ExecutionPlan, modifications: PhaseModificatio
 
 /**
  * Build agent query from execution plan
- * Extracts search keywords instead of passing full workflow instruction text
+ * Uses structured search terms from research phase instead of parsing overview text
  */
 function buildAgentQueryFromPlan(plan: ExecutionPlan): string {
-  const parts: string[] = []
-  const overview = plan.overview
+  // First priority: Get search terms directly from research phase details
+  const researchPhase = plan.phases.find(p => p.type === 'research')
+  const researchDetails = researchPhase?.details as { searchTerms?: string[], keyAreas?: string[] } | undefined
 
-  // Extract domain if present - stops at newline or next label
-  const domainMatch = overview.match(/Domain:\s*(\w+)/i)
-  if (domainMatch) {
-    parts.push(domainMatch[1])
-  }
-
-  // Extract goal - stops at newline, "Research Goals:", or "Focus Areas:"
-  const goalMatch = overview.match(/Goal:\s*(.+?)(?:\n|Research Goals:|Focus Areas:|$)/i)
-  if (goalMatch) {
-    const goal = goalMatch[1].trim()
-    if (goal && goal.length > 5) {
-      parts.push(goal)
-    }
-  }
-
-  // If we have domain + goal, that's enough for a good search query
-  if (parts.length >= 2) {
-    const query = parts.join(' ').trim()
-    console.log('[Workflow API] Built search query:', query)
+  if (researchDetails?.searchTerms?.length) {
+    // Use the first 3 search terms for a focused query
+    const query = researchDetails.searchTerms.slice(0, 3).join(' ')
+    console.log('[Workflow API] Built search query from searchTerms:', query)
     return query
   }
 
-  // Fallback: extract key phrases from overview
-  if (parts.length === 0) {
-    // Take the first meaningful line of the overview
-    const firstLine = overview.split('\n')[0].trim()
-    const cleanLine = firstLine
-      .replace(/Domain:|Goal:|Research Goals:|Focus Areas:/gi, '')
-      .trim()
-      .slice(0, 150)
-    if (cleanLine) {
-      parts.push(cleanLine)
-    }
+  // Second priority: Use key areas if no search terms
+  if (researchDetails?.keyAreas?.length) {
+    const query = researchDetails.keyAreas.slice(0, 2).join(' ')
+    console.log('[Workflow API] Built search query from keyAreas:', query)
+    return query
   }
 
-  const query = parts.join(' ').trim() || 'clean energy research'
-  console.log('[Workflow API] Built search query:', query)
+  // Third priority: Use searchTerms from parameters (older format)
+  const searchTermsParam = researchPhase?.parameters?.searchTerms as string[] | undefined
+  if (searchTermsParam?.length) {
+    const query = searchTermsParam.slice(0, 3).join(' ')
+    console.log('[Workflow API] Built search query from parameters:', query)
+    return query
+  }
+
+  // Last resort: Extract research question from overview
+  const overview = plan.overview
+  // Look for the quoted research question in the overview
+  const match = overview.match(/investigate:\s*"([^"]+)"/i)
+  if (match?.[1]) {
+    console.log('[Workflow API] Built search query from overview match:', match[1])
+    return match[1]
+  }
+
+  // Fallback to first line of overview, cleaned
+  const firstLine = overview.split('\n')[0]
+    .replace(/^A \d+-phase research workflow to investigate:\s*/i, '')
+    .replace(/["]/g, '')
+    .trim()
+    .slice(0, 100)
+
+  const query = firstLine || 'clean energy research'
+  console.log('[Workflow API] Built search query (fallback):', query)
   return query
 }
 
