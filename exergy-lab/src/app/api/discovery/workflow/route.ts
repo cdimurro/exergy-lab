@@ -458,39 +458,44 @@ function applyModifications(plan: ExecutionPlan, modifications: PhaseModificatio
  */
 function buildAgentQueryFromPlan(plan: ExecutionPlan): string {
   const parts: string[] = []
+  const overview = plan.overview
 
-  // Extract domain if present in overview
-  const domainMatch = plan.overview.match(/Domain:\s*(\w+)/i)
+  // Extract domain if present - stops at newline or next label
+  const domainMatch = overview.match(/Domain:\s*(\w+)/i)
   if (domainMatch) {
     parts.push(domainMatch[1])
   }
 
-  // Extract goal - this contains the actual research topic
-  const goalMatch = plan.overview.match(/Goal:\s*([^.]+)/i)
+  // Extract goal - stops at newline, "Research Goals:", or "Focus Areas:"
+  const goalMatch = overview.match(/Goal:\s*(.+?)(?:\n|Research Goals:|Focus Areas:|$)/i)
   if (goalMatch) {
-    parts.push(goalMatch[1].trim())
-  }
-
-  // Extract research goals if present
-  const researchGoalsMatch = plan.overview.match(/Research Goals:\s*([^.]+(?:\.[^.]+)*)/i)
-  if (researchGoalsMatch) {
-    // Take first research goal as it's usually most relevant
-    const firstGoal = researchGoalsMatch[1].split(',')[0].trim()
-    if (firstGoal && !parts.includes(firstGoal)) {
-      parts.push(firstGoal)
+    const goal = goalMatch[1].trim()
+    if (goal && goal.length > 5) {
+      parts.push(goal)
     }
   }
 
-  // Fallback: if no structured data found, use first 200 chars of overview
-  if (parts.length === 0) {
-    const cleanOverview = plan.overview
-      .replace(/Domain:|Goal:|Research Goals:|Focus Areas:/gi, '')
-      .trim()
-      .slice(0, 200)
-    parts.push(cleanOverview)
+  // If we have domain + goal, that's enough for a good search query
+  if (parts.length >= 2) {
+    const query = parts.join(' ').trim()
+    console.log('[Workflow API] Built search query:', query)
+    return query
   }
 
-  const query = parts.join(' ').trim()
+  // Fallback: extract key phrases from overview
+  if (parts.length === 0) {
+    // Take the first meaningful line of the overview
+    const firstLine = overview.split('\n')[0].trim()
+    const cleanLine = firstLine
+      .replace(/Domain:|Goal:|Research Goals:|Focus Areas:/gi, '')
+      .trim()
+      .slice(0, 150)
+    if (cleanLine) {
+      parts.push(cleanLine)
+    }
+  }
+
+  const query = parts.join(' ').trim() || 'clean energy research'
   console.log('[Workflow API] Built search query:', query)
   return query
 }
