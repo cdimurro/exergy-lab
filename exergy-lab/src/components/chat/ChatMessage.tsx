@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { User, Bot, AlertCircle, RefreshCw, ChevronDown, ChevronRight, ExternalLink, FileText, Beaker, CheckCircle2 } from 'lucide-react'
+import { User, Bot, AlertCircle, RefreshCw, ChevronDown, ChevronRight, ExternalLink, FileText, Beaker, CheckCircle2, Lightbulb, FlaskConical, LineChart, DollarSign, ShieldCheck, Award } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button, Card, Badge } from '@/components/ui'
 import { TypingIndicator } from './TypingIndicator'
@@ -210,6 +210,217 @@ function ResultsCard({ results }: ResultsCardProps) {
             </div>
           </CollapsibleSection>
         )}
+
+        {/* Hypotheses Section */}
+        {results.hypotheses?.hypotheses?.length > 0 && (
+          <CollapsibleSection
+            title={`Hypotheses (${results.hypotheses.totalHypotheses})`}
+            isExpanded={expandedSections.has('hypotheses')}
+            onToggle={() => toggleSection('hypotheses')}
+            icon={<Lightbulb className="h-4 w-4" />}
+          >
+            <div className="space-y-3">
+              {results.hypotheses.hypotheses.map((hyp: any, idx: number) => (
+                <div key={hyp.id || idx} className="p-3 rounded-lg bg-background border border-border">
+                  <div className="flex items-start gap-2">
+                    <span className="text-primary font-medium shrink-0">H{idx + 1}.</span>
+                    <div className="flex-1">
+                      <p className="font-medium text-foreground">{hyp.statement}</p>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        <Badge variant="secondary" className="text-xs">
+                          Novelty: {hyp.noveltyScore}%
+                        </Badge>
+                        <Badge variant="secondary" className="text-xs">
+                          Feasibility: {hyp.feasibilityScore}%
+                        </Badge>
+                        <Badge variant="secondary" className="text-xs">
+                          Impact: {hyp.impactScore}%
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CollapsibleSection>
+        )}
+
+        {/* Experiments Section */}
+        {results.experiments?.protocols?.length > 0 && (
+          <CollapsibleSection
+            title={`Experimental Protocols (${results.experiments.totalProtocols})`}
+            isExpanded={expandedSections.has('experiments')}
+            onToggle={() => toggleSection('experiments')}
+            icon={<FlaskConical className="h-4 w-4" />}
+          >
+            <div className="space-y-3">
+              {results.experiments.protocols.map((protocol: any, idx: number) => (
+                <div key={protocol.id || idx} className="p-3 rounded-lg bg-background border border-border">
+                  <h6 className="font-medium text-foreground">{protocol.title}</h6>
+                  <p className="text-sm text-muted-foreground mt-1">{protocol.objective}</p>
+                  <div className="flex flex-wrap gap-2 mt-2 text-xs text-muted-foreground">
+                    <span>Duration: {protocol.duration}</span>
+                    <span>•</span>
+                    <span>Difficulty: {protocol.difficulty}</span>
+                    <span>•</span>
+                    <span>Est. Cost: ${protocol.cost?.toLocaleString()}</span>
+                  </div>
+                  {protocol.safetyWarnings?.length > 0 && (
+                    <div className="mt-2 p-2 rounded bg-yellow-500/10 border border-yellow-500/20">
+                      <p className="text-xs text-yellow-600 font-medium">Safety Notes:</p>
+                      <ul className="text-xs text-muted-foreground mt-1">
+                        {protocol.safetyWarnings.slice(0, 3).map((warning: string, i: number) => (
+                          <li key={i}>• {warning}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </CollapsibleSection>
+        )}
+
+        {/* Simulations Section */}
+        {results.simulations?.runs?.length > 0 && (
+          <CollapsibleSection
+            title={`Simulation Results (${results.simulations.totalRuns} runs)`}
+            isExpanded={expandedSections.has('simulations')}
+            onToggle={() => toggleSection('simulations')}
+            icon={<LineChart className="h-4 w-4" />}
+          >
+            <div className="space-y-3">
+              {results.simulations.runs.map((run: any, idx: number) => (
+                <div key={run.id || idx} className="p-3 rounded-lg bg-background border border-border">
+                  <div className="flex items-center justify-between">
+                    <h6 className="font-medium text-foreground">{run.name}</h6>
+                    <Badge variant="secondary" className="text-xs">
+                      {run.accuracy}% accuracy
+                    </Badge>
+                  </div>
+                  {run.metrics?.length > 0 && (
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                      {run.metrics.slice(0, 6).map((metric: any, i: number) => (
+                        <div key={i} className="text-sm">
+                          <span className="text-muted-foreground">{metric.name}:</span>{' '}
+                          <span className="font-medium">{typeof metric.value === 'number' ? metric.value.toFixed(2) : metric.value} {metric.unit}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </CollapsibleSection>
+        )}
+
+        {/* TEA Section */}
+        {results.tea && results.tea.npv !== 0 && (
+          <CollapsibleSection
+            title="Techno-Economic Analysis"
+            isExpanded={expandedSections.has('tea')}
+            onToggle={() => toggleSection('tea')}
+            icon={<DollarSign className="h-4 w-4" />}
+          >
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-3 rounded-lg bg-background border border-border text-center">
+                <p className="text-xs text-muted-foreground">LCOE</p>
+                <p className="text-lg font-bold text-primary">${results.tea.lcoe?.toFixed(4)}/kWh</p>
+              </div>
+              <div className="p-3 rounded-lg bg-background border border-border text-center">
+                <p className="text-xs text-muted-foreground">NPV</p>
+                <p className="text-lg font-bold text-primary">${results.tea.npv?.toLocaleString()}</p>
+              </div>
+              <div className="p-3 rounded-lg bg-background border border-border text-center">
+                <p className="text-xs text-muted-foreground">IRR</p>
+                <p className="text-lg font-bold text-primary">{results.tea.irr?.toFixed(1)}%</p>
+              </div>
+              <div className="p-3 rounded-lg bg-background border border-border text-center">
+                <p className="text-xs text-muted-foreground">Payback Period</p>
+                <p className="text-lg font-bold text-primary">{results.tea.paybackPeriod} years</p>
+              </div>
+            </div>
+          </CollapsibleSection>
+        )}
+
+        {/* Validation Section */}
+        {results.validation?.validationChecks?.length > 0 && (
+          <CollapsibleSection
+            title={`Validation (${results.validation.overallScore}% score)`}
+            isExpanded={expandedSections.has('validation')}
+            onToggle={() => toggleSection('validation')}
+            icon={<ShieldCheck className="h-4 w-4" />}
+          >
+            <div className="space-y-2">
+              {results.validation.validationChecks.map((check: any, idx: number) => (
+                <div key={idx} className="flex items-center justify-between p-2 rounded bg-background border border-border">
+                  <div className="flex items-center gap-2">
+                    <div className={cn(
+                      "w-2 h-2 rounded-full",
+                      check.result === 'pass' ? 'bg-green-500' :
+                      check.result === 'warning' ? 'bg-yellow-500' : 'bg-red-500'
+                    )} />
+                    <span className="text-sm">{check.name}</span>
+                  </div>
+                  <Badge variant="secondary" className="text-xs">
+                    {check.score}%
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          </CollapsibleSection>
+        )}
+
+        {/* Quality Gates Section */}
+        {results.qualityGates?.gates?.length > 0 && (
+          <CollapsibleSection
+            title={`Quality Gates (${results.qualityGates.passed ? 'PASSED' : 'NEEDS WORK'})`}
+            isExpanded={expandedSections.has('qualityGates')}
+            onToggle={() => toggleSection('qualityGates')}
+            icon={<Award className="h-4 w-4" />}
+          >
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-3 rounded-lg bg-background border border-border">
+                <span className="font-medium">Overall Score</span>
+                <Badge
+                  variant="secondary"
+                  className={cn(
+                    "text-sm font-bold",
+                    results.qualityGates.overallScore >= 70 ? 'text-green-500' :
+                    results.qualityGates.overallScore >= 50 ? 'text-yellow-500' : 'text-red-500'
+                  )}
+                >
+                  {results.qualityGates.overallScore}%
+                </Badge>
+              </div>
+              <div className="space-y-2">
+                {results.qualityGates.gates.map((gate: any, idx: number) => (
+                  <div key={idx} className="flex items-center justify-between p-2 rounded bg-background border border-border">
+                    <div className="flex items-center gap-2">
+                      {gate.passed ? (
+                        <CheckCircle2 className="h-4 w-4 text-green-500" />
+                      ) : (
+                        <AlertCircle className="h-4 w-4 text-yellow-500" />
+                      )}
+                      <span className="text-sm">{gate.name}</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground">{gate.details}</span>
+                  </div>
+                ))}
+              </div>
+              {results.qualityGates.recommendations?.length > 0 && (
+                <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+                  <p className="text-sm font-medium text-yellow-600 mb-2">Recommendations:</p>
+                  <ul className="space-y-1">
+                    {results.qualityGates.recommendations.map((rec: string, i: number) => (
+                      <li key={i} className="text-sm text-muted-foreground">• {rec}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </CollapsibleSection>
+        )}
       </div>
     </Card>
   )
@@ -221,9 +432,10 @@ interface CollapsibleSectionProps {
   isExpanded: boolean
   onToggle: () => void
   children: React.ReactNode
+  icon?: React.ReactNode
 }
 
-function CollapsibleSection({ title, isExpanded, onToggle, children }: CollapsibleSectionProps) {
+function CollapsibleSection({ title, isExpanded, onToggle, children, icon }: CollapsibleSectionProps) {
   return (
     <div className="border-t border-border pt-3">
       <button
@@ -231,7 +443,10 @@ function CollapsibleSection({ title, isExpanded, onToggle, children }: Collapsib
         onClick={onToggle}
         className="flex items-center justify-between w-full text-left hover:bg-foreground/5 rounded px-2 py-1 -mx-2 transition-colors"
       >
-        <h5 className="text-sm font-medium text-muted-foreground">{title}</h5>
+        <div className="flex items-center gap-2">
+          {icon && <span className="text-muted-foreground">{icon}</span>}
+          <h5 className="text-sm font-medium text-muted-foreground">{title}</h5>
+        </div>
         {isExpanded ? (
           <ChevronDown className="h-4 w-4 text-muted-foreground" />
         ) : (

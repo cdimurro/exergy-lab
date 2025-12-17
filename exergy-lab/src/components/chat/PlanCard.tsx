@@ -667,7 +667,7 @@ function PhaseItem({
                   }}
                   className={cn(
                     "relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer",
-                    phase.enabled !== false ? "bg-primary" : "bg-gray-300"
+                    phase.enabled !== false ? "bg-primary" : "bg-foreground/20"
                   )}
                   title={phase.enabled !== false ? "Click to disable this phase" : "Click to enable this phase"}
                 >
