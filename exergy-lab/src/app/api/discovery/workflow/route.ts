@@ -200,10 +200,12 @@ export async function PUT(request: NextRequest) {
     })
 
     // Create ReasoningEngine instance for execution
+    // Using reduced iterations but longer timeout to allow completion
     const engine = new ReasoningEngine({
-      maxIterations: 5,
+      maxIterations: 3,
       enableStreaming: true,
       maxTokens: 8000,
+      timeout: 90000, // 90 seconds for research phase
     })
 
     // Build agent query from execution plan
@@ -848,19 +850,29 @@ async function executeWorkflowPhases(
         const papers = sources.filter((s: any) => s.type === 'academic-paper' || !s.type)
         const patents = sources.filter((s: any) => s.type === 'patent')
 
+        // Extract key findings from metadata, or generate from paper titles if empty
+        let keyFindings = agentResult.metadata?.keyFindings || []
+        if (keyFindings.length === 0 && papers.length > 0) {
+          // Generate fallback keyFindings from paper titles/snippets
+          keyFindings = papers.slice(0, 5).map((p: any) =>
+            p.title || p.snippet?.substring(0, 150) || 'Research finding'
+          ).filter(Boolean)
+          console.log('[executeWorkflowPhases] Generated fallback keyFindings from papers:', keyFindings.length)
+        }
+
         results.research = {
           papers,
           patents,
           datasets: [],
           totalSources: sources.length,
-          keyFindings: agentResult.metadata?.keyFindings || [],
+          keyFindings,
           confidenceScore: agentResult.metadata?.confidence || 75,
           searchTime: Date.now() - researchStart,
         }
 
         results.analysis = {
           synthesis: agentResult.metadata?.synthesis || agentResult.response,
-          keyFindings: agentResult.metadata?.keyFindings || [],
+          keyFindings,
           recommendations: agentResult.metadata?.recommendations || [],
           confidence: agentResult.metadata?.confidence || 75,
         }
@@ -876,7 +888,7 @@ async function executeWorkflowPhases(
     // ========================================================================
     // PHASE 2: Hypothesis Generation
     // ========================================================================
-    if (isPhaseEnabled('hypothesis') && results.research.keyFindings.length > 0) {
+    if (isPhaseEnabled('hypothesis') && results.research.papers.length > 0) {
       console.log('[executeWorkflowPhases] === Phase 2: Hypothesis Generation ===')
       const hypothesisStart = Date.now()
 
@@ -932,6 +944,12 @@ async function executeWorkflowPhases(
         console.warn('[executeWorkflowPhases] Hypothesis generation failed:', error)
         await updateProgress('hypothesis', 'hypothesis', 'Hypothesis generation skipped')
       }
+    } else {
+      console.log('[executeWorkflowPhases] Hypothesis phase SKIPPED:', {
+        enabled: isPhaseEnabled('hypothesis'),
+        papersCount: results.research.papers.length,
+        keyFindingsCount: results.research.keyFindings.length,
+      })
     }
 
     // ========================================================================
@@ -1001,6 +1019,11 @@ async function executeWorkflowPhases(
         console.warn('[executeWorkflowPhases] Experiment design failed:', error)
         await updateProgress('experiment', 'experiment', 'Experiment design skipped')
       }
+    } else {
+      console.log('[executeWorkflowPhases] Experiment phase SKIPPED:', {
+        enabled: isPhaseEnabled('experiment'),
+        hypothesesCount: results.hypotheses.hypotheses.length,
+      })
     }
 
     // ========================================================================
