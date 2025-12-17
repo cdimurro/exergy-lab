@@ -68,6 +68,10 @@ export function ChatInterface({
   const [selectedDomains, setSelectedDomains] = React.useState<Domain[]>([])
   const [hasAutoStarted, setHasAutoStarted] = React.useState(false)
 
+  // Ref to synchronously prevent double-execution in React 18 StrictMode
+  // State updates are batched/async, but refs update synchronously
+  const hasSentInitialMessageRef = React.useRef(false)
+
   const {
     messages,
     workflowState,
@@ -92,7 +96,7 @@ export function ChatInterface({
   })
 
   // Auto-start with form data when autoStart is true
-  // Use state (not ref) to track initialization - this survives StrictMode remounts properly
+  // Use ref + state to prevent double execution in React 18 StrictMode
   React.useEffect(() => {
     // Skip if conditions aren't met
     if (!autoStart || !initialFormData || hasAutoStarted) {
@@ -100,17 +104,27 @@ export function ChatInterface({
       return
     }
 
-    console.log('[ChatInterface] Auto-start conditions met, preparing to send message')
+    // CRITICAL: Check ref synchronously to prevent StrictMode double-execution
+    // React 18 StrictMode runs effects twice, and state updates are async
+    // The ref check happens synchronously before any async operations
+    if (hasSentInitialMessageRef.current) {
+      console.log('[ChatInterface] Auto-start blocked by ref guard (StrictMode double-run)')
+      return
+    }
+
+    // Set ref immediately (synchronous) to block any concurrent execution
+    hasSentInitialMessageRef.current = true
     setHasAutoStarted(true)
+
+    console.log('[ChatInterface] Auto-start conditions met, preparing to send message')
 
     // Build prompt from form data
     const prompt = buildPromptFromFormData(pageType as PageType, initialFormData)
     console.log('[ChatInterface] Built prompt:', prompt)
 
-    // Use a microtask to ensure state has settled before calling sendMessage
-    // This prevents issues with React 18's automatic batching
-    queueMicrotask(() => {
-      console.log('[ChatInterface] Microtask executing, calling sendMessage now')
+    // Use setTimeout instead of queueMicrotask for cleaner cleanup
+    const timer = setTimeout(() => {
+      console.log('[ChatInterface] Timer executing, calling sendMessage now')
       sendMessage(prompt, {
         formData: initialFormData,
         domains: initialFormData.domain ? [initialFormData.domain as Domain] : [],
@@ -119,7 +133,11 @@ export function ChatInterface({
       }).catch((err) => {
         console.error('[ChatInterface] sendMessage error:', err)
       })
-    })
+    }, 50) // Small delay to ensure React state is settled
+
+    return () => {
+      clearTimeout(timer)
+    }
   }, [autoStart, initialFormData, hasAutoStarted, pageType, sendMessage])
 
   const handleDomainToggle = (domain: Domain) => {

@@ -113,8 +113,7 @@ function ResearchDetails({ details }: { details: ResearchPlanDetails }) {
 }
 
 function ExperimentDetails({ details }: { details: ExperimentPlanDetails }) {
-  const [expandedProtocol, setExpandedProtocol] = React.useState<number | null>(null)
-
+  // Show all protocols fully expanded by default (no collapse behavior)
   return (
     <div className="space-y-5 pt-4 border-t border-border/50">
       <h5 className="text-base font-medium text-muted-foreground flex items-center gap-2">
@@ -122,117 +121,106 @@ function ExperimentDetails({ details }: { details: ExperimentPlanDetails }) {
         Planned Protocols ({details.protocols.length})
       </h5>
 
-      <div className="space-y-3">
+      <div className="space-y-4">
         {details.protocols.map((protocol, idx) => (
           <div
             key={idx}
             className="border border-border/50 rounded-lg overflow-hidden"
           >
             {/* Protocol header */}
-            <button
-              type="button"
-              onClick={() => setExpandedProtocol(expandedProtocol === idx ? null : idx)}
-              className="w-full flex items-center gap-3 p-4 text-left hover:bg-background-elevated/30 transition-colors"
-            >
+            <div className="flex items-center gap-3 p-4 bg-background-elevated/30">
               <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-base font-medium">
                 {idx + 1}
               </span>
               <div className="flex-1 min-w-0">
-                <span className="text-lg font-medium truncate block">{protocol.name}</span>
-                <span className="text-base text-muted-foreground truncate block">
+                <span className="text-lg font-medium block">{protocol.name}</span>
+                <span className="text-base text-muted-foreground block">
                   {protocol.objective}
                 </span>
               </div>
               {protocol.estimatedDuration && (
                 <span className="text-base text-muted-foreground">{protocol.estimatedDuration}</span>
               )}
-              {expandedProtocol === idx ? (
-                <ChevronDown className="h-5 w-5 text-muted-foreground" />
-              ) : (
-                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+            </div>
+
+            {/* Protocol details - always visible */}
+            <div className="px-4 pb-4 space-y-4 border-t border-border/50">
+              {/* Materials */}
+              {protocol.materials.length > 0 && (
+                <div className="pt-4">
+                  <h6 className="text-base font-medium text-muted-foreground mb-3">Materials</h6>
+                  <div className="flex flex-wrap gap-2.5">
+                    {protocol.materials.map((mat, midx) => (
+                      <span
+                        key={midx}
+                        className="text-base bg-foreground/5 px-3 py-1.5 rounded"
+                      >
+                        {mat}
+                      </span>
+                    ))}
+                  </div>
+                </div>
               )}
-            </button>
 
-            {/* Protocol details */}
-            {expandedProtocol === idx && (
-              <div className="px-4 pb-4 space-y-4 border-t border-border/50">
-                {/* Materials */}
-                {protocol.materials.length > 0 && (
-                  <div className="pt-4">
-                    <h6 className="text-base font-medium text-muted-foreground mb-3">Materials</h6>
-                    <div className="flex flex-wrap gap-2.5">
-                      {protocol.materials.map((mat, midx) => (
-                        <span
-                          key={midx}
-                          className="text-base bg-foreground/5 px-3 py-1.5 rounded"
-                        >
-                          {mat}
-                        </span>
-                      ))}
-                    </div>
+              {/* Equipment */}
+              {protocol.equipment.length > 0 && (
+                <div>
+                  <h6 className="text-base font-medium text-muted-foreground mb-3">Equipment</h6>
+                  <div className="flex flex-wrap gap-2.5">
+                    {protocol.equipment.map((equip, eidx) => (
+                      <span
+                        key={eidx}
+                        className="text-base bg-foreground/5 px-3 py-1.5 rounded"
+                      >
+                        {equip}
+                      </span>
+                    ))}
                   </div>
-                )}
+                </div>
+              )}
 
-                {/* Equipment */}
-                {protocol.equipment.length > 0 && (
-                  <div>
-                    <h6 className="text-base font-medium text-muted-foreground mb-3">Equipment</h6>
-                    <div className="flex flex-wrap gap-2.5">
-                      {protocol.equipment.map((equip, eidx) => (
-                        <span
-                          key={eidx}
-                          className="text-base bg-foreground/5 px-3 py-1.5 rounded"
-                        >
-                          {equip}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
+              {/* Procedure */}
+              {protocol.procedure.length > 0 && (
+                <div>
+                  <h6 className="text-base font-medium text-muted-foreground mb-3">Procedure</h6>
+                  <ol className="space-y-2 text-base">
+                    {protocol.procedure.map((step, sidx) => (
+                      <li key={sidx} className="flex gap-2">
+                        <span className="text-muted-foreground shrink-0">{sidx + 1}.</span>
+                        <span>{step}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              )}
 
-                {/* Procedure */}
-                {protocol.procedure.length > 0 && (
-                  <div>
-                    <h6 className="text-base font-medium text-muted-foreground mb-3">Procedure</h6>
-                    <ol className="space-y-2 text-base">
-                      {protocol.procedure.map((step, sidx) => (
-                        <li key={sidx} className="flex gap-2">
-                          <span className="text-muted-foreground shrink-0">{sidx + 1}.</span>
-                          <span>{step}</span>
-                        </li>
-                      ))}
-                    </ol>
-                  </div>
-                )}
+              {/* Metrics */}
+              {protocol.metrics.length > 0 && (
+                <div>
+                  <h6 className="text-base font-medium text-muted-foreground mb-3">Success Metrics</h6>
+                  <ul className="space-y-2 text-base">
+                    {protocol.metrics.map((metric, midx) => (
+                      <li key={midx} className="flex items-center gap-2">
+                        <CheckCircle2 className="h-5 w-5 text-primary" />
+                        {metric}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
-                {/* Metrics */}
-                {protocol.metrics.length > 0 && (
-                  <div>
-                    <h6 className="text-base font-medium text-muted-foreground mb-3">Success Metrics</h6>
-                    <ul className="space-y-2 text-base">
-                      {protocol.metrics.map((metric, midx) => (
-                        <li key={midx} className="flex items-center gap-2">
-                          <CheckCircle2 className="h-5 w-5 text-primary" />
-                          {metric}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {/* Safety Notes */}
-                {protocol.safetyNotes && protocol.safetyNotes.length > 0 && (
-                  <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-lg p-4">
-                    <h6 className="text-base font-medium text-yellow-600 mb-3">⚠️ Safety Notes</h6>
-                    <ul className="space-y-2 text-base text-yellow-700">
-                      {protocol.safetyNotes.map((note, nidx) => (
-                        <li key={nidx}>• {note}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            )}
+              {/* Safety Notes */}
+              {protocol.safetyNotes && protocol.safetyNotes.length > 0 && (
+                <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-lg p-4">
+                  <h6 className="text-base font-medium text-yellow-600 mb-3">⚠️ Safety Notes</h6>
+                  <ul className="space-y-2 text-base text-yellow-700">
+                    {protocol.safetyNotes.map((note, nidx) => (
+                      <li key={nidx}>• {note}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
           </div>
         ))}
       </div>
@@ -609,8 +597,9 @@ export function PlanCard({
   modifications = [],
   isLoading = false,
 }: PlanCardProps) {
+  // Initialize with ALL phases expanded by default
   const [expandedPhases, setExpandedPhases] = React.useState<Set<string>>(
-    new Set()
+    () => new Set(plan.phases.map(p => p.id))
   )
 
   const togglePhase = (phaseId: string) => {
