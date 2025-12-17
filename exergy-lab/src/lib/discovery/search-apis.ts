@@ -245,7 +245,9 @@ export class SearchOrchestrator {
   /**
    * Semantic Scholar - Academic Papers
    * API: https://api.semanticscholar.org/graph/v1/paper/search
-   * Rate Limit: 100 requests/5 minutes (1 request/3 seconds recommended)
+   * Rate Limit: 100 requests/5 minutes without API key (1 request/3 seconds recommended)
+   *             100 requests/second with API key
+   * Register at: https://www.semanticscholar.org/product/api#api-key-form
    */
   private async searchSemanticScholar(query: string, domains: string[]): Promise<Source[]> {
     try {
@@ -260,11 +262,19 @@ export class SearchOrchestrator {
 
       console.log('[Semantic Scholar] Searching:', cleanQuery)
 
-      const response = await fetch(url, {
-        headers: {
-          'Accept': 'application/json'
-        }
-      })
+      // Build headers - add API key if available for higher rate limits
+      const headers: Record<string, string> = {
+        'Accept': 'application/json'
+      }
+
+      const apiKey = process.env.SEMANTIC_SCHOLAR_API_KEY
+      if (apiKey) {
+        headers['x-api-key'] = apiKey
+      } else {
+        console.warn('[Semantic Scholar] No API key configured - using lower rate limits (100 req/5min)')
+      }
+
+      const response = await fetch(url, { headers })
 
       if (!response.ok) {
         const errorText = await response.text().catch(() => 'Unknown error')

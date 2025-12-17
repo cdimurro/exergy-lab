@@ -79,6 +79,19 @@ export class ConsensusAdapter extends BaseAdapter {
   ): Promise<SearchResult> {
     const startTime = Date.now()
 
+    // Check for API key before making request
+    if (!this.apiKey) {
+      console.warn(`[${this.name}] Skipping search - no API key configured`)
+      return {
+        sources: [],
+        total: 0,
+        searchTime: Date.now() - startTime,
+        query,
+        filters,
+        from: this.name,
+      }
+    }
+
     // Build search parameters
     const params: Record<string, any> = {
       q: query,
@@ -118,6 +131,12 @@ export class ConsensusAdapter extends BaseAdapter {
    * Get details for a specific paper
    */
   protected async executeGetDetails(id: string): Promise<Source | null> {
+    // Check for API key before making request
+    if (!this.apiKey) {
+      console.warn(`[${this.name}] Cannot get details - no API key configured`)
+      return null
+    }
+
     try {
       // Consensus API doesn't have a details endpoint
       // We'll need to search by ID or DOI

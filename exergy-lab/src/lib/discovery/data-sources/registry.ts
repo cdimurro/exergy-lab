@@ -110,7 +110,40 @@ export class DataSourceRegistry {
   }
 
   /**
+   * Get available adapters (ones that have required API keys configured)
+   * This is a quick check that doesn't make network requests
+   */
+  async getAvailableAdapters(): Promise<DataSourceAdapter[]> {
+    const adapters = this.getAll()
+    const availabilityChecks = await Promise.all(
+      adapters.map(async (adapter) => {
+        try {
+          const available = await adapter.isAvailable()
+          return { adapter, available }
+        } catch {
+          return { adapter, available: false }
+        }
+      })
+    )
+
+    const available = availabilityChecks
+      .filter(({ available }) => available)
+      .map(({ adapter }) => adapter)
+
+    const unavailable = availabilityChecks
+      .filter(({ available }) => !available)
+      .map(({ adapter }) => adapter.name)
+
+    if (unavailable.length > 0) {
+      console.log(`[DataSourceRegistry] Unavailable sources (missing API keys or offline): ${unavailable.join(', ')}`)
+    }
+
+    return available
+  }
+
+  /**
    * Search across all registered sources in parallel
+   * Automatically skips sources that aren't available (missing API keys, etc.)
    */
   async searchAll(query: string, filters: SearchFilters = {}): Promise<AggregatedSearchResult> {
     const startTime = Date.now()

@@ -80,6 +80,10 @@ interface PatentsViewPatent {
 
 /**
  * USPTO PatentsView adapter implementation
+ *
+ * IMPORTANT: PatentsView API requires an API key as of 2024.
+ * Register at https://patentsview.org/ to obtain a key.
+ * Set PATENTSVIEW_API_KEY environment variable.
  */
 export class USPTOAdapter extends BaseAdapter {
   readonly name: DataSourceName = 'uspto'
@@ -96,14 +100,38 @@ export class USPTOAdapter extends BaseAdapter {
     'materials-science',
   ]
 
+  private readonly patentsViewApiKey: string | undefined
+
   constructor() {
     super({
       // New PatentsView API v1 endpoint (the old api.patentsview.org is deprecated with HTTP 410)
       baseUrl: 'https://search.patentsview.org/api/v1/patent',
-      requestsPerMinute: 30,
+      requestsPerMinute: 45, // PatentsView allows 45 req/min with API key
       requestsPerDay: 10000,
       cacheTTL: 24 * 60 * 60 * 1000, // 24 hours (patents don't change)
     })
+
+    this.patentsViewApiKey = process.env.PATENTSVIEW_API_KEY
+
+    if (!this.patentsViewApiKey) {
+      console.warn(`[${this.name}] No PATENTSVIEW_API_KEY configured - patent searches will be unavailable`)
+    }
+  }
+
+  /**
+   * Build headers for PatentsView API requests
+   */
+  private getRequestHeaders(): Record<string, string> {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    }
+
+    if (this.patentsViewApiKey) {
+      headers['X-Api-Key'] = this.patentsViewApiKey
+    }
+
+    return headers
   }
 
   /**
@@ -115,6 +143,19 @@ export class USPTOAdapter extends BaseAdapter {
     filters: SearchFilters = {}
   ): Promise<SearchResult> {
     const startTime = Date.now()
+
+    // Check for API key before making request
+    if (!this.patentsViewApiKey) {
+      console.warn(`[${this.name}] Skipping search - no API key configured`)
+      return {
+        sources: [],
+        total: 0,
+        searchTime: Date.now() - startTime,
+        query,
+        filters,
+        from: this.name,
+      }
+    }
 
     try {
       const limit = Math.min(filters.limit || 20, 100)
@@ -146,10 +187,7 @@ export class USPTOAdapter extends BaseAdapter {
 
       const response = await fetch(`${this.baseUrl}/`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
+        headers: this.getRequestHeaders(),
         body: JSON.stringify(requestBody),
       })
 
@@ -331,6 +369,12 @@ export class USPTOAdapter extends BaseAdapter {
    * Get details for a specific patent using the new API
    */
   protected async executeGetDetails(id: string): Promise<Source | null> {
+    // Check for API key before making request
+    if (!this.patentsViewApiKey) {
+      console.warn(`[${this.name}] Cannot get details - no API key configured`)
+      return null
+    }
+
     try {
       // Extract patent number from our ID format
       const patentNumber = id.replace('uspto:', '').replace('US', '')
@@ -354,10 +398,7 @@ export class USPTOAdapter extends BaseAdapter {
 
       const response = await fetch(`${this.baseUrl}/`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
+        headers: this.getRequestHeaders(),
         body: JSON.stringify(requestBody),
       })
 
@@ -380,8 +421,15 @@ export class USPTOAdapter extends BaseAdapter {
 
   /**
    * Test if API is available using the new API
+   * Returns false if no API key is configured
    */
   async isAvailable(): Promise<boolean> {
+    // No API key = not available
+    if (!this.patentsViewApiKey) {
+      console.warn(`[${this.name}] Not available - no PATENTSVIEW_API_KEY configured`)
+      return false
+    }
+
     try {
       // Test with a simple query to the new API
       const requestBody = {
@@ -392,12 +440,13 @@ export class USPTOAdapter extends BaseAdapter {
 
       const response = await fetch(`${this.baseUrl}/`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
+        headers: this.getRequestHeaders(),
         body: JSON.stringify(requestBody),
       })
+
+      if (!response.ok) {
+        console.warn(`[${this.name}] API returned ${response.status} - may need to verify API key`)
+      }
 
       return response.ok
     } catch (error) {
