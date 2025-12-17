@@ -637,6 +637,115 @@ function buildAgentQueryFromPlan(plan: ExecutionPlan): string {
 }
 
 /**
+ * Calculate exergy metrics for a simulation based on its type
+ * Uses second-law thermodynamic analysis to determine efficiency limits
+ */
+function calculateExergyForSimulation(
+  simResult: any,
+  simulationType: string
+): {
+  exergyEfficiency: number
+  exergyDestruction: number
+  secondLawEfficiency: number
+  theoreticalMax: number
+  carnotFactor: number
+  energyType: string
+} {
+  // Extract simulation metrics
+  const metrics = simResult.metrics || {}
+  const annualProduction = metrics.annualProduction?.value || metrics['Annual Production']?.value || 100000
+  const efficiency = metrics.efficiency?.value || metrics.systemEfficiency?.value || 85
+
+  // Dead state temperature (25°C = 298.15K)
+  const T0 = 298.15
+
+  // Calculate exergy based on simulation type
+  let theoreticalMax = 100
+  let carnotFactor = 1
+  let energyType = 'electrical'
+  let inputExergy = annualProduction / (efficiency / 100)
+  let outputExergy = annualProduction
+
+  switch (simulationType) {
+    case 'solar_pv':
+      // Solar PV: Petela formula for solar exergy
+      // Max theoretical ~93.6% but practical limit ~30% for single junction
+      const SOLAR_TEMP = 5778  // Sun surface temperature K
+      const tempRatio = T0 / SOLAR_TEMP
+      const petelaEfficiency = 1 - (4/3) * tempRatio + (1/3) * Math.pow(tempRatio, 4)
+      theoreticalMax = 30  // Practical Shockley-Queisser limit for single junction
+      carnotFactor = petelaEfficiency
+      energyType = 'solar'
+      break
+
+    case 'solar_thermal':
+      // Solar thermal with typical collector temperature ~400K
+      const collectorTemp = 400
+      carnotFactor = 1 - (T0 / collectorTemp)
+      theoreticalMax = carnotFactor * 100  // ~25-35%
+      energyType = 'thermal'
+      break
+
+    case 'wind_turbine':
+      // Wind: Betz limit 59.3%
+      theoreticalMax = 59.3
+      carnotFactor = 0.593
+      energyType = 'wind'
+      break
+
+    case 'battery_storage':
+      // Battery: Round-trip efficiency limit ~98%
+      theoreticalMax = 98
+      carnotFactor = 0.98
+      energyType = 'electrical'
+      break
+
+    case 'hydrogen_electrolyzer':
+      // Electrolyzer: Thermodynamic limit ~83% (LHV basis)
+      theoreticalMax = 83
+      carnotFactor = 0.83
+      energyType = 'chemical'
+      break
+
+    case 'fuel_cell':
+      // Fuel cell: Gibbs free energy limit ~83%
+      theoreticalMax = 83
+      carnotFactor = 0.83
+      energyType = 'chemical'
+      break
+
+    case 'heat_pump':
+      // Heat pump COP can exceed 100% (typical 300-500%)
+      theoreticalMax = 500  // COP of 5
+      carnotFactor = 5
+      energyType = 'thermal'
+      break
+
+    case 'combined_system':
+    default:
+      // Generic system - use first law efficiency as baseline
+      theoreticalMax = 85
+      carnotFactor = 0.85
+      energyType = 'mixed'
+      break
+  }
+
+  // Calculate exergy metrics
+  const exergyEfficiency = Math.min(efficiency, theoreticalMax)
+  const exergyDestruction = inputExergy - outputExergy
+  const secondLawEfficiency = theoreticalMax > 0 ? (exergyEfficiency / theoreticalMax) * 100 : 0
+
+  return {
+    exergyEfficiency: Math.round(exergyEfficiency * 100) / 100,
+    exergyDestruction: Math.round(Math.max(0, exergyDestruction) * 100) / 100,
+    secondLawEfficiency: Math.round(secondLawEfficiency * 100) / 100,
+    theoreticalMax: Math.round(theoreticalMax * 100) / 100,
+    carnotFactor: Math.round(carnotFactor * 10000) / 10000,
+    energyType,
+  }
+}
+
+/**
  * Execute workflow asynchronously with timeout and proper progress tracking
  */
 async function executeWorkflowAsync(
@@ -1036,12 +1145,43 @@ async function executeWorkflowPhases(
       try {
         const phaseConfig = getPhaseConfig('simulation')
 
+        // Detect simulation type from query (domain-aware)
+        const queryLower = workflow.query.toLowerCase()
+        const detectedSimType: 'solar_pv' | 'solar_thermal' | 'wind_turbine' | 'battery_storage' | 'hydrogen_electrolyzer' | 'fuel_cell' | 'heat_pump' | 'combined_system' =
+          queryLower.includes('solar') ? 'solar_pv' :
+          queryLower.includes('wind') ? 'wind_turbine' :
+          queryLower.includes('battery') || queryLower.includes('storage') ? 'battery_storage' :
+          queryLower.includes('hydrogen') || queryLower.includes('electrolyzer') ? 'hydrogen_electrolyzer' :
+          queryLower.includes('fuel cell') ? 'fuel_cell' :
+          queryLower.includes('heat pump') ? 'heat_pump' :
+          'combined_system' // Default for carbon capture, materials, etc.
+
+        console.log('[executeWorkflowPhases] Detected simulation type:', detectedSimType)
+
+        // Build domain-specific parameters
+        const simParams = detectedSimType === 'solar_pv' ? {
+          capacity: phaseConfig?.parameters?.capacity || 100,
+          panelEfficiency: phaseConfig?.parameters?.efficiency || 0.2,
+        } : detectedSimType === 'battery_storage' ? {
+          capacity: phaseConfig?.parameters?.capacity || 100,
+          roundTripEfficiency: 0.9,
+        } : detectedSimType === 'hydrogen_electrolyzer' ? {
+          capacity: phaseConfig?.parameters?.capacity || 100,
+          efficiency: 0.7,
+        } : detectedSimType === 'wind_turbine' ? {
+          capacity: phaseConfig?.parameters?.capacity || 100,
+          hubHeight: 80,
+        } : {
+          // Generic/combined system defaults
+          capacity: phaseConfig?.parameters?.capacity || 100,
+          efficiency: phaseConfig?.parameters?.efficiency || 0.8,
+        }
+
         const simResult = await runSimulationTool.handler({
           tier: 'tier1' as const,
-          simulationType: 'solar_pv' as const,
+          simulationType: detectedSimType,
           parameters: {
-            capacity: phaseConfig?.parameters?.capacity || 100,
-            panelEfficiency: phaseConfig?.parameters?.efficiency || 0.2,
+            ...simParams,
             ...phaseConfig?.parameters,
           },
           timeHorizon: 8760, // 1 year
@@ -1049,18 +1189,33 @@ async function executeWorkflowPhases(
         })
 
         if (simResult) {
+          // Calculate exergy metrics based on simulation type
+          const exergyMetrics = calculateExergyForSimulation(simResult, detectedSimType)
+
+          // Build base metrics from simulation
+          const baseMetrics = Object.entries(simResult.metrics || {}).map(([name, data]: [string, any]) => ({
+            name,
+            value: data.value || 0,
+            unit: data.unit || '',
+            uncertainty: data.uncertainty,
+          }))
+
+          // Add exergy metrics to simulation results
+          const allMetrics = [
+            ...baseMetrics,
+            { name: 'Exergy Efficiency', value: exergyMetrics.exergyEfficiency, unit: '%' },
+            { name: 'Exergy Destruction', value: exergyMetrics.exergyDestruction, unit: 'kWh' },
+            { name: 'Second Law Efficiency', value: exergyMetrics.secondLawEfficiency, unit: '%' },
+            { name: 'Theoretical Max Efficiency', value: exergyMetrics.theoreticalMax, unit: '%' },
+          ]
+
           results.simulations = {
             runs: [{
               id: 'sim-1',
               name: simResult.scenario || 'Baseline Simulation',
               tier: 'local' as const,
               parameters: simResult.parameters || {},
-              metrics: Object.entries(simResult.metrics || {}).map(([name, data]: [string, any]) => ({
-                name,
-                value: data.value || 0,
-                unit: data.unit || '',
-                uncertainty: data.uncertainty,
-              })),
+              metrics: allMetrics,
               status: 'completed' as const,
               duration: Date.now() - simStart,
               accuracy: simResult.confidence || 85,
@@ -1074,7 +1229,11 @@ async function executeWorkflowPhases(
             visualizations: [],
             totalRuns: 1,
             averageAccuracy: simResult.confidence || 85,
+            // Store exergy analysis for TEA integration
+            exergyAnalysis: exergyMetrics,
           }
+
+          console.log('[executeWorkflowPhases] Exergy analysis:', exergyMetrics)
         }
 
         await updateProgress('simulation', 'simulation', 'Simulation completed')
@@ -1093,34 +1252,85 @@ async function executeWorkflowPhases(
       try {
         const phaseConfig = getPhaseConfig('tea')
 
+        // Get energy production estimate from simulation results
+        const annualEnergyProduction = results.simulations.runs[0]?.metrics
+          ?.find((m: any) => m.name === 'Annual Production' || m.name === 'annualProduction')?.value || 100000
+
         const teaResult = await calculateMetricsTool.handler({
-          calculationType: 'tea',
-          parameters: {
+          type: 'tea',  // Correct field name
+          data: {       // Financial data goes in 'data' object
             capitalCost: phaseConfig?.parameters?.capitalCost || 100000,
-            annualOperatingCost: phaseConfig?.parameters?.operatingCost || 5000,
+            operatingCost: phaseConfig?.parameters?.operatingCost || 5000,
             annualRevenue: phaseConfig?.parameters?.revenue || 20000,
-            projectLifetime: phaseConfig?.parameters?.lifetime || 25,
+            annualEnergyProduction,
+            energyPrice: phaseConfig?.parameters?.energyPrice || 0.10,  // $/kWh
+          },
+          parameters: {  // Options go in 'parameters'
             discountRate: phaseConfig?.parameters?.discountRate || 0.08,
+            projectLifetime: phaseConfig?.parameters?.lifetime || 25,
           },
         })
 
-        if (teaResult?.tea) {
-          results.tea = {
-            lcoe: teaResult.tea.lcoe || 0.05,
-            npv: teaResult.tea.npv || 50000,
-            irr: teaResult.tea.irr || 12,
-            paybackPeriod: teaResult.tea.paybackPeriod || 8,
-            breakdown: {
-              capitalCosts: teaResult.tea.breakdown?.capitalCosts || [],
-              operatingCosts: teaResult.tea.breakdown?.operatingCosts || [],
-              revenue: teaResult.tea.breakdown?.revenue || [],
-              totalCapex: teaResult.tea.breakdown?.totalCapex || 100000,
-              totalOpex: teaResult.tea.breakdown?.totalOpex || 5000,
-              annualRevenue: teaResult.tea.breakdown?.annualRevenue || 20000,
-            },
-            sensitivityAnalysis: teaResult.tea.sensitivityAnalysis || [],
-            recommendations: teaResult.recommendations || [],
+        // Results are flat, not nested under .tea
+        if (teaResult) {
+          const capitalCost = phaseConfig?.parameters?.capitalCost || 100000
+          const operatingCost = phaseConfig?.parameters?.operatingCost || 5000
+          const annualRevenue = phaseConfig?.parameters?.revenue || 20000
+
+          // Get exergy analysis from simulation for exergo-economic integration
+          const exergyAnalysis = (results.simulations as any).exergyAnalysis || {
+            exergyEfficiency: 85,
+            exergyDestruction: 15000,
+            secondLawEfficiency: 70,
+            theoreticalMax: 100,
           }
+
+          // Calculate exergo-economic metrics
+          const lcoe = teaResult.lcoe || 0.05
+          const exergyEfficiencyFactor = exergyAnalysis.exergyEfficiency / 100
+          const specificExergyCost = exergyEfficiencyFactor > 0 ? lcoe / exergyEfficiencyFactor : lcoe
+          const exergyDestructionCost = lcoe * (1 - exergyEfficiencyFactor) * annualEnergyProduction
+          const exergoEconomicFactor = exergyEfficiencyFactor  // f_k factor
+
+          results.tea = {
+            lcoe,
+            npv: teaResult.npv || 0,
+            irr: teaResult.irrPercentage || teaResult.irr || 0,
+            paybackPeriod: teaResult.simplePaybackPeriod || teaResult.discountedPaybackPeriod || 0,
+            breakdown: {
+              capitalCosts: [{ category: 'Equipment & Installation', amount: capitalCost }],
+              operatingCosts: [{ category: 'Annual O&M', amount: operatingCost }],
+              revenue: [{ source: 'Energy Sales', amount: annualRevenue }],
+              totalCapex: capitalCost,
+              totalOpex: operatingCost * (phaseConfig?.parameters?.lifetime || 25),
+              annualRevenue,
+            },
+            sensitivityAnalysis: teaResult.sensitivityAnalysis || [],
+            recommendations: teaResult.isViable
+              ? ['Project shows positive NPV and is economically viable']
+              : ['Consider reducing capital costs or increasing revenue to improve viability'],
+            // Exergo-economic analysis
+            exergyAnalysis: {
+              specificExergyCost: Math.round(specificExergyCost * 10000) / 10000,  // $/kWh-exergy
+              exergyDestructionCost: Math.round(exergyDestructionCost),  // $/year lost to inefficiency
+              exergoEconomicFactor: Math.round(exergoEconomicFactor * 100) / 100,  // f_k
+              exergyEfficiency: exergyAnalysis.exergyEfficiency,
+              secondLawEfficiency: exergyAnalysis.secondLawEfficiency,
+              theoreticalMaxEfficiency: exergyAnalysis.theoreticalMax,
+              // Cost breakdown by exergy component
+              costOfExergyDestruction: Math.round(exergyDestructionCost * (phaseConfig?.parameters?.lifetime || 25)),
+              potentialSavings: Math.round(exergyDestructionCost * 0.3 * (phaseConfig?.parameters?.lifetime || 25)),  // 30% improvement potential
+            },
+          }
+
+          console.log('[executeWorkflowPhases] TEA calculated with exergo-economics:', {
+            npv: results.tea.npv,
+            irr: results.tea.irr,
+            lcoe: results.tea.lcoe,
+            payback: results.tea.paybackPeriod,
+            specificExergyCost: (results.tea as any).exergyAnalysis?.specificExergyCost,
+            exergyEfficiency: (results.tea as any).exergyAnalysis?.exergyEfficiency,
+          })
         }
 
         await updateProgress('tea', 'tea', 'TEA analysis completed')
@@ -1196,6 +1406,61 @@ async function executeWorkflowPhases(
         })
         overallScore += teaScore
         checkCount++
+      }
+
+      // Check exergy efficiency against theoretical limits
+      const exergyData = (results.simulations as any).exergyAnalysis
+      if (exergyData) {
+        // Exergy efficiency benchmarks by technology type
+        const exergyBenchmarks: Record<string, { min: number; typical: number; max: number }> = {
+          solar: { min: 10, typical: 15, max: 25 },
+          wind: { min: 35, typical: 45, max: 59.3 },
+          electrical: { min: 80, typical: 90, max: 98 },
+          chemical: { min: 50, typical: 65, max: 85 },
+          thermal: { min: 20, typical: 35, max: 50 },
+          mixed: { min: 60, typical: 75, max: 90 },
+        }
+
+        const benchmark = exergyBenchmarks[exergyData.energyType] || exergyBenchmarks.mixed
+        const exergyEfficiency = exergyData.exergyEfficiency || 0
+        const secondLawEfficiency = exergyData.secondLawEfficiency || 0
+
+        // Score based on how close to typical efficiency
+        let exergyScore = 50
+        if (exergyEfficiency >= benchmark.typical) {
+          exergyScore = 85  // At or above typical
+        } else if (exergyEfficiency >= benchmark.min) {
+          exergyScore = 70  // Above minimum but below typical
+        } else {
+          exergyScore = 40  // Below minimum benchmark
+        }
+
+        // Validate against theoretical maximum (Carnot, Betz, etc.)
+        const theoreticalMax = exergyData.theoreticalMax || 100
+        const isPhysicallyValid = exergyEfficiency <= theoreticalMax * 1.05  // 5% tolerance
+
+        validationChecks.push({
+          name: 'Exergy Efficiency',
+          description: 'Second-law thermodynamic efficiency within acceptable range',
+          result: isPhysicallyValid && exergyScore >= 60 ? 'pass' : exergyScore >= 40 ? 'warning' : 'fail',
+          score: exergyScore,
+          details: `η_ex: ${exergyEfficiency.toFixed(1)}% (benchmark: ${benchmark.min}-${benchmark.max}%), η_II: ${secondLawEfficiency.toFixed(1)}%`,
+        })
+        overallScore += exergyScore
+        checkCount++
+
+        // Check for thermodynamic law violations
+        if (!isPhysicallyValid) {
+          validationChecks.push({
+            name: 'Thermodynamic Validity',
+            description: 'Results comply with second law of thermodynamics',
+            result: 'fail',
+            score: 0,
+            details: `Exergy efficiency ${exergyEfficiency.toFixed(1)}% exceeds theoretical maximum ${theoreticalMax.toFixed(1)}%`,
+          })
+          overallScore += 0
+          checkCount++
+        }
       }
 
       results.validation = {

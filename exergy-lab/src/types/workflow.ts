@@ -342,6 +342,19 @@ export interface SimulationResults {
   visualizations: Visualization[]
   totalRuns: number
   averageAccuracy: number
+  exergyAnalysis?: SimulationExergyAnalysis  // Exergy metrics from simulation
+}
+
+/**
+ * Exergy analysis output from simulation phase
+ */
+export interface SimulationExergyAnalysis {
+  exergyEfficiency: number         // %
+  exergyDestruction: number        // kWh
+  secondLawEfficiency: number      // %
+  theoreticalMax: number           // % (Carnot, Betz, etc.)
+  carnotFactor: number
+  energyType: string
 }
 
 export interface SimulationRun {
@@ -384,6 +397,72 @@ export interface TEAResults {
   breakdown: TEABreakdown
   sensitivityAnalysis: SensitivityResult[]
   recommendations: string[]
+  exergyAnalysis?: ExergoEconomicAnalysis  // Exergo-economic metrics
+}
+
+/**
+ * Exergo-economic analysis combining exergy and cost metrics
+ * Based on second-law thermodynamic analysis
+ */
+export interface ExergoEconomicAnalysis {
+  // Cost metrics per unit exergy
+  specificExergyCost: number       // $/kWh-exergy (cost per unit of useful work potential)
+  exergyDestructionCost: number    // $/year lost to thermodynamic inefficiency
+  exergoEconomicFactor: number     // f_k = exergy efficiency factor
+
+  // Efficiency metrics
+  exergyEfficiency: number         // η_ex = output exergy / input exergy (%)
+  secondLawEfficiency: number      // η_II = actual efficiency / theoretical max (%)
+  theoreticalMaxEfficiency: number // Carnot, Betz, or other theoretical limit (%)
+
+  // Lifetime cost analysis
+  costOfExergyDestruction: number  // Total lifetime cost of inefficiency ($)
+  potentialSavings: number         // Potential savings from efficiency improvements ($)
+}
+
+/**
+ * Exergy analysis results from simulation
+ */
+export interface ExergyAnalysis {
+  // Core exergy metrics
+  inputExergy: number              // kWh
+  outputExergy: number             // kWh
+  exergyDestruction: number        // kWh (irreversibilities)
+  exergyLoss: number              // kWh (exergy rejected to environment)
+
+  // Efficiency metrics
+  exergyEfficiency: number         // %
+  secondLawEfficiency: number      // %
+  carnotFactor: number             // Carnot efficiency factor
+
+  // Reference environment
+  deadStateTemperature: number     // K (typically 298.15)
+  deadStatePressure: number        // kPa (typically 101.325)
+
+  // Destruction analysis
+  exergyDestructionRatio: number   // % of input destroyed
+  irreversibility: number          // kWh
+
+  // Metadata
+  energyType: 'thermal' | 'electrical' | 'chemical' | 'mechanical' | 'solar' | 'wind' | 'mixed'
+  calculationMethod: string
+  theoreticalMax: number           // % (Betz, Carnot, etc.)
+
+  // Benchmarks
+  benchmarks?: ExergyBenchmarks
+}
+
+/**
+ * Exergy efficiency benchmarks by technology
+ */
+export interface ExergyBenchmarks {
+  solarPV?: { typical: number; max: number }
+  solarThermal?: { typical: number; max: number }
+  windTurbine?: { typical: number; max: number }
+  battery?: { typical: number; max: number }
+  fuelCell?: { typical: number; max: number }
+  electrolyzer?: { typical: number; max: number }
+  carbonCapture?: { typical: number; max: number }
 }
 
 export interface TEABreakdown {

@@ -196,7 +196,7 @@ export const extractDataTool: ToolDeclaration = {
 // ============================================================================
 
 const calculateMetricsSchema = z.object({
-  type: z.enum(['tea', 'efficiency', 'emissions', 'cost', 'energy', 'lcoe']).describe('Type of calculation'),
+  type: z.enum(['tea', 'efficiency', 'emissions', 'cost', 'energy', 'lcoe', 'exergy']).describe('Type of calculation'),
   data: z.record(z.string(), z.any()).describe('Input data for calculation'),
   parameters: z.object({
     discountRate: z.number().optional().describe('Discount rate for financial calculations (e.g., 0.08 for 8%)'),
@@ -768,6 +768,137 @@ async function calculateMetricsHandler(params: z.infer<typeof calculateMetricsSc
             month: i + 1,
             production: Math.round(annualProduction / 12 * (1 + 0.2 * Math.sin((i - 3) * Math.PI / 6))), // Seasonal variation
           })),
+        }
+        break
+      }
+
+      case 'exergy': {
+        // Exergy (Second-Law Thermodynamic) Analysis
+        // Exergy = maximum useful work obtainable from a system
+        const {
+          inputEnergy = 0,           // kWh or kJ
+          outputEnergy = 0,          // kWh or kJ (useful output)
+          hotTemperature = 373.15,   // Th in Kelvin (default 100°C)
+          coldTemperature = 298.15,  // Tc in Kelvin (default 25°C = dead state)
+          energyType = 'thermal',    // 'thermal', 'electrical', 'chemical', 'mechanical', 'solar', 'wind'
+          solarIrradiance = 0,       // W/m² for solar exergy
+          panelArea = 0,             // m² for solar
+          windSpeed = 0,             // m/s for wind
+          rotorArea = 0,             // m² for wind
+          airDensity = 1.225,        // kg/m³
+        } = data
+
+        const T0 = coldTemperature || 298.15  // Dead state temperature (25°C)
+        const SOLAR_TEMPERATURE = 5778        // Sun surface temperature in K
+
+        let inputExergy = 0
+        let outputExergy = 0
+        let carnotFactor = 1
+        let theoreticalMax = 0
+        let calculationMethod = energyType
+
+        switch (energyType) {
+          case 'thermal':
+            // Thermal exergy: E_x = Q * (1 - T0/Th)
+            carnotFactor = 1 - (T0 / hotTemperature)
+            inputExergy = inputEnergy * carnotFactor
+            outputExergy = outputEnergy * carnotFactor
+            theoreticalMax = carnotFactor * 100  // Carnot efficiency %
+            break
+
+          case 'electrical':
+          case 'mechanical':
+            // Electrical/mechanical energy = exergy (100% convertible to work)
+            carnotFactor = 1
+            inputExergy = inputEnergy
+            outputExergy = outputEnergy
+            theoreticalMax = 100
+            break
+
+          case 'solar':
+            // Solar exergy: considers sun as heat source at 5778K
+            // Petela formula: η_ex_max = 1 - (4/3)*(T0/Ts) + (1/3)*(T0/Ts)^4
+            const tempRatio = T0 / SOLAR_TEMPERATURE
+            const petelaEfficiency = 1 - (4/3) * tempRatio + (1/3) * Math.pow(tempRatio, 4)
+            carnotFactor = petelaEfficiency
+            inputExergy = solarIrradiance * panelArea * 8760 / 1000 * petelaEfficiency  // kWh/year
+            outputExergy = outputEnergy  // Actual electrical output
+            theoreticalMax = petelaEfficiency * 100  // ~93.6%
+            calculationMethod = 'solar-petela'
+            break
+
+          case 'wind':
+            // Wind exergy: kinetic energy of air
+            // E_x = 0.5 * ρ * A * v³ (limited by Betz at 59.3%)
+            const betzLimit = 0.593
+            const windPower = 0.5 * airDensity * rotorArea * Math.pow(windSpeed, 3) / 1000  // kW
+            inputExergy = windPower * 8760  // kWh/year theoretical
+            outputExergy = outputEnergy
+            theoreticalMax = betzLimit * 100  // 59.3%
+            carnotFactor = betzLimit
+            calculationMethod = 'wind-betz'
+            break
+
+          case 'chemical':
+            // Chemical exergy (simplified - uses standard chemical exergy values)
+            // For hydrogen: 236.1 kJ/mol or 118 MJ/kg
+            carnotFactor = 0.83  // Typical fuel cell exergy efficiency limit
+            inputExergy = inputEnergy
+            outputExergy = outputEnergy
+            theoreticalMax = 83
+            break
+
+          default:
+            // Generic calculation
+            inputExergy = inputEnergy
+            outputExergy = outputEnergy
+            carnotFactor = 1
+            theoreticalMax = 100
+        }
+
+        // Calculate exergy metrics
+        const exergyDestruction = Math.max(0, inputExergy - outputExergy)
+        const exergyEfficiency = inputExergy > 0 ? (outputExergy / inputExergy) * 100 : 0
+        const exergyDestructionRatio = inputExergy > 0 ? (exergyDestruction / inputExergy) * 100 : 0
+        const secondLawEfficiency = theoreticalMax > 0 ? (exergyEfficiency / theoreticalMax) * 100 : 0
+
+        results = {
+          // Core exergy metrics
+          inputExergy: Math.round(inputExergy * 100) / 100,
+          outputExergy: Math.round(outputExergy * 100) / 100,
+          exergyDestruction: Math.round(exergyDestruction * 100) / 100,
+          exergyLoss: Math.round(exergyDestruction * 100) / 100,  // Alias
+
+          // Efficiency metrics
+          exergyEfficiency: Math.round(exergyEfficiency * 100) / 100,
+          secondLawEfficiency: Math.round(secondLawEfficiency * 100) / 100,
+          carnotFactor: Math.round(carnotFactor * 10000) / 10000,
+          theoreticalMaxEfficiency: Math.round(theoreticalMax * 100) / 100,
+
+          // Destruction analysis
+          exergyDestructionRatio: Math.round(exergyDestructionRatio * 100) / 100,
+          irreversibility: Math.round(exergyDestruction * 100) / 100,
+
+          // Reference environment
+          deadStateTemperature: T0,
+          deadStatePressure: 101.325,  // kPa (standard)
+
+          // Metadata
+          energyType,
+          calculationMethod,
+          unit: 'kWh',
+          efficiencyUnit: '%',
+
+          // Benchmarks for comparison
+          benchmarks: {
+            solarPV: { typical: 15, max: 25 },
+            solarThermal: { typical: 35, max: 50 },
+            windTurbine: { typical: 45, max: 59.3 },
+            battery: { typical: 90, max: 98 },
+            fuelCell: { typical: 55, max: 70 },
+            electrolyzer: { typical: 65, max: 85 },
+            carbonCapture: { typical: 15, max: 30 },
+          },
         }
         break
       }
