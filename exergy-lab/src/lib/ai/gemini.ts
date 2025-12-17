@@ -37,25 +37,57 @@ export async function generateText(
     maxOutputTokens = 2048,
     topP = 0.95,
     topK = 40,
+    responseMimeType,
   } = options
 
+  console.log(`[Gemini] === API Call ===`)
+  console.log(`[Gemini] Model: ${MODELS[model]}`)
+  console.log(`[Gemini] Config: temp=${temperature}, maxTokens=${maxOutputTokens}`)
+  console.log(`[Gemini] Prompt length: ${prompt.length} chars`)
+  if (responseMimeType) {
+    console.log(`[Gemini] Response MIME type: ${responseMimeType}`)
+  }
+
   try {
+    const generationConfig: any = {
+      temperature,
+      maxOutputTokens,
+      topP,
+      topK,
+    }
+
+    // Add responseMimeType if specified (for JSON output)
+    if (responseMimeType) {
+      generationConfig.responseMimeType = responseMimeType
+    }
+
     const generativeModel: GenerativeModel = genAI.getGenerativeModel({
       model: MODELS[model],
-      generationConfig: {
-        temperature,
-        maxOutputTokens,
-        topP,
-        topK,
-      },
+      generationConfig,
     })
 
+    console.log(`[Gemini] Sending request to ${MODELS[model]}...`)
     const result = await generativeModel.generateContent(prompt)
     const response = result.response
-    return response.text()
-  } catch (error) {
-    console.error('Gemini API error:', error)
-    throw new Error(`Gemini generation failed: ${error}`)
+    const text = response.text()
+
+    console.log(`[Gemini] === Response Received ===`)
+    console.log(`[Gemini] Response length: ${text.length} chars`)
+    console.log(`[Gemini] Response preview (first 500 chars):`)
+    console.log(text.substring(0, 500))
+    if (text.length > 500) {
+      console.log(`[Gemini] ... (${text.length - 500} more chars)`)
+    }
+
+    return text
+  } catch (error: any) {
+    console.error('[Gemini] === API ERROR ===')
+    console.error('[Gemini] Error message:', error?.message || String(error))
+    console.error('[Gemini] Error type:', error?.constructor?.name)
+    if (error?.response) {
+      console.error('[Gemini] Response status:', error.response?.status)
+    }
+    throw new Error(`Gemini generation failed: ${error?.message || error}`)
   }
 }
 

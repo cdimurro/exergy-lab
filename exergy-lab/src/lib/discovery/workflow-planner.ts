@@ -293,31 +293,55 @@ Respond with ONLY the JSON object below. Start directly with { and end with }. D
   "overview": "2-3 sentence summary explaining the personalized approach for this specific query"
 }`
 
+    console.log('[WorkflowPlanner] === Starting AI Plan Generation ===')
+    console.log('[WorkflowPlanner] Query:', query)
+    console.log('[WorkflowPlanner] Domains:', domains)
+    console.log('[WorkflowPlanner] Goals:', goals)
+    console.log('[WorkflowPlanner] Required phases:', requiredPhases)
+    console.log('[WorkflowPlanner] Prompt length:', planPrompt.length, 'chars')
+
     try {
-      // Use Gemini flash-lite for development/testing
-      console.log('[WorkflowPlanner] Generating AI plan for query:', query.substring(0, 50))
+      // Use Gemini flash for better quality (not flash-lite)
+      console.log('[WorkflowPlanner] Calling Gemini API...')
       const content = await gemini.generateText(planPrompt, {
-        model: 'flash-lite',
-        temperature: 0.7,
-        maxOutputTokens: 2500,
+        model: 'flash', // Upgraded from flash-lite for better JSON quality
+        temperature: 0.5, // Lower temperature for more consistent JSON
+        maxOutputTokens: 3000, // More tokens for complex plans
+        responseMimeType: 'application/json', // Request JSON response
       })
 
-      console.log('[WorkflowPlanner] AI response length:', content.length)
+      console.log('[WorkflowPlanner] === Raw AI Response ===')
+      console.log('[WorkflowPlanner] Response length:', content.length, 'chars')
+      console.log('[WorkflowPlanner] Raw response (first 800 chars):')
+      console.log(content.substring(0, 800))
 
       // Parse JSON with robust error handling
+      console.log('[WorkflowPlanner] Attempting to parse JSON response...')
       const aiPlan = this.parseJSONResponse(content) as AIGeneratedPlan
+
+      console.log('[WorkflowPlanner] === Parsed Plan ===')
+      console.log('[WorkflowPlanner] Overview:', aiPlan.overview?.substring(0, 100))
+      console.log('[WorkflowPlanner] Has research:', !!aiPlan.research)
+      console.log('[WorkflowPlanner] Search terms:', aiPlan.research?.searchTerms)
+      console.log('[WorkflowPlanner] Has experiments:', !!aiPlan.experiments)
+      console.log('[WorkflowPlanner] Has simulations:', !!aiPlan.simulations)
 
       // Validate that we got required fields
       if (!aiPlan.research || !aiPlan.research.searchTerms) {
-        console.warn('[WorkflowPlanner] AI plan missing required research fields, using fallback')
+        console.warn('[WorkflowPlanner] === VALIDATION FAILED ===')
+        console.warn('[WorkflowPlanner] Missing required research fields!')
+        console.warn('[WorkflowPlanner] aiPlan.research:', aiPlan.research)
         return this.createFallbackPlan(query, domains, goals, requiredPhases)
       }
 
-      console.log('[WorkflowPlanner] Successfully parsed AI plan with', aiPlan.research.searchTerms.length, 'search terms')
+      console.log('[WorkflowPlanner] === AI Plan Generation SUCCESS ===')
+      console.log('[WorkflowPlanner] Search terms count:', aiPlan.research.searchTerms.length)
       return aiPlan
     } catch (error) {
-      console.error('[WorkflowPlanner] AI plan generation failed:', error)
-      console.error('[WorkflowPlanner] Error details:', error instanceof Error ? error.message : String(error))
+      console.error('[WorkflowPlanner] === AI Plan Generation FAILED ===')
+      console.error('[WorkflowPlanner] Error type:', (error as any)?.constructor?.name)
+      console.error('[WorkflowPlanner] Error message:', error instanceof Error ? error.message : String(error))
+      console.error('[WorkflowPlanner] Using fallback plan instead')
       return this.createFallbackPlan(query, domains, goals, requiredPhases)
     }
   }
@@ -327,6 +351,8 @@ Respond with ONLY the JSON object below. Start directly with { and end with }. D
    * Handles markdown code blocks, trailing commas, unescaped quotes, and other common LLM issues
    */
   private parseJSONResponse(content: string): any {
+    console.log('[WorkflowPlanner] parseJSONResponse - input length:', content.length)
+
     let cleanedContent = content.trim()
 
     // Remove markdown code blocks (various formats)
@@ -336,24 +362,33 @@ Respond with ONLY the JSON object below. Start directly with { and end with }. D
       .replace(/\n?```\s*$/g, '')
       .trim()
 
+    console.log('[WorkflowPlanner] After markdown cleanup - length:', cleanedContent.length)
+
     // Try direct parse first
     try {
-      return JSON.parse(cleanedContent)
-    } catch (firstError) {
-      console.log('[WorkflowPlanner] First JSON parse failed, attempting cleanup...')
+      const result = JSON.parse(cleanedContent)
+      console.log('[WorkflowPlanner] Direct JSON parse SUCCESS')
+      return result
+    } catch (firstError: any) {
+      console.log('[WorkflowPlanner] Direct parse failed:', firstError.message)
+      console.log('[WorkflowPlanner] Content starts with:', cleanedContent.substring(0, 100))
     }
 
     // Find the JSON object boundaries first
     const firstBrace = cleanedContent.indexOf('{')
     const lastBrace = cleanedContent.lastIndexOf('}')
 
+    console.log('[WorkflowPlanner] JSON boundaries - first {:', firstBrace, ', last }:', lastBrace)
+
     if (firstBrace === -1 || lastBrace === -1 || lastBrace <= firstBrace) {
-      console.error('[WorkflowPlanner] No JSON object found in response')
+      console.error('[WorkflowPlanner] No JSON object found in response!')
+      console.error('[WorkflowPlanner] Content preview:', cleanedContent.substring(0, 300))
       throw new Error('No JSON object found in AI response')
     }
 
     // Extract just the JSON portion
     let jsonStr = cleanedContent.substring(firstBrace, lastBrace + 1)
+    console.log('[WorkflowPlanner] Extracted JSON length:', jsonStr.length)
 
     // Apply fixes in sequence
     try {
@@ -371,9 +406,11 @@ Respond with ONLY the JSON object below. Start directly with { and end with }. D
 
       // Try parsing after basic fixes
       try {
-        return JSON.parse(jsonStr)
-      } catch (e) {
-        console.log('[WorkflowPlanner] Parse after basic fixes failed, trying more aggressive cleanup...')
+        const result = JSON.parse(jsonStr)
+        console.log('[WorkflowPlanner] Parse after basic fixes SUCCESS')
+        return result
+      } catch (e: any) {
+        console.log('[WorkflowPlanner] Parse after basic fixes failed:', e.message)
       }
 
       // 4. More aggressive: escape unescaped quotes in string values
@@ -412,22 +449,28 @@ Respond with ONLY the JSON object below. Start directly with { and end with }. D
         i++
       }
 
-      return JSON.parse(result)
-    } catch (secondError) {
-      console.log('[WorkflowPlanner] Second JSON parse failed, attempting final extraction...')
+      const aggressiveResult = JSON.parse(result)
+      console.log('[WorkflowPlanner] Parse after quote fix SUCCESS')
+      return aggressiveResult
+    } catch (secondError: any) {
+      console.log('[WorkflowPlanner] Parse after quote fix failed:', secondError.message)
     }
 
     // Last resort: try a very aggressive cleanup
     try {
+      console.log('[WorkflowPlanner] Attempting aggressive cleanup...')
       // Remove all control characters and try again
       const aggressive = jsonStr
         .replace(/[\x00-\x1F\x7F]/g, ' ')
         .replace(/,(\s*[}\]])/g, '$1')
         .replace(/\s+/g, ' ')
 
-      return JSON.parse(aggressive)
-    } catch (thirdError) {
-      console.error('[WorkflowPlanner] All JSON parse attempts failed')
+      const finalResult = JSON.parse(aggressive)
+      console.log('[WorkflowPlanner] Aggressive cleanup parse SUCCESS')
+      return finalResult
+    } catch (thirdError: any) {
+      console.error('[WorkflowPlanner] === ALL JSON PARSE ATTEMPTS FAILED ===')
+      console.error('[WorkflowPlanner] Final error:', thirdError.message)
       console.error('[WorkflowPlanner] Raw content (first 500 chars):', content.substring(0, 500))
       console.error('[WorkflowPlanner] Extracted JSON (first 500 chars):', jsonStr.substring(0, 500))
     }
