@@ -194,7 +194,7 @@ export function DiscoveryForm({
             <Button
               type="button"
               variant="outline"
-              size="default"
+              size="md"
               onClick={handleAddGoal}
               className="gap-2 text-base"
             >

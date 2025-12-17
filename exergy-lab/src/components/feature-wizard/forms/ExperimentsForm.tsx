@@ -200,7 +200,7 @@ export function ExperimentsForm({
             <Button
               type="button"
               variant="outline"
-              size="default"
+              size="md"
               onClick={handleAddObjective}
               className="gap-2 text-base"
             >
