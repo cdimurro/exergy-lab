@@ -20,7 +20,7 @@ import type {
 } from '@/types/workflow'
 import type { ToolName, ToolCall } from '@/types/agent'
 import type { Domain } from '@/types/discovery'
-import * as gemini from '../ai/gemini'
+import * as openai from '../ai/openai'
 
 // ============================================================================
 // AI Plan Generation Types
@@ -135,12 +135,12 @@ Respond with JSON:
 }`
 
     try {
-      // Use Gemini directly for JSON response
+      // Use OpenAI for JSON response (Gemini API key expired)
       console.log('[WorkflowPlanner] Analyzing required phases...')
-      const content = await gemini.generateText(analysisPrompt, {
-        model: 'flash',
+      const content = await openai.generateText(analysisPrompt, {
+        model: 'gpt-3.5-turbo',
         temperature: 0.3,
-        maxOutputTokens: 500,
+        maxTokens: 500,
       })
 
       console.log('[WorkflowPlanner] Phase analysis response:', content.substring(0, 100))
@@ -289,12 +289,12 @@ Respond ONLY with valid JSON (no markdown, no code blocks):
 }`
 
     try {
-      // Use Gemini directly for JSON response (bypass router for better debugging)
+      // Use OpenAI for JSON response (Gemini API key expired)
       console.log('[WorkflowPlanner] Generating AI plan for query:', query.substring(0, 50))
-      const content = await gemini.generateText(planPrompt, {
-        model: 'pro', // Use pro for higher quality
+      const content = await openai.generateText(planPrompt, {
+        model: 'gpt-3.5-turbo',
         temperature: 0.7,
-        maxOutputTokens: 2500,
+        maxTokens: 2500,
       })
 
       console.log('[WorkflowPlanner] AI response length:', content.length)
