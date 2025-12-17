@@ -201,6 +201,7 @@ export function ChatInterface({
         onMakeChanges={makeChanges}
         onRetry={retry}
         onCancel={cancelExecution}
+        modifications={modifications}
       />
 
       {/* Input */}

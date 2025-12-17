@@ -14,6 +14,8 @@ interface MessageListProps {
   onMakeChanges?: (feedback: string) => void
   onRetry?: () => void
   onCancel?: () => void
+  /** Current plan modifications to pass to PlanCard */
+  modifications?: PlanModification[]
 }
 
 export function MessageList({
@@ -25,6 +27,7 @@ export function MessageList({
   onMakeChanges,
   onRetry,
   onCancel,
+  modifications,
 }: MessageListProps) {
   const bottomRef = React.useRef<HTMLDivElement>(null)
   const containerRef = React.useRef<HTMLDivElement>(null)
@@ -128,6 +131,7 @@ export function MessageList({
             onRetry={onRetry}
             onCancel={onCancel}
             isLastMessage={index === messages.length - 1}
+            modifications={modifications}
           />
         ))}
         <div ref={bottomRef} />

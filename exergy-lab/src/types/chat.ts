@@ -205,6 +205,8 @@ export interface ChatMessageProps {
   onRetry?: () => void
   onCancel?: () => void
   isLastMessage?: boolean
+  /** Current plan modifications from useChatWorkflow */
+  modifications?: PlanModification[]
 }
 
 export interface PlanCardProps {
