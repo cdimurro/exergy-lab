@@ -465,74 +465,118 @@ function createEmptyResults(): WorkflowResults {
 /**
  * Apply user modifications to execution plan
  * Handles type coercion to ensure numeric/boolean values remain correct types
+ * Supports both old format (parameterChanges) and new format (parameter/newValue)
  */
-function applyModifications(plan: ExecutionPlan, modifications: PhaseModification[]): void {
+function applyModifications(plan: ExecutionPlan, modifications: any[]): void {
   console.log('[Workflow API] === Applying Modifications ===')
   console.log('[Workflow API] Modifications count:', modifications.length)
 
   for (const mod of modifications) {
     console.log('[Workflow API] Processing modification for phase:', mod.phaseId)
-    console.log('[Workflow API] Parameter changes (raw):', JSON.stringify(mod.parameterChanges))
+    console.log('[Workflow API] Modification data:', JSON.stringify(mod))
 
     const phase = plan.phases.find((p) => p.id === mod.phaseId)
-    if (phase) {
-      // Coerce values to match original parameter types
+    if (!phase) {
+      console.warn('[Workflow API] Phase not found for modification:', mod.phaseId)
+      continue
+    }
+
+    // Handle new format: { phaseId, parameter, newValue }
+    if (mod.parameter !== undefined && mod.newValue !== undefined) {
+      const key = mod.parameter
+      const value = mod.newValue
+
+      console.log(`[Workflow API] New format - param: "${key}", value: "${value}"`)
+
+      // Handle 'enabled' as a special case - it's on the phase, not in parameters
+      if (key === 'enabled') {
+        phase.enabled = value === true || value === 'true'
+        console.log(`[Workflow API]   -> Set phase.enabled to: ${phase.enabled}`)
+        continue
+      }
+
+      // Coerce value based on original type
+      const originalValue = phase.parameters[key]
+      const originalType = typeof originalValue
+      let coercedValue: any = value
+
+      console.log(`[Workflow API] Coercing "${key}": value="${value}" (${typeof value}), original="${originalValue}" (${originalType})`)
+
+      if (originalType === 'number' && typeof value === 'string') {
+        const parsed = parseFloat(value)
+        coercedValue = isNaN(parsed) ? 0 : parsed
+      } else if (originalType === 'boolean' && typeof value === 'string') {
+        coercedValue = value === 'true' || value === '1'
+      } else if (originalType === 'undefined') {
+        // New parameter - try to infer type
+        if (typeof value === 'string') {
+          const numVal = parseFloat(value)
+          if (!isNaN(numVal) && String(numVal) === value) {
+            coercedValue = numVal
+          } else if (value === 'true' || value === 'false') {
+            coercedValue = value === 'true'
+          }
+        }
+      }
+
+      phase.parameters[key] = coercedValue
+      console.log(`[Workflow API]   -> Set phase.parameters["${key}"] to: ${coercedValue}`)
+      continue
+    }
+
+    // Handle old format: { phaseId, parameterChanges: { key: value } }
+    if (mod.parameterChanges) {
+      console.log('[Workflow API] Old format - parameterChanges:', JSON.stringify(mod.parameterChanges))
+
       const coercedChanges: Record<string, unknown> = {}
 
       for (const [key, value] of Object.entries(mod.parameterChanges)) {
+        // Handle 'enabled' as a special case
+        if (key === 'enabled') {
+          phase.enabled = value === true || value === 'true'
+          console.log(`[Workflow API]   -> Set phase.enabled to: ${phase.enabled}`)
+          continue
+        }
+
         const originalValue = phase.parameters[key]
         const originalType = typeof originalValue
 
         console.log(`[Workflow API] Coercing "${key}": value="${value}" (${typeof value}), original="${originalValue}" (${originalType})`)
 
         if (originalType === 'number' && typeof value === 'string') {
-          // Coerce string to number
-          const parsed = parseFloat(value)
+          const parsed = parseFloat(value as string)
           coercedChanges[key] = isNaN(parsed) ? 0 : parsed
-          console.log(`[Workflow API]   -> Coerced to number: ${coercedChanges[key]}`)
         } else if (originalType === 'boolean' && typeof value === 'string') {
-          // Coerce string to boolean
           coercedChanges[key] = value === 'true' || value === '1'
-          console.log(`[Workflow API]   -> Coerced to boolean: ${coercedChanges[key]}`)
         } else if (originalType === 'number' && typeof value === 'number') {
-          // Already correct type
           coercedChanges[key] = value
-          console.log(`[Workflow API]   -> Already number: ${coercedChanges[key]}`)
         } else if (originalType === 'boolean' && typeof value === 'boolean') {
-          // Already correct type
           coercedChanges[key] = value
-          console.log(`[Workflow API]   -> Already boolean: ${coercedChanges[key]}`)
         } else if (originalType === 'undefined' && typeof value === 'string') {
-          // New parameter - try to infer type from value
-          const numVal = parseFloat(value)
+          const numVal = parseFloat(value as string)
           if (!isNaN(numVal) && String(numVal) === value) {
             coercedChanges[key] = numVal
-            console.log(`[Workflow API]   -> New param, inferred number: ${coercedChanges[key]}`)
           } else if (value === 'true' || value === 'false') {
             coercedChanges[key] = value === 'true'
-            console.log(`[Workflow API]   -> New param, inferred boolean: ${coercedChanges[key]}`)
           } else {
             coercedChanges[key] = value
-            console.log(`[Workflow API]   -> New param, kept as string: ${coercedChanges[key]}`)
           }
         } else {
-          // Keep original type (likely string)
           coercedChanges[key] = value
-          console.log(`[Workflow API]   -> Kept as-is: ${coercedChanges[key]} (${typeof coercedChanges[key]})`)
         }
+
+        console.log(`[Workflow API]   -> Coerced to: ${coercedChanges[key]} (${typeof coercedChanges[key]})`)
       }
 
-      // Apply coerced changes
       phase.parameters = {
         ...phase.parameters,
         ...coercedChanges,
       }
-
-      console.log('[Workflow API] Modified phase:', phase.id)
-      console.log('[Workflow API] Final parameters:', JSON.stringify(phase.parameters))
-    } else {
-      console.warn('[Workflow API] Phase not found for modification:', mod.phaseId)
     }
+
+    console.log('[Workflow API] Modified phase:', phase.id)
+    console.log('[Workflow API] Final parameters:', JSON.stringify(phase.parameters))
+    console.log('[Workflow API] Phase enabled:', phase.enabled)
   }
 
   console.log('[Workflow API] === Modifications Applied ===')

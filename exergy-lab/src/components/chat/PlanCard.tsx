@@ -630,6 +630,12 @@ function PhaseItem({
     return mod?.newValue
   }
 
+  // Get the effective enabled state - check modifications first, then fall back to phase.enabled
+  const enabledModification = modifications.find(m => m.parameter === 'enabled')
+  const isPhaseEnabled = enabledModification !== undefined
+    ? enabledModification.newValue === true
+    : phase.enabled !== false
+
   return (
     <div
       className={cn(
@@ -662,19 +668,20 @@ function PhaseItem({
                   onClick={(e) => {
                     e.stopPropagation()
                     if (onModify) {
-                      onModify(phase.id, 'enabled', phase.enabled === false ? true : false)
+                      // Toggle the enabled state
+                      onModify(phase.id, 'enabled', !isPhaseEnabled)
                     }
                   }}
                   className={cn(
                     "relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer",
-                    phase.enabled !== false ? "bg-primary" : "bg-foreground/20"
+                    isPhaseEnabled ? "bg-primary" : "bg-foreground/20"
                   )}
-                  title={phase.enabled !== false ? "Click to disable this phase" : "Click to enable this phase"}
+                  title={isPhaseEnabled ? "Click to disable this phase" : "Click to enable this phase"}
                 >
                   <span
                     className={cn(
                       "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
-                      phase.enabled !== false ? "translate-x-6" : "translate-x-1"
+                      isPhaseEnabled ? "translate-x-6" : "translate-x-1"
                     )}
                   />
                 </button>
