@@ -251,14 +251,34 @@ export async function GET(request: NextRequest) {
   const stream = new TransformStream()
   const writer = stream.writable.getWriter()
 
+  // Track if stream has been closed to prevent double-close errors
+  let isStreamClosed = false
+
+  // Safe close function that prevents double-close errors
+  const safeCloseStream = async () => {
+    if (isStreamClosed) return
+    isStreamClosed = true
+    try {
+      await writer.close()
+    } catch {
+      // Stream already closed, ignore
+    }
+  }
+
   // Start streaming status updates
   const streamInterval = setInterval(async () => {
+    // Skip if stream is already closed
+    if (isStreamClosed) {
+      clearInterval(streamInterval)
+      return
+    }
+
     try {
       const currentWorkflow = await serverWorkflowStore.get(workflowId)
 
       if (!currentWorkflow) {
         clearInterval(streamInterval)
-        writer.close()
+        await safeCloseStream()
         return
       }
 
@@ -277,11 +297,13 @@ export async function GET(request: NextRequest) {
       // Close stream when workflow completes or fails
       if (currentWorkflow.status === 'completed' || currentWorkflow.status === 'failed') {
         clearInterval(streamInterval)
-        setTimeout(() => writer.close(), 1000) // Allow final message to send
+        // Use a small delay to ensure the final message is sent, then close safely
+        setTimeout(safeCloseStream, 500)
       }
     } catch (error) {
       console.error('[Workflow API] Stream error:', error)
       clearInterval(streamInterval)
+      await safeCloseStream()
     }
   }, 1000) // Update every second
 

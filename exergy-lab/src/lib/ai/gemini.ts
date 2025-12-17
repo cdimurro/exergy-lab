@@ -6,10 +6,11 @@ const apiKey = process.env.GOOGLE_AI_API_KEY || ''
 const genAI = new GoogleGenerativeAI(apiKey)
 
 // Model selection
-export type GeminiModel = 'flash' | 'pro'
+export type GeminiModel = 'flash' | 'flash-lite' | 'pro'
 
 const MODELS: Record<GeminiModel, string> = {
-  flash: 'gemini-1.5-flash', // Fast, good for most tasks
+  'flash-lite': 'gemini-2.0-flash-lite', // Fastest, for dev/testing
+  flash: 'gemini-2.0-flash', // Fast, good for most tasks
   pro: 'gemini-1.5-pro', // Slower, better quality
 }
 
@@ -242,12 +243,9 @@ export async function generateWithTools(
   } = options
 
   try {
-    // Convert tools to Gemini format
-    const geminiTools = tools.map(convertToGeminiFunctionDeclaration)
-
-    const generativeModel: GenerativeModel = genAI.getGenerativeModel({
+    // Build model configuration
+    const modelConfig: any = {
       model: MODELS[model],
-      tools: [{ functionDeclarations: geminiTools }],
       generationConfig: {
         temperature,
         maxOutputTokens,
@@ -255,7 +253,20 @@ export async function generateWithTools(
         topK,
         ...(responseMimeType && { responseMimeType }),
       },
-    })
+    }
+
+    // Only add tools if we have valid function declarations
+    // This prevents the "tool_type required" error when tools array is empty or malformed
+    if (tools && tools.length > 0) {
+      const geminiTools = tools.map(convertToGeminiFunctionDeclaration)
+      // Ensure all tools have required fields
+      const validTools = geminiTools.filter(t => t.name && t.description)
+      if (validTools.length > 0) {
+        modelConfig.tools = [{ functionDeclarations: validTools }]
+      }
+    }
+
+    const generativeModel: GenerativeModel = genAI.getGenerativeModel(modelConfig)
 
     const result = await generativeModel.generateContent(prompt)
     const response = result.response
@@ -304,16 +315,25 @@ export async function continueWithFunctionResponse(
   } = options
 
   try {
-    const geminiTools = tools.map(convertToGeminiFunctionDeclaration)
-
-    const generativeModel: GenerativeModel = genAI.getGenerativeModel({
+    // Build model configuration
+    const modelConfig: any = {
       model: MODELS[model],
-      tools: [{ functionDeclarations: geminiTools }],
       generationConfig: {
         temperature,
         maxOutputTokens,
       },
-    })
+    }
+
+    // Only add tools if we have valid function declarations
+    if (tools && tools.length > 0) {
+      const geminiTools = tools.map(convertToGeminiFunctionDeclaration)
+      const validTools = geminiTools.filter(t => t.name && t.description)
+      if (validTools.length > 0) {
+        modelConfig.tools = [{ functionDeclarations: validTools }]
+      }
+    }
+
+    const generativeModel: GenerativeModel = genAI.getGenerativeModel(modelConfig)
 
     // Build the conversation history
     const history = [

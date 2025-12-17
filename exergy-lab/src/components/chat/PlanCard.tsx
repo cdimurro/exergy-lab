@@ -45,17 +45,17 @@ const PHASE_LABELS: Record<PhaseType, string> = {
 
 function ResearchDetails({ details }: { details: ResearchPlanDetails }) {
   return (
-    <div className="space-y-4 pt-4 border-t border-border/50">
+    <div className="space-y-5 pt-4 border-t border-border/50">
       {/* Search Terms */}
       {details.searchTerms.length > 0 && (
         <div>
-          <h5 className="text-sm font-medium text-muted-foreground mb-2.5 flex items-center gap-2">
-            <Search className="h-4 w-4" />
+          <h5 className="text-base font-medium text-muted-foreground mb-3 flex items-center gap-2">
+            <Search className="h-5 w-5" />
             Search Terms
           </h5>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2.5">
             {details.searchTerms.map((term, idx) => (
-              <Badge key={idx} variant="secondary" className="text-sm font-normal py-1 px-2.5">
+              <Badge key={idx} variant="secondary" className="text-base font-normal py-1.5 px-3">
                 {term}
               </Badge>
             ))}
@@ -66,14 +66,14 @@ function ResearchDetails({ details }: { details: ResearchPlanDetails }) {
       {/* Databases */}
       {details.databases.length > 0 && (
         <div>
-          <h5 className="text-sm font-medium text-muted-foreground mb-2.5">
+          <h5 className="text-base font-medium text-muted-foreground mb-3">
             Databases to Search
           </h5>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2.5">
             {details.databases.map((db, idx) => (
               <span
                 key={idx}
-                className="text-sm bg-foreground/5 px-3 py-1.5 rounded"
+                className="text-base bg-foreground/5 px-3.5 py-2 rounded"
               >
                 {db}
               </span>
@@ -85,12 +85,12 @@ function ResearchDetails({ details }: { details: ResearchPlanDetails }) {
       {/* Key Research Areas */}
       {details.keyAreas.length > 0 && (
         <div>
-          <h5 className="text-sm font-medium text-muted-foreground mb-2.5">
+          <h5 className="text-base font-medium text-muted-foreground mb-3">
             Key Research Areas
           </h5>
-          <ul className="space-y-1.5">
+          <ul className="space-y-2">
             {details.keyAreas.map((area, idx) => (
-              <li key={idx} className="text-base text-foreground flex items-start gap-2">
+              <li key={idx} className="text-lg text-foreground flex items-start gap-2">
                 <span className="text-primary mt-1">•</span>
                 {area}
               </li>
@@ -100,12 +100,12 @@ function ResearchDetails({ details }: { details: ResearchPlanDetails }) {
       )}
 
       {/* Expected Results */}
-      <div className="flex gap-8 text-sm text-muted-foreground">
+      <div className="flex gap-10 text-base text-muted-foreground">
         <span>
-          <strong className="text-foreground text-base">{details.expectedPapers}</strong> papers expected
+          <strong className="text-foreground text-lg">{details.expectedPapers}</strong> papers expected
         </span>
         <span>
-          <strong className="text-foreground text-base">{details.expectedPatents}</strong> patents expected
+          <strong className="text-foreground text-lg">{details.expectedPatents}</strong> patents expected
         </span>
       </div>
     </div>
@@ -116,9 +116,9 @@ function ExperimentDetails({ details }: { details: ExperimentPlanDetails }) {
   const [expandedProtocol, setExpandedProtocol] = React.useState<number | null>(null)
 
   return (
-    <div className="space-y-4 pt-4 border-t border-border/50">
-      <h5 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-        <FlaskConical className="h-4 w-4" />
+    <div className="space-y-5 pt-4 border-t border-border/50">
+      <h5 className="text-base font-medium text-muted-foreground flex items-center gap-2">
+        <FlaskConical className="h-5 w-5" />
         Planned Protocols ({details.protocols.length})
       </h5>
 
@@ -132,19 +132,19 @@ function ExperimentDetails({ details }: { details: ExperimentPlanDetails }) {
             <button
               type="button"
               onClick={() => setExpandedProtocol(expandedProtocol === idx ? null : idx)}
-              className="w-full flex items-center gap-3 p-3 text-left hover:bg-background-elevated/30 transition-colors"
+              className="w-full flex items-center gap-3 p-4 text-left hover:bg-background-elevated/30 transition-colors"
             >
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-medium">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-base font-medium">
                 {idx + 1}
               </span>
               <div className="flex-1 min-w-0">
-                <span className="text-base font-medium truncate block">{protocol.name}</span>
-                <span className="text-sm text-muted-foreground truncate block">
+                <span className="text-lg font-medium truncate block">{protocol.name}</span>
+                <span className="text-base text-muted-foreground truncate block">
                   {protocol.objective}
                 </span>
               </div>
               {protocol.estimatedDuration && (
-                <span className="text-sm text-muted-foreground">{protocol.estimatedDuration}</span>
+                <span className="text-base text-muted-foreground">{protocol.estimatedDuration}</span>
               )}
               {expandedProtocol === idx ? (
                 <ChevronDown className="h-5 w-5 text-muted-foreground" />
@@ -155,16 +155,16 @@ function ExperimentDetails({ details }: { details: ExperimentPlanDetails }) {
 
             {/* Protocol details */}
             {expandedProtocol === idx && (
-              <div className="px-3 pb-3 space-y-4 border-t border-border/50">
+              <div className="px-4 pb-4 space-y-4 border-t border-border/50">
                 {/* Materials */}
                 {protocol.materials.length > 0 && (
-                  <div className="pt-3">
-                    <h6 className="text-sm font-medium text-muted-foreground mb-2">Materials</h6>
-                    <div className="flex flex-wrap gap-2">
+                  <div className="pt-4">
+                    <h6 className="text-base font-medium text-muted-foreground mb-3">Materials</h6>
+                    <div className="flex flex-wrap gap-2.5">
                       {protocol.materials.map((mat, midx) => (
                         <span
                           key={midx}
-                          className="text-sm bg-foreground/5 px-2.5 py-1 rounded"
+                          className="text-base bg-foreground/5 px-3 py-1.5 rounded"
                         >
                           {mat}
                         </span>
@@ -176,12 +176,12 @@ function ExperimentDetails({ details }: { details: ExperimentPlanDetails }) {
                 {/* Equipment */}
                 {protocol.equipment.length > 0 && (
                   <div>
-                    <h6 className="text-sm font-medium text-muted-foreground mb-2">Equipment</h6>
-                    <div className="flex flex-wrap gap-2">
+                    <h6 className="text-base font-medium text-muted-foreground mb-3">Equipment</h6>
+                    <div className="flex flex-wrap gap-2.5">
                       {protocol.equipment.map((equip, eidx) => (
                         <span
                           key={eidx}
-                          className="text-sm bg-foreground/5 px-2.5 py-1 rounded"
+                          className="text-base bg-foreground/5 px-3 py-1.5 rounded"
                         >
                           {equip}
                         </span>
@@ -193,8 +193,8 @@ function ExperimentDetails({ details }: { details: ExperimentPlanDetails }) {
                 {/* Procedure */}
                 {protocol.procedure.length > 0 && (
                   <div>
-                    <h6 className="text-sm font-medium text-muted-foreground mb-2">Procedure</h6>
-                    <ol className="space-y-1.5 text-sm">
+                    <h6 className="text-base font-medium text-muted-foreground mb-3">Procedure</h6>
+                    <ol className="space-y-2 text-base">
                       {protocol.procedure.map((step, sidx) => (
                         <li key={sidx} className="flex gap-2">
                           <span className="text-muted-foreground shrink-0">{sidx + 1}.</span>
@@ -208,11 +208,11 @@ function ExperimentDetails({ details }: { details: ExperimentPlanDetails }) {
                 {/* Metrics */}
                 {protocol.metrics.length > 0 && (
                   <div>
-                    <h6 className="text-sm font-medium text-muted-foreground mb-2">Success Metrics</h6>
-                    <ul className="space-y-1 text-sm">
+                    <h6 className="text-base font-medium text-muted-foreground mb-3">Success Metrics</h6>
+                    <ul className="space-y-2 text-base">
                       {protocol.metrics.map((metric, midx) => (
                         <li key={midx} className="flex items-center gap-2">
-                          <CheckCircle2 className="h-4 w-4 text-primary" />
+                          <CheckCircle2 className="h-5 w-5 text-primary" />
                           {metric}
                         </li>
                       ))}
@@ -222,9 +222,9 @@ function ExperimentDetails({ details }: { details: ExperimentPlanDetails }) {
 
                 {/* Safety Notes */}
                 {protocol.safetyNotes && protocol.safetyNotes.length > 0 && (
-                  <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-lg p-3">
-                    <h6 className="text-sm font-medium text-yellow-600 mb-2">⚠️ Safety Notes</h6>
-                    <ul className="space-y-1 text-sm text-yellow-700">
+                  <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-lg p-4">
+                    <h6 className="text-base font-medium text-yellow-600 mb-3">⚠️ Safety Notes</h6>
+                    <ul className="space-y-2 text-base text-yellow-700">
                       {protocol.safetyNotes.map((note, nidx) => (
                         <li key={nidx}>• {note}</li>
                       ))}
@@ -255,27 +255,27 @@ function SimulationDetails({ details }: { details: SimulationPlanDetails }) {
   }
 
   return (
-    <div className="space-y-4 pt-4 border-t border-border/50">
+    <div className="space-y-5 pt-4 border-t border-border/50">
       {/* Simulation Type */}
-      <div className="flex items-center gap-2">
-        <Cpu className="h-4 w-4 text-muted-foreground" />
-        <h5 className="text-sm font-medium text-muted-foreground">Simulation Method</h5>
-        <Badge variant="secondary" className="text-sm py-1 px-2.5">
+      <div className="flex items-center gap-3">
+        <Cpu className="h-5 w-5 text-muted-foreground" />
+        <h5 className="text-base font-medium text-muted-foreground">Simulation Method</h5>
+        <Badge variant="secondary" className="text-base py-1.5 px-3">
           {simTypeLabels[details.simulationType] || details.simulationType}
         </Badge>
       </div>
 
       {/* System Description */}
       <div>
-        <h5 className="text-sm font-medium text-muted-foreground mb-1.5">System</h5>
-        <p className="text-base">{details.system}</p>
+        <h5 className="text-base font-medium text-muted-foreground mb-2">System</h5>
+        <p className="text-lg">{details.system}</p>
       </div>
 
       {/* Parameters */}
       {Object.keys(details.parameters).length > 0 && (
         <div>
-          <h5 className="text-sm font-medium text-muted-foreground mb-2">Parameters</h5>
-          <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+          <h5 className="text-base font-medium text-muted-foreground mb-3">Parameters</h5>
+          <div className="grid grid-cols-2 gap-x-8 gap-y-3 text-base">
             {Object.entries(details.parameters).map(([key, value]) => (
               <div key={key} className="flex justify-between">
                 <span className="text-muted-foreground capitalize">
@@ -291,11 +291,11 @@ function SimulationDetails({ details }: { details: SimulationPlanDetails }) {
       {/* Expected Outputs */}
       {details.expectedOutputs.length > 0 && (
         <div>
-          <h5 className="text-sm font-medium text-muted-foreground mb-2">Expected Outputs</h5>
-          <ul className="space-y-1 text-sm">
+          <h5 className="text-base font-medium text-muted-foreground mb-3">Expected Outputs</h5>
+          <ul className="space-y-2 text-base">
             {details.expectedOutputs.map((output, idx) => (
               <li key={idx} className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-primary" />
+                <CheckCircle2 className="h-5 w-5 text-primary" />
                 {output}
               </li>
             ))}
@@ -308,21 +308,21 @@ function SimulationDetails({ details }: { details: SimulationPlanDetails }) {
 
 function TEADetails({ details }: { details: TEAPlanDetails }) {
   return (
-    <div className="space-y-4 pt-4 border-t border-border/50">
+    <div className="space-y-5 pt-4 border-t border-border/50">
       {/* Analysis Scope */}
       <div>
-        <h5 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
-          <Calculator className="h-4 w-4" />
+        <h5 className="text-base font-medium text-muted-foreground mb-3 flex items-center gap-2">
+          <Calculator className="h-5 w-5" />
           Analysis Scope
         </h5>
-        <p className="text-base">{details.analysisScope}</p>
+        <p className="text-lg">{details.analysisScope}</p>
       </div>
 
       {/* Key Assumptions */}
       {details.keyAssumptions.length > 0 && (
         <div>
-          <h5 className="text-sm font-medium text-muted-foreground mb-2">Key Assumptions</h5>
-          <ul className="space-y-1 text-sm">
+          <h5 className="text-base font-medium text-muted-foreground mb-3">Key Assumptions</h5>
+          <ul className="space-y-2 text-base">
             {details.keyAssumptions.map((assumption, idx) => (
               <li key={idx} className="flex items-start gap-2">
                 <span className="text-muted-foreground">•</span>
@@ -336,10 +336,10 @@ function TEADetails({ details }: { details: TEAPlanDetails }) {
       {/* Data Requirements */}
       {details.dataRequirements.length > 0 && (
         <div>
-          <h5 className="text-sm font-medium text-muted-foreground mb-2">Data Requirements</h5>
-          <div className="flex flex-wrap gap-2">
+          <h5 className="text-base font-medium text-muted-foreground mb-3">Data Requirements</h5>
+          <div className="flex flex-wrap gap-2.5">
             {details.dataRequirements.map((req, idx) => (
-              <Badge key={idx} variant="secondary" className="text-sm font-normal py-1 px-2.5">
+              <Badge key={idx} variant="secondary" className="text-base font-normal py-1.5 px-3">
                 {req}
               </Badge>
             ))}
@@ -350,12 +350,12 @@ function TEADetails({ details }: { details: TEAPlanDetails }) {
       {/* Output Metrics */}
       {details.outputMetrics.length > 0 && (
         <div>
-          <h5 className="text-sm font-medium text-muted-foreground mb-2">Financial Metrics</h5>
-          <div className="flex flex-wrap gap-2">
+          <h5 className="text-base font-medium text-muted-foreground mb-3">Financial Metrics</h5>
+          <div className="flex flex-wrap gap-2.5">
             {details.outputMetrics.map((metric, idx) => (
               <span
                 key={idx}
-                className="text-sm bg-primary/10 text-primary px-3 py-1.5 rounded font-medium"
+                className="text-base bg-primary/10 text-primary px-4 py-2 rounded font-medium"
               >
                 {metric}
               </span>
@@ -449,32 +449,32 @@ function PhaseItem({
       <button
         type="button"
         onClick={onToggle}
-        className="w-full flex items-center gap-3 p-4 text-left hover:bg-background-elevated/50 transition-colors"
+        className="w-full flex items-center gap-4 p-5 text-left hover:bg-background-elevated/50 transition-colors"
       >
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-foreground/10 text-sm font-medium">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-foreground/10 text-base font-medium">
           {index + 1}
         </span>
         <div className="flex items-center gap-2 text-muted-foreground">
           {PHASE_ICONS[phase.type]}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="font-medium text-base truncate">{phase.title}</span>
+          <div className="flex items-center gap-3">
+            <span className="font-medium text-lg truncate">{phase.title}</span>
             {phase.optional && (
-              <Badge variant="secondary" className="text-sm">
+              <Badge variant="secondary" className="text-base">
                 Optional
               </Badge>
             )}
             {hasModifications && (
-              <Badge variant="default" className="text-sm">
+              <Badge variant="default" className="text-base">
                 Modified
               </Badge>
             )}
           </div>
         </div>
-        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-          <span className="flex items-center gap-1.5">
-            <Clock className="h-4 w-4" />
+        <div className="flex items-center gap-5 text-base text-muted-foreground">
+          <span className="flex items-center gap-2">
+            <Clock className="h-5 w-5" />
             {formatDuration(phase.estimatedDuration)}
           </span>
           {phase.estimatedCost > 0 && (
@@ -490,9 +490,9 @@ function PhaseItem({
 
       {/* Expanded content */}
       {isExpanded && (
-        <div className="px-4 pb-4 space-y-4 border-t border-border">
+        <div className="px-5 pb-5 space-y-5 border-t border-border">
           {/* Description */}
-          <p className="text-base text-muted-foreground pt-4">{phase.description}</p>
+          <p className="text-lg text-muted-foreground pt-5">{phase.description}</p>
 
           {/* AI-Generated Details - Rich content based on phase type */}
           <PhaseDetails phase={phase} />
@@ -500,16 +500,16 @@ function PhaseItem({
           {/* Expected outputs (only show if no details, as details include outputs) */}
           {!phase.details && phase.expectedOutputs.length > 0 && (
             <div>
-              <h5 className="text-sm font-medium text-muted-foreground mb-2">
+              <h5 className="text-base font-medium text-muted-foreground mb-3">
                 Expected Outputs
               </h5>
-              <ul className="space-y-1.5">
+              <ul className="space-y-2">
                 {phase.expectedOutputs.map((output, idx) => (
                   <li
                     key={idx}
-                    className="flex items-center gap-2 text-base text-foreground"
+                    className="flex items-center gap-2 text-lg text-foreground"
                   >
-                    <CheckCircle2 className="h-4 w-4 text-primary" />
+                    <CheckCircle2 className="h-5 w-5 text-primary" />
                     {output}
                   </li>
                 ))}
@@ -520,11 +520,11 @@ function PhaseItem({
           {/* Editable parameters - collapsed by default since details show most info */}
           {phase.canModify && Object.keys(phase.parameters).length > 0 && (
             <details className="group">
-              <summary className="text-sm font-medium text-muted-foreground mb-2 cursor-pointer list-none flex items-center gap-1.5 hover:text-foreground transition-colors">
-                <ChevronRight className="h-4 w-4 transition-transform group-open:rotate-90" />
+              <summary className="text-base font-medium text-muted-foreground mb-3 cursor-pointer list-none flex items-center gap-2 hover:text-foreground transition-colors">
+                <ChevronRight className="h-5 w-5 transition-transform group-open:rotate-90" />
                 Advanced Parameters
               </summary>
-              <div className="space-y-2 pt-2">
+              <div className="space-y-3 pt-3">
                 {Object.entries(phase.parameters).map(([key, value]) => {
                   if (value === undefined || value === null) return null
                   // Skip array/object parameters in the editable section
@@ -539,18 +539,18 @@ function PhaseItem({
                   return (
                     <div
                       key={key}
-                      className="flex items-center justify-between gap-2 text-base"
+                      className="flex items-center justify-between gap-3 text-lg"
                     >
                       <span className="text-muted-foreground capitalize">
                         {key.replace(/([A-Z])/g, ' $1').trim()}
                       </span>
                       {isEditing ? (
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-2">
                           <Input
                             type={typeof value === 'number' ? 'number' : 'text'}
                             value={editValue}
                             onChange={(e) => setEditValue(e.target.value)}
-                            className="h-8 w-28 text-sm"
+                            className="h-10 w-32 text-base"
                             onKeyDown={(e) => {
                               if (e.key === 'Enter') handleEditSave()
                               if (e.key === 'Escape') handleEditCancel()
@@ -561,30 +561,30 @@ function PhaseItem({
                             size="sm"
                             variant="ghost"
                             onClick={handleEditSave}
-                            className="h-8 w-8 p-0"
+                            className="h-10 w-10 p-0"
                           >
-                            <CheckCircle2 className="h-4 w-4" />
+                            <CheckCircle2 className="h-5 w-5" />
                           </Button>
                           <Button
                             size="sm"
                             variant="ghost"
                             onClick={handleEditCancel}
-                            className="h-8 w-8 p-0"
+                            className="h-10 w-10 p-0"
                           >
-                            <X className="h-4 w-4" />
+                            <X className="h-5 w-5" />
                           </Button>
                         </div>
                       ) : (
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-2">
                           <span className="font-medium">{String(displayValue)}</span>
                           {onModify && (
                             <Button
                               size="sm"
                               variant="ghost"
                               onClick={() => handleEditStart(key, displayValue)}
-                              className="h-7 w-7 p-0 opacity-50 hover:opacity-100"
+                              className="h-8 w-8 p-0 opacity-50 hover:opacity-100"
                             >
-                              <Edit2 className="h-4 w-4" />
+                              <Edit2 className="h-5 w-5" />
                             </Button>
                           )}
                         </div>
@@ -638,27 +638,27 @@ export function PlanCard({
   const totalCost = plan.phases.reduce((sum, p) => sum + p.estimatedCost, 0)
 
   return (
-    <Card className="p-5 border-border">
-      <div className="space-y-5">
+    <Card className="p-6 border-border">
+      <div className="space-y-6">
         {/* Header */}
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1">
-            <h4 className="font-semibold text-lg text-foreground">Execution Plan</h4>
-            <p className="text-base text-muted-foreground mt-1.5">{plan.overview}</p>
+            <h4 className="font-semibold text-xl text-foreground">Execution Plan</h4>
+            <p className="text-lg text-muted-foreground mt-2">{plan.overview}</p>
           </div>
-          <div className="text-right text-sm text-muted-foreground space-y-1">
-            <div className="flex items-center gap-1.5 justify-end">
-              <Clock className="h-4 w-4" />
+          <div className="text-right text-base text-muted-foreground space-y-1.5">
+            <div className="flex items-center gap-2 justify-end">
+              <Clock className="h-5 w-5" />
               ~{formatDuration(plan.estimatedDuration)}
             </div>
             {totalCost > 0 && (
-              <div className="font-medium">${totalCost.toFixed(2)}</div>
+              <div className="font-medium text-lg">${totalCost.toFixed(2)}</div>
             )}
           </div>
         </div>
 
         {/* Phases */}
-        <div className="space-y-2">
+        <div className="space-y-3">
           {plan.phases.map((phase, index) => (
             <PhaseItem
               key={phase.id}
@@ -674,18 +674,18 @@ export function PlanCard({
 
         {/* Modifications summary */}
         {modifications.length > 0 && (
-          <div className="text-sm text-muted-foreground pt-3 border-t border-border">
+          <div className="text-base text-muted-foreground pt-4 border-t border-border">
             {modifications.length} parameter{modifications.length !== 1 ? 's' : ''}{' '}
             modified
           </div>
         )}
 
         {/* Actions */}
-        <div className="flex gap-2 pt-2 border-t border-border">
+        <div className="flex gap-3 pt-3 border-t border-border">
           <Button
             onClick={() => onApprove(modifications)}
             disabled={isLoading}
-            className="flex-1"
+            className="flex-1 h-12 text-base"
           >
             {modifications.length > 0 ? 'Approve with Changes' : 'Approve & Execute'}
           </Button>
@@ -693,6 +693,7 @@ export function PlanCard({
             variant="secondary"
             onClick={() => onReject()}
             disabled={isLoading}
+            className="h-12 text-base"
           >
             Start Over
           </Button>

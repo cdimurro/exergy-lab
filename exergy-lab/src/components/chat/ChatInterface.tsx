@@ -98,17 +98,23 @@ export function ChatInterface({
   React.useEffect(() => {
     // Only run once: check both ref and state to prevent double execution
     if (autoStart && initialFormData && !hasAutoStarted && !hasInitializedRef.current) {
+      console.log('[ChatInterface] Auto-start triggered', { autoStart, hasFormData: !!initialFormData, pageType })
       hasInitializedRef.current = true
       setHasAutoStarted(true)
+
       // Build prompt from form data
       const prompt = buildPromptFromFormData(pageType as PageType, initialFormData)
-      // Send the initial message with a small delay to ensure state is settled
+      console.log('[ChatInterface] Built prompt:', prompt.substring(0, 100) + '...')
+
+      // Send the initial message with a slightly longer delay to ensure all state is settled
       const timer = setTimeout(() => {
+        console.log('[ChatInterface] Sending auto-start message')
         sendMessage(prompt, {
           formData: initialFormData,
           domains: initialFormData.domain ? [initialFormData.domain as Domain] : [],
         })
-      }, 0)
+      }, 100) // Increased delay from 0 to 100ms for better reliability
+
       return () => clearTimeout(timer)
     }
   }, [autoStart, initialFormData, hasAutoStarted, pageType, sendMessage])
