@@ -454,18 +454,45 @@ function applyModifications(plan: ExecutionPlan, modifications: PhaseModificatio
 
 /**
  * Build agent query from execution plan
+ * Extracts search keywords instead of passing full workflow instruction text
  */
 function buildAgentQueryFromPlan(plan: ExecutionPlan): string {
-  const phaseDescriptions = plan.phases.map((p) => `- ${p.title}: ${p.description}`).join('\n')
+  const parts: string[] = []
 
-  return `Execute the following workflow plan:
+  // Extract domain if present in overview
+  const domainMatch = plan.overview.match(/Domain:\s*(\w+)/i)
+  if (domainMatch) {
+    parts.push(domainMatch[1])
+  }
 
-${plan.overview}
+  // Extract goal - this contains the actual research topic
+  const goalMatch = plan.overview.match(/Goal:\s*([^.]+)/i)
+  if (goalMatch) {
+    parts.push(goalMatch[1].trim())
+  }
 
-Phases:
-${phaseDescriptions}
+  // Extract research goals if present
+  const researchGoalsMatch = plan.overview.match(/Research Goals:\s*([^.]+(?:\.[^.]+)*)/i)
+  if (researchGoalsMatch) {
+    // Take first research goal as it's usually most relevant
+    const firstGoal = researchGoalsMatch[1].split(',')[0].trim()
+    if (firstGoal && !parts.includes(firstGoal)) {
+      parts.push(firstGoal)
+    }
+  }
 
-Execute each phase in order, using the specified tools and parameters. Provide detailed status updates and results for each phase.`
+  // Fallback: if no structured data found, use first 200 chars of overview
+  if (parts.length === 0) {
+    const cleanOverview = plan.overview
+      .replace(/Domain:|Goal:|Research Goals:|Focus Areas:/gi, '')
+      .trim()
+      .slice(0, 200)
+    parts.push(cleanOverview)
+  }
+
+  const query = parts.join(' ').trim()
+  console.log('[Workflow API] Built search query:', query)
+  return query
 }
 
 /**
