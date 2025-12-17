@@ -96,8 +96,8 @@ export function SearchForm({
             {pageIcon}
           </div>
           <div>
-            <h1 className="text-xl font-semibold text-foreground">{pageTitle}</h1>
-            <p className="text-sm text-muted-foreground">{pageSubtitle}</p>
+            <h1 className="text-2xl font-semibold text-foreground">{pageTitle}</h1>
+            <p className="text-base text-muted-foreground">{pageSubtitle}</p>
           </div>
         </div>
       </div>
@@ -107,7 +107,7 @@ export function SearchForm({
         <form onSubmit={handleSubmit} className="max-w-2xl mx-auto space-y-8">
           {/* Domain Selection */}
           <div className="space-y-3">
-            <label className="text-sm font-medium text-foreground">
+            <label className="text-base font-medium text-foreground">
               Research Domain
             </label>
             <div className="flex flex-wrap gap-2">
@@ -129,7 +129,7 @@ export function SearchForm({
 
           {/* Search Query */}
           <div className="space-y-3">
-            <label className="text-sm font-medium text-foreground">
+            <label className="text-base font-medium text-foreground">
               Search Query
             </label>
             <Textarea
@@ -139,17 +139,17 @@ export function SearchForm({
                 if (!description) setDescription(e.target.value)
               }}
               placeholder="Enter keywords, phrases, or a natural language query..."
-              className="min-h-[100px]"
+              className="min-h-[100px] text-base"
               error={errors.query}
             />
-            <p className="text-xs text-foreground-subtle">
+            <p className="text-sm text-foreground-subtle">
               Try: "perovskite solar cell efficiency 2024" or "solid-state battery thermal management"
             </p>
           </div>
 
           {/* Source Types */}
           <div className="space-y-3">
-            <label className="text-sm font-medium text-foreground">
+            <label className="text-base font-medium text-foreground">
               Source Types
             </label>
             <div className="flex flex-wrap gap-2">
@@ -179,7 +179,7 @@ export function SearchForm({
                 onChange={(e) => setUseDateRange(e.target.checked)}
                 className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
               />
-              <label htmlFor="useDateRange" className="text-sm font-medium text-foreground">
+              <label htmlFor="useDateRange" className="text-base font-medium text-foreground">
                 Filter by date range
               </label>
             </div>
@@ -213,8 +213,8 @@ export function SearchForm({
               <div className="flex gap-3">
                 <Search className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                 <div className="space-y-1">
-                  <p className="text-sm font-medium text-foreground">Search tips</p>
-                  <ul className="text-xs text-foreground-muted space-y-1">
+                  <p className="text-base font-medium text-foreground">Search tips</p>
+                  <ul className="text-sm text-foreground-muted space-y-1">
                     <li>Use specific technical terms for better results</li>
                     <li>Include year ranges for recent research</li>
                     <li>Combine domain keywords with application areas</li>

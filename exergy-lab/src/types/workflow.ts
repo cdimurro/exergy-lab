@@ -181,11 +181,13 @@ export interface PhaseDependency {
 // ============================================================================
 
 export interface WorkflowResults {
+  // Optional summary field for AI-generated overviews
+  summary?: string
   research: ResearchResults
   experiments: ExperimentResults
   simulations: SimulationResults
   tea: TEAResults
-  crossFeatureInsights: Insight[]
+  crossFeatureInsights: Insight[] | string[]  // Can be full Insights or simple strings
 }
 
 export interface ResearchResults {
@@ -376,13 +378,14 @@ export interface PhaseModification {
 // ============================================================================
 
 export interface WorkflowCheckpoint {
-  id: string
-  workflowId: string
+  id?: string
+  workflowId?: string
   phaseId: string
   timestamp: number
-  state: WorkflowState
-  canResumeFrom: boolean
-  ttl: number            // milliseconds (default 24h)
+  state?: WorkflowState
+  canResumeFrom?: boolean
+  ttl?: number            // milliseconds (default 24h)
+  data?: Record<string, any>  // Flexible data for checkpoint state
 }
 
 export interface WorkflowState {

@@ -96,7 +96,7 @@ export function ChatInput({
                 onClick={() => onDomainToggle?.(domain)}
                 disabled={disabled}
                 className={cn(
-                  'px-3 py-1 text-xs font-medium rounded-full border transition-colors',
+                  'px-3 py-1.5 text-sm font-medium rounded-full border transition-colors',
                   isSelected
                     ? 'bg-primary/10 text-primary border-primary/30'
                     : 'bg-background-elevated text-muted-foreground border-border hover:border-foreground/30'
@@ -167,7 +167,7 @@ export function ChatInput({
             placeholder={placeholder}
             disabled={disabled || isLoading}
             className={cn(
-              'min-h-[48px] max-h-[200px] resize-none pr-12',
+              'min-h-[48px] max-h-[200px] resize-none pr-12 text-base',
               'bg-background-elevated border-border'
             )}
             rows={1}
@@ -200,7 +200,7 @@ export function ChatInput({
                 textareaRef.current?.focus()
               }}
               disabled={disabled}
-              className="px-3 py-1 text-xs text-muted-foreground bg-background-elevated border border-border rounded-full hover:border-foreground/30 transition-colors"
+              className="px-3 py-1.5 text-sm text-muted-foreground bg-background-elevated border border-border rounded-full hover:border-foreground/30 transition-colors"
             >
               {action.icon && <span className="mr-1">{action.icon}</span>}
               {action.label}

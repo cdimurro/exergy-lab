@@ -114,8 +114,8 @@ export function DiscoveryForm({
             {pageIcon}
           </div>
           <div>
-            <h1 className="text-xl font-semibold text-foreground">{pageTitle}</h1>
-            <p className="text-sm text-muted-foreground">{pageSubtitle}</p>
+            <h1 className="text-2xl font-semibold text-foreground">{pageTitle}</h1>
+            <p className="text-base text-muted-foreground">{pageSubtitle}</p>
           </div>
         </div>
       </div>
@@ -125,7 +125,7 @@ export function DiscoveryForm({
         <form onSubmit={handleSubmit} className="max-w-2xl mx-auto space-y-8">
           {/* Domain Selection */}
           <div className="space-y-3">
-            <label className="text-sm font-medium text-foreground">
+            <label className="text-base font-medium text-foreground">
               Research Domain
             </label>
             <div className="flex flex-wrap gap-2">
@@ -147,24 +147,24 @@ export function DiscoveryForm({
 
           {/* Description */}
           <div className="space-y-3">
-            <label className="text-sm font-medium text-foreground">
+            <label className="text-base font-medium text-foreground">
               What would you like to discover?
             </label>
             <Textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Describe your research goal in detail. What problem are you trying to solve? What outcomes are you looking for?"
-              className="min-h-[120px]"
+              className="min-h-[120px] text-base"
               error={errors.description}
             />
-            <p className="text-xs text-foreground-subtle">
+            <p className="text-sm text-foreground-subtle">
               Be specific about the technology, application, or challenge you want to explore
             </p>
           </div>
 
           {/* Research Goals */}
           <div className="space-y-3">
-            <label className="text-sm font-medium text-foreground">
+            <label className="text-base font-medium text-foreground">
               Research Goals
             </label>
             <div className="space-y-2">
@@ -175,7 +175,7 @@ export function DiscoveryForm({
                     value={goal}
                     onChange={(e) => handleGoalChange(index, e.target.value)}
                     placeholder={`Goal ${index + 1}`}
-                    className="flex-1 h-10 px-3 rounded-lg border border-border bg-background-elevated text-foreground placeholder:text-foreground-subtle focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    className="flex-1 h-10 px-3 rounded-lg border border-border bg-background-elevated text-base text-foreground placeholder:text-foreground-subtle focus:outline-none focus:ring-2 focus:ring-primary/50"
                   />
                   {goals.length > 1 && (
                     <Button
@@ -208,7 +208,7 @@ export function DiscoveryForm({
 
           {/* Focus Areas */}
           <div className="space-y-3">
-            <label className="text-sm font-medium text-foreground">
+            <label className="text-base font-medium text-foreground">
               Focus Areas (Optional)
             </label>
             <div className="flex flex-wrap gap-2">
@@ -216,14 +216,14 @@ export function DiscoveryForm({
                 <Badge
                   key={area}
                   variant={focusAreas.includes(area) ? 'primary' : 'secondary'}
-                  className="cursor-pointer transition-colors"
+                  className="cursor-pointer transition-colors text-base"
                   onClick={() => handleFocusAreaToggle(area)}
                 >
                   {area}
                 </Badge>
               ))}
             </div>
-            <p className="text-xs text-foreground-subtle">
+            <p className="text-sm text-foreground-subtle">
               Select areas to help focus the AI's research
             </p>
           </div>
@@ -234,8 +234,8 @@ export function DiscoveryForm({
               <div className="flex gap-3">
                 <Sparkles className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                 <div className="space-y-1">
-                  <p className="text-sm font-medium text-foreground">Tips for better results</p>
-                  <ul className="text-xs text-foreground-muted space-y-1">
+                  <p className="text-base font-medium text-foreground">Tips for better results</p>
+                  <ul className="text-sm text-foreground-muted space-y-1">
                     <li>Be specific about the technology or application</li>
                     <li>Mention any constraints (budget, timeline, scale)</li>
                     <li>Include target metrics if you have them</li>

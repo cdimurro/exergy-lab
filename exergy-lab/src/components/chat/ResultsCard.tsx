@@ -393,9 +393,17 @@ export function ResultsCard({
               defaultOpen
             >
               <div className="space-y-2">
-                {results.crossFeatureInsights!.map((insight) => (
-                  <InsightItem key={insight.id} insight={insight} />
-                ))}
+                {results.crossFeatureInsights!.map((insight, idx) => {
+                  // Handle both string and Insight object types
+                  if (typeof insight === 'string') {
+                    return (
+                      <div key={idx} className="p-2 rounded bg-background-surface">
+                        <p className="text-sm">{insight}</p>
+                      </div>
+                    )
+                  }
+                  return <InsightItem key={insight.id} insight={insight} />
+                })}
               </div>
             </Section>
           )}

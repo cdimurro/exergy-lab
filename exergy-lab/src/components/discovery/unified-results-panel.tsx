@@ -146,30 +146,43 @@ function OverviewTab({ results }: { results: WorkflowResults }) {
         <div>
           <h3 className="text-lg font-semibold mb-4">Cross-Feature Insights</h3>
           <div className="space-y-3">
-            {results.crossFeatureInsights.map((insight, idx) => (
-              <Card
-                key={idx}
-                className="p-4 bg-gradient-to-r from-purple-500/5 to-pink-500/5 border-purple-500/20"
-              >
-                <div className="flex items-start gap-3">
-                  <span className="text-2xl">💡</span>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h4 className="font-semibold">{insight.title}</h4>
-                      <Badge variant="secondary" className="text-xs capitalize">
-                        {insight.priority}
-                      </Badge>
+            {results.crossFeatureInsights.map((insight, idx) => {
+              // Handle both string and Insight object types
+              if (typeof insight === 'string') {
+                return (
+                  <Card key={idx} className="p-4 border-border">
+                    <div className="flex items-start gap-3">
+                      <span className="text-2xl">💡</span>
+                      <p className="text-sm text-foreground">{insight}</p>
                     </div>
-                    <p className="text-sm text-muted-foreground mb-2">{insight.description}</p>
-                    {insight.recommendation && (
-                      <p className="text-sm text-purple-600 dark:text-purple-400">
-                        → {insight.recommendation}
-                      </p>
-                    )}
+                  </Card>
+                )
+              }
+              return (
+                <Card
+                  key={idx}
+                  className="p-4 bg-gradient-to-r from-purple-500/5 to-pink-500/5 border-purple-500/20"
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl">💡</span>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <h4 className="font-semibold">{insight.title}</h4>
+                        <Badge variant="secondary" className="text-xs capitalize">
+                          {insight.priority}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-2">{insight.description}</p>
+                      {insight.recommendation && (
+                        <p className="text-sm text-purple-600 dark:text-purple-400">
+                          → {insight.recommendation}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </Card>
-            ))}
+                </Card>
+              )
+            })}
           </div>
         </div>
       )}

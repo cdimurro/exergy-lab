@@ -201,6 +201,7 @@ export interface ChatMessageProps {
   onPlanApprove?: (modifications?: PlanModification[]) => void
   onPlanReject?: (reason?: string) => void
   onPlanModify?: (phaseId: string, parameter: string, value: any) => void
+  onMakeChanges?: (feedback: string) => void
   onRetry?: () => void
   onCancel?: () => void
   isLastMessage?: boolean
@@ -210,7 +211,8 @@ export interface PlanCardProps {
   plan: ExecutionPlan
   onApprove: (modifications?: PlanModification[]) => void
   onReject: (reason?: string) => void
-  onModify: (phaseId: string, parameter: string, value: any) => void
+  onModify?: (phaseId: string, parameter: string, value: any) => void
+  onMakeChanges?: (feedback: string) => void
   modifications?: PlanModification[]
   isLoading?: boolean
 }

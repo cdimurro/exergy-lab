@@ -13,11 +13,11 @@ import type { Domain } from '@/types/discovery'
 import type { PageType } from '@/types/wizard'
 
 const DEFAULT_PLACEHOLDERS: Record<string, string> = {
-  discovery: 'What would you like to discover? Describe your research goal...',
-  search: 'Search for papers, patents, or datasets...',
-  experiments: 'Describe the experiment you want to design...',
-  simulations: 'What system or process would you like to simulate?',
-  tea: 'Describe the technology for techno-economic analysis...',
+  discovery: 'Enter your prompt...',
+  search: 'Enter your prompt...',
+  experiments: 'Enter your prompt...',
+  simulations: 'Enter your prompt...',
+  tea: 'Enter your prompt...',
 }
 
 const DEFAULT_QUICK_ACTIONS: Record<string, QuickAction[]> = {
@@ -80,6 +80,7 @@ export function ChatInterface({
     approvePlan,
     rejectPlan,
     modifyPlan,
+    makeChanges,
     cancelExecution,
     retry,
     modifications,
@@ -179,8 +180,8 @@ export function ChatInterface({
             </div>
           )}
           <div>
-            <h1 className="text-xl font-semibold text-foreground">{pageTitle}</h1>
-            <p className="text-sm text-muted-foreground">{pageSubtitle}</p>
+            <h1 className="text-2xl font-semibold text-foreground">{pageTitle}</h1>
+            <p className="text-base text-muted-foreground">{pageSubtitle}</p>
           </div>
         </div>
       </div>
@@ -192,6 +193,7 @@ export function ChatInterface({
         onPlanApprove={approvePlan}
         onPlanReject={rejectPlan}
         onPlanModify={modifyPlan}
+        onMakeChanges={makeChanges}
         onRetry={retry}
         onCancel={cancelExecution}
       />

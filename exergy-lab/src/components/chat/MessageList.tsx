@@ -11,6 +11,7 @@ interface MessageListProps {
   onPlanApprove?: (modifications?: PlanModification[]) => void
   onPlanReject?: (reason?: string) => void
   onPlanModify?: (phaseId: string, parameter: string, value: any) => void
+  onMakeChanges?: (feedback: string) => void
   onRetry?: () => void
   onCancel?: () => void
 }
@@ -21,6 +22,7 @@ export function MessageList({
   onPlanApprove,
   onPlanReject,
   onPlanModify,
+  onMakeChanges,
   onRetry,
   onCancel,
 }: MessageListProps) {
@@ -94,10 +96,10 @@ export function MessageList({
               />
             </svg>
           </div>
-          <h3 className="text-lg font-medium text-foreground mb-2">
+          <h3 className="text-xl font-medium text-foreground mb-2">
             Start a Conversation
           </h3>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-base text-muted-foreground">
             Describe what you'd like to discover, search, or analyze.
             I'll create a plan and walk you through it step by step.
           </p>
@@ -114,7 +116,7 @@ export function MessageList({
         className
       )}
     >
-      <div className="max-w-3xl mx-auto py-4">
+      <div className="w-full px-2 py-4">
         {messages.map((message, index) => (
           <ChatMessage
             key={message.id}
@@ -122,6 +124,7 @@ export function MessageList({
             onPlanApprove={onPlanApprove}
             onPlanReject={onPlanReject}
             onPlanModify={onPlanModify}
+            onMakeChanges={onMakeChanges}
             onRetry={onRetry}
             onCancel={onCancel}
             isLastMessage={index === messages.length - 1}

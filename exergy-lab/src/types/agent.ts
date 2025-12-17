@@ -67,6 +67,7 @@ export interface AgentResultMetadata {
   iterations: number
   totalToolCalls: number
   confidence: number
+  keyFindings?: string[]  // Key findings from the agent execution
 }
 
 export interface AgentResult {

@@ -5,6 +5,7 @@ import { User, Bot, AlertCircle, RefreshCw } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button, Card } from '@/components/ui'
 import { TypingIndicator } from './TypingIndicator'
+import { PlanCard } from './PlanCard'
 import type { ChatMessageProps } from '@/types/chat'
 
 export function ChatMessage({
@@ -12,6 +13,7 @@ export function ChatMessage({
   onPlanApprove,
   onPlanReject,
   onPlanModify,
+  onMakeChanges,
   onRetry,
   onCancel,
   isLastMessage = false,
@@ -46,7 +48,7 @@ export function ChatMessage({
       <div className="flex gap-3 py-4 justify-end">
         <div className="flex flex-col items-end gap-1 max-w-[80%]">
           <div className="rounded-2xl rounded-tr-sm bg-primary px-4 py-2.5 text-primary-foreground">
-            <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+            <p className="text-base whitespace-pre-wrap">{message.content}</p>
           </div>
           <span className="text-xs text-muted-foreground px-2">{formattedTime}</span>
         </div>
@@ -79,64 +81,19 @@ export function ChatMessage({
           {/* Text content */}
           {message.content && message.contentType !== 'error' && (
             <div className="rounded-2xl rounded-tl-sm bg-background-elevated border border-border px-4 py-2.5">
-              <p className="text-sm text-foreground whitespace-pre-wrap">{message.content}</p>
+              <p className="text-base text-foreground whitespace-pre-wrap">{message.content}</p>
             </div>
           )}
 
-          {/* Plan content - placeholder for PlanCard */}
-          {message.contentType === 'plan' && message.plan && (
-            <div className="plan-card-placeholder">
-              {/* PlanCard will be rendered here */}
-              <Card className="p-4 border-border">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-medium text-sm">Execution Plan</h4>
-                    <span className="text-xs text-muted-foreground">
-                      {message.plan.phases.length} phases
-                    </span>
-                  </div>
-                  <div className="space-y-2">
-                    {message.plan.phases.map((phase, idx) => (
-                      <div
-                        key={phase.id}
-                        className="flex items-start gap-2 text-sm"
-                      >
-                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-foreground/10 text-xs">
-                          {idx + 1}
-                        </span>
-                        <div>
-                          <span className="font-medium">{phase.title}</span>
-                          {phase.description && (
-                            <p className="text-muted-foreground text-xs mt-0.5">
-                              {phase.description}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  {/* Approval buttons */}
-                  {isLastMessage && onPlanApprove && onPlanReject && (
-                    <div className="flex gap-2 pt-3 border-t border-border">
-                      <Button
-                        size="sm"
-                        onClick={() => onPlanApprove()}
-                        className="flex-1"
-                      >
-                        Approve & Execute
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => onPlanReject()}
-                      >
-                        Start Over
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </Card>
-            </div>
+          {/* Plan content - using PlanCard component */}
+          {message.contentType === 'plan' && message.plan && isLastMessage && onPlanApprove && onPlanReject && (
+            <PlanCard
+              plan={message.plan}
+              onApprove={onPlanApprove}
+              onReject={onPlanReject}
+              onModify={onPlanModify}
+              onMakeChanges={onMakeChanges}
+            />
           )}
 
           {/* Execution status - placeholder for ExecutionCard */}
@@ -144,8 +101,8 @@ export function ChatMessage({
             <Card className="p-4 border-border">
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h4 className="font-medium text-sm">Executing</h4>
-                  <span className="text-xs text-muted-foreground">
+                  <h4 className="font-medium text-base">Executing</h4>
+                  <span className="text-sm text-muted-foreground">
                     {message.execution.progress}%
                   </span>
                 </div>
@@ -156,7 +113,7 @@ export function ChatMessage({
                       style={{ width: `${message.execution.progress}%` }}
                     />
                   </div>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-base text-muted-foreground">
                     {message.execution.currentStep}
                   </p>
                 </div>
@@ -174,22 +131,86 @@ export function ChatMessage({
             </Card>
           )}
 
-          {/* Results - placeholder for ResultsCard */}
+          {/* Results - shows workflow results */}
           {message.contentType === 'results' && message.results && (
             <Card className="p-4 border-border">
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h4 className="font-medium text-sm">Results</h4>
-                  <span className="text-xs text-primary">Complete</span>
+                  <h4 className="font-medium text-lg">Results</h4>
+                  <span className="text-sm text-primary font-medium">Complete</span>
                 </div>
-                <div className="text-sm text-muted-foreground">
-                  <p>
-                    Found {message.results.research?.totalSources || 0} sources
-                  </p>
-                  {message.results.crossFeatureInsights && message.results.crossFeatureInsights.length > 0 && (
-                    <p>{message.results.crossFeatureInsights.length} key insights</p>
-                  )}
-                </div>
+
+                {/* Summary */}
+                {message.results.summary && (
+                  <div className="text-base text-foreground whitespace-pre-wrap">
+                    {message.results.summary}
+                  </div>
+                )}
+
+                {/* Research stats */}
+                {message.results.research && (
+                  <div className="flex flex-wrap gap-4 text-base">
+                    <span className="text-muted-foreground">
+                      <strong className="text-foreground">{message.results.research.totalSources || 0}</strong> sources found
+                    </span>
+                    {message.results.research.papers?.length > 0 && (
+                      <span className="text-muted-foreground">
+                        <strong className="text-foreground">{message.results.research.papers.length}</strong> papers
+                      </span>
+                    )}
+                    {message.results.research.patents?.length > 0 && (
+                      <span className="text-muted-foreground">
+                        <strong className="text-foreground">{message.results.research.patents.length}</strong> patents
+                      </span>
+                    )}
+                    {message.results.research.confidenceScore > 0 && (
+                      <span className="text-muted-foreground">
+                        <strong className="text-foreground">{message.results.research.confidenceScore}%</strong> confidence
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* Key insights */}
+                {message.results.crossFeatureInsights && message.results.crossFeatureInsights.length > 0 && (
+                  <div className="space-y-2">
+                    <h5 className="text-sm font-medium text-muted-foreground">Key Insights</h5>
+                    <ul className="space-y-1 text-base">
+                      {message.results.crossFeatureInsights.slice(0, 5).map((insight: any, idx: number) => (
+                        <li key={idx} className="flex gap-2">
+                          <span className="text-primary">•</span>
+                          <span>{typeof insight === 'string' ? insight : insight.title || insight.description}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Top papers preview */}
+                {message.results.research?.papers && message.results.research.papers.length > 0 && (
+                  <div className="space-y-2">
+                    <h5 className="text-sm font-medium text-muted-foreground">Top Papers</h5>
+                    <div className="space-y-2">
+                      {message.results.research.papers.slice(0, 3).map((paper: any, idx: number) => (
+                        <div key={idx} className="p-3 rounded-lg bg-background-elevated border border-border">
+                          <a
+                            href={paper.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-base font-medium text-primary hover:underline"
+                          >
+                            {paper.title}
+                          </a>
+                          {paper.authors?.length > 0 && (
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {paper.authors.slice(0, 3).join(', ')}{paper.authors.length > 3 ? ' et al.' : ''}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </Card>
           )}
@@ -200,9 +221,9 @@ export function ChatMessage({
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-destructive">
                   <AlertCircle className="h-4 w-4" />
-                  <h4 className="font-medium text-sm">Error</h4>
+                  <h4 className="font-medium text-base">Error</h4>
                 </div>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-base text-muted-foreground">
                   {message.error.message}
                 </p>
                 {message.error.retryable && onRetry && (

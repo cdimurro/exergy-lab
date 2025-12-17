@@ -110,8 +110,8 @@ export function TEAForm({
             {pageIcon}
           </div>
           <div>
-            <h1 className="text-xl font-semibold text-foreground">{pageTitle}</h1>
-            <p className="text-sm text-muted-foreground">{pageSubtitle}</p>
+            <h1 className="text-2xl font-semibold text-foreground">{pageTitle}</h1>
+            <p className="text-base text-muted-foreground">{pageSubtitle}</p>
           </div>
         </div>
       </div>
@@ -121,7 +121,7 @@ export function TEAForm({
         <form onSubmit={handleSubmit} className="max-w-2xl mx-auto space-y-8">
           {/* Domain Selection */}
           <div className="space-y-3">
-            <label className="text-sm font-medium text-foreground">
+            <label className="text-base font-medium text-foreground">
               Technology Domain
             </label>
             <div className="flex flex-wrap gap-2">
@@ -143,24 +143,24 @@ export function TEAForm({
 
           {/* Technology Description */}
           <div className="space-y-3">
-            <label className="text-sm font-medium text-foreground">
+            <label className="text-base font-medium text-foreground">
               Technology Description
             </label>
             <Textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Describe the technology for economic analysis. Include key specifications, capacity, and any cost assumptions..."
-              className="min-h-[120px]"
+              className="min-h-[120px] text-base"
               error={errors.description}
             />
-            <p className="text-xs text-foreground-subtle">
+            <p className="text-sm text-foreground-subtle">
               Include capacity, efficiency, and any known cost parameters
             </p>
           </div>
 
           {/* File Upload */}
           <div className="space-y-3">
-            <label className="text-sm font-medium text-foreground">
+            <label className="text-base font-medium text-foreground">
               Supporting Documents (Optional)
             </label>
             <input
@@ -214,7 +214,7 @@ export function TEAForm({
 
           {/* Scale Selection */}
           <div className="space-y-3">
-            <label className="text-sm font-medium text-foreground">
+            <label className="text-base font-medium text-foreground">
               Project Scale
             </label>
             <div className="grid grid-cols-3 gap-3">
@@ -240,7 +240,7 @@ export function TEAForm({
 
           {/* Region */}
           <div className="space-y-3">
-            <label className="text-sm font-medium text-foreground">
+            <label className="text-base font-medium text-foreground">
               Target Region (Optional)
             </label>
             <div className="flex flex-wrap gap-2">
@@ -248,21 +248,21 @@ export function TEAForm({
                 <Badge
                   key={r}
                   variant={region === r ? 'primary' : 'secondary'}
-                  className="cursor-pointer transition-colors"
+                  className="cursor-pointer transition-colors text-base"
                   onClick={() => setRegion(region === r ? '' : r)}
                 >
                   {r}
                 </Badge>
               ))}
             </div>
-            <p className="text-xs text-foreground-subtle">
+            <p className="text-sm text-foreground-subtle">
               Region affects electricity prices, labor costs, and incentives
             </p>
           </div>
 
           {/* Project Lifespan */}
           <div className="space-y-3">
-            <label className="text-sm font-medium text-foreground">
+            <label className="text-base font-medium text-foreground">
               Project Lifespan: {projectLifespan} years
             </label>
             <input
@@ -285,8 +285,8 @@ export function TEAForm({
               <div className="flex gap-3">
                 <Calculator className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                 <div className="space-y-1">
-                  <p className="text-sm font-medium text-foreground">TEA analysis includes</p>
-                  <ul className="text-xs text-foreground-muted space-y-1">
+                  <p className="text-base font-medium text-foreground">TEA analysis includes</p>
+                  <ul className="text-sm text-foreground-muted space-y-1">
                     <li>LCOE (Levelized Cost of Energy)</li>
                     <li>NPV and IRR calculations</li>
                     <li>Sensitivity analysis on key parameters</li>

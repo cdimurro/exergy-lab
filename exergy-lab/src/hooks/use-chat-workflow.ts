@@ -37,6 +37,7 @@ interface UseChatWorkflowReturn {
   approvePlan: (modifications?: PlanModification[]) => Promise<void>
   rejectPlan: (reason?: string) => void
   modifyPlan: (phaseId: string, parameter: string, value: any) => void
+  makeChanges: (feedback: string) => Promise<void>
   cancelExecution: () => void
   retry: () => void
   reset: () => void
@@ -267,10 +268,10 @@ export function useChatWorkflow(options: UseChatWorkflowOptions): UseChatWorkflo
           const data = JSON.parse(event.data)
 
           if (data.type === 'status') {
-            // Update execution status
+            // Update execution status - use overallProgress from SSE
             const status: ExecutionStatus = {
-              phase: data.phase || 'Executing',
-              progress: data.progress || 0,
+              phase: data.currentPhase || data.phase || 'Executing',
+              progress: data.overallProgress || data.progress || 0,
               currentStep: data.message || 'Processing...',
               toolCalls: data.toolCalls || [],
               startedAt: data.startedAt || Date.now(),
@@ -344,6 +345,86 @@ export function useChatWorkflow(options: UseChatWorkflowOptions): UseChatWorkflo
       setModifications([])
     },
     [addMessage]
+  )
+
+  // Make changes to plan with user feedback
+  const makeChanges = useCallback(
+    async (feedback: string) => {
+      if (!feedback.trim()) return
+
+      // Add user message with feedback
+      addMessage(createUserMessage(`Please revise the plan: ${feedback}`))
+
+      // Reset plan state but keep the original query context
+      setWorkflowState('thinking')
+      planRef.current = null
+      workflowIdRef.current = null
+      setModifications([])
+      setIsLoading(true)
+
+      // Add thinking message
+      const thinkingMessage = createAssistantMessage('Revising the plan based on your feedback...')
+      thinkingMessage.isStreaming = true
+      addMessage(thinkingMessage)
+
+      // Re-send with original query + feedback context
+      const originalQuery = lastQueryRef.current || ''
+      const revisedQuery = `${originalQuery}\n\nUser feedback on previous plan:\n${feedback}\n\nPlease generate a revised plan that addresses this feedback.`
+
+      try {
+        const response = await fetch('/api/discovery/workflow', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query: revisedQuery,
+            domains: lastContextRef.current?.domains || [],
+            goals: lastContextRef.current?.goals || [originalQuery],
+            options: {
+              targetAccuracy: 85,
+              includeExperiments: pageType !== 'search',
+              includeSimulations: pageType !== 'search' && pageType !== 'experiments',
+              includeTEA: pageType === 'tea',
+            },
+          }),
+        })
+
+        if (!response.ok) {
+          throw new Error(`Failed to generate revised plan: ${response.statusText}`)
+        }
+
+        const data = await response.json()
+        workflowIdRef.current = data.workflowId
+        planRef.current = data.plan
+
+        updateLastMessage({
+          content: `I've revised the plan based on your feedback. Here's the updated approach:`,
+          contentType: 'plan',
+          plan: data.plan,
+          isStreaming: false,
+        })
+
+        setWorkflowState('awaiting_approval')
+      } catch (error) {
+        const chatError: ChatError = {
+          message: error instanceof Error ? error.message : 'Failed to revise plan',
+          retryable: true,
+        }
+        errorRef.current = chatError
+
+        updateLastMessage({
+          content: chatError.message,
+          contentType: 'error',
+          error: chatError,
+          isStreaming: false,
+        })
+
+        setWorkflowState('error')
+        onError?.(chatError)
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    [pageType, addMessage, updateLastMessage, onError]
   )
 
   // Modify plan parameter
@@ -438,6 +519,7 @@ export function useChatWorkflow(options: UseChatWorkflowOptions): UseChatWorkflo
     approvePlan,
     rejectPlan,
     modifyPlan,
+    makeChanges,
     cancelExecution,
     retry,
     reset,

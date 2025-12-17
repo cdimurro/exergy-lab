@@ -14,7 +14,7 @@ import {
   X,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { Button, Card, Badge, Input } from '@/components/ui'
+import { Button, Card, Badge, Input, Textarea } from '@/components/ui'
 import type { PlanCardProps } from '@/types/chat'
 import type {
   PlanPhase,
@@ -594,6 +594,7 @@ export function PlanCard({
   onApprove,
   onReject,
   onModify,
+  onMakeChanges,
   modifications = [],
   isLoading = false,
 }: PlanCardProps) {
@@ -601,6 +602,10 @@ export function PlanCard({
   const [expandedPhases, setExpandedPhases] = React.useState<Set<string>>(
     () => new Set(plan.phases.map(p => p.id))
   )
+
+  // Feedback state for "Make Changes" flow
+  const [showFeedback, setShowFeedback] = React.useState(false)
+  const [feedbackText, setFeedbackText] = React.useState('')
 
   const togglePhase = (phaseId: string) => {
     setExpandedPhases((prev) => {
@@ -670,22 +675,79 @@ export function PlanCard({
         )}
 
         {/* Actions */}
-        <div className="flex gap-3 pt-3 border-t border-border">
-          <Button
-            onClick={() => onApprove(modifications)}
-            disabled={isLoading}
-            className="flex-1 h-12 text-base"
-          >
-            {modifications.length > 0 ? 'Approve with Changes' : 'Approve & Execute'}
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={() => onReject()}
-            disabled={isLoading}
-            className="h-12 text-base"
-          >
-            Start Over
-          </Button>
+        <div className="pt-3 border-t border-border">
+          {showFeedback ? (
+            // Feedback mode - show textarea and submit/cancel
+            <div className="space-y-4">
+              <div>
+                <label className="block text-base font-medium text-foreground mb-2">
+                  What changes would you like?
+                </label>
+                <Textarea
+                  placeholder="Describe what you'd like me to change about the plan..."
+                  value={feedbackText}
+                  onChange={(e) => setFeedbackText(e.target.value)}
+                  className="min-h-[100px] text-base resize-none"
+                  autoFocus
+                />
+              </div>
+              <div className="flex gap-3">
+                <Button
+                  onClick={() => {
+                    if (feedbackText.trim() && onMakeChanges) {
+                      onMakeChanges(feedbackText.trim())
+                      setShowFeedback(false)
+                      setFeedbackText('')
+                    }
+                  }}
+                  disabled={!feedbackText.trim() || isLoading}
+                  className="flex-1 h-12 text-base"
+                >
+                  Regenerate Plan
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowFeedback(false)
+                    setFeedbackText('')
+                  }}
+                  disabled={isLoading}
+                  className="h-12 text-base"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          ) : (
+            // Normal mode - show 3 action buttons
+            <div className="flex gap-3">
+              <Button
+                onClick={() => onApprove(modifications)}
+                disabled={isLoading}
+                className="flex-1 h-12 text-base"
+              >
+                {modifications.length > 0 ? 'Accept with Changes' : 'Accept Plan'}
+              </Button>
+              {onMakeChanges && (
+                <Button
+                  variant="outline"
+                  onClick={() => setShowFeedback(true)}
+                  disabled={isLoading}
+                  className="flex-1 h-12 text-base"
+                >
+                  Make Changes
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                onClick={() => onReject()}
+                disabled={isLoading}
+                className="h-12 text-base"
+              >
+                Start Over
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </Card>

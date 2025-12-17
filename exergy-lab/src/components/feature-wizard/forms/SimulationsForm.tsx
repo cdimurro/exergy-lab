@@ -115,8 +115,8 @@ export function SimulationsForm({
             {pageIcon}
           </div>
           <div>
-            <h1 className="text-xl font-semibold text-foreground">{pageTitle}</h1>
-            <p className="text-sm text-muted-foreground">{pageSubtitle}</p>
+            <h1 className="text-2xl font-semibold text-foreground">{pageTitle}</h1>
+            <p className="text-base text-muted-foreground">{pageSubtitle}</p>
           </div>
         </div>
       </div>
@@ -126,7 +126,7 @@ export function SimulationsForm({
         <form onSubmit={handleSubmit} className="max-w-2xl mx-auto space-y-8">
           {/* Domain Selection */}
           <div className="space-y-3">
-            <label className="text-sm font-medium text-foreground">
+            <label className="text-base font-medium text-foreground">
               Simulation Domain
             </label>
             <div className="flex flex-wrap gap-2">
@@ -148,7 +148,7 @@ export function SimulationsForm({
 
           {/* System Type */}
           <div className="space-y-3">
-            <label className="text-sm font-medium text-foreground">
+            <label className="text-base font-medium text-foreground">
               System Type (Optional)
             </label>
             <div className="flex flex-wrap gap-2">
@@ -167,24 +167,24 @@ export function SimulationsForm({
 
           {/* System Description */}
           <div className="space-y-3">
-            <label className="text-sm font-medium text-foreground">
+            <label className="text-base font-medium text-foreground">
               System Description
             </label>
             <Textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Describe the system you want to simulate. Include key parameters, operating conditions, and what metrics you want to analyze..."
-              className="min-h-[120px]"
+              className="min-h-[120px] text-base"
               error={errors.description}
             />
-            <p className="text-xs text-foreground-subtle">
+            <p className="text-sm text-foreground-subtle">
               Include dimensions, materials, operating conditions, and target outputs
             </p>
           </div>
 
           {/* Simulation Tier */}
           <div className="space-y-3">
-            <label className="text-sm font-medium text-foreground">
+            <label className="text-base font-medium text-foreground">
               Simulation Tier
             </label>
             <div className="grid gap-3">
@@ -250,8 +250,8 @@ export function SimulationsForm({
               <div className="flex gap-3">
                 <Cpu className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                 <div className="space-y-1">
-                  <p className="text-sm font-medium text-foreground">Simulation tips</p>
-                  <ul className="text-xs text-foreground-muted space-y-1">
+                  <p className="text-base font-medium text-foreground">Simulation tips</p>
+                  <ul className="text-sm text-foreground-muted space-y-1">
                     <li>Start with Browser tier for quick feasibility checks</li>
                     <li>Use Cloud GPU for detailed parameter sweeps</li>
                     <li>Include boundary conditions and constraints</li>
