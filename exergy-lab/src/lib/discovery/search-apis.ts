@@ -39,22 +39,36 @@ export class SearchOrchestrator {
     console.log('[Discovery] Starting parallel search across all APIs...')
 
     // Execute all searches in parallel
-    const [papersResult, patentsResult, preprintsResult, newsResult] = await Promise.allSettled([
+    const [
+      semanticScholarResult,
+      openAlexResult,
+      patentsResult,
+      preprintsResult,
+      newsResult
+    ] = await Promise.allSettled([
       this.searchSemanticScholar(prompt.description, prompt.domains),
+      this.searchOpenAlex(prompt.description, prompt.domains),
       this.searchUSPTO(prompt.description),
       this.searchArxiv(prompt.domains, prompt.description),
       this.searchNews(prompt.description)
     ])
 
     // Extract successful results
-    const papers = papersResult.status === 'fulfilled' ? papersResult.value : []
+    const semanticScholarPapers = semanticScholarResult.status === 'fulfilled' ? semanticScholarResult.value : []
+    const openAlexPapers = openAlexResult.status === 'fulfilled' ? openAlexResult.value : []
     const patents = patentsResult.status === 'fulfilled' ? patentsResult.value : []
     const preprints = preprintsResult.status === 'fulfilled' ? preprintsResult.value : []
     const news = newsResult.status === 'fulfilled' ? newsResult.value : []
 
+    // Combine papers from both sources (dedupe by title similarity)
+    const allPapers = this.deduplicatePapers([...semanticScholarPapers, ...openAlexPapers])
+
     // Log any failures
-    if (papersResult.status === 'rejected') {
-      console.error('[Discovery] Semantic Scholar search failed:', papersResult.reason)
+    if (semanticScholarResult.status === 'rejected') {
+      console.error('[Discovery] Semantic Scholar search failed:', semanticScholarResult.reason)
+    }
+    if (openAlexResult.status === 'rejected') {
+      console.error('[Discovery] OpenAlex search failed:', openAlexResult.reason)
     }
     if (patentsResult.status === 'rejected') {
       console.error('[Discovery] USPTO search failed:', patentsResult.reason)
@@ -67,14 +81,14 @@ export class SearchOrchestrator {
     }
 
     // Combine all sources
-    const allSources = [...papers, ...patents, ...preprints, ...news]
+    const allSources = [...allPapers, ...patents, ...preprints, ...news]
 
     // Sort by relevance score
     allSources.sort((a, b) => b.relevanceScore - a.relevanceScore)
 
     const results: SearchResults = {
       totalSources: allSources.length,
-      papers: papers.length,
+      papers: allPapers.length,
       patents: patents.length,
       reports: preprints.length,
       news: news.length,
@@ -88,16 +102,47 @@ export class SearchOrchestrator {
   }
 
   /**
+   * Deduplicate papers by title similarity
+   */
+  private deduplicatePapers(papers: Source[]): Source[] {
+    const seen = new Map<string, Source>()
+
+    for (const paper of papers) {
+      // Normalize title for comparison
+      const normalizedTitle = paper.title.toLowerCase().replace(/[^a-z0-9]/g, '')
+
+      if (!seen.has(normalizedTitle)) {
+        seen.set(normalizedTitle, paper)
+      } else {
+        // Keep the one with more info (higher citation count or abstract)
+        const existing = seen.get(normalizedTitle)!
+        if ((paper.citationCount || 0) > (existing.citationCount || 0) ||
+            (paper.abstract?.length || 0) > (existing.abstract?.length || 0)) {
+          seen.set(normalizedTitle, paper)
+        }
+      }
+    }
+
+    return Array.from(seen.values())
+  }
+
+  /**
    * Semantic Scholar - Academic Papers
    * API: https://api.semanticscholar.org/graph/v1/paper/search
-   * Rate Limit: 100 requests/5 minutes
+   * Rate Limit: 100 requests/5 minutes (1 request/3 seconds recommended)
    */
   private async searchSemanticScholar(query: string, domains: string[]): Promise<Source[]> {
     try {
+      // Semantic Scholar works best with keyword queries, not questions
+      // Extract key terms if query looks like a question
+      const cleanQuery = this.cleanSearchQuery(query)
+
       const url = `https://api.semanticscholar.org/graph/v1/paper/search?` +
-        `query=${encodeURIComponent(query)}` +
+        `query=${encodeURIComponent(cleanQuery)}` +
         `&fields=paperId,title,authors,abstract,citationCount,year,url,publicationDate` +
         `&limit=20`
+
+      console.log('[Semantic Scholar] Searching:', cleanQuery)
 
       const response = await fetch(url, {
         headers: {
@@ -106,14 +151,19 @@ export class SearchOrchestrator {
       })
 
       if (!response.ok) {
-        throw new Error(`Semantic Scholar API error: ${response.statusText}`)
+        const errorText = await response.text().catch(() => 'Unknown error')
+        console.error(`[Semantic Scholar] HTTP ${response.status}: ${errorText}`)
+        throw new Error(`Semantic Scholar API error: HTTP ${response.status}`)
       }
 
       const data = await response.json()
 
       if (!data.data || !Array.isArray(data.data)) {
+        console.log('[Semantic Scholar] No results found')
         return []
       }
+
+      console.log(`[Semantic Scholar] Found ${data.data.length} papers`)
 
       return data.data.map((paper: any) => ({
         id: paper.paperId || `ss_${Date.now()}_${Math.random()}`,
@@ -130,6 +180,100 @@ export class SearchOrchestrator {
       console.error('[Semantic Scholar] Search failed:', error)
       throw error
     }
+  }
+
+  /**
+   * OpenAlex - Open Academic Graph (free, no API key required)
+   * API: https://api.openalex.org/works
+   * Rate Limit: 100,000 requests/day, 10 requests/second
+   */
+  private async searchOpenAlex(query: string, domains: string[]): Promise<Source[]> {
+    try {
+      const cleanQuery = this.cleanSearchQuery(query)
+
+      const url = `https://api.openalex.org/works?` +
+        `search=${encodeURIComponent(cleanQuery)}` +
+        `&per_page=20` +
+        `&sort=relevance_score:desc` +
+        `&mailto=exergy-lab@example.com` // Polite pool
+
+      console.log('[OpenAlex] Searching:', cleanQuery)
+
+      const response = await fetch(url, {
+        headers: {
+          'Accept': 'application/json'
+        }
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => 'Unknown error')
+        console.error(`[OpenAlex] HTTP ${response.status}: ${errorText}`)
+        throw new Error(`OpenAlex API error: HTTP ${response.status}`)
+      }
+
+      const data = await response.json()
+
+      if (!data.results || !Array.isArray(data.results)) {
+        console.log('[OpenAlex] No results found')
+        return []
+      }
+
+      console.log(`[OpenAlex] Found ${data.results.length} papers`)
+
+      return data.results.map((work: any) => ({
+        id: work.id || `oa_${Date.now()}_${Math.random()}`,
+        type: 'academic-paper' as const,
+        title: work.title || 'Untitled',
+        authors: work.authorships?.map((a: any) => a.author?.display_name).filter(Boolean) || [],
+        abstract: work.abstract_inverted_index ? this.reconstructAbstract(work.abstract_inverted_index) : '',
+        url: work.doi ? `https://doi.org/${work.doi.replace('https://doi.org/', '')}` : work.id,
+        publishedDate: work.publication_date || `${work.publication_year || 'Unknown'}`,
+        citationCount: work.cited_by_count || 0,
+        relevanceScore: this.calculateRelevanceScore({
+          title: work.title,
+          abstract: '',
+          year: work.publication_year,
+          citationCount: work.cited_by_count
+        }, query, domains)
+      }))
+    } catch (error) {
+      console.error('[OpenAlex] Search failed:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Reconstruct abstract from OpenAlex inverted index format
+   */
+  private reconstructAbstract(invertedIndex: Record<string, number[]>): string {
+    if (!invertedIndex) return ''
+
+    const words: [string, number][] = []
+    for (const [word, positions] of Object.entries(invertedIndex)) {
+      for (const pos of positions) {
+        words.push([word, pos])
+      }
+    }
+    words.sort((a, b) => a[1] - b[1])
+    return words.map(w => w[0]).join(' ').slice(0, 500)
+  }
+
+  /**
+   * Clean and optimize search query for academic APIs
+   */
+  private cleanSearchQuery(query: string): string {
+    // Remove question words and make it more keyword-like
+    let clean = query
+      .replace(/^(how|what|why|when|where|can|do|does|is|are|will)\s+(we|you|i|they|one)?\s*/gi, '')
+      .replace(/\?+$/g, '')
+      .trim()
+
+    // If still too long, take first 100 chars
+    if (clean.length > 100) {
+      clean = clean.slice(0, 100).trim()
+    }
+
+    return clean || query
   }
 
   /**
