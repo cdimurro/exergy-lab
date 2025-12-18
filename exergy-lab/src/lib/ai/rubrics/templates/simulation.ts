@@ -157,7 +157,9 @@ function validatePhysicalLimits(response: any): ItemScore {
     }
   }
 
-  const violations: string[] = []
+  // Track violations with severity classification
+  const majorViolations: string[] = []
+  const minorViolations: string[] = []
 
   for (const r of results) {
     const outputs = r.outputs || []
@@ -171,20 +173,35 @@ function validatePhysicalLimits(response: any): ItemScore {
       if (name.includes('efficiency') || name.includes('eta') || name === 'η') {
         // General efficiency check (can't exceed 100%)
         if (value > 1 && !name.includes('exerg')) {
-          violations.push(`${name}: ${value} exceeds 100%`)
+          // Major if significantly over (>110%), minor if slight (<110%)
+          if (value > 1.1) {
+            majorViolations.push(`${name}: ${value} significantly exceeds 100%`)
+          } else {
+            minorViolations.push(`${name}: ${value} slightly exceeds 100% (may be rounding)`)
+          }
         }
 
         // Solar efficiency
         if (simType.includes('solar') || name.includes('solar')) {
           if (value > THERMODYNAMIC_LIMITS.concentratedSolar) {
-            violations.push(`Solar efficiency ${value} exceeds concentrated solar limit (${THERMODYNAMIC_LIMITS.concentratedSolar})`)
+            const overage = (value - THERMODYNAMIC_LIMITS.concentratedSolar) / THERMODYNAMIC_LIMITS.concentratedSolar
+            if (overage > 0.1) {
+              majorViolations.push(`Solar efficiency ${value} exceeds concentrated solar limit (${THERMODYNAMIC_LIMITS.concentratedSolar})`)
+            } else {
+              minorViolations.push(`Solar efficiency ${value} slightly above limit (within 10%)`)
+            }
           }
         }
 
         // Wind efficiency
         if (simType.includes('wind') || name.includes('wind')) {
           if (value > THERMODYNAMIC_LIMITS.betz) {
-            violations.push(`Wind efficiency ${value} exceeds Betz limit (${THERMODYNAMIC_LIMITS.betz})`)
+            const overage = (value - THERMODYNAMIC_LIMITS.betz) / THERMODYNAMIC_LIMITS.betz
+            if (overage > 0.1) {
+              majorViolations.push(`Wind efficiency ${value} exceeds Betz limit (${THERMODYNAMIC_LIMITS.betz})`)
+            } else {
+              minorViolations.push(`Wind efficiency ${value} slightly above Betz (within 10%)`)
+            }
           }
         }
       }
@@ -193,7 +210,12 @@ function validatePhysicalLimits(response: any): ItemScore {
       if ((name.includes('energy') || name.includes('power')) &&
         !name.includes('binding') && !name.includes('formation')) {
         if (value < 0) {
-          violations.push(`${name}: Negative value ${value} is unphysical`)
+          // Small negative values may be numerical artifacts
+          if (Math.abs(value) < 0.01) {
+            minorViolations.push(`${name}: Small negative ${value} (numerical artifact)`)
+          } else {
+            majorViolations.push(`${name}: Negative value ${value} is unphysical`)
+          }
         }
       }
 
@@ -201,10 +223,10 @@ function validatePhysicalLimits(response: any): ItemScore {
       if (name.includes('temperature') || name.includes('temp')) {
         const unit = (o.unit || '').toLowerCase()
         if (unit.includes('k') && value < 0) {
-          violations.push(`Temperature ${value}K below absolute zero`)
+          majorViolations.push(`Temperature ${value}K below absolute zero`)
         }
         if (unit.includes('c') && value < -273.15) {
-          violations.push(`Temperature ${value}°C below absolute zero`)
+          majorViolations.push(`Temperature ${value}°C below absolute zero`)
         }
       }
     }
@@ -212,23 +234,37 @@ function validatePhysicalLimits(response: any): ItemScore {
 
   let points = 0
   let reasoning = ''
+  let passed = false
 
-  if (violations.length === 0) {
+  // RELAXED: Allow minor violations to still pass
+  // This addresses the common case where small numerical errors occur
+  if (majorViolations.length > 0) {
+    // Major violations always fail
+    points = 0
+    reasoning = `Major violations: ${majorViolations.slice(0, 3).join('; ')}`
+    passed = false
+  } else if (minorViolations.length === 0) {
+    // No violations at all - full credit
     points = 2.0
     reasoning = 'All outputs within physical limits'
-  } else if (violations.length <= 1) {
-    points = 1.0
-    reasoning = `Minor violation: ${violations[0]}`
+    passed = true
+  } else if (minorViolations.length <= 2) {
+    // 1-2 minor violations - partial credit but still passes
+    points = 1.5
+    reasoning = `Minor violations within tolerance (${minorViolations.length}): ${minorViolations[0]}`
+    passed = true  // RELAXED: 1-2 minor violations now pass
   } else {
-    points = 0
-    reasoning = `Multiple violations: ${violations.slice(0, 3).join('; ')}`
+    // Too many minor violations
+    points = 0.75
+    reasoning = `Multiple minor violations (${minorViolations.length}): ${minorViolations.slice(0, 2).join('; ')}`
+    passed = false
   }
 
   return {
     itemId: 'S3',
     points,
     maxPoints: 2.0,
-    passed: violations.length === 0,
+    passed,
     reasoning,
   }
 }

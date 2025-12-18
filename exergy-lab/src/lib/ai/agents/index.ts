@@ -64,6 +64,8 @@ export type {
   IterationCallback,
   ThinkingEvent,
   ThinkingCallback,
+  PhaseFailedEvent,
+  PhaseFailedCallback,
 } from './discovery-orchestrator'
 
 // Re-export key types from rubrics for convenience

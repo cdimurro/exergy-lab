@@ -22,6 +22,16 @@ export { RubricScoreCard, CompactRubricSummary, RubricProgressBar } from './Rubr
 // Main cards
 export { FrontierScienceProgressCard, MinimalProgress } from './FrontierScienceProgressCard'
 export { FrontierScienceResultsCard, CompactResultsSummary } from './FrontierScienceResultsCard'
+export { PartialResultsCard } from './PartialResultsCard'
+
+// Multi-benchmark validation
+export { MultiBenchmarkCard } from './MultiBenchmarkCard'
+
+// User feedback
+export { FeedbackPanel, ItemFeedback, QuickRating } from './FeedbackPanel'
+
+// Recommendations
+export { RecommendationsList, CompactRecommendations } from './RecommendationsList'
 
 // Configuration panel
 export { DiscoveryConfigPanel } from './DiscoveryConfigPanel'

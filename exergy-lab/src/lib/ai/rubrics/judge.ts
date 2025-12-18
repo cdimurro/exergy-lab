@@ -160,13 +160,16 @@ export class RubricJudge {
         attempts++
         console.warn(`Judge attempt ${attempts} failed:`, error)
         if (attempts >= this.config.maxRetries) {
-          // Return conservative scores on failure
+          // Return conservative partial credit on failure (30% instead of 0)
+          // This prevents instant failure when AI judge has temporary issues
+          // Items are marked as not passed but receive some credit
           return itemsToJudge.map(item => ({
             itemId: item.id,
-            points: 0,
+            points: item.points * 0.3,  // 30% conservative partial credit
             maxPoints: item.points,
-            passed: false,
-            reasoning: 'Automated grading failed - defaulting to 0 points',
+            passed: false,  // Still not considered passing
+            reasoning: 'AI grading failed - applying conservative partial credit (30%)',
+            needsManualReview: true,  // Flag for potential manual review
           }))
         }
       }

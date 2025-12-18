@@ -11,10 +11,8 @@ import { cn } from '@/lib/utils'
 import type { DiscoveryPhase, PhaseProgressDisplay } from '@/types/frontierscience'
 import { getPhaseMetadata } from '@/types/frontierscience'
 import { PhaseTimeline } from './PhaseTimeline'
-import { IterationBadge, IterationDots } from './IterationBadge'
-import { ThinkingIndicator, PulsingBrain } from './ThinkingIndicator'
-import { RubricScoreCard, RubricProgressBar } from './RubricScoreCard'
-import { QualityBadge } from './QualityBadge'
+import { IterationBadge } from './IterationBadge'
+import { PulsingBrain } from './ThinkingIndicator'
 import { PhaseResultsDropdown, generatePhaseKeyFindings } from './PhaseResultsDropdown'
 import { LiveActivityFeed, type ActivityItem } from './LiveActivityFeed'
 import { X, Clock, Zap, ChevronDown, ChevronUp, Activity } from 'lucide-react'
@@ -43,7 +41,6 @@ export function FrontierScienceProgressCard({
   onCancel,
   className,
 }: FrontierScienceProgressCardProps) {
-  const [showRubricDetails, setShowRubricDetails] = useState(false)
   const [selectedPhase, setSelectedPhase] = useState<DiscoveryPhase | null>(null)
   const [lastCompletedPhase, setLastCompletedPhase] = useState<DiscoveryPhase | null>(null)
   const [showActivityFeed, setShowActivityFeed] = useState(true)
@@ -247,47 +244,19 @@ export function FrontierScienceProgressCard({
               {displayMeta.description}
             </p>
 
-            {/* === RUNNING PHASE: Show Real-Time Updates === */}
+            {/* === RUNNING PHASE: Minimal info since Live Activity Feed shows details === */}
             {isRunning && (
-              <div className="space-y-4">
-                {/* Iteration Progress */}
-                <div className="flex items-center justify-between bg-background/60 rounded-lg p-3 border border-border/50">
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-medium text-foreground">Iteration Progress</span>
-                    <IterationBadge
-                      current={displayProgress.currentIteration}
-                      max={displayProgress.maxIterations}
-                      score={displayProgress.score}
-                      isActive={true}
-                      size="sm"
-                    />
-                  </div>
-                  <IterationDots
-                    current={displayProgress.currentIteration}
-                    max={displayProgress.maxIterations}
-                  />
-                </div>
-
-                {/* Thinking indicator - Real-time status */}
-                {thinkingMessage && (
-                  <ThinkingIndicator
-                    message={thinkingMessage}
-                    phase={displayMeta?.shortName}
-                    isActive={true}
-                    variant="default"
-                  />
-                )}
-
-                {/* Current rubric score if available during iteration */}
-                {displayProgress.judgeResult && (
-                  <div className="mt-2">
-                    <RubricScoreCard
-                      judgeResult={displayProgress.judgeResult}
-                      showDetails={showRubricDetails}
-                      initialExpanded={false}
-                    />
-                  </div>
-                )}
+              <div className="flex items-center gap-3 bg-background/60 rounded-lg p-3 border border-border/50">
+                <span className="text-sm text-muted-foreground">
+                  See Live Activity Feed above for real-time updates
+                </span>
+                <IterationBadge
+                  current={displayProgress.currentIteration}
+                  max={displayProgress.maxIterations}
+                  score={displayProgress.score}
+                  isActive={true}
+                  size="sm"
+                />
               </div>
             )}
 

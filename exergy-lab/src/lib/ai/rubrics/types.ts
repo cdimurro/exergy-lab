@@ -62,6 +62,7 @@ export interface ItemScore {
   passed: boolean
   reasoning: string
   partialCredits?: { condition: string; points: number; earned: boolean }[]
+  needsManualReview?: boolean // Flag when AI judging failed and partial credit was applied
 }
 
 // ============================================================================
@@ -213,6 +214,29 @@ export interface DiscoveryResult {
   startTime: Date
   endTime: Date
   totalDurationMs: number
+}
+
+// ============================================================================
+// Graceful Degradation Types
+// ============================================================================
+
+export type FailureMode = 'none' | 'partial' | 'critical'
+
+export interface RecoveryRecommendation {
+  phase: DiscoveryPhase
+  issue: string
+  suggestion: string
+  priority: 'high' | 'medium' | 'low'
+  actionable: boolean
+}
+
+export interface PartialDiscoveryResult extends DiscoveryResult {
+  failureMode: FailureMode
+  completedPhases: DiscoveryPhase[]
+  failedPhases: DiscoveryPhase[]
+  skippedPhases: DiscoveryPhase[]
+  degradationReason?: string
+  recoveryRecommendations: RecoveryRecommendation[]
 }
 
 export interface PublicationPackage {

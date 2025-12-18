@@ -23,6 +23,8 @@ import type {
   UseFrontierScienceWorkflowReturn,
   SSEEvent,
   ALL_PHASES,
+  PartialDiscoveryResultSummary,
+  RecoveryRecommendation,
 } from '@/types/frontierscience'
 import { DebugContext } from '@/hooks/use-debug-capture'
 import type { ActivityItem } from '@/components/discovery/LiveActivityFeed'
@@ -94,6 +96,10 @@ export function useFrontierScienceWorkflow(): UseFrontierScienceWorkflowReturn {
 
   // Activity feed state for real-time updates
   const [activities, setActivities] = useState<ActivityItem[]>([])
+
+  // Partial results state (graceful degradation)
+  const [partialResult, setPartialResult] = useState<PartialDiscoveryResultSummary | null>(null)
+  const [recoveryRecommendations, setRecoveryRecommendations] = useState<RecoveryRecommendation[]>([])
 
   // Pause/Resume state
   const [isPaused, setIsPaused] = useState(false)
@@ -271,6 +277,76 @@ export function useFrontierScienceWorkflow(): UseFrontierScienceWorkflowReturn {
         setElapsedTime(event.elapsed)
         break
       }
+
+      case 'phase_failed': {
+        const { phase, score, threshold, failedCriteria, continuingWithDegradation } = event
+        console.log('[FrontierScience UI] Phase failed:', { phase, score, threshold, continuingWithDegradation })
+
+        // Create activity for phase failure
+        const failActivity: ActivityItem = {
+          id: `phase-failed-${phase}-${Date.now()}`,
+          timestamp: Date.now(),
+          type: 'phase_failed' as any,
+          phase,
+          message: continuingWithDegradation
+            ? `${phase} scored ${score.toFixed(1)}/10 (below ${threshold} threshold). Continuing with partial results.`
+            : `${phase} failed with score ${score.toFixed(1)}/10`,
+          score,
+          passed: false,
+          details: failedCriteria.map(c => `${c.id}: ${c.issue}`),
+        }
+        setActivities(prev => [...prev, failActivity])
+
+        // Update phase progress
+        setPhaseProgress(prev => {
+          const newMap = new Map(prev)
+          const existing = newMap.get(phase)
+          if (existing) {
+            newMap.set(phase, {
+              ...existing,
+              status: 'failed',
+              score,
+              passed: false,
+            })
+          }
+          return newMap
+        })
+        break
+      }
+
+      case 'partial_complete': {
+        setStatus('completed_partial')
+        const { result: partialResultData, recommendations } = event
+
+        // Set partial result
+        setPartialResult(partialResultData)
+        setRecoveryRecommendations(recommendations)
+
+        // Also set regular result for compatibility
+        setResult({
+          id: partialResultData.id,
+          query: partialResultData.query,
+          domain: partialResultData.domain,
+          phases: partialResultData.phases.map((p: any) => ({
+            phase: p.phase,
+            finalOutput: p.finalOutput,
+            finalScore: p.finalScore,
+            passed: p.passed,
+            iterations: p.iterations || [],
+            durationMs: p.durationMs || 0,
+          })),
+          overallScore: partialResultData.overallScore,
+          discoveryQuality: partialResultData.discoveryQuality,
+          recommendations: partialResultData.recommendations,
+          startTime: partialResultData.startTime ? new Date(partialResultData.startTime) : new Date(),
+          endTime: partialResultData.endTime ? new Date(partialResultData.endTime) : new Date(),
+          totalDurationMs: partialResultData.totalDuration,
+        } as DiscoveryResult)
+
+        setThinkingMessage(null)
+        cleanup()
+        break
+      }
     }
   }, [cleanup, debugContext])
 
@@ -283,6 +359,8 @@ export function useFrontierScienceWorkflow(): UseFrontierScienceWorkflowReturn {
     setPhaseProgress(createInitialPhaseProgress())
     setElapsedTime(0)
     setResult(null)
+    setPartialResult(null)
+    setRecoveryRecommendations([])
     setError(null)
     setThinkingMessage(null)
     setActivities([])
@@ -552,6 +630,11 @@ export function useFrontierScienceWorkflow(): UseFrontierScienceWorkflowReturn {
     error,
     thinkingMessage,
     activities,
+
+    // Partial results state (graceful degradation)
+    partialResult,
+    recoveryRecommendations,
+    isPartialResult: status === 'completed_partial',
 
     // Pause/Resume state
     isPaused,

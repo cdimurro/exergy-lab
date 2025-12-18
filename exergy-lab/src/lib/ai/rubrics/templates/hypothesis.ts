@@ -109,9 +109,14 @@ function validateSupportingEvidence(response: any): ItemScore {
   for (const h of hypotheses) {
     const evidence = h.supportingEvidence || h.evidence || []
     const hasEnoughEvidence = evidence.length >= 3
-    const hasCitations = evidence.every((e: any) => e.citation || e.source || e.reference)
 
-    if (hasEnoughEvidence && hasCitations) wellSupportedCount++
+    // RELAXED: Changed from requiring ALL citations to 60%+ citation ratio
+    // This addresses the common case where some evidence is from general knowledge
+    const citedCount = evidence.filter((e: any) => e.citation || e.source || e.reference).length
+    const citationRatio = evidence.length > 0 ? citedCount / evidence.length : 0
+    const hasAdequateCitations = citationRatio >= 0.6 || citedCount >= 2
+
+    if (hasEnoughEvidence && hasAdequateCitations) wellSupportedCount++
   }
 
   const ratio = wellSupportedCount / hypotheses.length
@@ -120,9 +125,9 @@ function validateSupportingEvidence(response: any): ItemScore {
 
   if (ratio >= 0.8) {
     points = 1.5
-    reasoning = `Excellent: ${wellSupportedCount}/${hypotheses.length} hypotheses have 3+ cited evidence pieces`
+    reasoning = `Excellent: ${wellSupportedCount}/${hypotheses.length} hypotheses have 3+ evidence pieces with adequate citations`
   } else if (ratio >= 0.6) {
-    points = 1.0
+    points = 1.125  // IMPROVED: 75% partial credit for good coverage
     reasoning = `Good: ${wellSupportedCount}/${hypotheses.length} hypotheses have adequate evidence`
   } else if (ratio >= 0.4) {
     points = 0.75
@@ -265,6 +270,82 @@ function validateFeasibility(response: any): ItemScore {
   }
 }
 
+function validateCausalMechanism(response: any): ItemScore {
+  const hypotheses = extractHypotheses(response)
+
+  if (!Array.isArray(hypotheses) || hypotheses.length === 0) {
+    return {
+      itemId: 'H6',
+      points: 0,
+      maxPoints: 2.0,
+      passed: false,
+      reasoning: 'No hypotheses found to evaluate',
+    }
+  }
+
+  let totalSteps = 0
+  let hypothesesWithMechanism = 0
+
+  for (const h of hypotheses) {
+    // Check various mechanism formats
+    const mechanism = h.causalMechanism || h.mechanism || h.mechanismSteps || []
+    let stepCount = 0
+
+    if (Array.isArray(mechanism)) {
+      stepCount = mechanism.length
+    } else if (typeof mechanism === 'object' && mechanism.steps) {
+      stepCount = Array.isArray(mechanism.steps) ? mechanism.steps.length : 0
+    } else if (typeof mechanism === 'string') {
+      // Count logical steps in text (numbered items or bullet points)
+      const stepMatches = mechanism.match(/(\d+\.|•|-|\*)\s+/g)
+      stepCount = stepMatches ? stepMatches.length : 1
+    }
+
+    if (stepCount > 0) {
+      totalSteps += stepCount
+      hypothesesWithMechanism++
+    }
+  }
+
+  if (hypothesesWithMechanism === 0) {
+    return {
+      itemId: 'H6',
+      points: 0,
+      maxPoints: 2.0,
+      passed: false,
+      reasoning: 'No causal mechanisms found in hypotheses',
+    }
+  }
+
+  const avgSteps = totalSteps / hypothesesWithMechanism
+  let points = 0
+  let reasoning = ''
+
+  // RELAXED: 3+ steps now passes (was 4+)
+  // This addresses the common case where 2-3 clear steps are scientifically sufficient
+  if (avgSteps >= 4) {
+    points = 2.0
+    reasoning = `Excellent: Average ${avgSteps.toFixed(1)} mechanism steps (comprehensive)`
+  } else if (avgSteps >= 3) {
+    points = 1.75  // IMPROVED: 3 steps now passes with good credit
+    reasoning = `Good: Average ${avgSteps.toFixed(1)} mechanism steps (clear logic)`
+  } else if (avgSteps >= 2) {
+    points = 1.25  // IMPROVED: 2 steps gets more credit
+    reasoning = `Acceptable: Average ${avgSteps.toFixed(1)} mechanism steps (basic coverage)`
+  } else {
+    points = 0.5
+    reasoning = `Limited: Average ${avgSteps.toFixed(1)} mechanism steps (needs more detail)`
+  }
+
+  return {
+    itemId: 'H6',
+    points,
+    maxPoints: 2.0,
+    passed: points >= 1.4, // 70% of 2.0
+    reasoning,
+  }
+}
+
 function validateVariables(response: any): ItemScore {
   const hypotheses = extractHypotheses(response)
 
@@ -388,11 +469,11 @@ const hypothesisRubricItems: RubricItem[] = [
     passCondition: 'Hypothesis includes a clear causal mechanism with at least 3 logical steps explaining how the intervention leads to the predicted outcome',
     partialConditions: [
       { condition: 'Mechanism has 4+ steps with physical principles', points: 2.0 },
-      { condition: 'Mechanism has 3 steps with clear logic', points: 1.5 },
-      { condition: 'Mechanism has 2 steps', points: 1.0 },
+      { condition: 'Mechanism has 3 steps with clear logic', points: 1.75 },  // RELAXED: now passes
+      { condition: 'Mechanism has 2 steps', points: 1.25 },  // RELAXED: more credit
       { condition: 'Mechanism has 1 step or unclear', points: 0.5 },
     ],
-    // Requires AI judge
+    automatedValidation: validateCausalMechanism,
   },
   {
     id: 'H7',

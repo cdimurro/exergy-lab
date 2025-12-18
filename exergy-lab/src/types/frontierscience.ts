@@ -13,6 +13,8 @@ import type {
   JudgeResult,
   ItemScore,
   RefinementHints,
+  RecoveryRecommendation,
+  FailureMode,
 } from '@/lib/ai/rubrics/types'
 import type { ActivityItem } from '@/components/discovery/LiveActivityFeed'
 
@@ -25,6 +27,8 @@ export type {
   JudgeResult,
   ItemScore,
   RefinementHints,
+  RecoveryRecommendation,
+  FailureMode,
 }
 
 // ============================================================================
@@ -87,6 +91,25 @@ export interface SSEHeartbeatEvent {
   elapsed: number
 }
 
+export interface SSEPhaseFailedEvent {
+  type: 'phase_failed'
+  phase: DiscoveryPhase
+  score: number
+  threshold: number
+  failedCriteria: { id: string; issue: string; suggestion: string }[]
+  continuingWithDegradation: boolean
+}
+
+export interface SSEPartialCompleteEvent {
+  type: 'partial_complete'
+  discoveryId: string
+  status: 'completed_partial'
+  result: PartialDiscoveryResultSummary
+  completedPhases: DiscoveryPhase[]
+  failedPhases: DiscoveryPhase[]
+  recommendations: RecoveryRecommendation[]
+}
+
 export type SSEEvent =
   | SSEProgressEvent
   | SSEIterationEvent
@@ -94,12 +117,14 @@ export type SSEEvent =
   | SSECompleteEvent
   | SSEErrorEvent
   | SSEHeartbeatEvent
+  | SSEPhaseFailedEvent
+  | SSEPartialCompleteEvent
 
 // ============================================================================
 // UI State Types
 // ============================================================================
 
-export type WorkflowStatus = 'idle' | 'starting' | 'running' | 'completed' | 'failed'
+export type WorkflowStatus = 'idle' | 'starting' | 'running' | 'completed' | 'completed_partial' | 'failed'
 export type PhaseStatus = 'pending' | 'running' | 'completed' | 'failed' | 'skipped'
 
 export interface PhaseProgressDisplay {
@@ -144,6 +169,15 @@ export interface DiscoveryResultSummary {
   totalDuration: number
   startTime?: string | Date
   endTime?: string | Date
+}
+
+export interface PartialDiscoveryResultSummary extends DiscoveryResultSummary {
+  failureMode: FailureMode
+  completedPhases: DiscoveryPhase[]
+  failedPhases: DiscoveryPhase[]
+  skippedPhases: DiscoveryPhase[]
+  degradationReason?: string
+  recoveryRecommendations: RecoveryRecommendation[]
 }
 
 // ============================================================================
@@ -192,6 +226,11 @@ export interface UseFrontierScienceWorkflowReturn {
   error: string | null
   thinkingMessage: string | null
   activities: ActivityItem[]
+
+  // Partial results state (graceful degradation)
+  partialResult: PartialDiscoveryResultSummary | null
+  recoveryRecommendations: RecoveryRecommendation[]
+  isPartialResult: boolean
 
   // Pause/Resume state
   isPaused: boolean

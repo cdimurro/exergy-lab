@@ -20,6 +20,7 @@ import {
   PulsingBrain,
   DiscoveryConfigPanel,
   ExportPanel,
+  PartialResultsCard,
 } from '@/components/discovery'
 import type { DiscoveryOptions } from '@/types/frontierscience'
 import type { DiscoveryConfiguration, Domain } from '@/types/intervention'
@@ -72,6 +73,9 @@ export function FrontierScienceChatInterface({
     overallProgress,
     elapsedTime,
     result,
+    partialResult,
+    recoveryRecommendations,
+    isPartialResult,
     error,
     thinkingMessage,
     activities,
@@ -97,12 +101,12 @@ export function FrontierScienceChatInterface({
     }
   }, [autoStart, initialQuery, initialOptions, hasAutoStarted, status, startDiscovery])
 
-  // Notify on completion
+  // Notify on completion (including partial completion)
   React.useEffect(() => {
-    if (status === 'completed' && result && onComplete) {
-      onComplete(result)
+    if ((status === 'completed' || status === 'completed_partial') && (result || partialResult) && onComplete) {
+      onComplete(result || partialResult)
     }
-  }, [status, result, onComplete])
+  }, [status, result, partialResult, onComplete])
 
   // Auto-save checkpoints when phases complete
   React.useEffect(() => {
@@ -387,6 +391,45 @@ export function FrontierScienceChatInterface({
                       </Button>
                       <ExportPanel
                         result={result}
+                        query={inputValue || initialQuery || ''}
+                        discoveryId={discoveryId || 'unknown'}
+                        onExport={() => {
+                          // Optionally close after export
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Partial Completion State - Show Partial Results with Recommendations */}
+            {status === 'completed_partial' && partialResult && (
+              <>
+                <PartialResultsCard
+                  result={partialResult}
+                  onExport={() => setShowExportPanel(true)}
+                  onModifyQuery={() => {
+                    // Reset to allow new query
+                    setInputValue(inputValue || initialQuery || '')
+                    setShowConfig(false)
+                  }}
+                />
+
+                {/* Export Panel Modal for Partial Results */}
+                {showExportPanel && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                    <div className="bg-background rounded-xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-auto m-4 relative">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowExportPanel(false)}
+                        className="absolute top-3 right-3 z-10 h-8 w-8 p-0"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                      <ExportPanel
+                        result={partialResult as any}
                         query={inputValue || initialQuery || ''}
                         discoveryId={discoveryId || 'unknown'}
                         onExport={() => {

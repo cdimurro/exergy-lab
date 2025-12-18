@@ -257,9 +257,9 @@ function PhaseNode({
 
 /**
  * Progress dots connector between phase nodes
- * - Green dots for completed phases
- * - Blue dots for active/running phase
- * - Grey dots for pending phases
+ * - Grey/dark dots always visible as baseline for future steps
+ * - Green dots overlay for completed connections
+ * - Blue dots overlay for connection to running phase
  */
 function PhaseConnector({
   completed,
@@ -272,16 +272,18 @@ function PhaseConnector({
   const getDotColor = () => {
     if (completed) return 'bg-emerald-500'
     if (active) return 'bg-blue-500'
-    return 'bg-muted-foreground/30'
+    return 'bg-muted-foreground/20'
   }
 
   const dotColor = getDotColor()
 
   return (
-    <div className="flex items-center gap-1 mx-1.5 mt-7">
-      <div className={cn('w-1.5 h-1.5 rounded-full transition-colors duration-300', dotColor)} />
-      <div className={cn('w-1.5 h-1.5 rounded-full transition-colors duration-300', dotColor)} />
-      <div className={cn('w-1.5 h-1.5 rounded-full transition-colors duration-300', dotColor)} />
+    <div className="flex items-center gap-0.5 mx-1 mt-7">
+      <div className={cn('w-1 h-1 rounded-full transition-colors duration-300', dotColor)} />
+      <div className={cn('w-1 h-1 rounded-full transition-colors duration-300', dotColor)} />
+      <div className={cn('w-1 h-1 rounded-full transition-colors duration-300', dotColor)} />
+      <div className={cn('w-1 h-1 rounded-full transition-colors duration-300', dotColor)} />
+      <div className={cn('w-1 h-1 rounded-full transition-colors duration-300', dotColor)} />
     </div>
   )
 }

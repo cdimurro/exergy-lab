@@ -20,16 +20,20 @@ import type {
   PhaseProgress,
   IterationEvent,
   ThinkingEvent,
+  PhaseFailedEvent,
 } from '@/lib/ai/agents'
+import type { PartialDiscoveryResult } from '@/lib/ai/rubrics/types'
 
 // In-memory store for active discoveries (would use Redis in production)
 const activeDiscoveries = new Map<string, {
   orchestrator: DiscoveryOrchestrator
-  status: 'pending' | 'running' | 'completed' | 'failed'
+  status: 'pending' | 'running' | 'completed' | 'completed_partial' | 'failed'
   progress: PhaseProgress[]
   iterations: IterationEvent[]
   thinking: ThinkingEvent[]
-  result?: DiscoveryResult
+  phaseFailed: PhaseFailedEvent[]
+  result?: DiscoveryResult | PartialDiscoveryResult
+  isPartialResult?: boolean
   error?: string
   startTime: number
 }>()
@@ -96,11 +100,13 @@ export async function POST(request: NextRequest) {
     // Initialize discovery state
     const discoveryState: {
       orchestrator: DiscoveryOrchestrator
-      status: 'pending' | 'running' | 'completed' | 'failed'
+      status: 'pending' | 'running' | 'completed' | 'completed_partial' | 'failed'
       progress: PhaseProgress[]
       iterations: IterationEvent[]
       thinking: ThinkingEvent[]
-      result?: DiscoveryResult
+      phaseFailed: PhaseFailedEvent[]
+      result?: DiscoveryResult | PartialDiscoveryResult
+      isPartialResult?: boolean
       error?: string
       startTime: number
     } = {
@@ -109,6 +115,7 @@ export async function POST(request: NextRequest) {
       progress: [],
       iterations: [],
       thinking: [],
+      phaseFailed: [],
       startTime: Date.now(),
     }
     activeDiscoveries.set(discoveryId, discoveryState)
@@ -140,19 +147,31 @@ export async function POST(request: NextRequest) {
       }
     })
 
+    // Set up phase failed tracking (graceful degradation)
+    orchestrator.onPhaseFailed((phaseFailed) => {
+      const state = activeDiscoveries.get(discoveryId)
+      if (state) {
+        state.phaseFailed.push(phaseFailed)
+      }
+    })
+
     // Start discovery in background
     discoveryState.status = 'running'
     orchestrator.executeDiscovery(query)
       .then((result) => {
         const state = activeDiscoveries.get(discoveryId)
         if (state) {
-          state.status = 'completed'
           state.result = result
+          // Check if this is a partial result (has failedPhases property)
+          const isPartial = 'failedPhases' in result && (result as PartialDiscoveryResult).failedPhases.length > 0
+          state.isPartialResult = isPartial
+          state.status = isPartial ? 'completed_partial' : 'completed'
         }
-        console.log(`[FrontierScience] Discovery ${discoveryId} completed:`, {
+        console.log(`[FrontierScience] Discovery ${discoveryId} ${state?.status}:`, {
           quality: result.discoveryQuality,
           score: result.overallScore,
           duration: result.totalDurationMs,
+          isPartial: state?.isPartialResult,
         })
       })
       .catch((error) => {
@@ -232,6 +251,7 @@ export async function GET(request: NextRequest) {
   let lastProgressIndex = 0
   let lastIterationIndex = 0
   let lastThinkingIndex = 0
+  let lastPhaseFailedIndex = 0
 
   const safeCloseStream = async () => {
     if (isStreamClosed) return
@@ -285,6 +305,15 @@ export async function GET(request: NextRequest) {
         lastIterationIndex++
       }
 
+      // Send any new phase_failed events (graceful degradation)
+      while (lastPhaseFailedIndex < currentDiscovery.phaseFailed.length) {
+        const phaseFailed = currentDiscovery.phaseFailed[lastPhaseFailedIndex]
+        await writer.write(encoder.encode(
+          `data: ${JSON.stringify({ type: 'phase_failed', ...phaseFailed })}\n\n`
+        ))
+        lastPhaseFailedIndex++
+      }
+
       // Check for completion
       if (currentDiscovery.status === 'completed' && currentDiscovery.result) {
         const completeEvent = {
@@ -331,6 +360,61 @@ export async function GET(request: NextRequest) {
         return
       }
 
+      // Check for partial completion (graceful degradation)
+      if (currentDiscovery.status === 'completed_partial' && currentDiscovery.result) {
+        const partialResult = currentDiscovery.result as PartialDiscoveryResult
+        const partialCompleteEvent = {
+          type: 'partial_complete',
+          discoveryId,
+          status: 'completed_partial',
+          result: {
+            id: partialResult.id,
+            query: partialResult.query,
+            domain: partialResult.domain,
+            overallScore: partialResult.overallScore,
+            discoveryQuality: partialResult.discoveryQuality,
+            recommendations: partialResult.recommendations,
+            phases: partialResult.phases.map(p => ({
+              phase: p.phase,
+              finalScore: p.finalScore,
+              passed: p.passed,
+              iterationCount: p.iterations.length,
+              durationMs: p.durationMs,
+              finalOutput: p.finalOutput,
+              iterations: p.iterations.map(iter => ({
+                iteration: iter.iteration,
+                judgeResult: iter.judgeResult ? {
+                  totalScore: iter.judgeResult.totalScore,
+                  passed: iter.judgeResult.passed,
+                  reasoning: iter.judgeResult.reasoning,
+                  recommendations: iter.judgeResult.recommendations,
+                  itemScores: iter.judgeResult.itemScores?.slice(0, 10),
+                } : null,
+                durationMs: iter.durationMs,
+              })),
+            })),
+            totalDuration: partialResult.totalDurationMs,
+            startTime: partialResult.startTime,
+            endTime: partialResult.endTime,
+            // Partial result fields
+            failureMode: partialResult.failureMode,
+            completedPhases: partialResult.completedPhases,
+            failedPhases: partialResult.failedPhases,
+            skippedPhases: partialResult.skippedPhases,
+            degradationReason: partialResult.degradationReason,
+            recoveryRecommendations: partialResult.recoveryRecommendations,
+          },
+          completedPhases: partialResult.completedPhases,
+          failedPhases: partialResult.failedPhases,
+          recommendations: partialResult.recoveryRecommendations,
+        }
+        await writer.write(encoder.encode(`data: ${JSON.stringify(partialCompleteEvent)}\n\n`))
+
+        clearInterval(streamInterval)
+        setTimeout(safeCloseStream, 300)
+        return
+      }
+
       // Check for failure
       if (currentDiscovery.status === 'failed') {
         const errorEvent = {
@@ -349,7 +433,8 @@ export async function GET(request: NextRequest) {
       // Send heartbeat (only if no other events were sent in this cycle)
       if (lastProgressIndex === currentDiscovery.progress.length &&
           lastIterationIndex === currentDiscovery.iterations.length &&
-          lastThinkingIndex === currentDiscovery.thinking.length) {
+          lastThinkingIndex === currentDiscovery.thinking.length &&
+          lastPhaseFailedIndex === currentDiscovery.phaseFailed.length) {
         await writer.write(encoder.encode(
           `data: ${JSON.stringify({
             type: 'heartbeat',

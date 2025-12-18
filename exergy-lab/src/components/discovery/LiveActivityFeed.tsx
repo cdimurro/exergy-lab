@@ -16,6 +16,7 @@ import {
   Brain,
   CheckCircle2,
   AlertCircle,
+  AlertTriangle,
   ArrowRight,
   Sparkles,
   Search,
@@ -32,7 +33,7 @@ import {
 // Types
 // ============================================================================
 
-export type ActivityType = 'thinking' | 'iteration' | 'score' | 'phase_start' | 'phase_complete'
+export type ActivityType = 'thinking' | 'iteration' | 'score' | 'phase_start' | 'phase_complete' | 'phase_failed'
 
 export interface ActivityItem {
   id: string
@@ -75,6 +76,8 @@ function getActivityIcon(type: ActivityType, phase?: DiscoveryPhase) {
       return <ArrowRight size={14} className="text-blue-500" />
     case 'phase_complete':
       return <CheckCircle2 size={14} className="text-emerald-500" />
+    case 'phase_failed':
+      return <AlertTriangle size={14} className="text-amber-500" />
     default:
       return <Brain size={14} className="text-muted-foreground" />
   }
@@ -152,8 +155,9 @@ function ActivityItemCard({ activity, showTimestamp }: { activity: ActivityItem;
         activity.type === 'iteration' && !activity.passed && 'bg-amber-500/5 border-amber-500/20',
         activity.type === 'thinking' && 'bg-blue-500/5 border-blue-500/20',
         activity.type === 'phase_complete' && 'bg-emerald-500/5 border-emerald-500/20',
+        activity.type === 'phase_failed' && 'bg-amber-500/10 border-amber-500/30',
         activity.type === 'phase_start' && 'bg-muted/50 border-border',
-        !['iteration', 'thinking', 'phase_complete', 'phase_start'].includes(activity.type) && 'bg-card border-border'
+        !['iteration', 'thinking', 'phase_complete', 'phase_failed', 'phase_start'].includes(activity.type) && 'bg-card border-border'
       )}>
         {/* Header */}
         <div className="flex items-start justify-between gap-2">
@@ -441,6 +445,27 @@ export function createActivityFromPhaseComplete(
       : `${phaseMeta.name} completed with score ${score.toFixed(1)}/10`,
     score,
     passed,
+  }
+}
+
+export function createActivityFromPhaseFailed(
+  phase: DiscoveryPhase,
+  score: number,
+  failedCriteria: { id: string; issue: string; suggestion: string }[],
+  continuingWithDegradation: boolean
+): ActivityItem {
+  const phaseMeta = getPhaseMetadata(phase)
+  return {
+    id: `phase-failed-${phase}-${Date.now()}`,
+    timestamp: Date.now(),
+    type: 'phase_failed',
+    phase,
+    message: continuingWithDegradation
+      ? `${phaseMeta.name} scored ${score.toFixed(1)}/10 (below 7.0 threshold). Continuing with partial results.`
+      : `${phaseMeta.name} failed with score ${score.toFixed(1)}/10`,
+    score,
+    passed: false,
+    details: failedCriteria.map(c => `${c.id}: ${c.issue} - ${c.suggestion}`),
   }
 }
 

@@ -13,9 +13,13 @@ import {
 } from '../rubrics'
 import type {
   DiscoveryResult,
+  PartialDiscoveryResult,
+  RecoveryRecommendation,
   PhaseResult,
   DiscoveryQuality,
+  DiscoveryPhase,
   RefinementHints,
+  FailureMode,
 } from '../rubrics/types'
 import { classifyDiscoveryQuality, calculateOverallScore } from '../rubrics/types'
 
@@ -23,6 +27,10 @@ import { ResearchAgent, createResearchAgent, type ResearchResult } from './resea
 import { CreativeAgent, createCreativeAgent, type Hypothesis, type ExperimentDesign } from './creative-agent'
 import { CriticalAgent, createCriticalAgent, PHYSICAL_BENCHMARKS } from './critical-agent'
 import { SimulationManager, type SimulationTier, type SimulationParams } from '@/lib/simulation'
+import { MultiBenchmarkValidator, type ValidationContext } from '../validation/multi-benchmark-validator'
+import { selfCritiqueAgent, type SelfCritiqueResult } from './self-critique-agent'
+import { diagnosticLogger } from '../../diagnostics/diagnostic-logger'
+import type { AggregatedValidation } from '../validation/types'
 
 // ============================================================================
 // Types
@@ -39,6 +47,10 @@ export interface DiscoveryConfig {
   targetQuality: DiscoveryQuality
   simulationTier: SimulationTier
   verbose: boolean
+  // Graceful degradation options
+  gracefulDegradation: boolean
+  continueOnCriticalFailure: boolean
+  minViablePhases: DiscoveryPhase[]
 }
 
 const DEFAULT_CONFIG: DiscoveryConfig = {
@@ -52,6 +64,10 @@ const DEFAULT_CONFIG: DiscoveryConfig = {
   targetQuality: 'validated',
   simulationTier: 'tier1', // Default to analytical models
   verbose: true,
+  // Graceful degradation - continue even when phases fail
+  gracefulDegradation: true,
+  continueOnCriticalFailure: true, // Continue even after critical phase failure
+  minViablePhases: [], // No minimum required phases - always return partial results
 }
 
 export interface PhaseProgress {
@@ -101,9 +117,21 @@ export interface ThinkingEvent {
   iteration?: number
 }
 
+/**
+ * Phase failed event for graceful degradation
+ */
+export interface PhaseFailedEvent {
+  phase: DiscoveryPhase
+  score: number
+  threshold: number
+  failedCriteria: { id: string; issue: string; suggestion: string }[]
+  continuingWithDegradation: boolean
+}
+
 export type ProgressCallback = (progress: PhaseProgress) => void
 export type IterationCallback = (event: IterationEvent) => void
 export type ThinkingCallback = (event: ThinkingEvent) => void
+export type PhaseFailedCallback = (event: PhaseFailedEvent) => void
 
 // ============================================================================
 // Discovery Orchestrator Class
@@ -115,16 +143,29 @@ export class DiscoveryOrchestrator {
   private creativeAgent: CreativeAgent
   private criticalAgent: CriticalAgent
   private refinementEngine: RefinementEngine
+  private multiBenchmarkValidator: MultiBenchmarkValidator
   private progressCallback?: ProgressCallback
   private iterationCallback?: IterationCallback
   private thinkingCallback?: ThinkingCallback
+  private phaseFailedCallback?: PhaseFailedCallback
   private currentPhase: string = ''
+
+  // Tracking for graceful degradation
+  private completedPhases: DiscoveryPhase[] = []
+  private failedPhases: DiscoveryPhase[] = []
+  private skippedPhases: DiscoveryPhase[] = []
+  private recoveryRecommendations: RecoveryRecommendation[] = []
+
+  // Multi-benchmark validation results
+  private multiBenchmarkResult?: AggregatedValidation
+  private selfCritiqueResult?: SelfCritiqueResult
 
   constructor(config: Partial<DiscoveryConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config }
     this.researchAgent = createResearchAgent()
     this.creativeAgent = createCreativeAgent()
     this.criticalAgent = createCriticalAgent()
+    this.multiBenchmarkValidator = new MultiBenchmarkValidator()
     this.refinementEngine = new RefinementEngine({
       verbose: this.config.verbose,
       refinementConfig: {
@@ -197,15 +238,29 @@ export class DiscoveryOrchestrator {
   }
 
   /**
+   * Set phase failed callback for graceful degradation notifications
+   */
+  onPhaseFailed(callback: PhaseFailedCallback): void {
+    this.phaseFailedCallback = callback
+  }
+
+  /**
    * Execute the full discovery pipeline
    */
-  async executeDiscovery(query: string): Promise<DiscoveryResult> {
+  async executeDiscovery(query: string): Promise<DiscoveryResult | PartialDiscoveryResult> {
     const startTime = new Date()
     const phases: PhaseResult[] = []
+
+    // Reset tracking arrays for this discovery run
+    this.completedPhases = []
+    this.failedPhases = []
+    this.skippedPhases = []
+    this.recoveryRecommendations = []
 
     this.log(`Starting FrontierScience Discovery for: "${query}"`)
     this.log(`Domain: ${this.config.domain}`)
     this.log(`Target quality: ${this.config.targetQuality}`)
+    this.log(`Graceful degradation: ${this.config.gracefulDegradation ? 'enabled' : 'disabled'}`)
 
     try {
       // Phase 1: Multi-Source Research
@@ -214,12 +269,21 @@ export class DiscoveryOrchestrator {
       phases.push(researchResult)
       this.emitProgress('research', researchResult.passed ? 'completed' : 'failed', researchResult.iterations.length, researchResult.finalScore, researchResult.passed)
 
-      // Critical phase check: Research must pass to continue
-      if (!researchResult.passed) {
-        throw new Error(
-          `Research phase failed after ${researchResult.iterations.length} iterations (score: ${researchResult.finalScore.toFixed(1)}/10). ` +
-          `Unable to continue discovery without adequate research foundation.`
-        )
+      // Track phase result and handle failure gracefully
+      if (researchResult.passed) {
+        this.completedPhases.push('research')
+      } else {
+        this.failedPhases.push('research')
+        this.handlePhaseFailure('research', researchResult)
+
+        // If graceful degradation is disabled, throw as before
+        if (!this.config.gracefulDegradation) {
+          throw new Error(
+            `Research phase failed after ${researchResult.iterations.length} iterations (score: ${researchResult.finalScore.toFixed(1)}/10). ` +
+            `Unable to continue discovery without adequate research foundation.`
+          )
+        }
+        this.log(`Research phase did not pass (${researchResult.finalScore.toFixed(1)}/10), continuing with graceful degradation`)
       }
 
       // Phase 2: Knowledge Synthesis
@@ -229,6 +293,9 @@ export class DiscoveryOrchestrator {
         synthesisResult = await this.executeSynthesisPhase(researchResult.finalOutput as ResearchResult)
         phases.push(synthesisResult)
         this.emitProgress('synthesis', 'completed', 1, synthesisResult.finalScore, synthesisResult.passed)
+        this.completedPhases.push('synthesis')
+      } else {
+        this.skippedPhases.push('synthesis')
       }
 
       // Phase 3: Hypothesis Generation
@@ -237,12 +304,20 @@ export class DiscoveryOrchestrator {
       phases.push(hypothesisResult)
       this.emitProgress('hypothesis', hypothesisResult.passed ? 'completed' : 'failed', hypothesisResult.iterations.length, hypothesisResult.finalScore, hypothesisResult.passed)
 
-      // Critical phase check: Hypothesis must pass to continue
-      if (!hypothesisResult.passed) {
-        throw new Error(
-          `Hypothesis Generation phase failed after ${hypothesisResult.iterations.length} iterations (score: ${hypothesisResult.finalScore.toFixed(1)}/10). ` +
-          `Unable to proceed to experiments without validated hypotheses.`
-        )
+      // Track phase result and handle failure gracefully
+      if (hypothesisResult.passed) {
+        this.completedPhases.push('hypothesis')
+      } else {
+        this.failedPhases.push('hypothesis')
+        this.handlePhaseFailure('hypothesis', hypothesisResult)
+
+        if (!this.config.gracefulDegradation) {
+          throw new Error(
+            `Hypothesis Generation phase failed after ${hypothesisResult.iterations.length} iterations (score: ${hypothesisResult.finalScore.toFixed(1)}/10). ` +
+            `Unable to proceed to experiments without validated hypotheses.`
+          )
+        }
+        this.log(`Hypothesis phase did not pass (${hypothesisResult.finalScore.toFixed(1)}/10), continuing with graceful degradation`)
       }
 
       // Phase 4: Computational Screening
@@ -254,6 +329,15 @@ export class DiscoveryOrchestrator {
         phases.push(screeningResult)
         this.emitProgress('screening', 'completed', 1, screeningResult.finalScore, screeningResult.passed)
         hypothesesForExperiment = screeningResult.finalOutput // Use screened hypotheses
+
+        if (screeningResult.passed) {
+          this.completedPhases.push('screening')
+        } else {
+          this.failedPhases.push('screening')
+          this.handlePhaseFailure('screening', screeningResult)
+        }
+      } else {
+        this.skippedPhases.push('screening')
       }
 
       // Phase 5: Experiment Design
@@ -262,12 +346,20 @@ export class DiscoveryOrchestrator {
       phases.push(experimentResult)
       this.emitProgress('experiment', experimentResult.passed ? 'completed' : 'failed', 1, experimentResult.finalScore, experimentResult.passed)
 
-      // Critical phase check: Experiment design must pass to continue
-      if (!experimentResult.passed) {
-        throw new Error(
-          `Experiment Design phase failed (score: ${experimentResult.finalScore.toFixed(1)}/10). ` +
-          `Unable to run simulations without validated experiment designs.`
-        )
+      // Track phase result and handle failure gracefully
+      if (experimentResult.passed) {
+        this.completedPhases.push('experiment')
+      } else {
+        this.failedPhases.push('experiment')
+        this.handlePhaseFailure('experiment', experimentResult)
+
+        if (!this.config.gracefulDegradation) {
+          throw new Error(
+            `Experiment Design phase failed (score: ${experimentResult.finalScore.toFixed(1)}/10). ` +
+            `Unable to run simulations without validated experiment designs.`
+          )
+        }
+        this.log(`Experiment phase did not pass (${experimentResult.finalScore.toFixed(1)}/10), continuing with graceful degradation`)
       }
 
       // Phase 6: Simulation
@@ -276,46 +368,93 @@ export class DiscoveryOrchestrator {
       phases.push(simulationResult)
       this.emitProgress('simulation', simulationResult.passed ? 'completed' : 'failed', simulationResult.iterations.length, simulationResult.finalScore, simulationResult.passed)
 
-      // Critical phase check: Simulation must pass to continue
-      if (!simulationResult.passed) {
-        throw new Error(
-          `Simulation phase failed after ${simulationResult.iterations.length} iterations (score: ${simulationResult.finalScore.toFixed(1)}/10). ` +
-          `Unable to perform analysis without validated simulation results.`
-        )
+      // Track phase result and handle failure gracefully
+      if (simulationResult.passed) {
+        this.completedPhases.push('simulation')
+      } else {
+        this.failedPhases.push('simulation')
+        this.handlePhaseFailure('simulation', simulationResult)
+
+        if (!this.config.gracefulDegradation) {
+          throw new Error(
+            `Simulation phase failed after ${simulationResult.iterations.length} iterations (score: ${simulationResult.finalScore.toFixed(1)}/10). ` +
+            `Unable to perform analysis without validated simulation results.`
+          )
+        }
+        this.log(`Simulation phase did not pass (${simulationResult.finalScore.toFixed(1)}/10), continuing with graceful degradation`)
       }
 
       // Phases 7 & 8: Exergy and TEA Analysis (run in parallel if both enabled)
       // These phases are independent - both only depend on simulation results
-      const parallelPhases: Promise<PhaseResult<any>>[] = []
+      // Using Promise.allSettled for graceful degradation
+      const parallelPhases: { phase: DiscoveryPhase; promise: Promise<PhaseResult<any>> }[] = []
 
       if (this.config.enableExergyAnalysis) {
         this.emitProgress('exergy', 'running', 1)
-        parallelPhases.push(
-          this.executeExergyPhase(simulationResult.finalOutput).then(result => {
-            this.emitProgress('exergy', 'completed', 1, result.finalScore, result.passed)
+        parallelPhases.push({
+          phase: 'exergy',
+          promise: this.executeExergyPhase(simulationResult.finalOutput).then(result => {
+            this.emitProgress('exergy', result.passed ? 'completed' : 'failed', 1, result.finalScore, result.passed)
             return result
           })
-        )
+        })
+      } else {
+        this.skippedPhases.push('exergy')
       }
 
       if (this.config.enableTEAAnalysis) {
         this.emitProgress('tea', 'running', 1)
-        parallelPhases.push(
-          this.executeTEAPhase(simulationResult.finalOutput).then(result => {
-            this.emitProgress('tea', 'completed', 1, result.finalScore, result.passed)
+        parallelPhases.push({
+          phase: 'tea',
+          promise: this.executeTEAPhase(simulationResult.finalOutput).then(result => {
+            this.emitProgress('tea', result.passed ? 'completed' : 'failed', 1, result.finalScore, result.passed)
             return result
           })
-        )
+        })
+      } else {
+        this.skippedPhases.push('tea')
       }
 
-      // Wait for both phases to complete in parallel
+      // Wait for all phases using allSettled for graceful degradation
       if (parallelPhases.length > 0) {
-        const parallelResults = await Promise.all(parallelPhases)
-        phases.push(...parallelResults)
+        const settledResults = await Promise.allSettled(parallelPhases.map(p => p.promise))
+
+        for (let i = 0; i < settledResults.length; i++) {
+          const settled = settledResults[i]
+          const phaseInfo = parallelPhases[i]
+
+          if (settled.status === 'fulfilled') {
+            const result = settled.value
+            phases.push(result)
+
+            if (result.passed) {
+              this.completedPhases.push(phaseInfo.phase)
+            } else {
+              this.failedPhases.push(phaseInfo.phase)
+              this.handlePhaseFailure(phaseInfo.phase, result)
+            }
+          } else {
+            // Phase threw an error - mark as failed
+            this.failedPhases.push(phaseInfo.phase)
+            this.emitProgress(phaseInfo.phase, 'failed', 1)
+            this.log(`${phaseInfo.phase} phase threw error: ${settled.reason}`)
+
+            // Add a failed result to phases
+            phases.push({
+              phase: phaseInfo.phase,
+              finalOutput: null,
+              finalScore: 0,
+              passed: false,
+              iterations: [],
+              durationMs: 0,
+            })
+          }
+        }
       }
 
       // Phase 9: Patent Landscape (if enabled)
       // TODO: Implement patent analysis
+      this.skippedPhases.push('patent')
 
       // Phase 10: Validation
       this.emitProgress('validation', 'running', 1)
@@ -328,14 +467,54 @@ export class DiscoveryOrchestrator {
       phases.push(validationResult)
       this.emitProgress('validation', validationResult.passed ? 'completed' : 'failed', 1, validationResult.finalScore, validationResult.passed)
 
+      if (validationResult.passed) {
+        this.completedPhases.push('validation')
+      } else {
+        this.failedPhases.push('validation')
+        this.handlePhaseFailure('validation', validationResult)
+      }
+
+      // Mark rubric_eval and publication as skipped (TODO: implement)
+      this.skippedPhases.push('rubric_eval', 'publication')
+
       // Calculate overall score
       const overallScore = calculateOverallScore(phases)
       const discoveryQuality = classifyDiscoveryQuality(overallScore)
 
-      // Generate recommendations
+      // Generate recommendations (includes recovery recommendations for failed phases)
       const recommendations = this.generateRecommendations(phases)
 
       const endTime = new Date()
+
+      // Determine failure mode based on results
+      const failureMode: FailureMode = this.failedPhases.length === 0
+        ? 'none'
+        : this.failedPhases.some(p => ['research', 'hypothesis', 'simulation'].includes(p))
+          ? 'critical'
+          : 'partial'
+
+      // Return PartialDiscoveryResult if there are any failures
+      if (this.failedPhases.length > 0) {
+        return {
+          id: `discovery-${Date.now()}`,
+          query,
+          domain: this.config.domain,
+          phases,
+          overallScore,
+          discoveryQuality,
+          recommendations,
+          startTime,
+          endTime,
+          totalDurationMs: endTime.getTime() - startTime.getTime(),
+          // Partial result fields
+          failureMode,
+          completedPhases: this.completedPhases,
+          failedPhases: this.failedPhases,
+          skippedPhases: this.skippedPhases,
+          degradationReason: `${this.failedPhases.length} phase(s) failed to meet the 7.0/10 threshold`,
+          recoveryRecommendations: this.recoveryRecommendations,
+        } as PartialDiscoveryResult
+      }
 
       return {
         id: `discovery-${Date.now()}`,
@@ -833,7 +1012,7 @@ export class DiscoveryOrchestrator {
   }
 
   /**
-   * Execute validation phase
+   * Execute validation phase with multi-benchmark validation
    */
   private async executeValidationPhase(outputs: any): Promise<PhaseResult<any>> {
     this.log('Phase 10: Validation & Benchmarking')
@@ -842,6 +1021,7 @@ export class DiscoveryOrchestrator {
 
     const startTime = Date.now()
 
+    // Run original validation
     const validationResult = await this.criticalAgent.validate(
       outputs,
       undefined, // No rubric for validation phase itself
@@ -849,19 +1029,70 @@ export class DiscoveryOrchestrator {
     )
     this.emitThinking('judging', `${validationResult.checks.filter((c: any) => c.passed).length}/${validationResult.checks.length} validation checks passed`)
 
+    // Run multi-benchmark validation
+    this.emitThinking('validating', 'Running 5-tier multi-benchmark validation...')
+    const validationContext: ValidationContext = {
+      sources: outputs.research?.sources || [],
+      simulationOutput: outputs.simulations,
+      hypothesisOutput: outputs.hypotheses,
+      researchOutput: outputs.research,
+    }
+
+    try {
+      this.multiBenchmarkResult = await this.multiBenchmarkValidator.validate(outputs, validationContext)
+      this.emitThinking('judging', `Multi-benchmark score: ${this.multiBenchmarkResult.overallScore.toFixed(1)}/10 (${this.multiBenchmarkResult.agreementLevel} agreement)`)
+
+      // Log to diagnostics
+      diagnosticLogger.logPhaseTransition({
+        phase: 'validation',
+        event: 'complete',
+        score: this.multiBenchmarkResult.overallScore,
+        passed: this.multiBenchmarkResult.overallPassed,
+        context: {
+          benchmarkCount: this.multiBenchmarkResult.benchmarks.length,
+          agreementLevel: this.multiBenchmarkResult.agreementLevel,
+          discrepancies: this.multiBenchmarkResult.discrepancies.length,
+        },
+      })
+
+      // Run self-critique analysis
+      this.emitThinking('validating', 'Running self-critique analysis...')
+      const phaseOutputs = new Map<string, any>()
+      phaseOutputs.set('research', outputs.research)
+      phaseOutputs.set('hypotheses', outputs.hypotheses)
+      phaseOutputs.set('experiments', outputs.experiments)
+      phaseOutputs.set('simulations', outputs.simulations)
+
+      this.selfCritiqueResult = await selfCritiqueAgent.analyze(this.multiBenchmarkResult, phaseOutputs)
+      this.emitThinking('judging', `Self-critique: ${this.selfCritiqueResult.summary.scoreCategory} (${this.selfCritiqueResult.summary.highPriorityIssues} high-priority issues)`)
+
+    } catch (error) {
+      this.log('Multi-benchmark validation failed:', error)
+      // Continue with original validation result
+    }
+
+    // Combine results - use multi-benchmark score if available
+    const finalScore = this.multiBenchmarkResult
+      ? (validationResult.overallScore * 0.5 + this.multiBenchmarkResult.overallScore * 0.5)
+      : validationResult.overallScore
+
     return {
       phase: 'validation',
-      finalOutput: validationResult,
-      finalScore: validationResult.overallScore,
-      passed: validationResult.passed,
+      finalOutput: {
+        ...validationResult,
+        multiBenchmark: this.multiBenchmarkResult,
+        selfCritique: this.selfCritiqueResult,
+      },
+      finalScore,
+      passed: finalScore >= 7 || (validationResult.passed && (this.multiBenchmarkResult?.overallPassed ?? true)),
       iterations: [{
         iteration: 1,
         output: validationResult,
         judgeResult: {
           rubricId: 'validation-v1',
           phase: 'validation',
-          totalScore: validationResult.overallScore,
-          passed: validationResult.passed,
+          totalScore: finalScore,
+          passed: finalScore >= 7,
           itemScores: validationResult.checks.map(c => ({
             itemId: c.name,
             points: c.score,
@@ -869,13 +1100,20 @@ export class DiscoveryOrchestrator {
             passed: c.passed,
             reasoning: c.details,
           })),
-          reasoning: `${validationResult.checks.filter(c => c.passed).length}/${validationResult.checks.length} checks passed`,
+          reasoning: this.multiBenchmarkResult
+            ? `${validationResult.checks.filter(c => c.passed).length}/${validationResult.checks.length} checks passed, multi-benchmark: ${this.multiBenchmarkResult.overallScore.toFixed(1)}/10`
+            : `${validationResult.checks.filter(c => c.passed).length}/${validationResult.checks.length} checks passed`,
           failedItems: [],
           passedItems: [],
-          recommendations: validationResult.recommendations,
-          confidenceScore: 85,
+          recommendations: [
+            ...validationResult.recommendations,
+            ...(this.multiBenchmarkResult?.recommendations.slice(0, 3).map(r => r.suggestion) || []),
+          ],
+          confidenceScore: this.multiBenchmarkResult
+            ? Math.round(this.multiBenchmarkResult.confidenceBreakdown.reduce((sum, c) => sum + c.confidence, 0) / this.multiBenchmarkResult.confidenceBreakdown.length * 100)
+            : 85,
           timestamp: new Date(),
-          judgeModel: 'critical-agent',
+          judgeModel: 'multi-benchmark',
         },
         durationMs: Date.now() - startTime,
       }],
@@ -906,6 +1144,119 @@ export class DiscoveryOrchestrator {
     }
 
     return recommendations.slice(0, 10)
+  }
+
+  /**
+   * Handle a phase failure - generate recovery recommendations and emit phase_failed event
+   */
+  private handlePhaseFailure(phase: DiscoveryPhase, result: PhaseResult<any>): void {
+    const lastIteration = result.iterations[result.iterations.length - 1]
+    const failedCriteria: { id: string; issue: string; suggestion: string }[] = []
+
+    // Extract failed criteria from the judge result
+    if (lastIteration?.judgeResult?.itemScores) {
+      const failed = lastIteration.judgeResult.itemScores.filter(s => !s.passed)
+
+      for (const criterion of failed.slice(0, 5)) { // Top 5 issues
+        const suggestion = this.getSuggestionForCriterion(criterion.itemId, phase)
+        failedCriteria.push({
+          id: criterion.itemId,
+          issue: criterion.reasoning || `Failed criterion: ${criterion.itemId}`,
+          suggestion,
+        })
+
+        // Add to recovery recommendations
+        this.recoveryRecommendations.push({
+          phase,
+          issue: criterion.reasoning || `Failed criterion: ${criterion.itemId}`,
+          suggestion,
+          priority: criterion.maxPoints >= 1.5 ? 'high' : 'medium',
+          actionable: true,
+        })
+      }
+    }
+
+    // Emit phase_failed event
+    this.emitPhaseFailed(phase, result.finalScore, failedCriteria)
+  }
+
+  /**
+   * Get specific suggestion for a failed criterion
+   */
+  private getSuggestionForCriterion(criterionId: string, phase: DiscoveryPhase): string {
+    // Research phase suggestions
+    const researchSuggestions: Record<string, string> = {
+      'R1': 'Include more sources (aim for 8+ relevant papers, patents, or datasets)',
+      'R2': 'Diversify source types - try adding patents, datasets, or technical reports alongside papers',
+      'R3': 'Include more recent publications from 2020-2024 to capture latest developments',
+      'R4': 'Expand search to include IEEE, arXiv, and domain-specific databases',
+      'R5': 'Extract 5+ specific key findings with quantitative data where possible',
+      'R6': 'Include efficiency, cost, or performance metrics with units and values',
+      'R7': 'Identify research gaps and unexplored areas in the field',
+      'R8': 'List specific materials with their properties and applications',
+      'R9': 'Add context about how findings relate to the research question',
+      'R10': 'Ensure findings are synthesized into coherent themes, not just listed',
+    }
+
+    // Hypothesis phase suggestions
+    const hypothesisSuggestions: Record<string, string> = {
+      'H1': 'Generate more hypotheses (aim for 3-5 distinct testable predictions)',
+      'H2': 'Add citations or sources supporting each piece of evidence',
+      'H3': 'Ensure each hypothesis is unique and addresses different aspects of the problem',
+      'H4': 'Include specific quantitative predictions that can be measured',
+      'H5': 'Add feasibility assessment with concrete reasoning for each hypothesis',
+      'H6': 'Describe the step-by-step causal mechanism (3-4 logical steps minimum)',
+      'H7': 'Identify specific experiments that could test each hypothesis',
+      'H8': 'Consider potential failure modes and how to address them',
+      'H9': 'Quantify expected impact or improvement over current approaches',
+      'H10': 'Highlight what makes each hypothesis novel compared to existing work',
+    }
+
+    // Simulation phase suggestions
+    const simulationSuggestions: Record<string, string> = {
+      'S1': 'Ensure simulation converged within tolerance (residual < 0.001)',
+      'S2': 'Provide uncertainty estimates for all simulation outputs',
+      'S3': 'Check that results don\'t violate physical limits (efficiency > 0, energy > 0)',
+      'S4': 'Include at least 4 boundary conditions with units and values',
+      'S5': 'Add exergy analysis with second-law efficiency calculation',
+      'S6': 'Include comparison with published literature values',
+      'S7': 'Document all simulation parameters and assumptions',
+      'S8': 'Run sensitivity analysis on key parameters',
+    }
+
+    // Map phase to suggestions
+    const suggestionMap: Partial<Record<DiscoveryPhase, Record<string, string>>> = {
+      'research': researchSuggestions,
+      'hypothesis': hypothesisSuggestions,
+      'simulation': simulationSuggestions,
+    }
+
+    const phaseSuggestions = suggestionMap[phase]
+    if (phaseSuggestions && phaseSuggestions[criterionId]) {
+      return phaseSuggestions[criterionId]
+    }
+
+    // Default suggestion
+    return `Review and improve criterion ${criterionId} to meet the passing threshold`
+  }
+
+  /**
+   * Emit phase_failed event for graceful degradation
+   */
+  private emitPhaseFailed(
+    phase: DiscoveryPhase,
+    score: number,
+    failedCriteria: { id: string; issue: string; suggestion: string }[]
+  ): void {
+    if (this.phaseFailedCallback) {
+      this.phaseFailedCallback({
+        phase,
+        score,
+        threshold: 7.0,
+        failedCriteria,
+        continuingWithDegradation: this.config.gracefulDegradation,
+      })
+    }
   }
 
   /**
