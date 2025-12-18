@@ -229,7 +229,7 @@ function PhaseNode({
       {showLabel && (
         <span
           className={cn(
-            'text-xs font-medium text-center max-w-[80px] truncate mt-1',
+            'text-sm font-medium text-center max-w-[90px] truncate mt-1.5',
             status === 'pending' && 'text-muted-foreground',
             status === 'running' && 'text-blue-600',
             status === 'completed' && passed && 'text-emerald-600',
@@ -244,7 +244,7 @@ function PhaseNode({
       {showScore && score !== undefined && (
         <span
           className={cn(
-            'text-xs tabular-nums',
+            'text-sm font-semibold tabular-nums',
             passed ? 'text-emerald-600' : 'text-amber-600'
           )}
         >
@@ -256,7 +256,10 @@ function PhaseNode({
 }
 
 /**
- * Connector line between phase nodes
+ * Progress dots connector between phase nodes
+ * - Green dots for completed phases
+ * - Blue dots for active/running phase
+ * - Grey dots for pending phases
  */
 function PhaseConnector({
   completed,
@@ -265,15 +268,21 @@ function PhaseConnector({
   completed: boolean
   active: boolean
 }) {
+  // Determine dot color based on state
+  const getDotColor = () => {
+    if (completed) return 'bg-emerald-500'
+    if (active) return 'bg-blue-500'
+    return 'bg-muted-foreground/30'
+  }
+
+  const dotColor = getDotColor()
+
   return (
-    <div
-      className={cn(
-        'flex-1 h-0.5 min-w-[8px] max-w-[24px] mx-1 mt-7',
-        completed && 'bg-emerald-500',
-        active && 'bg-blue-500',
-        !completed && !active && 'bg-muted-foreground/30'
-      )}
-    />
+    <div className="flex items-center gap-1 mx-1.5 mt-7">
+      <div className={cn('w-1.5 h-1.5 rounded-full transition-colors duration-300', dotColor)} />
+      <div className={cn('w-1.5 h-1.5 rounded-full transition-colors duration-300', dotColor)} />
+      <div className={cn('w-1.5 h-1.5 rounded-full transition-colors duration-300', dotColor)} />
+    </div>
   )
 }
 

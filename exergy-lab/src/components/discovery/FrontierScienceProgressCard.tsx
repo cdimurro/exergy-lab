@@ -83,10 +83,10 @@ export function FrontierScienceProgressCard({
         <div className="flex items-center gap-3">
           <PulsingBrain />
           <div>
-            <h3 className="text-sm font-semibold text-foreground">
+            <h3 className="text-base font-semibold text-foreground">
               Discovery Engine
             </h3>
-            <p className="text-xs text-muted-foreground truncate max-w-[300px]">
+            <p className="text-sm text-muted-foreground truncate max-w-[350px]">
               {query}
             </p>
           </div>
@@ -97,7 +97,7 @@ export function FrontierScienceProgressCard({
             className="p-2 hover:bg-muted rounded-lg transition-colors"
             title="Cancel discovery"
           >
-            <X size={16} className="text-muted-foreground" />
+            <X size={18} className="text-muted-foreground" />
           </button>
         )}
       </div>
@@ -105,40 +105,40 @@ export function FrontierScienceProgressCard({
       {/* Scrollable Content Area */}
       <div className="flex-1 overflow-y-auto">
         {/* Overall Progress */}
-        <div className="p-4 border-b">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-foreground">
+        <div className="p-5 border-b">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-base font-semibold text-foreground">
             Overall Progress
           </span>
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <Clock size={12} />
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              <Clock size={14} />
               {formatTime(elapsedTime)}
             </span>
             {estimatedRemaining > 0 && overallProgress > 10 && (
-              <span className="flex items-center gap-1">
-                <Zap size={12} />
+              <span className="flex items-center gap-1.5">
+                <Zap size={14} />
                 ~{formatTime(estimatedRemaining)} left
               </span>
             )}
           </div>
         </div>
         <div className="relative">
-          <div className="h-2 bg-muted rounded-full overflow-hidden">
+          <div className="h-2.5 bg-muted rounded-full overflow-hidden">
             <div
               className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-500"
               style={{ width: `${Math.min(100, overallProgress)}%` }}
             />
           </div>
-          <span className="absolute right-0 top-3 text-xs text-muted-foreground">
+          <span className="absolute right-0 top-4 text-sm font-medium text-muted-foreground">
             {Math.round(overallProgress)}%
           </span>
         </div>
       </div>
 
       {/* Phase Timeline */}
-      <div className="p-4 border-b">
-        <div className="text-xs font-medium text-muted-foreground mb-3 uppercase tracking-wide">
+      <div className="p-5 border-b">
+        <div className="text-sm font-medium text-muted-foreground mb-4 uppercase tracking-wide">
           Phase Timeline
         </div>
         <PhaseTimeline
@@ -151,22 +151,22 @@ export function FrontierScienceProgressCard({
         />
       </div>
 
-      {/* Selected Phase Details */}
+      {/* Selected Phase Details with AI Summary */}
       {selectedPhase && (() => {
         const selectedProgress = phaseProgress.get(selectedPhase)
         const selectedMeta = getPhaseMetadata(selectedPhase)
         const keyFindings = generatePhaseKeyFindings(selectedPhase, null, selectedProgress?.judgeResult)
 
         return selectedProgress && (
-          <div className="p-4 border-b bg-gradient-to-br from-blue-500/5 to-purple-500/5">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold text-foreground">
+          <div className="p-5 border-b bg-gradient-to-br from-blue-500/5 to-purple-500/5">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <span className="text-base font-semibold text-foreground">
                   {selectedMeta.name}
                 </span>
                 {selectedProgress.score !== undefined && (
                   <span className={cn(
-                    'text-xs px-2 py-0.5 rounded-full',
+                    'text-sm px-2.5 py-1 rounded-full font-medium',
                     selectedProgress.passed
                       ? 'bg-emerald-500/20 text-emerald-600'
                       : 'bg-amber-500/20 text-amber-600'
@@ -177,23 +177,83 @@ export function FrontierScienceProgressCard({
               </div>
               <button
                 onClick={() => setSelectedPhase(null)}
-                className="text-xs text-muted-foreground hover:text-foreground"
+                className="text-muted-foreground hover:text-foreground p-1 rounded-md hover:bg-muted/50 transition-colors"
               >
-                <X size={16} />
+                <X size={18} />
               </button>
             </div>
 
-            <p className="text-xs text-muted-foreground mb-3">
+            <p className="text-sm text-muted-foreground mb-4">
               {selectedMeta.description}
             </p>
 
+            {/* AI-Generated Summary - Always Visible */}
             {keyFindings && (
-              <PhaseResultsDropdown
-                phase={selectedPhase}
-                phaseName={selectedMeta.name}
-                status={selectedProgress.status as any}
-                results={keyFindings}
-              />
+              <div className="space-y-4">
+                {/* Summary */}
+                <div className="bg-background/60 rounded-lg p-4 border border-border/50">
+                  <p className="text-sm text-foreground leading-relaxed">
+                    {keyFindings.summary}
+                  </p>
+                </div>
+
+                {/* Key Findings - Always Shown */}
+                {keyFindings.keyFindings.length > 0 && (
+                  <div className="bg-background/60 rounded-lg p-4 border border-border/50">
+                    <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                      Key Findings
+                    </h4>
+                    <ul className="space-y-2">
+                      {keyFindings.keyFindings.map((finding, i) => (
+                        <li key={i} className="text-sm text-foreground/90 flex items-start gap-2">
+                          <span className="text-muted-foreground mt-1.5 text-xs">-</span>
+                          <span className="leading-relaxed">{finding}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Highlights Grid - Always Shown */}
+                {keyFindings.highlights && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {keyFindings.highlights.whatWorked.length > 0 && (
+                      <div className="bg-emerald-500/5 rounded-lg p-4 border border-emerald-500/20">
+                        <h4 className="text-sm font-semibold text-emerald-600 mb-2 flex items-center gap-2">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                          What Worked
+                        </h4>
+                        <ul className="space-y-1.5">
+                          {keyFindings.highlights.whatWorked.map((item, i) => (
+                            <li key={i} className="text-sm text-foreground/90 flex items-start gap-2">
+                              <span className="text-emerald-500 mt-0.5">-</span>
+                              <span>{item}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {keyFindings.highlights.challenges.length > 0 && (
+                      <div className="bg-amber-500/5 rounded-lg p-4 border border-amber-500/20">
+                        <h4 className="text-sm font-semibold text-amber-600 mb-2 flex items-center gap-2">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                          Challenges
+                        </h4>
+                        <ul className="space-y-1.5">
+                          {keyFindings.highlights.challenges.map((item, i) => (
+                            <li key={i} className="text-sm text-foreground/90 flex items-start gap-2">
+                              <span className="text-amber-500 mt-0.5">!</span>
+                              <span>{item}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             )}
           </div>
         )
@@ -201,10 +261,10 @@ export function FrontierScienceProgressCard({
 
       {/* Current Phase Details */}
       {currentPhase && currentProgress && (
-        <div className="p-4 border-b bg-blue-500/5">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-foreground">
+        <div className="p-5 border-b bg-blue-500/5">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <span className="text-base font-semibold text-foreground">
                 Current: {phaseMeta?.name}
               </span>
               <IterationBadge
@@ -222,7 +282,7 @@ export function FrontierScienceProgressCard({
           </div>
 
           {/* Phase description */}
-          <p className="text-xs text-muted-foreground mb-3">
+          <p className="text-sm text-muted-foreground mb-4">
             {phaseMeta?.description}
           </p>
 
@@ -238,7 +298,7 @@ export function FrontierScienceProgressCard({
 
           {/* Current rubric score if available */}
           {currentProgress.judgeResult && (
-            <div className="mt-3">
+            <div className="mt-4">
               <RubricScoreCard
                 judgeResult={currentProgress.judgeResult}
                 showDetails={showRubricDetails}
@@ -276,14 +336,14 @@ function CompletedPhasesSummary({
   const avgScore = completedPhases.reduce((sum, p) => sum + (p.score || 0), 0) / completedPhases.length
 
   return (
-    <div className="p-4">
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+    <div className="p-5">
+      <div className="flex items-center justify-between mb-4">
+        <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
           Completed Phases
         </span>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 text-xs">
-            <span className="text-emerald-600 font-medium">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 text-sm">
+            <span className="text-emerald-600 font-semibold">
               {passedCount}/{completedPhases.length} passed
             </span>
             <span className="text-muted-foreground">
@@ -292,16 +352,16 @@ function CompletedPhasesSummary({
           </div>
           <button
             onClick={() => setExpandedView(!expandedView)}
-            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             {expandedView ? (
               <>
-                <ChevronUp size={14} />
+                <ChevronUp size={16} />
                 <span>Hide details</span>
               </>
             ) : (
               <>
-                <ChevronDown size={14} />
+                <ChevronDown size={16} />
                 <span>Show details</span>
               </>
             )}
@@ -318,7 +378,7 @@ function CompletedPhasesSummary({
               <div
                 key={phase}
                 className={cn(
-                  'flex items-center gap-1.5 px-2 py-1 rounded-md text-xs',
+                  'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium',
                   passed
                     ? 'bg-emerald-500/10 text-emerald-600'
                     : 'bg-amber-500/10 text-amber-600'
@@ -344,20 +404,20 @@ function CompletedPhasesSummary({
               <div
                 key={phase}
                 className={cn(
-                  'p-3 rounded-lg border',
+                  'p-4 rounded-lg border',
                   passed
                     ? 'border-emerald-500/30 bg-emerald-500/5'
                     : 'border-amber-500/30 bg-amber-500/5'
                 )}
               >
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-foreground">
+                  <div className="flex items-center gap-3">
+                    <span className="text-base font-medium text-foreground">
                       {meta.name}
                     </span>
                     <span
                       className={cn(
-                        'text-xs px-1.5 py-0.5 rounded',
+                        'text-sm px-2 py-0.5 rounded font-medium',
                         passed ? 'bg-emerald-500/20 text-emerald-600' : 'bg-amber-500/20 text-amber-600'
                       )}
                     >
@@ -366,7 +426,7 @@ function CompletedPhasesSummary({
                   </div>
                   <span
                     className={cn(
-                      'text-xs',
+                      'text-sm font-medium',
                       passed ? 'text-emerald-600' : 'text-amber-600'
                     )}
                   >
