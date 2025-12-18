@@ -55,6 +55,20 @@ function createInitialPhaseProgress(): Map<DiscoveryPhase, PhaseProgressDisplay>
   return map
 }
 
+// Change request type for Make Changes feature
+export interface ChangeRequest {
+  id: string
+  request: string
+  timestamp: Date
+  status: 'pending' | 'reviewing' | 'applied' | 'rejected'
+  aiResponse?: string
+  changes?: {
+    phase: string
+    description: string
+    applied: boolean
+  }[]
+}
+
 export function useFrontierScienceWorkflow(): UseFrontierScienceWorkflowReturn {
   // Get debug context from provider (shared with AdminDebugViewer)
   const debugContext = useContext(DebugContext)
@@ -71,10 +85,17 @@ export function useFrontierScienceWorkflow(): UseFrontierScienceWorkflowReturn {
   const [error, setError] = useState<string | null>(null)
   const [thinkingMessage, setThinkingMessage] = useState<string | null>(null)
 
+  // Pause/Resume state
+  const [isPaused, setIsPaused] = useState(false)
+  const [pausedAtPhase, setPausedAtPhase] = useState<DiscoveryPhase | null>(null)
+  const [changeRequests, setChangeRequests] = useState<ChangeRequest[]>([])
+  const [pendingChangeRequest, setPendingChangeRequest] = useState<ChangeRequest | null>(null)
+
   // Refs for cleanup
   const eventSourceRef = useRef<EventSource | null>(null)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const startTimeRef = useRef<number>(0)
+  const pausedElapsedRef = useRef<number>(0)
 
   // Cleanup function
   const cleanup = useCallback(() => {
@@ -339,8 +360,98 @@ export function useFrontierScienceWorkflow(): UseFrontierScienceWorkflowReturn {
     cleanup()
     setStatus('idle')
     setThinkingMessage(null)
+    setIsPaused(false)
+    setPausedAtPhase(null)
     // Note: We don't reset other state so user can see what was completed
   }, [cleanup])
+
+  // Pause discovery for making changes
+  const pauseDiscovery = useCallback(() => {
+    if (status !== 'running') return
+
+    // Store current elapsed time
+    pausedElapsedRef.current = elapsedTime
+
+    // Pause the timer
+    if (timerRef.current) {
+      clearInterval(timerRef.current)
+      timerRef.current = null
+    }
+
+    setIsPaused(true)
+    setPausedAtPhase(currentPhase)
+    setThinkingMessage('Discovery paused - awaiting your changes...')
+  }, [status, elapsedTime, currentPhase])
+
+  // Resume discovery after making changes
+  const resumeDiscovery = useCallback(() => {
+    if (!isPaused) return
+
+    // Resume timer from where we left off
+    startTimeRef.current = Date.now() - pausedElapsedRef.current
+    timerRef.current = setInterval(() => {
+      setElapsedTime(Date.now() - startTimeRef.current)
+    }, 1000)
+
+    setIsPaused(false)
+    setPausedAtPhase(null)
+    setThinkingMessage(null)
+  }, [isPaused])
+
+  // Submit a change request for AI review
+  const submitChangeRequest = useCallback(async (request: string): Promise<ChangeRequest> => {
+    const changeRequest: ChangeRequest = {
+      id: `change-${Date.now()}`,
+      request,
+      timestamp: new Date(),
+      status: 'reviewing',
+    }
+
+    setPendingChangeRequest(changeRequest)
+
+    try {
+      // Call AI to review the change request
+      const response = await fetch('/api/discovery/change-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          discoveryId,
+          changeRequest: request,
+          currentPhase,
+          phaseProgress: Object.fromEntries(phaseProgress),
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to process change request')
+      }
+
+      const data = await response.json()
+
+      const reviewedRequest: ChangeRequest = {
+        ...changeRequest,
+        status: data.canApply ? 'applied' : 'rejected',
+        aiResponse: data.response,
+        changes: data.changes || [],
+      }
+
+      setChangeRequests(prev => [...prev, reviewedRequest])
+      setPendingChangeRequest(null)
+
+      return reviewedRequest
+    } catch (err) {
+      const errorRequest: ChangeRequest = {
+        ...changeRequest,
+        status: 'rejected',
+        aiResponse: err instanceof Error ? err.message : 'Failed to process change request',
+      }
+
+      setChangeRequests(prev => [...prev, errorRequest])
+      setPendingChangeRequest(null)
+
+      return errorRequest
+    }
+  }, [discoveryId, currentPhase, phaseProgress])
 
   // Computed values
   const qualityTier = useMemo((): DiscoveryQuality | null => {
@@ -397,9 +508,18 @@ export function useFrontierScienceWorkflow(): UseFrontierScienceWorkflowReturn {
     error,
     thinkingMessage,
 
+    // Pause/Resume state
+    isPaused,
+    pausedAtPhase,
+    changeRequests,
+    pendingChangeRequest,
+
     // Actions
     startDiscovery,
     cancelDiscovery,
+    pauseDiscovery,
+    resumeDiscovery,
+    submitChangeRequest,
 
     // Computed
     qualityTier,

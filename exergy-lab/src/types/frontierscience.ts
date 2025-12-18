@@ -144,6 +144,23 @@ export interface DiscoveryOptions {
 }
 
 // ============================================================================
+// Change Request Types
+// ============================================================================
+
+export interface ChangeRequest {
+  id: string
+  request: string
+  timestamp: Date
+  status: 'pending' | 'reviewing' | 'applied' | 'rejected'
+  aiResponse?: string
+  changes?: {
+    phase: string
+    description: string
+    applied: boolean
+  }[]
+}
+
+// ============================================================================
 // Hook Return Type
 // ============================================================================
 
@@ -159,9 +176,18 @@ export interface UseFrontierScienceWorkflowReturn {
   error: string | null
   thinkingMessage: string | null
 
+  // Pause/Resume state
+  isPaused: boolean
+  pausedAtPhase: DiscoveryPhase | null
+  changeRequests: ChangeRequest[]
+  pendingChangeRequest: ChangeRequest | null
+
   // Actions
   startDiscovery: (query: string, options?: DiscoveryOptions) => Promise<void>
   cancelDiscovery: () => void
+  pauseDiscovery: () => void
+  resumeDiscovery: () => void
+  submitChangeRequest: (request: string) => Promise<ChangeRequest>
 
   // Computed
   qualityTier: DiscoveryQuality | null

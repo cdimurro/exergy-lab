@@ -53,6 +53,13 @@ export function FrontierScienceChatInterface({
   const [isAutoSaving, setIsAutoSaving] = React.useState(false)
   const [lastSavedTime, setLastSavedTime] = React.useState<Date | null>(null)
   const [checkpoints, setCheckpoints] = React.useState<Array<{phase: string; timestamp: Date; data: any}>>([])
+  const [changeRequestInput, setChangeRequestInput] = React.useState('')
+  const [isSubmittingChange, setIsSubmittingChange] = React.useState(false)
+  const [lastChangeResponse, setLastChangeResponse] = React.useState<{
+    response: string
+    changes: { phase: string; description: string; applied: boolean }[]
+    summary: string
+  } | null>(null)
   const [discoveryConfig, setDiscoveryConfig] = React.useState<DiscoveryConfiguration | null>(null)
   const [suggestedDomain, setSuggestedDomain] = React.useState<Domain | undefined>(undefined)
   const inputRef = React.useRef<HTMLTextAreaElement>(null)
@@ -69,6 +76,13 @@ export function FrontierScienceChatInterface({
     thinkingMessage,
     startDiscovery,
     cancelDiscovery,
+    pauseDiscovery,
+    resumeDiscovery,
+    submitChangeRequest,
+    isPaused,
+    pausedAtPhase,
+    pendingChangeRequest,
+    changeRequests,
     qualityTier,
     completedPhasesCount,
     totalPhasesCount,
@@ -251,17 +265,36 @@ export function FrontierScienceChatInterface({
               </div>
             )}
 
-            {/* Make Changes Button - Only show when running or completed */}
+            {/* Make Changes / Resume Button - Only show when running or completed */}
             {(status === 'running' || status === 'completed') && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowPromptWindow(!showPromptWindow)}
-                className="gap-1.5"
-              >
-                <Pencil className="h-4 w-4" />
-                Make Changes
-              </Button>
+              isPaused ? (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => {
+                    setShowPromptWindow(false)
+                    setLastChangeResponse(null)
+                    resumeDiscovery()
+                  }}
+                  className="gap-1.5 bg-emerald-600 hover:bg-emerald-700"
+                >
+                  <Send className="h-4 w-4" />
+                  Resume Discovery
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    pauseDiscovery()
+                    setShowPromptWindow(true)
+                  }}
+                  className="gap-1.5"
+                >
+                  <Pencil className="h-4 w-4" />
+                  Make Changes
+                </Button>
+              )
             )}
 
             {/* Close/Cancel Button */}
@@ -422,45 +455,140 @@ export function FrontierScienceChatInterface({
       )}
 
       {/* Make Changes Prompt Window - Floating overlay */}
-      {showPromptWindow && (status === 'running' || status === 'completed') && (
+      {showPromptWindow && isPaused && (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-full max-w-2xl px-4">
           <div className="bg-background border border-border rounded-xl shadow-2xl p-4">
+            {/* Header */}
             <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-medium text-foreground">Make Changes</span>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                <span className="text-sm font-medium text-foreground">
+                  Discovery Paused - Make Changes
+                </span>
+              </div>
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setShowPromptWindow(false)}
+                onClick={() => {
+                  setShowPromptWindow(false)
+                  setLastChangeResponse(null)
+                  resumeDiscovery()
+                }}
                 className="h-7 w-7 p-0"
               >
                 <X className="h-4 w-4" />
               </Button>
             </div>
+
+            {/* Paused Phase Info */}
+            {pausedAtPhase && (
+              <div className="text-xs text-muted-foreground mb-3 bg-muted/30 p-2 rounded">
+                Paused at: <span className="font-medium capitalize">{pausedAtPhase}</span> phase
+              </div>
+            )}
+
+            {/* AI Response Display */}
+            {lastChangeResponse && (
+              <div className="mb-4 p-3 rounded-lg bg-blue-500/5 border border-blue-500/20">
+                <div className="flex items-start gap-2 mb-2">
+                  <CheckCircle className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground mb-1">AI Review Complete</p>
+                    <p className="text-sm text-muted-foreground">{lastChangeResponse.response}</p>
+                  </div>
+                </div>
+                {lastChangeResponse.changes.length > 0 && (
+                  <div className="mt-3 space-y-1">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Changes Applied:</p>
+                    {lastChangeResponse.changes.map((change, i) => (
+                      <div key={i} className="flex items-center gap-2 text-xs">
+                        <span className={cn(
+                          'w-1.5 h-1.5 rounded-full',
+                          change.applied ? 'bg-emerald-500' : 'bg-amber-500'
+                        )} />
+                        <span className="capitalize text-muted-foreground">{change.phase}:</span>
+                        <span className="text-foreground">{change.description}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground mt-3 pt-2 border-t border-border">
+                  {lastChangeResponse.summary}
+                </p>
+              </div>
+            )}
+
+            {/* Input Area */}
             <div className="relative">
               <textarea
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                placeholder="Describe the changes you want to make to the current discovery..."
+                value={changeRequestInput}
+                onChange={(e) => setChangeRequestInput(e.target.value)}
+                disabled={isSubmittingChange}
+                placeholder={lastChangeResponse
+                  ? "Need more changes? Describe them here, or click Resume to continue..."
+                  : "Describe the changes you want to make to the current discovery..."
+                }
                 className={cn(
                   'w-full min-h-[80px] max-h-[150px] p-3 pr-12',
                   'rounded-lg border border-border bg-muted/30',
                   'text-foreground placeholder:text-muted-foreground',
-                  'resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/50'
+                  'resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/50',
+                  'disabled:opacity-50'
                 )}
               />
               <Button
                 type="button"
                 size="sm"
-                disabled={!inputValue.trim()}
-                onClick={() => {
-                  // TODO: Implement change request handling
-                  console.log('Change request:', inputValue)
-                  setShowPromptWindow(false)
-                  setInputValue('')
+                disabled={!changeRequestInput.trim() || isSubmittingChange}
+                onClick={async () => {
+                  if (!changeRequestInput.trim()) return
+                  setIsSubmittingChange(true)
+                  try {
+                    const result = await submitChangeRequest(changeRequestInput.trim())
+                    setLastChangeResponse({
+                      response: result.aiResponse || 'Changes processed',
+                      changes: result.changes || [],
+                      summary: result.status === 'applied'
+                        ? 'Your changes have been applied to the discovery.'
+                        : 'Some changes could not be applied.',
+                    })
+                    setChangeRequestInput('')
+                  } catch {
+                    setLastChangeResponse({
+                      response: 'Failed to process your change request.',
+                      changes: [],
+                      summary: 'Please try again or resume the discovery.',
+                    })
+                  }
+                  setIsSubmittingChange(false)
                 }}
                 className="absolute bottom-2 right-2"
               >
+                {isSubmittingChange ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
+              <p className="text-xs text-muted-foreground">
+                {isSubmittingChange ? 'AI is reviewing your request...' : 'Describe changes and submit, or resume discovery'}
+              </p>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => {
+                  setShowPromptWindow(false)
+                  setLastChangeResponse(null)
+                  resumeDiscovery()
+                }}
+                className="gap-1.5 bg-emerald-600 hover:bg-emerald-700"
+              >
                 <Send className="h-4 w-4" />
+                Resume
               </Button>
             </div>
           </div>
