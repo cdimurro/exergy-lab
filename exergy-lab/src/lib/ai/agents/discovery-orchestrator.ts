@@ -210,6 +210,14 @@ export class DiscoveryOrchestrator {
       phases.push(researchResult)
       this.emitProgress('research', researchResult.passed ? 'completed' : 'failed', researchResult.iterations.length, researchResult.finalScore, researchResult.passed)
 
+      // Critical phase check: Research must pass to continue
+      if (!researchResult.passed) {
+        throw new Error(
+          `Research phase failed after ${researchResult.iterations.length} iterations (score: ${researchResult.finalScore.toFixed(1)}/10). ` +
+          `Unable to continue discovery without adequate research foundation.`
+        )
+      }
+
       // Phase 2: Knowledge Synthesis (embedded in research for now)
       // TODO: Implement separate synthesis phase
 
@@ -218,6 +226,14 @@ export class DiscoveryOrchestrator {
       const hypothesisResult = await this.executeHypothesisPhase(researchResult.finalOutput as ResearchResult)
       phases.push(hypothesisResult)
       this.emitProgress('hypothesis', hypothesisResult.passed ? 'completed' : 'failed', hypothesisResult.iterations.length, hypothesisResult.finalScore, hypothesisResult.passed)
+
+      // Critical phase check: Hypothesis must pass to continue
+      if (!hypothesisResult.passed) {
+        throw new Error(
+          `Hypothesis Generation phase failed after ${hypothesisResult.iterations.length} iterations (score: ${hypothesisResult.finalScore.toFixed(1)}/10). ` +
+          `Unable to proceed to experiments without validated hypotheses.`
+        )
+      }
 
       // Phase 4: Computational Screening (embedded in hypothesis for now)
       // TODO: Implement separate screening with Materials Project
@@ -228,11 +244,27 @@ export class DiscoveryOrchestrator {
       phases.push(experimentResult)
       this.emitProgress('experiment', experimentResult.passed ? 'completed' : 'failed', 1, experimentResult.finalScore, experimentResult.passed)
 
+      // Critical phase check: Experiment design must pass to continue
+      if (!experimentResult.passed) {
+        throw new Error(
+          `Experiment Design phase failed (score: ${experimentResult.finalScore.toFixed(1)}/10). ` +
+          `Unable to run simulations without validated experiment designs.`
+        )
+      }
+
       // Phase 6: Simulation
       this.emitProgress('simulation', 'running', 1)
       const simulationResult = await this.executeSimulationPhase(experimentResult.finalOutput as ExperimentDesign[])
       phases.push(simulationResult)
       this.emitProgress('simulation', simulationResult.passed ? 'completed' : 'failed', simulationResult.iterations.length, simulationResult.finalScore, simulationResult.passed)
+
+      // Critical phase check: Simulation must pass to continue
+      if (!simulationResult.passed) {
+        throw new Error(
+          `Simulation phase failed after ${simulationResult.iterations.length} iterations (score: ${simulationResult.finalScore.toFixed(1)}/10). ` +
+          `Unable to perform analysis without validated simulation results.`
+        )
+      }
 
       // Phases 7 & 8: Exergy and TEA Analysis (run in parallel if both enabled)
       // These phases are independent - both only depend on simulation results
