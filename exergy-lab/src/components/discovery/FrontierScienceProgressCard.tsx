@@ -77,7 +77,7 @@ export function FrontierScienceProgressCard({
   const estimatedRemaining = Math.max(0, estimatedTotal - elapsedTime)
 
   return (
-    <div className={cn('border rounded-xl overflow-hidden bg-card', className)}>
+    <div className={cn('border rounded-xl overflow-hidden bg-card flex flex-col max-h-[80vh]', className)}>
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b bg-muted/30">
         <div className="flex items-center gap-3">
@@ -102,8 +102,10 @@ export function FrontierScienceProgressCard({
         )}
       </div>
 
-      {/* Overall Progress */}
-      <div className="p-4 border-b">
+      {/* Scrollable Content Area */}
+      <div className="flex-1 overflow-y-auto">
+        {/* Overall Progress */}
+        <div className="p-4 border-b">
         <div className="flex items-center justify-between mb-2">
           <span className="text-sm font-medium text-foreground">
             Overall Progress
@@ -247,8 +249,9 @@ export function FrontierScienceProgressCard({
         </div>
       )}
 
-      {/* Completed Phases Summary */}
-      <CompletedPhasesSummary phaseProgress={phaseProgress} />
+        {/* Completed Phases Summary */}
+        <CompletedPhasesSummary phaseProgress={phaseProgress} />
+      </div>
     </div>
   )
 }

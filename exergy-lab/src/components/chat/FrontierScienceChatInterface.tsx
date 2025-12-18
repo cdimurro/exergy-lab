@@ -9,7 +9,7 @@
  */
 
 import * as React from 'react'
-import { ArrowLeft, Send, Loader2, Settings2, X } from 'lucide-react'
+import { ArrowLeft, Send, Loader2, Settings2, X, Pencil, Save, RotateCcw, CheckCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { useFrontierScienceWorkflow } from '@/hooks/use-frontierscience-workflow'
@@ -49,6 +49,10 @@ export function FrontierScienceChatInterface({
   const [hasAutoStarted, setHasAutoStarted] = React.useState(false)
   const [showConfig, setShowConfig] = React.useState(false)
   const [showExportPanel, setShowExportPanel] = React.useState(false)
+  const [showPromptWindow, setShowPromptWindow] = React.useState(false)
+  const [isAutoSaving, setIsAutoSaving] = React.useState(false)
+  const [lastSavedTime, setLastSavedTime] = React.useState<Date | null>(null)
+  const [checkpoints, setCheckpoints] = React.useState<Array<{phase: string; timestamp: Date; data: any}>>([])
   const [discoveryConfig, setDiscoveryConfig] = React.useState<DiscoveryConfiguration | null>(null)
   const [suggestedDomain, setSuggestedDomain] = React.useState<Domain | undefined>(undefined)
   const inputRef = React.useRef<HTMLTextAreaElement>(null)
@@ -84,6 +88,47 @@ export function FrontierScienceChatInterface({
       onComplete(result)
     }
   }, [status, result, onComplete])
+
+  // Auto-save checkpoints when phases complete
+  React.useEffect(() => {
+    if (currentPhase && phaseProgress.size > 0) {
+      const completedPhases = Array.from(phaseProgress.entries())
+        .filter(([_, p]) => p.status === 'completed')
+
+      // Check if we have a new completed phase
+      const lastCompleted = completedPhases[completedPhases.length - 1]
+      if (lastCompleted && !checkpoints.some(c => c.phase === lastCompleted[0])) {
+        // Trigger auto-save animation
+        setIsAutoSaving(true)
+
+        // Create checkpoint
+        const newCheckpoint = {
+          phase: lastCompleted[0],
+          timestamp: new Date(),
+          data: {
+            phaseProgress: Object.fromEntries(phaseProgress),
+            overallProgress,
+            elapsedTime,
+          }
+        }
+        setCheckpoints(prev => [...prev, newCheckpoint])
+        setLastSavedTime(new Date())
+
+        // Stop animation after 2 seconds
+        setTimeout(() => setIsAutoSaving(false), 2000)
+      }
+    }
+  }, [currentPhase, phaseProgress, overallProgress, elapsedTime, checkpoints])
+
+  // Handle rollback to last checkpoint
+  const handleRollbackToCheckpoint = (checkpointIndex: number) => {
+    const checkpoint = checkpoints[checkpointIndex]
+    if (checkpoint) {
+      console.log(`Rolling back to checkpoint: ${checkpoint.phase}`, checkpoint.data)
+      // Note: Full rollback implementation would require additional backend support
+      // For now, we just show the checkpoint data and allow retry from that point
+    }
+  }
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault()
@@ -174,6 +219,64 @@ export function FrontierScienceChatInterface({
           {qualityTier && status === 'running' && (
             <QualityBadge quality={qualityTier} size="sm" />
           )}
+
+          {/* Action Buttons - Right side */}
+          <div className="flex items-center gap-2">
+            {/* Auto-Save Indicator */}
+            {status === 'running' && (
+              <div className={cn(
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-300',
+                isAutoSaving
+                  ? 'bg-emerald-500/10 text-emerald-600 animate-pulse'
+                  : lastSavedTime
+                  ? 'bg-muted text-muted-foreground'
+                  : 'bg-muted/50 text-muted-foreground/50'
+              )}>
+                {isAutoSaving ? (
+                  <>
+                    <Save className="h-3.5 w-3.5 animate-spin" />
+                    <span>Saving...</span>
+                  </>
+                ) : lastSavedTime ? (
+                  <>
+                    <CheckCircle className="h-3.5 w-3.5" />
+                    <span>Auto-Saved</span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-3.5 w-3.5" />
+                    <span>Auto-Save</span>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Make Changes Button - Only show when running or completed */}
+            {(status === 'running' || status === 'completed') && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowPromptWindow(!showPromptWindow)}
+                className="gap-1.5"
+              >
+                <Pencil className="h-4 w-4" />
+                Make Changes
+              </Button>
+            )}
+
+            {/* Close/Cancel Button */}
+            {status === 'running' && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={cancelDiscovery}
+                className="h-9 w-9 p-0"
+                title="Cancel discovery"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -270,14 +373,16 @@ export function FrontierScienceChatInterface({
                     startDiscovery(inputValue || initialQuery!, initialOptions)
                   }
                 }}
+                checkpoints={checkpoints}
+                onRollback={handleRollbackToCheckpoint}
               />
             )}
           </div>
         )}
       </div>
 
-      {/* Input Area - Hidden when config panel is shown */}
-      {!showConfig && (
+      {/* Input Area - Show at bottom when idle OR when Make Changes is clicked */}
+      {(status === 'idle' && !showConfig) && (
         <div className="shrink-0 border-t border-border p-4">
           <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
             <div className="relative">
@@ -287,11 +392,7 @@ export function FrontierScienceChatInterface({
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleKeyDown}
                 disabled={isInputDisabled}
-                placeholder={
-                  isInputDisabled
-                    ? 'Discovery in progress...'
-                    : 'Describe your scientific discovery query (e.g., "Novel approaches to high-temperature SOEC efficiency")'
-                }
+                placeholder="Describe your scientific discovery query (e.g., 'Novel approaches to high-temperature SOEC efficiency')"
                 className={cn(
                   'w-full min-h-[100px] max-h-[200px] p-4 pr-14',
                   'rounded-xl border border-border bg-background',
@@ -315,13 +416,54 @@ export function FrontierScienceChatInterface({
             </div>
             <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
               <span>Press Enter to send, Shift+Enter for new line</span>
-              {status === 'running' && (
-                <span>
-                  {completedPhasesCount}/{totalPhasesCount} phases completed
-                </span>
-              )}
             </div>
           </form>
+        </div>
+      )}
+
+      {/* Make Changes Prompt Window - Floating overlay */}
+      {showPromptWindow && (status === 'running' || status === 'completed') && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-full max-w-2xl px-4">
+          <div className="bg-background border border-border rounded-xl shadow-2xl p-4">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-medium text-foreground">Make Changes</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowPromptWindow(false)}
+                className="h-7 w-7 p-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="relative">
+              <textarea
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                placeholder="Describe the changes you want to make to the current discovery..."
+                className={cn(
+                  'w-full min-h-[80px] max-h-[150px] p-3 pr-12',
+                  'rounded-lg border border-border bg-muted/30',
+                  'text-foreground placeholder:text-muted-foreground',
+                  'resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/50'
+                )}
+              />
+              <Button
+                type="button"
+                size="sm"
+                disabled={!inputValue.trim()}
+                onClick={() => {
+                  // TODO: Implement change request handling
+                  console.log('Change request:', inputValue)
+                  setShowPromptWindow(false)
+                  setInputValue('')
+                }}
+                className="absolute bottom-2 right-2"
+              >
+                <Send className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -483,14 +625,18 @@ function StartingState({ query }: { query: string }) {
 }
 
 /**
- * Error state
+ * Error state with checkpoint rollback options
  */
 function ErrorState({
   error,
   onRetry,
+  checkpoints,
+  onRollback,
 }: {
   error: string | null
   onRetry: () => void
+  checkpoints?: Array<{phase: string; timestamp: Date; data: any}>
+  onRollback?: (index: number) => void
 }) {
   return (
     <div className="flex flex-col items-center justify-center py-12">
@@ -515,9 +661,38 @@ function ErrorState({
       <p className="text-sm text-red-600 text-center max-w-md mb-4">
         {error || 'An unexpected error occurred'}
       </p>
-      <Button onClick={onRetry} variant="outline">
-        Try Again
-      </Button>
+
+      <div className="flex flex-col gap-3 items-center">
+        <Button onClick={onRetry} variant="outline">
+          Try Again
+        </Button>
+
+        {/* Checkpoint Rollback Options */}
+        {checkpoints && checkpoints.length > 0 && onRollback && (
+          <div className="mt-4 w-full max-w-sm">
+            <p className="text-xs text-muted-foreground text-center mb-3">
+              Or rollback to a previous checkpoint:
+            </p>
+            <div className="flex flex-col gap-2">
+              {checkpoints.map((checkpoint, index) => (
+                <Button
+                  key={index}
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onRollback(index)}
+                  className="justify-start gap-2 text-left"
+                >
+                  <RotateCcw className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="capitalize">{checkpoint.phase}</span>
+                  <span className="text-xs text-muted-foreground ml-auto">
+                    {checkpoint.timestamp.toLocaleTimeString()}
+                  </span>
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

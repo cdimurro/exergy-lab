@@ -361,19 +361,19 @@ export class DiscoveryOrchestrator {
   private async executeResearchPhase(query: string): Promise<PhaseResult<ResearchResult>> {
     this.log('Phase 1: Multi-Source Research')
     this.currentPhase = 'research'
-    this.emitThinking('generating', '🔍 Searching 14+ scientific databases (arXiv, PubMed, Google Scholar, IEEE)...')
+    this.emitThinking('generating', 'Searching 14+ scientific databases (arXiv, PubMed, Google Scholar, IEEE)...')
 
     const result = await this.refinementEngine.refineUntilPass(
       query,
       async (hints?: RefinementHints) => {
         if (hints) {
-          this.emitThinking('refining', `🔄 Refining search strategy (previous score: ${hints.previousScore?.toFixed(1)}/10)`, hints.iterationNumber)
+          this.emitThinking('refining', `Refining search strategy (previous score: ${hints.previousScore?.toFixed(1)}/10)`, hints.iterationNumber)
         } else {
-          this.emitThinking('generating', '📚 Analyzing scientific papers and extracting key findings...')
+          this.emitThinking('generating', 'Analyzing scientific papers and extracting key findings...')
         }
         const research = await this.researchAgent.execute(query, this.config.domain, hints)
-        this.emitThinking('validating', `✓ Found ${research.sources?.length || 0} sources, ${research.keyFindings?.length || 0} key findings`)
-        this.emitThinking('judging', `⚖️ Evaluating research quality against rubric criteria...`)
+        this.emitThinking('validating', `Found ${research.sources?.length || 0} sources, ${research.keyFindings?.length || 0} key findings`)
+        this.emitThinking('judging', 'Evaluating research quality against rubric criteria...')
         return research
       },
       RESEARCH_RUBRIC
@@ -395,8 +395,8 @@ export class DiscoveryOrchestrator {
   private async executeSynthesisPhase(research: ResearchResult): Promise<PhaseResult<any>> {
     this.log('Phase 2: Knowledge Synthesis')
     this.currentPhase = 'synthesis'
-    this.emitThinking('generating', '📊 Synthesizing knowledge across research findings...')
-    this.emitThinking('generating', '🔗 Identifying patterns, contradictions, and knowledge gaps...')
+    this.emitThinking('generating', 'Synthesizing knowledge across research findings...')
+    this.emitThinking('generating', 'Identifying patterns, contradictions, and knowledge gaps...')
 
     const startTime = Date.now()
 
@@ -409,7 +409,7 @@ export class DiscoveryOrchestrator {
       synthesis: `Synthesized ${research.keyFindings.length} findings from ${research.sources.length} sources`,
     }
 
-    this.emitThinking('validating', `✓ Identified ${synthesis.keyInsights.length} key insights and ${synthesis.knowledgeGaps.length} knowledge gaps`)
+    this.emitThinking('validating', `Identified ${synthesis.keyInsights.length} key insights and ${synthesis.knowledgeGaps.length} knowledge gaps`)
 
     const durationMs = Date.now() - startTime
 
@@ -429,19 +429,19 @@ export class DiscoveryOrchestrator {
   private async executeHypothesisPhase(research: ResearchResult): Promise<PhaseResult<Hypothesis[]>> {
     this.log('Phase 3: Hypothesis Generation')
     this.currentPhase = 'hypothesis'
-    this.emitThinking('generating', '💡 Synthesizing research into testable hypotheses...')
+    this.emitThinking('generating', 'Synthesizing research into testable hypotheses...')
 
     const result = await this.refinementEngine.refineUntilPass(
       research.query,
       async (hints?: RefinementHints) => {
         if (hints) {
-          this.emitThinking('refining', `🎯 Refining hypotheses (targeting: ${hints.failedCriteria.map(c => c.id).join(', ')})`, hints.iterationNumber)
+          this.emitThinking('refining', `Refining hypotheses (targeting: ${hints.failedCriteria.map(c => c.id).join(', ')})`, hints.iterationNumber)
         } else {
-          this.emitThinking('generating', '🧠 Analyzing research gaps and generating novel research directions...')
+          this.emitThinking('generating', 'Analyzing research gaps and generating novel research directions...')
         }
         const hypotheses = await this.creativeAgent.generateHypotheses(research, hints)
-        this.emitThinking('validating', `✓ Generated ${hypotheses.length} hypotheses with testable predictions`)
-        this.emitThinking('judging', `⚖️ Evaluating novelty, feasibility, and impact potential...`)
+        this.emitThinking('validating', `Generated ${hypotheses.length} hypotheses with testable predictions`)
+        this.emitThinking('judging', 'Evaluating novelty, feasibility, and impact potential...')
         return hypotheses
       },
       HYPOTHESIS_RUBRIC
@@ -463,8 +463,8 @@ export class DiscoveryOrchestrator {
   private async executeScreeningPhase(hypotheses: Hypothesis[]): Promise<PhaseResult<Hypothesis[]>> {
     this.log('Phase 4: Computational Screening')
     this.currentPhase = 'screening'
-    this.emitThinking('generating', '🖥️ Running computational screening of hypotheses...')
-    this.emitThinking('generating', '⚡ Filtering candidates by feasibility and computational predictions...')
+    this.emitThinking('generating', 'Running computational screening of hypotheses...')
+    this.emitThinking('generating', 'Filtering candidates by feasibility and computational predictions...')
 
     const startTime = Date.now()
 
@@ -474,7 +474,7 @@ export class DiscoveryOrchestrator {
       return (h.feasibilityScore || 0) >= 6
     })
 
-    this.emitThinking('validating', `✓ Screened ${hypotheses.length} hypotheses → ${screenedHypotheses.length} passed screening`)
+    this.emitThinking('validating', `Screened ${hypotheses.length} hypotheses, ${screenedHypotheses.length} passed screening`)
 
     const durationMs = Date.now() - startTime
 
@@ -494,13 +494,13 @@ export class DiscoveryOrchestrator {
   private async executeExperimentPhase(hypotheses: Hypothesis[]): Promise<PhaseResult<ExperimentDesign[]>> {
     this.log('Phase 5: Experiment Design')
     this.currentPhase = 'experiment'
-    this.emitThinking('generating', `🧪 Designing experimental protocols for ${hypotheses.length} hypotheses...`)
-    this.emitThinking('generating', '📋 Creating detailed procedures, materials lists, and safety protocols...')
+    this.emitThinking('generating', `Designing experimental protocols for ${hypotheses.length} hypotheses...`)
+    this.emitThinking('generating', 'Creating detailed procedures, materials lists, and safety protocols...')
 
     const startTime = Date.now()
     const experiments = await this.creativeAgent.designExperiments(hypotheses)
-    this.emitThinking('validating', `✓ Generated ${experiments.length} experiment designs`)
-    this.emitThinking('validating', `🔒 Validating safety protocols and reproducibility criteria...`)
+    this.emitThinking('validating', `Generated ${experiments.length} experiment designs`)
+    this.emitThinking('validating', 'Validating safety protocols and reproducibility criteria...')
 
     // Simple scoring for experiments (TODO: add experiment rubric)
     const avgCompleteness = experiments.reduce((sum, e) => {
@@ -547,8 +547,8 @@ export class DiscoveryOrchestrator {
   private async executeSimulationPhase(experiments: ExperimentDesign[]): Promise<PhaseResult<any>> {
     this.log('Phase 6: Multi-Tier Simulation')
     this.currentPhase = 'simulation'
-    this.emitThinking('generating', `⚙️ Initializing ${this.config.simulationTier.toUpperCase()} simulation engine...`)
-    this.emitThinking('generating', `🔬 Running ${experiments.length} computational simulations...`)
+    this.emitThinking('generating', `Initializing ${this.config.simulationTier.toUpperCase()} simulation engine...`)
+    this.emitThinking('generating', `Running ${experiments.length} computational simulations...`)
 
     const startTime = Date.now()
 
