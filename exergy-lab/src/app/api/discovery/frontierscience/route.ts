@@ -346,7 +346,7 @@ export async function GET(request: NextRequest) {
       clearInterval(streamInterval)
       await safeCloseStream()
     }
-  }, 500) // Reduced interval to 500ms for more responsive updates
+  }, 2000) // Reduced heartbeat noise - only send events every 2s
 
   return new Response(stream.readable, {
     headers: {

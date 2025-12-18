@@ -151,11 +151,19 @@ function generateMarkdown(
   lines.push(`**Overall Score:** ${result.overallScore?.toFixed(1) || 'N/A'}/10`)
   lines.push(`**Quality:** ${result.discoveryQuality || 'Unknown'}`)
   lines.push('')
+
+  // Executive Summary
+  lines.push('## Executive Summary')
+  lines.push('')
+  const passedPhases = result.phases?.filter(p => p.passed).length || 0
+  const totalPhases = result.phases?.length || 0
+  lines.push(`This discovery completed ${passedPhases}/${totalPhases} phases successfully with an overall score of ${result.overallScore?.toFixed(1) || 'N/A'}/10.`)
+  lines.push('')
   lines.push('---')
   lines.push('')
 
   // Phase Results
-  lines.push('## Phase Results')
+  lines.push('## Detailed Phase Results')
   lines.push('')
 
   if (result.phases) {
@@ -166,16 +174,48 @@ function generateMarkdown(
       lines.push('')
 
       if (config.includeRubricScores && phase.finalScore !== undefined) {
-        lines.push(`**Score:** ${phase.finalScore.toFixed(1)}/10 (${phase.passed ? 'Passed' : 'Failed'})`)
+        lines.push(`**Score:** ${phase.finalScore.toFixed(1)}/10 (${phase.passed ? '✓ Passed' : '✗ Needs Improvement'})`)
         lines.push('')
       }
 
-      if (config.includeIterationHistory && phase.iterations) {
-        lines.push('**Iterations:**')
-        for (const iter of phase.iterations) {
-          lines.push(`- Iteration ${iter.iteration}: ${iter.judgeResult?.totalScore?.toFixed(1) || 'N/A'}/10`)
-        }
+      // Iteration history with details
+      if (config.includeIterationHistory && phase.iterations && phase.iterations.length > 0) {
+        lines.push('#### Iteration History')
         lines.push('')
+        for (const iter of phase.iterations) {
+          lines.push(`**Iteration ${iter.iteration}:** Score ${iter.judgeResult?.totalScore?.toFixed(1) || 'N/A'}/10`)
+
+          // What worked (passed items)
+          const passedItems = iter.judgeResult?.passedItems || iter.judgeResult?.itemScores?.filter((s: any) => s.passed) || []
+          if (passedItems.length > 0) {
+            lines.push('')
+            lines.push('*What Worked:*')
+            for (const item of passedItems.slice(0, 5)) {
+              const itemAny = item as any
+              lines.push(`- ✓ ${itemAny.description || itemAny.id || itemAny.itemId || String(item)}`)
+            }
+          }
+
+          // Challenges (failed items)
+          const failedItems = iter.judgeResult?.failedItems || iter.judgeResult?.itemScores?.filter((s: any) => !s.passed) || []
+          if (failedItems.length > 0) {
+            lines.push('')
+            lines.push('*Challenges:*')
+            for (const item of failedItems.slice(0, 5)) {
+              const itemAny = item as any
+              lines.push(`- ⚠ ${itemAny.description || itemAny.id || itemAny.itemId || String(item)}${itemAny.reasoning ? `: ${itemAny.reasoning}` : ''}`)
+            }
+          }
+
+          // Refinements applied
+          if (iter.hints?.specificGuidance) {
+            lines.push('')
+            lines.push('*Refinements Applied:*')
+            lines.push(`- → ${iter.hints.specificGuidance}`)
+          }
+
+          lines.push('')
+        }
       }
 
       // Phase-specific content
@@ -184,49 +224,133 @@ function generateMarkdown(
 
         // Research phase
         if (phase.phase === 'research' && output.sources) {
+          lines.push('#### Key Findings')
+          lines.push('')
           lines.push(`**Sources Found:** ${output.sources.length}`)
           lines.push('')
           if (output.keyFindings) {
-            lines.push('**Key Findings:**')
             for (const finding of output.keyFindings.slice(0, 5)) {
-              lines.push(`- ${finding.summary || finding}`)
+              const findingText = typeof finding === 'string' ? finding : finding.summary || finding.finding || JSON.stringify(finding)
+              lines.push(`- ${findingText}`)
+            }
+            lines.push('')
+          }
+          if (output.gaps && output.gaps.length > 0) {
+            lines.push('**Identified Gaps:**')
+            for (const gap of output.gaps.slice(0, 3)) {
+              lines.push(`- ${typeof gap === 'string' ? gap : gap.description || JSON.stringify(gap)}`)
             }
             lines.push('')
           }
         }
 
         // Hypothesis phase
-        if (phase.phase === 'hypothesis' && output.hypotheses) {
-          lines.push('**Hypotheses:**')
-          for (let i = 0; i < Math.min(output.hypotheses.length, 5); i++) {
-            const h = output.hypotheses[i]
-            lines.push(`${i + 1}. ${h.statement}`)
-            if (h.noveltyScore !== undefined) {
-              lines.push(`   - Novelty: ${h.noveltyScore}, Feasibility: ${h.feasibilityScore || 'N/A'}`)
+        if (phase.phase === 'hypothesis') {
+          const hypotheses = output.hypotheses || output
+          if (Array.isArray(hypotheses) && hypotheses.length > 0) {
+            lines.push('#### Generated Hypotheses')
+            lines.push('')
+            for (let i = 0; i < Math.min(hypotheses.length, 5); i++) {
+              const h = hypotheses[i]
+              lines.push(`**${i + 1}. ${h.title || `Hypothesis ${i + 1}`}**`)
+              lines.push('')
+              lines.push(`> ${h.statement}`)
+              lines.push('')
+              if (h.noveltyScore !== undefined || h.feasibilityScore !== undefined) {
+                lines.push(`- Novelty Score: ${h.noveltyScore || 'N/A'}`)
+                lines.push(`- Feasibility Score: ${h.feasibilityScore || 'N/A'}`)
+                if (h.impactScore !== undefined) lines.push(`- Impact Score: ${h.impactScore}`)
+              }
+              if (h.predictions && h.predictions.length > 0) {
+                lines.push('')
+                lines.push('*Predictions:*')
+                for (const p of h.predictions.slice(0, 3)) {
+                  lines.push(`- ${p.statement}${p.expectedValue ? ` (Expected: ${p.expectedValue}${p.unit || ''})` : ''}`)
+                }
+              }
+              lines.push('')
             }
           }
-          lines.push('')
+        }
+
+        // Experiment phase
+        if (phase.phase === 'experiment') {
+          const experiments = output.experiments || output
+          if (Array.isArray(experiments) && experiments.length > 0) {
+            lines.push('#### Designed Experiments')
+            lines.push('')
+            for (let i = 0; i < Math.min(experiments.length, 3); i++) {
+              const e = experiments[i]
+              lines.push(`**${e.title || `Experiment ${i + 1}`}**`)
+              lines.push('')
+              lines.push(`- Type: ${e.type || 'N/A'}`)
+              lines.push(`- Difficulty: ${e.difficulty || 'N/A'}`)
+              lines.push(`- Duration: ${e.estimatedDuration || 'N/A'}`)
+              if (e.estimatedCost) lines.push(`- Cost: $${e.estimatedCost.toLocaleString()}`)
+              lines.push('')
+            }
+          }
         }
 
         // Simulation phase
         if (phase.phase === 'simulation' && output.results) {
-          lines.push('**Simulation Results:**')
-          if (typeof output.results === 'object') {
-            for (const [key, value] of Object.entries(output.results).slice(0, 10)) {
-              lines.push(`- ${key}: ${JSON.stringify(value)}`)
-            }
-          }
+          lines.push('#### Simulation Results')
           lines.push('')
+          const results = Array.isArray(output.results) ? output.results : [output.results]
+          for (const r of results.slice(0, 3)) {
+            lines.push(`**${r.experimentId || 'Simulation'}**`)
+            lines.push('')
+            if (r.convergenceMetrics) {
+              lines.push(`- Converged: ${r.convergenceMetrics.converged ? 'Yes' : 'No'}`)
+              lines.push(`- Iterations: ${r.convergenceMetrics.iterations}`)
+            }
+            if (r.outputs && Array.isArray(r.outputs)) {
+              lines.push('')
+              lines.push('*Key Outputs:*')
+              for (const o of r.outputs.slice(0, 5)) {
+                lines.push(`- ${o.name}: ${typeof o.value === 'number' ? o.value.toFixed(3) : o.value} ${o.unit || ''}`)
+              }
+            }
+            lines.push('')
+          }
         }
 
         // TEA phase
         if (phase.phase === 'tea' && output.economics) {
-          lines.push('**Economic Analysis:**')
+          lines.push('#### Economic Analysis')
+          lines.push('')
           const econ = output.economics
-          if (econ.npv !== undefined) lines.push(`- NPV: $${econ.npv.toLocaleString()}`)
-          if (econ.irr !== undefined) lines.push(`- IRR: ${(econ.irr * 100).toFixed(1)}%`)
-          if (econ.lcoe !== undefined) lines.push(`- LCOE: $${econ.lcoe.toFixed(4)}/kWh`)
-          if (econ.paybackPeriod !== undefined) lines.push(`- Payback: ${econ.paybackPeriod.toFixed(1)} years`)
+          if (econ.npv !== undefined) lines.push(`- **NPV:** $${econ.npv.toLocaleString()}`)
+          if (econ.irr !== undefined) lines.push(`- **IRR:** ${(econ.irr * 100).toFixed(1)}%`)
+          if (econ.lcoe !== undefined) lines.push(`- **LCOE:** $${econ.lcoe.toFixed(4)}/kWh`)
+          if (econ.paybackPeriod !== undefined) lines.push(`- **Payback Period:** ${econ.paybackPeriod.toFixed(1)} years`)
+          lines.push('')
+          if (econ.risks && econ.risks.length > 0) {
+            lines.push('*Identified Risks:*')
+            for (const risk of econ.risks.slice(0, 3)) {
+              lines.push(`- ⚠ ${risk}`)
+            }
+            lines.push('')
+          }
+        }
+
+        // Exergy phase
+        if (phase.phase === 'exergy') {
+          lines.push('#### Exergy Analysis')
+          lines.push('')
+          if (output.overallSecondLawEfficiency !== undefined) {
+            lines.push(`- **Second Law Efficiency:** ${(output.overallSecondLawEfficiency * 100).toFixed(1)}%`)
+          }
+          if (output.totalExergyDestruction !== undefined) {
+            lines.push(`- **Total Exergy Destruction:** ${output.totalExergyDestruction.toFixed(1)} ${output.unit || 'kJ'}`)
+          }
+          if (output.recommendations && output.recommendations.length > 0) {
+            lines.push('')
+            lines.push('*Recommendations:*')
+            for (const rec of output.recommendations.slice(0, 3)) {
+              lines.push(`- ${rec}`)
+            }
+          }
           lines.push('')
         }
       }
@@ -238,12 +362,22 @@ function generateMarkdown(
 
   // Recommendations
   if (result.recommendations && result.recommendations.length > 0) {
-    lines.push('## Recommendations')
+    lines.push('## Recommendations & Next Steps')
     lines.push('')
-    for (const rec of result.recommendations) {
-      lines.push(`- ${rec}`)
+    lines.push('### Immediate Actions')
+    lines.push('')
+    for (const rec of result.recommendations.slice(0, 3)) {
+      lines.push(`1. ${rec}`)
     }
     lines.push('')
+    if (result.recommendations.length > 3) {
+      lines.push('### Future Considerations')
+      lines.push('')
+      for (const rec of result.recommendations.slice(3)) {
+        lines.push(`- ${rec}`)
+      }
+      lines.push('')
+    }
   }
 
   // Raw data section
@@ -260,6 +394,7 @@ function generateMarkdown(
   lines.push('---')
   lines.push('')
   lines.push('*Generated by Exergy Lab Discovery Engine*')
+  lines.push(`*Report generated at ${new Date().toLocaleString()}*`)
 
   return lines.join('\n')
 }

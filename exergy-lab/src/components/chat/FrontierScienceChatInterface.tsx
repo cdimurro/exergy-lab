@@ -9,7 +9,7 @@
  */
 
 import * as React from 'react'
-import { ArrowLeft, Send, Loader2, Settings2 } from 'lucide-react'
+import { ArrowLeft, Send, Loader2, Settings2, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { useFrontierScienceWorkflow } from '@/hooks/use-frontierscience-workflow'
@@ -19,6 +19,7 @@ import {
   QualityBadge,
   PulsingBrain,
   DiscoveryConfigPanel,
+  ExportPanel,
 } from '@/components/discovery'
 import type { DiscoveryOptions } from '@/types/frontierscience'
 import type { DiscoveryConfiguration, Domain } from '@/types/intervention'
@@ -47,6 +48,7 @@ export function FrontierScienceChatInterface({
   const [inputValue, setInputValue] = React.useState(initialQuery || '')
   const [hasAutoStarted, setHasAutoStarted] = React.useState(false)
   const [showConfig, setShowConfig] = React.useState(false)
+  const [showExportPanel, setShowExportPanel] = React.useState(false)
   const [discoveryConfig, setDiscoveryConfig] = React.useState<DiscoveryConfiguration | null>(null)
   const [suggestedDomain, setSuggestedDomain] = React.useState<Domain | undefined>(undefined)
   const inputRef = React.useRef<HTMLTextAreaElement>(null)
@@ -227,13 +229,36 @@ export function FrontierScienceChatInterface({
 
             {/* Completed State - Show Results */}
             {status === 'completed' && result && (
-              <FrontierScienceResultsCard
-                result={result}
-                onExport={() => {
-                  // Export functionality
-                  console.log('Exporting results...')
-                }}
-              />
+              <>
+                <FrontierScienceResultsCard
+                  result={result}
+                  onExport={() => setShowExportPanel(true)}
+                />
+
+                {/* Export Panel Modal */}
+                {showExportPanel && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                    <div className="bg-background rounded-xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-auto m-4 relative">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowExportPanel(false)}
+                        className="absolute top-3 right-3 z-10 h-8 w-8 p-0"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                      <ExportPanel
+                        result={result}
+                        query={inputValue || initialQuery || ''}
+                        discoveryId={discoveryId || 'unknown'}
+                        onExport={() => {
+                          // Optionally close after export
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </>
             )}
 
             {/* Error State */}

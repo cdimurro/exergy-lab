@@ -186,8 +186,8 @@ export class CreativeAgent {
   ): Promise<Hypothesis[]> {
     console.log(`[CreativeAgent] Generating hypotheses for: "${research.query}"`)
 
-    // Generate candidate hypotheses
-    const candidates = await this.generateCandidates(research, this.config.maxHypotheses)
+    // Generate candidate hypotheses with refinement hints
+    const candidates = await this.generateCandidates(research, this.config.maxHypotheses, hints)
 
     // Enrich with materials data
     const withMaterials = this.enrichWithMaterialsData(candidates, research.materialsData)
@@ -248,20 +248,35 @@ export class CreativeAgent {
    */
   private async generateCandidates(
     research: ResearchResult,
-    count: number
+    count: number,
+    hints?: RefinementHints
   ): Promise<Hypothesis[]> {
-    const prompt = `You are a scientific hypothesis generator for the ${research.domain} domain.
+    // Build hints section if refinement hints are provided
+    const hintsSection = hints ? `
+## IMPROVEMENT GUIDANCE (Previous Score: ${hints.previousScore}/10)
+Your previous attempt scored below the required threshold. Focus on addressing these failed criteria:
+${hints.failedCriteria.map(c => `- ${c.id}: ${c.description}
+  Reason: ${c.reasoning}
+  Pass condition: ${c.passCondition}`).join('\n')}
+
+SPECIFIC GUIDANCE: ${hints.specificGuidance}
+
+IMPORTANT: Ensure each hypothesis fully meets the criteria above.
+---
+` : ''
+
+    const prompt = `${hintsSection}You are a scientific hypothesis generator for the ${research.domain} domain.
 
 Based on the following research:
 
 KEY FINDINGS:
-${research.keyFindings.slice(0, 5).map(f => `- ${f.finding}${f.value ? ` (${f.value} ${f.unit})` : ''}`).join('\n')}
+${research.keyFindings.map(f => `- ${f.finding}${f.value ? ` (${f.value} ${f.unit})` : ''}`).join('\n')}
 
 TECHNOLOGICAL GAPS:
 ${research.technologicalGaps.map(g => `- ${g.description} (Impact: ${g.impact})`).join('\n')}
 
 AVAILABLE MATERIALS:
-${research.materialsData.slice(0, 5).map(m => `- ${m.formula}: bandGap=${m.bandGap}eV, ${m.stability}`).join('\n')}
+${research.materialsData.map(m => `- ${m.formula}: bandGap=${m.bandGap}eV, ${m.stability}`).join('\n')}
 
 Generate ${count} novel, testable hypotheses that could advance the field.
 
@@ -350,7 +365,7 @@ Do not truncate. Ensure all hypotheses have ALL required fields filled in comple
 
     try {
       const result = await generateText('discovery', prompt, {
-        temperature: 0.9, // Higher temperature for creativity
+        temperature: 0.7, // Balanced for structured JSON output with creativity
         maxTokens: 12000, // Optimized for speed (reduced from 16000)
       })
 
@@ -389,7 +404,7 @@ Do not truncate. Ensure all hypotheses have ALL required fields filled in comple
 
       return {
         ...h,
-        requiredMaterials: relevantMaterials.slice(0, 3),
+        requiredMaterials: relevantMaterials, // Keep all matched materials
       }
     })
   }

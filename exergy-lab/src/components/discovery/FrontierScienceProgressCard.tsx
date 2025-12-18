@@ -15,7 +15,8 @@ import { IterationBadge, IterationDots } from './IterationBadge'
 import { ThinkingIndicator, PulsingBrain } from './ThinkingIndicator'
 import { RubricScoreCard, RubricProgressBar } from './RubricScoreCard'
 import { QualityBadge } from './QualityBadge'
-import { X, Clock, Zap } from 'lucide-react'
+import { PhaseResultsDropdown, generatePhaseKeyFindings } from './PhaseResultsDropdown'
+import { X, Clock, Zap, ChevronDown, ChevronUp } from 'lucide-react'
 import { useState } from 'react'
 
 interface FrontierScienceProgressCardProps {
@@ -185,13 +186,15 @@ export function FrontierScienceProgressCard({
 }
 
 /**
- * Summary of completed phases
+ * Summary of completed phases with expandable results
  */
 function CompletedPhasesSummary({
   phaseProgress,
 }: {
   phaseProgress: Map<DiscoveryPhase, PhaseProgressDisplay>
 }) {
+  const [expandedView, setExpandedView] = useState(false)
+
   const completedPhases = Array.from(phaseProgress.entries())
     .filter(([_, p]) => p.status === 'completed')
     .map(([phase, p]) => ({ ...p, phase }))
@@ -207,34 +210,113 @@ function CompletedPhasesSummary({
         <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
           Completed Phases
         </span>
-        <div className="flex items-center gap-2 text-xs">
-          <span className="text-emerald-600 font-medium">
-            {passedCount}/{completedPhases.length} passed
-          </span>
-          <span className="text-muted-foreground">
-            avg: {avgScore.toFixed(1)}/10
-          </span>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 text-xs">
+            <span className="text-emerald-600 font-medium">
+              {passedCount}/{completedPhases.length} passed
+            </span>
+            <span className="text-muted-foreground">
+              avg: {avgScore.toFixed(1)}/10
+            </span>
+          </div>
+          <button
+            onClick={() => setExpandedView(!expandedView)}
+            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {expandedView ? (
+              <>
+                <ChevronUp size={14} />
+                <span>Hide details</span>
+              </>
+            ) : (
+              <>
+                <ChevronDown size={14} />
+                <span>Show details</span>
+              </>
+            )}
+          </button>
         </div>
       </div>
-      <div className="flex flex-wrap gap-2">
-        {completedPhases.map(({ phase, score, passed }) => {
-          const meta = getPhaseMetadata(phase)
-          return (
-            <div
-              key={phase}
-              className={cn(
-                'flex items-center gap-1.5 px-2 py-1 rounded-md text-xs',
-                passed
-                  ? 'bg-emerald-500/10 text-emerald-600'
-                  : 'bg-amber-500/10 text-amber-600'
-              )}
-            >
-              <span>{meta.shortName}</span>
-              <span className="opacity-70">{score?.toFixed(1)}</span>
-            </div>
-          )
-        })}
-      </div>
+
+      {/* Compact view - just badges */}
+      {!expandedView && (
+        <div className="flex flex-wrap gap-2">
+          {completedPhases.map(({ phase, score, passed }) => {
+            const meta = getPhaseMetadata(phase)
+            return (
+              <div
+                key={phase}
+                className={cn(
+                  'flex items-center gap-1.5 px-2 py-1 rounded-md text-xs',
+                  passed
+                    ? 'bg-emerald-500/10 text-emerald-600'
+                    : 'bg-amber-500/10 text-amber-600'
+                )}
+              >
+                <span>{meta.shortName}</span>
+                <span className="opacity-70">{score?.toFixed(1)}</span>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Expanded view - with phase results dropdowns */}
+      {expandedView && (
+        <div className="space-y-4 mt-4">
+          {completedPhases.map(({ phase, score, passed, judgeResult }) => {
+            const meta = getPhaseMetadata(phase)
+            // Generate key findings from judgeResult (available during progress)
+            const keyFindings = generatePhaseKeyFindings(phase, null, judgeResult)
+
+            return (
+              <div
+                key={phase}
+                className={cn(
+                  'p-3 rounded-lg border',
+                  passed
+                    ? 'border-emerald-500/30 bg-emerald-500/5'
+                    : 'border-amber-500/30 bg-amber-500/5'
+                )}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-foreground">
+                      {meta.name}
+                    </span>
+                    <span
+                      className={cn(
+                        'text-xs px-1.5 py-0.5 rounded',
+                        passed ? 'bg-emerald-500/20 text-emerald-600' : 'bg-amber-500/20 text-amber-600'
+                      )}
+                    >
+                      {score?.toFixed(1)}/10
+                    </span>
+                  </div>
+                  <span
+                    className={cn(
+                      'text-xs',
+                      passed ? 'text-emerald-600' : 'text-amber-600'
+                    )}
+                  >
+                    {passed ? 'Passed' : 'Needs improvement'}
+                  </span>
+                </div>
+
+                {/* Phase Results Dropdown */}
+                {keyFindings && (
+                  <PhaseResultsDropdown
+                    phase={phase}
+                    phaseName={meta.name}
+                    status="completed"
+                    results={keyFindings}
+                  />
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }

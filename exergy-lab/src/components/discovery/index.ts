@@ -38,3 +38,7 @@ export { HypothesisSelector, HypothesisBadgeList } from './HypothesisSelector'
 
 // Export functionality
 export { ExportPanel, QuickExportButton } from './ExportPanel'
+
+// Phase results display
+export { PhaseResultsDropdown, generatePhaseKeyFindings } from './PhaseResultsDropdown'
+export type { PhaseKeyFindings, PhaseResultsDropdownProps } from './PhaseResultsDropdown'
