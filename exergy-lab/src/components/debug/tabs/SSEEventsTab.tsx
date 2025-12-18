@@ -7,7 +7,7 @@
  */
 
 import * as React from 'react'
-import { Search, Filter, ArrowDown } from 'lucide-react'
+import { Search, Filter, ArrowDown, HeartPulse } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -48,12 +48,23 @@ export function SSEEventsTab({ events }: SSEEventsTabProps) {
   const [expandedEvents, setExpandedEvents] = React.useState<Set<string>>(new Set())
   const [autoScroll, setAutoScroll] = React.useState(true)
   const [showFilters, setShowFilters] = React.useState(false)
+  const [hideHeartbeats, setHideHeartbeats] = React.useState(true) // Hide heartbeats by default
 
   const scrollContainerRef = React.useRef<HTMLDivElement>(null)
+
+  // Count heartbeats for display
+  const heartbeatCount = React.useMemo(() => {
+    return events.filter(e => e.category === 'heartbeat').length
+  }, [events])
 
   // Filter events
   const filteredEvents = React.useMemo(() => {
     return events.filter((event) => {
+      // Hide heartbeats filter (applied first, before category filter)
+      if (hideHeartbeats && event.category === 'heartbeat') {
+        return false
+      }
+
       // Category filter
       if (selectedCategories.size > 0 && !selectedCategories.has(event.category)) {
         return false
@@ -72,7 +83,7 @@ export function SSEEventsTab({ events }: SSEEventsTabProps) {
 
       return true
     })
-  }, [events, selectedCategories, searchTerm])
+  }, [events, selectedCategories, searchTerm, hideHeartbeats])
 
   // Auto-scroll to bottom when new events arrive
   React.useEffect(() => {
@@ -147,6 +158,18 @@ export function SSEEventsTab({ events }: SSEEventsTabProps) {
             title="Auto-scroll to latest"
           >
             <ArrowDown size={14} />
+          </Button>
+          <Button
+            size="sm"
+            variant={hideHeartbeats ? 'outline' : 'secondary'}
+            onClick={() => setHideHeartbeats(!hideHeartbeats)}
+            className={cn('h-8 gap-1', hideHeartbeats && 'opacity-60')}
+            title={hideHeartbeats ? `Show heartbeats (${heartbeatCount} hidden)` : 'Hide heartbeats'}
+          >
+            <HeartPulse size={14} />
+            {heartbeatCount > 0 && hideHeartbeats && (
+              <span className="text-xs text-muted-foreground">+{heartbeatCount}</span>
+            )}
           </Button>
         </div>
 

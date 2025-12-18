@@ -213,22 +213,34 @@ export class CreativeAgent {
   }
 
   /**
-   * Design experiments for hypotheses
+   * Design experiments for hypotheses (runs in parallel with concurrency limit)
    */
   async designExperiments(
     hypotheses: Hypothesis[],
     hints?: RefinementHints
   ): Promise<ExperimentDesign[]> {
-    const designs: ExperimentDesign[] = []
+    const CONCURRENCY_LIMIT = 3 // Limit to avoid rate limits
 
-    for (const hypothesis of hypotheses) {
-      const design = await this.designExperimentForHypothesis(hypothesis, hints)
-      if (design) {
-        designs.push(design)
+    // Process hypotheses in parallel batches
+    const results: ExperimentDesign[] = []
+
+    for (let i = 0; i < hypotheses.length; i += CONCURRENCY_LIMIT) {
+      const batch = hypotheses.slice(i, i + CONCURRENCY_LIMIT)
+      const batchPromises = batch.map(hypothesis =>
+        this.designExperimentForHypothesis(hypothesis, hints)
+      )
+
+      const batchResults = await Promise.all(batchPromises)
+
+      // Filter out nulls and add to results
+      for (const design of batchResults) {
+        if (design) {
+          results.push(design)
+        }
       }
     }
 
-    return designs
+    return results
   }
 
   /**

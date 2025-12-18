@@ -5,10 +5,11 @@
  *
  * A specialized chat interface for FrontierScience discovery workflows.
  * Integrates the new 12-phase discovery pipeline with real-time progress visualization.
+ * Now includes pre-discovery configuration with tier selection and interaction modes.
  */
 
 import * as React from 'react'
-import { ArrowLeft, Send, Loader2 } from 'lucide-react'
+import { ArrowLeft, Send, Loader2, Settings2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { useFrontierScienceWorkflow } from '@/hooks/use-frontierscience-workflow'
@@ -17,9 +18,11 @@ import {
   FrontierScienceResultsCard,
   QualityBadge,
   PulsingBrain,
+  DiscoveryConfigPanel,
 } from '@/components/discovery'
 import type { DiscoveryOptions } from '@/types/frontierscience'
 import type { Domain } from '@/types/discovery'
+import type { DiscoveryConfiguration } from '@/types/intervention'
 
 interface FrontierScienceChatInterfaceProps {
   pageTitle?: string
@@ -29,6 +32,7 @@ interface FrontierScienceChatInterfaceProps {
   initialQuery?: string
   initialOptions?: DiscoveryOptions
   autoStart?: boolean
+  showConfigPanel?: boolean
 }
 
 export function FrontierScienceChatInterface({
@@ -39,9 +43,12 @@ export function FrontierScienceChatInterface({
   initialQuery,
   initialOptions,
   autoStart = false,
+  showConfigPanel = true,
 }: FrontierScienceChatInterfaceProps) {
   const [inputValue, setInputValue] = React.useState(initialQuery || '')
   const [hasAutoStarted, setHasAutoStarted] = React.useState(false)
+  const [showConfig, setShowConfig] = React.useState(false)
+  const [discoveryConfig, setDiscoveryConfig] = React.useState<DiscoveryConfiguration | null>(null)
   const inputRef = React.useRef<HTMLTextAreaElement>(null)
 
   const {
@@ -80,8 +87,55 @@ export function FrontierScienceChatInterface({
     e?.preventDefault()
     if (!inputValue.trim() || status === 'running' || status === 'starting') return
 
-    await startDiscovery(inputValue.trim(), initialOptions)
+    // If config panel is enabled and we have a query, show the config panel
+    if (showConfigPanel && !showConfig) {
+      setShowConfig(true)
+      return
+    }
+
+    // Start discovery with config or initial options
+    const options: DiscoveryOptions | undefined = discoveryConfig
+      ? {
+          domain: discoveryConfig.domain,
+          targetQuality: discoveryConfig.targetQuality === 'exploratory'
+            ? 'validated'
+            : discoveryConfig.targetQuality === 'publication'
+            ? 'breakthrough'
+            : 'significant',
+          maxIterationsPerPhase: discoveryConfig.budget.maxIterations,
+          enableExergyAnalysis: discoveryConfig.enabledPhases.has('exergy'),
+          enableTEAAnalysis: discoveryConfig.enabledPhases.has('tea'),
+          enablePatentAnalysis: discoveryConfig.enabledPhases.has('patent'),
+        }
+      : initialOptions
+
+    await startDiscovery(inputValue.trim(), options ?? {})
     setInputValue('')
+    setShowConfig(false)
+  }
+
+  // Handle config panel start
+  const handleConfigStart = async (config: DiscoveryConfiguration) => {
+    setDiscoveryConfig(config)
+    const options: DiscoveryOptions = {
+      domain: config.domain,
+      targetQuality: config.targetQuality === 'exploratory'
+        ? 'validated'
+        : config.targetQuality === 'publication'
+        ? 'breakthrough'
+        : 'significant',
+      maxIterationsPerPhase: config.budget.maxIterations,
+      enableExergyAnalysis: config.enabledPhases.has('exergy'),
+      enableTEAAnalysis: config.enabledPhases.has('tea'),
+      enablePatentAnalysis: config.enabledPhases.has('patent'),
+    }
+    await startDiscovery(inputValue.trim(), options)
+    setShowConfig(false)
+  }
+
+  // Handle config cancel
+  const handleConfigCancel = () => {
+    setShowConfig(false)
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -122,24 +176,35 @@ export function FrontierScienceChatInterface({
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-y-auto px-4 py-6">
-        {/* Full-screen progress card when running */}
-        {status === 'running' ? (
-          <FrontierScienceProgressCard
-            query={inputValue || initialQuery || 'Discovery in progress...'}
-            currentPhase={currentPhase}
-            phaseProgress={phaseProgress}
-            overallProgress={overallProgress}
-            elapsedTime={elapsedTime}
-            thinkingMessage={thinkingMessage}
-            onCancel={cancelDiscovery}
-            className="h-full"
+      <div className="flex-1 overflow-hidden">
+        {/* Configuration Panel */}
+        {showConfig && status === 'idle' ? (
+          <DiscoveryConfigPanel
+            initialConfig={{ query: inputValue }}
+            onConfigChange={setDiscoveryConfig}
+            onStart={handleConfigStart}
+            onCancel={handleConfigCancel}
+            isLoading={false}
           />
+        ) : status === 'running' ? (
+          <div className="h-full overflow-y-auto px-4 py-6">
+            {/* Full-screen progress card when running */}
+            <FrontierScienceProgressCard
+              query={inputValue || initialQuery || 'Discovery in progress...'}
+              currentPhase={currentPhase}
+              phaseProgress={phaseProgress}
+              overallProgress={overallProgress}
+              elapsedTime={elapsedTime}
+              thinkingMessage={thinkingMessage}
+              onCancel={cancelDiscovery}
+              className="h-full"
+            />
+          </div>
         ) : (
           <div className="max-w-4xl mx-auto">
             {/* Idle State - Show Input Prompt */}
-            {status === 'idle' && !result && (
-              <IdleState />
+            {status === 'idle' && !result && !showConfig && (
+              <IdleState onConfigureClick={showConfigPanel ? () => setShowConfig(true) : undefined} />
             )}
 
             {/* Starting State */}
@@ -226,7 +291,7 @@ export function FrontierScienceChatInterface({
 /**
  * Idle state placeholder
  */
-function IdleState() {
+function IdleState({ onConfigureClick }: { onConfigureClick?: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center py-12 text-center">
       <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500/10 to-purple-500/10 flex items-center justify-center mb-4">
@@ -239,6 +304,16 @@ function IdleState() {
         Enter a scientific research query to begin the 12-phase discovery pipeline.
         The AI will iteratively refine each phase until it reaches the 7/10 quality threshold.
       </p>
+      {onConfigureClick && (
+        <Button
+          variant="outline"
+          onClick={onConfigureClick}
+          className="mb-6 gap-2"
+        >
+          <Settings2 className="w-4 h-4" />
+          Configure Discovery Options
+        </Button>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-2xl">
         <ExampleCard
           title="Clean Energy"

@@ -22,3 +22,19 @@ export { RubricScoreCard, CompactRubricSummary, RubricProgressBar } from './Rubr
 // Main cards
 export { FrontierScienceProgressCard, MinimalProgress } from './FrontierScienceProgressCard'
 export { FrontierScienceResultsCard, CompactResultsSummary } from './FrontierScienceResultsCard'
+
+// Configuration panel
+export { DiscoveryConfigPanel } from './DiscoveryConfigPanel'
+
+// Tier selectors
+export { ExperimentTierSelector, ExperimentTierBadge } from './ExperimentTierSelector'
+export { SimulationTierSelector, SimulationTierBadge, TierEscalationBanner } from './SimulationTierSelector'
+
+// Phase intervention
+export { PhaseInterventionCard, InterventionBanner } from './PhaseInterventionCard'
+
+// Hypothesis management
+export { HypothesisSelector, HypothesisBadgeList } from './HypothesisSelector'
+
+// Export functionality
+export { ExportPanel, QuickExportButton } from './ExportPanel'

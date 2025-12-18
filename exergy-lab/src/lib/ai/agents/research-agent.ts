@@ -100,6 +100,40 @@ const DEFAULT_CONFIG: ResearchConfig = {
 }
 
 // ============================================================================
+// Session-level cache for research results
+// ============================================================================
+
+interface CacheEntry {
+  result: ResearchResult
+  timestamp: number
+}
+
+// Session-level cache (cleared when server restarts)
+const researchCache = new Map<string, CacheEntry>()
+const CACHE_TTL_MS = 30 * 60 * 1000 // 30 minutes
+
+/**
+ * Generate a cache key from query and domain
+ */
+function generateCacheKey(query: string, domain: string): string {
+  // Normalize query: lowercase, trim, remove extra whitespace
+  const normalizedQuery = query.toLowerCase().trim().replace(/\s+/g, ' ')
+  return `${domain}:${normalizedQuery}`
+}
+
+/**
+ * Clear expired cache entries
+ */
+function clearExpiredCache(): void {
+  const now = Date.now()
+  for (const [key, entry] of researchCache.entries()) {
+    if (now - entry.timestamp > CACHE_TTL_MS) {
+      researchCache.delete(key)
+    }
+  }
+}
+
+// ============================================================================
 // Research Agent Class
 // ============================================================================
 
@@ -111,14 +145,46 @@ export class ResearchAgent {
   }
 
   /**
+   * Clear the research cache (useful for testing or manual refresh)
+   */
+  static clearCache(): void {
+    researchCache.clear()
+    console.log('[ResearchAgent] Cache cleared')
+  }
+
+  /**
+   * Get cache statistics
+   */
+  static getCacheStats(): { size: number; entries: string[] } {
+    return {
+      size: researchCache.size,
+      entries: Array.from(researchCache.keys()),
+    }
+  }
+
+  /**
    * Execute comprehensive research across all sources
+   * Uses session-level caching to avoid redundant API calls
    */
   async execute(
     query: string,
     domain: string,
     hints?: RefinementHints
   ): Promise<ResearchResult> {
-    console.log(`[ResearchAgent] Starting research for: "${query}" in domain: ${domain}`)
+    // Clear expired entries periodically
+    clearExpiredCache()
+
+    // Check cache first (only if no hints - hints indicate refinement needed)
+    const cacheKey = generateCacheKey(query, domain)
+    if (!hints) {
+      const cached = researchCache.get(cacheKey)
+      if (cached) {
+        console.log(`[ResearchAgent] Cache HIT for: "${query}" (age: ${Math.round((Date.now() - cached.timestamp) / 1000)}s)`)
+        return cached.result
+      }
+    }
+
+    console.log(`[ResearchAgent] Cache MISS - Starting research for: "${query}" in domain: ${domain}`)
 
     // Generate expanded queries for better coverage
     const expandedQueries = await this.expandQuery(query, domain)
@@ -155,7 +221,7 @@ export class ResearchAgent {
     // Identify state-of-the-art metrics (depends on findings)
     const stateOfTheArt = await this.identifyStateOfTheArt(keyFindings, domain)
 
-    return {
+    const result: ResearchResult = {
       query,
       domain,
       sources: rankedSources,
@@ -178,6 +244,15 @@ export class ResearchAgent {
         timestamp: new Date(),
       },
     }
+
+    // Cache the result for future use
+    researchCache.set(cacheKey, {
+      result,
+      timestamp: Date.now(),
+    })
+    console.log(`[ResearchAgent] Cached result for: "${query}" (cache size: ${researchCache.size})`)
+
+    return result
   }
 
   /**

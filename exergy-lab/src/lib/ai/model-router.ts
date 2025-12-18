@@ -2,6 +2,7 @@ import * as gemini from './gemini'
 import * as openai from './openai'
 import * as huggingface from './huggingface'
 import { rateLimiter, RateLimitError, AIProvider } from './rate-limiter'
+import { ThinkingLevel } from './gemini'
 
 /**
  * AI Task Types
@@ -17,6 +18,113 @@ export type AITask =
   | 'simulation-predict' // Predict simulation results
   | 'summarize' // Summarize text
   | 'embeddings' // Generate embeddings
+
+/**
+ * Discovery Phase Types (for adaptive thinking)
+ */
+export type DiscoveryPhase =
+  | 'research'
+  | 'synthesis'
+  | 'hypothesis'
+  | 'screening'
+  | 'experiment'
+  | 'simulation'
+  | 'exergy'
+  | 'tea'
+  | 'patent'
+  | 'validation'
+  | 'judge'
+  | 'rubric_eval'
+  | 'publication'
+
+// ============================================================================
+// Adaptive Thinking Levels - Optimize token usage per task/phase
+// ============================================================================
+
+/**
+ * Get appropriate thinking level based on task complexity
+ * - 'high': Creative, safety-critical, or judgment tasks
+ * - 'medium': Analysis and pattern matching tasks
+ * - 'low': Formula-based or filtering tasks
+ * - 'minimal': Simple transformations
+ */
+const PHASE_THINKING_LEVELS: Record<string, ThinkingLevel> = {
+  // Discovery phases
+  'research': 'medium',      // Data gathering doesn't need deep reasoning
+  'synthesis': 'medium',     // Pattern matching and summarization
+  'hypothesis': 'high',      // Creative, needs deep thinking
+  'screening': 'low',        // Mostly filtering
+  'experiment': 'high',      // Safety-critical, needs care
+  'simulation': 'medium',    // Computational, not reasoning-heavy
+  'exergy': 'low',           // Formula-based calculation
+  'tea': 'low',              // Financial formulas
+  'patent': 'medium',        // Search + analysis
+  'validation': 'high',      // Critical thinking
+  'judge': 'high',           // Grading requires rigor
+  'rubric_eval': 'high',     // Evaluation requires rigor
+  'publication': 'medium',   // Writing/formatting
+
+  // General AI tasks
+  'search-expand': 'low',
+  'search-rank': 'low',
+  'tea-insights': 'medium',
+  'tea-extract': 'low',
+  'experiment-design': 'high',
+  'experiment-failure': 'high',
+  'discovery': 'high',
+  'simulation-predict': 'medium',
+  'summarize': 'low',
+}
+
+/**
+ * Get thinking level for a task or phase
+ */
+export function getThinkingLevel(taskOrPhase: string): ThinkingLevel {
+  return PHASE_THINKING_LEVELS[taskOrPhase] || 'medium'
+}
+
+// ============================================================================
+// Token Budgets per Phase - Prevent excessive token usage
+// ============================================================================
+
+/**
+ * Maximum output tokens per phase/task
+ * Lower budgets for formula-based tasks, higher for creative tasks
+ */
+const PHASE_TOKEN_BUDGETS: Record<string, number> = {
+  // Discovery phases
+  'research': 4000,
+  'synthesis': 3000,
+  'hypothesis': 6000,
+  'screening': 2000,
+  'experiment': 5000,
+  'simulation': 4000,
+  'exergy': 2000,
+  'tea': 2000,
+  'patent': 3000,
+  'validation': 4000,
+  'judge': 3000,
+  'rubric_eval': 3000,
+  'publication': 5000,
+
+  // General AI tasks
+  'search-expand': 500,
+  'search-rank': 1000,
+  'tea-insights': 2000,
+  'tea-extract': 1500,
+  'experiment-design': 5000,
+  'experiment-failure': 3000,
+  'discovery': 6000,
+  'simulation-predict': 2000,
+  'summarize': 1000,
+}
+
+/**
+ * Get token budget for a task or phase
+ */
+export function getTokenBudget(taskOrPhase: string): number {
+  return PHASE_TOKEN_BUDGETS[taskOrPhase] || 2048
+}
 
 /**
  * Task routing configuration
@@ -146,7 +254,7 @@ class AIModelRouter {
           model: geminiModel,
           temperature,
           maxOutputTokens: maxTokens,
-          thinkingLevel: 'high', // Always use high thinking for best quality
+          thinkingLevel: getThinkingLevel(task), // Adaptive thinking based on task
         })
       }
 
@@ -203,7 +311,7 @@ class AIModelRouter {
           model: geminiModel,
           temperature,
           maxOutputTokens: maxTokens,
-          thinkingLevel: 'high', // Always use high thinking for best quality
+          thinkingLevel: getThinkingLevel(task), // Adaptive thinking based on task
         })) {
           yield chunk
         }
@@ -341,7 +449,6 @@ export async function* streamText(
 
 import { FunctionDeclaration, GenerateResult } from '@/types/agent'
 import { getGlobalToolRegistry } from './tools/registry'
-import { ThinkingLevel } from './gemini'
 
 /**
  * Execute with function calling support (agent mode)
@@ -354,6 +461,7 @@ export async function executeWithTools(
     maxTokens?: number
     model?: 'fast' | 'quality'
     thinkingLevel?: ThinkingLevel // Gemini 3 thinking level
+    phase?: string // Discovery phase for adaptive thinking
   }
 ): Promise<GenerateResult> {
   // Check rate limits for Gemini (primary provider)
@@ -371,11 +479,16 @@ export async function executeWithTools(
 
     // Use Gemini 3 flash for all operations (Pro-grade reasoning at Flash speed)
     const geminiModel = options?.model === 'quality' ? 'flash' : 'flash-lite'
+
+    // Adaptive thinking: use provided level, or derive from phase, or default to 'medium'
+    const thinkingLevel = options?.thinkingLevel ??
+      (options?.phase ? getThinkingLevel(options.phase) : 'medium')
+
     const result = await gemini.generateWithTools(prompt, tools, {
       model: geminiModel as any,
       temperature: options?.temperature ?? 1.0, // Gemini 3 recommended default
       maxOutputTokens: options?.maxTokens ?? 2048,
-      thinkingLevel: 'high', // Always use high thinking for best quality
+      thinkingLevel,
     })
 
     // Consume rate limit token
@@ -401,6 +514,7 @@ export async function continueAfterFunctionCalls(
     maxTokens?: number
     model?: 'fast' | 'quality'
     thinkingLevel?: ThinkingLevel // Gemini 3 thinking level
+    phase?: string // Discovery phase for adaptive thinking
   }
 ): Promise<string> {
   if (!rateLimiter.canExecute('gemini')) {
@@ -415,6 +529,11 @@ export async function continueAfterFunctionCalls(
     const tools = toolRegistry.toGeminiFunctionDeclarations()
 
     const geminiModel = options?.model === 'quality' ? 'flash' : 'flash-lite'
+
+    // Adaptive thinking: use provided level, or derive from phase, or default to 'medium'
+    const thinkingLevel = options?.thinkingLevel ??
+      (options?.phase ? getThinkingLevel(options.phase) : 'medium')
+
     const result = await gemini.continueWithFunctionResponse(
       prompt,
       tools,
@@ -424,7 +543,7 @@ export async function continueAfterFunctionCalls(
         model: geminiModel as any,
         temperature: options?.temperature ?? 1.0, // Gemini 3 recommended default
         maxOutputTokens: options?.maxTokens ?? 2048,
-        thinkingLevel: 'high', // Always use high thinking for best quality
+        thinkingLevel,
       }
     )
 
@@ -448,6 +567,7 @@ export async function generateStructured<T = any>(
     maxTokens?: number
     model?: 'fast' | 'quality'
     thinkingLevel?: ThinkingLevel // Gemini 3 thinking level
+    phase?: string // Discovery phase for adaptive thinking
   }
 ): Promise<T> {
   if (!rateLimiter.canExecute('gemini')) {
@@ -461,11 +581,15 @@ export async function generateStructured<T = any>(
     const geminiModel = options?.model === 'quality' ? 'flash' : 'flash-lite'
     const fullPrompt = `${prompt}\n\nRespond with valid JSON matching this schema:\n${schema}`
 
+    // Adaptive thinking: use provided level, or derive from phase, or default to 'low' for structured output
+    const thinkingLevel = options?.thinkingLevel ??
+      (options?.phase ? getThinkingLevel(options.phase) : 'low')
+
     const response = await gemini.generateText(fullPrompt, {
       model: geminiModel as any,
       temperature: options?.temperature ?? 0.3, // Keep lower for JSON output
       maxOutputTokens: options?.maxTokens ?? 2048,
-      thinkingLevel: 'high', // Always use high thinking for best quality
+      thinkingLevel,
     })
 
     rateLimiter.consume('gemini')

@@ -51,12 +51,52 @@ export interface PhaseProgress {
   phase: string
   status: 'pending' | 'running' | 'completed' | 'failed'
   iteration: number
+  maxIterations: number
   score?: number
   passed?: boolean
   message?: string
 }
 
+/**
+ * Iteration event with full rubric judge result
+ */
+export interface IterationEvent {
+  phase: string
+  iteration: number
+  maxIterations: number
+  judgeResult: {
+    totalScore: number
+    passed: boolean
+    itemScores: Array<{
+      itemId: string
+      points: number
+      maxPoints: number
+      passed: boolean
+      reasoning?: string
+    }>
+    failedItems: string[]
+    iterationHint?: string
+    reasoning: string
+    recommendations: string[]
+  }
+  previousScore?: number
+  improvement?: number
+  durationMs: number
+}
+
+/**
+ * Thinking event for AI activity updates
+ */
+export interface ThinkingEvent {
+  phase: string
+  activity: 'generating' | 'judging' | 'refining' | 'validating'
+  message: string
+  iteration?: number
+}
+
 export type ProgressCallback = (progress: PhaseProgress) => void
+export type IterationCallback = (event: IterationEvent) => void
+export type ThinkingCallback = (event: ThinkingEvent) => void
 
 // ============================================================================
 // Discovery Orchestrator Class
@@ -69,6 +109,9 @@ export class DiscoveryOrchestrator {
   private criticalAgent: CriticalAgent
   private refinementEngine: RefinementEngine
   private progressCallback?: ProgressCallback
+  private iterationCallback?: IterationCallback
+  private thinkingCallback?: ThinkingCallback
+  private currentPhase: string = ''
 
   constructor(config: Partial<DiscoveryConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config }
@@ -83,6 +126,45 @@ export class DiscoveryOrchestrator {
         timeoutMs: 300000,
         earlyStopOnPass: true,
       },
+      // Wire up iteration callbacks for SSE events
+      onIterationComplete: (iteration) => {
+        if (this.iterationCallback && this.currentPhase) {
+          this.iterationCallback({
+            phase: this.currentPhase,
+            iteration: iteration.iteration,
+            maxIterations: this.config.maxIterationsPerPhase,
+            judgeResult: {
+              totalScore: iteration.judgeResult.totalScore,
+              passed: iteration.judgeResult.passed,
+              itemScores: iteration.judgeResult.itemScores.map(s => ({
+                itemId: s.itemId,
+                points: s.points,
+                maxPoints: s.maxPoints,
+                passed: s.passed,
+                reasoning: s.reasoning,
+              })),
+              failedItems: iteration.judgeResult.failedItems.map(i => i.id),
+              iterationHint: iteration.judgeResult.iterationHint,
+              reasoning: iteration.judgeResult.reasoning,
+              recommendations: iteration.judgeResult.recommendations,
+            },
+            previousScore: iteration.hints?.previousScore,
+            improvement: iteration.hints?.previousScore
+              ? iteration.judgeResult.totalScore - iteration.hints.previousScore
+              : undefined,
+            durationMs: iteration.durationMs,
+          })
+        }
+      },
+      onScoreImprovement: (oldScore, newScore) => {
+        if (this.thinkingCallback && this.currentPhase) {
+          this.thinkingCallback({
+            phase: this.currentPhase,
+            activity: 'refining',
+            message: `Score improved from ${oldScore.toFixed(1)} to ${newScore.toFixed(1)}`,
+          })
+        }
+      },
     })
   }
 
@@ -91,6 +173,20 @@ export class DiscoveryOrchestrator {
    */
   onProgress(callback: ProgressCallback): void {
     this.progressCallback = callback
+  }
+
+  /**
+   * Set iteration callback for detailed rubric updates
+   */
+  onIteration(callback: IterationCallback): void {
+    this.iterationCallback = callback
+  }
+
+  /**
+   * Set thinking callback for AI activity updates
+   */
+  onThinking(callback: ThinkingCallback): void {
+    this.thinkingCallback = callback
   }
 
   /**
@@ -135,20 +231,34 @@ export class DiscoveryOrchestrator {
       phases.push(simulationResult)
       this.emitProgress('simulation', simulationResult.passed ? 'completed' : 'failed', simulationResult.iterations.length, simulationResult.finalScore, simulationResult.passed)
 
-      // Phase 7: Exergy Analysis (if enabled)
+      // Phases 7 & 8: Exergy and TEA Analysis (run in parallel if both enabled)
+      // These phases are independent - both only depend on simulation results
+      const parallelPhases: Promise<PhaseResult<any>>[] = []
+
       if (this.config.enableExergyAnalysis) {
         this.emitProgress('exergy', 'running', 1)
-        const exergyResult = await this.executeExergyPhase(simulationResult.finalOutput)
-        phases.push(exergyResult)
-        this.emitProgress('exergy', 'completed', 1, exergyResult.finalScore, exergyResult.passed)
+        parallelPhases.push(
+          this.executeExergyPhase(simulationResult.finalOutput).then(result => {
+            this.emitProgress('exergy', 'completed', 1, result.finalScore, result.passed)
+            return result
+          })
+        )
       }
 
-      // Phase 8: TEA Analysis (if enabled)
       if (this.config.enableTEAAnalysis) {
         this.emitProgress('tea', 'running', 1)
-        const teaResult = await this.executeTEAPhase(simulationResult.finalOutput)
-        phases.push(teaResult)
-        this.emitProgress('tea', 'completed', 1, teaResult.finalScore, teaResult.passed)
+        parallelPhases.push(
+          this.executeTEAPhase(simulationResult.finalOutput).then(result => {
+            this.emitProgress('tea', 'completed', 1, result.finalScore, result.passed)
+            return result
+          })
+        )
+      }
+
+      // Wait for both phases to complete in parallel
+      if (parallelPhases.length > 0) {
+        const parallelResults = await Promise.all(parallelPhases)
+        phases.push(...parallelResults)
       }
 
       // Phase 9: Patent Landscape (if enabled)
@@ -197,11 +307,18 @@ export class DiscoveryOrchestrator {
    */
   private async executeResearchPhase(query: string): Promise<PhaseResult<ResearchResult>> {
     this.log('Phase 1: Multi-Source Research')
+    this.currentPhase = 'research'
+    this.emitThinking('generating', 'Searching 14+ scientific databases for relevant literature...')
 
     const result = await this.refinementEngine.refineUntilPass(
       query,
       async (hints?: RefinementHints) => {
-        return this.researchAgent.execute(query, this.config.domain, hints)
+        if (hints) {
+          this.emitThinking('refining', `Refining research based on feedback (previous score: ${hints.previousScore?.toFixed(1)})`, hints.iterationNumber)
+        }
+        const research = await this.researchAgent.execute(query, this.config.domain, hints)
+        this.emitThinking('judging', `Evaluating ${research.sources?.length || 0} sources against rubric criteria`)
+        return research
       },
       RESEARCH_RUBRIC
     )
@@ -221,11 +338,18 @@ export class DiscoveryOrchestrator {
    */
   private async executeHypothesisPhase(research: ResearchResult): Promise<PhaseResult<Hypothesis[]>> {
     this.log('Phase 3: Hypothesis Generation')
+    this.currentPhase = 'hypothesis'
+    this.emitThinking('generating', 'Generating novel hypotheses based on research findings...')
 
     const result = await this.refinementEngine.refineUntilPass(
       research.query,
       async (hints?: RefinementHints) => {
-        return this.creativeAgent.generateHypotheses(research, hints)
+        if (hints) {
+          this.emitThinking('refining', `Improving hypotheses (targeting failed criteria: ${hints.failedCriteria.map(c => c.id).join(', ')})`, hints.iterationNumber)
+        }
+        const hypotheses = await this.creativeAgent.generateHypotheses(research, hints)
+        this.emitThinking('judging', `Evaluating ${hypotheses.length} hypotheses for novelty and feasibility`)
+        return hypotheses
       },
       HYPOTHESIS_RUBRIC
     )
@@ -245,9 +369,12 @@ export class DiscoveryOrchestrator {
    */
   private async executeExperimentPhase(hypotheses: Hypothesis[]): Promise<PhaseResult<ExperimentDesign[]>> {
     this.log('Phase 5: Experiment Design')
+    this.currentPhase = 'experiment'
+    this.emitThinking('generating', `Designing experimental protocols for ${hypotheses.length} hypotheses...`)
 
     const startTime = Date.now()
     const experiments = await this.creativeAgent.designExperiments(hypotheses)
+    this.emitThinking('validating', `Validating ${experiments.length} experiment designs for safety and reproducibility`)
 
     // Simple scoring for experiments (TODO: add experiment rubric)
     const avgCompleteness = experiments.reduce((sum, e) => {
@@ -293,6 +420,8 @@ export class DiscoveryOrchestrator {
    */
   private async executeSimulationPhase(experiments: ExperimentDesign[]): Promise<PhaseResult<any>> {
     this.log('Phase 6: Multi-Tier Simulation')
+    this.currentPhase = 'simulation'
+    this.emitThinking('generating', `Running multi-tier simulations for ${experiments.length} experiments...`)
 
     // Generate simulated results based on experiments
     const startTime = Date.now()
@@ -358,6 +487,8 @@ export class DiscoveryOrchestrator {
       }),
     }
 
+    this.emitThinking('judging', `Evaluating simulation convergence and physical validity...`)
+
     const result = await this.refinementEngine.refineUntilPass(
       `Simulation for ${experiments.length} experiments`,
       async () => simulationResults,
@@ -379,6 +510,8 @@ export class DiscoveryOrchestrator {
    */
   private async executeExergyPhase(simulations: any): Promise<PhaseResult<any>> {
     this.log('Phase 7: Exergy Analysis')
+    this.currentPhase = 'exergy'
+    this.emitThinking('generating', 'Calculating second-law efficiency and exergy destruction...')
 
     const startTime = Date.now()
 
@@ -400,6 +533,7 @@ export class DiscoveryOrchestrator {
     }
 
     const score = exergyAnalysis.overallSecondLawEfficiency > 0.5 ? 8 : 6
+    this.emitThinking('validating', `Second-law efficiency: ${(exergyAnalysis.overallSecondLawEfficiency * 100).toFixed(1)}%`)
 
     return {
       phase: 'exergy',
@@ -434,6 +568,8 @@ export class DiscoveryOrchestrator {
    */
   private async executeTEAPhase(simulations: any): Promise<PhaseResult<any>> {
     this.log('Phase 8: Techno-Economic Analysis')
+    this.currentPhase = 'tea'
+    this.emitThinking('generating', 'Calculating NPV, IRR, LCOE, and payback period...')
 
     const startTime = Date.now()
 
@@ -458,6 +594,7 @@ export class DiscoveryOrchestrator {
     }
 
     const score = teaAnalysis.irr > 0.1 ? 8 : 6
+    this.emitThinking('validating', `IRR: ${(teaAnalysis.irr * 100).toFixed(1)}%, LCOE: ${teaAnalysis.lcoe} ${teaAnalysis.lcoeUnit}`)
 
     return {
       phase: 'tea',
@@ -492,6 +629,8 @@ export class DiscoveryOrchestrator {
    */
   private async executeValidationPhase(outputs: any): Promise<PhaseResult<any>> {
     this.log('Phase 10: Validation & Benchmarking')
+    this.currentPhase = 'validation'
+    this.emitThinking('validating', 'Running physical plausibility checks against 800+ benchmarks...')
 
     const startTime = Date.now()
 
@@ -500,6 +639,7 @@ export class DiscoveryOrchestrator {
       undefined, // No rubric for validation phase itself
       PHYSICAL_BENCHMARKS
     )
+    this.emitThinking('judging', `${validationResult.checks.filter((c: any) => c.passed).length}/${validationResult.checks.length} validation checks passed`)
 
     return {
       phase: 'validation',
@@ -571,8 +711,37 @@ export class DiscoveryOrchestrator {
     passed?: boolean,
     message?: string
   ): void {
+    // Track current phase for iteration callbacks
+    this.currentPhase = phase
+
     if (this.progressCallback) {
-      this.progressCallback({ phase, status, iteration, score, passed, message })
+      this.progressCallback({
+        phase,
+        status,
+        iteration,
+        maxIterations: this.config.maxIterationsPerPhase,
+        score,
+        passed,
+        message,
+      })
+    }
+  }
+
+  /**
+   * Emit thinking update for AI activity
+   */
+  private emitThinking(
+    activity: ThinkingEvent['activity'],
+    message: string,
+    iteration?: number
+  ): void {
+    if (this.thinkingCallback && this.currentPhase) {
+      this.thinkingCallback({
+        phase: this.currentPhase,
+        activity,
+        message,
+        iteration,
+      })
     }
   }
 

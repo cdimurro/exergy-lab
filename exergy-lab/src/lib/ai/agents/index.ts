@@ -60,6 +60,10 @@ export type {
   DiscoveryConfig,
   PhaseProgress,
   ProgressCallback,
+  IterationEvent,
+  IterationCallback,
+  ThinkingEvent,
+  ThinkingCallback,
 } from './discovery-orchestrator'
 
 // Re-export key types from rubrics for convenience

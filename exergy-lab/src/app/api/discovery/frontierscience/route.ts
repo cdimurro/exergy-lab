@@ -15,13 +15,20 @@ import {
   createDiscoveryOrchestrator,
   streamDiscovery,
 } from '@/lib/ai/agents'
-import type { DiscoveryResult, PhaseProgress } from '@/lib/ai/agents'
+import type {
+  DiscoveryResult,
+  PhaseProgress,
+  IterationEvent,
+  ThinkingEvent,
+} from '@/lib/ai/agents'
 
 // In-memory store for active discoveries (would use Redis in production)
 const activeDiscoveries = new Map<string, {
   orchestrator: DiscoveryOrchestrator
   status: 'pending' | 'running' | 'completed' | 'failed'
   progress: PhaseProgress[]
+  iterations: IterationEvent[]
+  thinking: ThinkingEvent[]
   result?: DiscoveryResult
   error?: string
   startTime: number
@@ -91,6 +98,8 @@ export async function POST(request: NextRequest) {
       orchestrator: DiscoveryOrchestrator
       status: 'pending' | 'running' | 'completed' | 'failed'
       progress: PhaseProgress[]
+      iterations: IterationEvent[]
+      thinking: ThinkingEvent[]
       result?: DiscoveryResult
       error?: string
       startTime: number
@@ -98,6 +107,8 @@ export async function POST(request: NextRequest) {
       orchestrator,
       status: 'pending',
       progress: [],
+      iterations: [],
+      thinking: [],
       startTime: Date.now(),
     }
     activeDiscoveries.set(discoveryId, discoveryState)
@@ -110,6 +121,22 @@ export async function POST(request: NextRequest) {
         if (progress.status === 'failed') {
           state.status = 'failed'
         }
+      }
+    })
+
+    // Set up iteration tracking (rich rubric judge results)
+    orchestrator.onIteration((iteration) => {
+      const state = activeDiscoveries.get(discoveryId)
+      if (state) {
+        state.iterations.push(iteration)
+      }
+    })
+
+    // Set up thinking tracking (AI activity updates)
+    orchestrator.onThinking((thinking) => {
+      const state = activeDiscoveries.get(discoveryId)
+      if (state) {
+        state.thinking.push(thinking)
       }
     })
 
@@ -203,6 +230,8 @@ export async function GET(request: NextRequest) {
 
   let isStreamClosed = false
   let lastProgressIndex = 0
+  let lastIterationIndex = 0
+  let lastThinkingIndex = 0
 
   const safeCloseStream = async () => {
     if (isStreamClosed) return
@@ -229,6 +258,15 @@ export async function GET(request: NextRequest) {
         return
       }
 
+      // Send any new thinking events (AI activity updates)
+      while (lastThinkingIndex < currentDiscovery.thinking.length) {
+        const thinking = currentDiscovery.thinking[lastThinkingIndex]
+        await writer.write(encoder.encode(
+          `data: ${JSON.stringify({ type: 'thinking', ...thinking })}\n\n`
+        ))
+        lastThinkingIndex++
+      }
+
       // Send any new progress updates
       while (lastProgressIndex < currentDiscovery.progress.length) {
         const progress = currentDiscovery.progress[lastProgressIndex]
@@ -236,6 +274,15 @@ export async function GET(request: NextRequest) {
           `data: ${JSON.stringify({ type: 'progress', ...progress })}\n\n`
         ))
         lastProgressIndex++
+      }
+
+      // Send any new iteration events (rich rubric judge results)
+      while (lastIterationIndex < currentDiscovery.iterations.length) {
+        const iteration = currentDiscovery.iterations[lastIterationIndex]
+        await writer.write(encoder.encode(
+          `data: ${JSON.stringify({ type: 'iteration', ...iteration })}\n\n`
+        ))
+        lastIterationIndex++
       }
 
       // Check for completion
@@ -282,20 +329,24 @@ export async function GET(request: NextRequest) {
         return
       }
 
-      // Send heartbeat
-      await writer.write(encoder.encode(
-        `data: ${JSON.stringify({
-          type: 'heartbeat',
-          status: currentDiscovery.status,
-          elapsed: Date.now() - currentDiscovery.startTime,
-        })}\n\n`
-      ))
+      // Send heartbeat (only if no other events were sent in this cycle)
+      if (lastProgressIndex === currentDiscovery.progress.length &&
+          lastIterationIndex === currentDiscovery.iterations.length &&
+          lastThinkingIndex === currentDiscovery.thinking.length) {
+        await writer.write(encoder.encode(
+          `data: ${JSON.stringify({
+            type: 'heartbeat',
+            status: currentDiscovery.status,
+            elapsed: Date.now() - currentDiscovery.startTime,
+          })}\n\n`
+        ))
+      }
     } catch (error) {
       console.error('[FrontierScience] Stream error:', error)
       clearInterval(streamInterval)
       await safeCloseStream()
     }
-  }, 1000)
+  }, 500) // Reduced interval to 500ms for more responsive updates
 
   return new Response(stream.readable, {
     headers: {
