@@ -146,6 +146,7 @@ class AIModelRouter {
           model: geminiModel,
           temperature,
           maxOutputTokens: maxTokens,
+          thinkingLevel: 'high', // Always use high thinking for best quality
         })
       }
 
@@ -202,6 +203,7 @@ class AIModelRouter {
           model: geminiModel,
           temperature,
           maxOutputTokens: maxTokens,
+          thinkingLevel: 'high', // Always use high thinking for best quality
         })) {
           yield chunk
         }
@@ -373,7 +375,7 @@ export async function executeWithTools(
       model: geminiModel as any,
       temperature: options?.temperature ?? 1.0, // Gemini 3 recommended default
       maxOutputTokens: options?.maxTokens ?? 2048,
-      thinkingLevel: options?.thinkingLevel, // Pass through Gemini 3 thinking level
+      thinkingLevel: 'high', // Always use high thinking for best quality
     })
 
     // Consume rate limit token
@@ -422,7 +424,7 @@ export async function continueAfterFunctionCalls(
         model: geminiModel as any,
         temperature: options?.temperature ?? 1.0, // Gemini 3 recommended default
         maxOutputTokens: options?.maxTokens ?? 2048,
-        thinkingLevel: options?.thinkingLevel, // Pass through Gemini 3 thinking level
+        thinkingLevel: 'high', // Always use high thinking for best quality
       }
     )
 
@@ -463,7 +465,7 @@ export async function generateStructured<T = any>(
       model: geminiModel as any,
       temperature: options?.temperature ?? 0.3, // Keep lower for JSON output
       maxOutputTokens: options?.maxTokens ?? 2048,
-      thinkingLevel: options?.thinkingLevel, // Pass through Gemini 3 thinking level
+      thinkingLevel: 'high', // Always use high thinking for best quality
     })
 
     rateLimiter.consume('gemini')

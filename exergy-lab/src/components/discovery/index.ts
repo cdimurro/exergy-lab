@@ -1,0 +1,24 @@
+/**
+ * Discovery Components Module
+ *
+ * Exports all FrontierScience discovery UI components.
+ */
+
+// Quality indicators
+export { QualityBadge, QualityScoreDisplay, CompactQualityIndicator } from './QualityBadge'
+
+// Phase timeline
+export { PhaseTimeline } from './PhaseTimeline'
+
+// Iteration tracking
+export { IterationBadge, IterationDots, IterationHistory } from './IterationBadge'
+
+// Thinking/activity indicators
+export { ThinkingIndicator, ActivityIndicator, PulsingBrain } from './ThinkingIndicator'
+
+// Rubric scoring
+export { RubricScoreCard, CompactRubricSummary, RubricProgressBar } from './RubricScoreCard'
+
+// Main cards
+export { FrontierScienceProgressCard, MinimalProgress } from './FrontierScienceProgressCard'
+export { FrontierScienceResultsCard, CompactResultsSummary } from './FrontierScienceResultsCard'

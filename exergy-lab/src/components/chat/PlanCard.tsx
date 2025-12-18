@@ -644,8 +644,7 @@ function PhaseItem({
       )}
     >
       {/* Phase header */}
-      <button
-        type="button"
+      <div
         onClick={onToggle}
         className="w-full flex items-center gap-4 p-5 text-left hover:bg-background-elevated/50 transition-colors cursor-pointer"
       >
@@ -707,7 +706,7 @@ function PhaseItem({
             !isExpanded && "-rotate-90"
           )} />
         </div>
-      </button>
+      </div>
 
       {/* Expanded content */}
       {isExpanded && (

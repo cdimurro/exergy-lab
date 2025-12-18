@@ -1,0 +1,281 @@
+'use client'
+
+/**
+ * FrontierScienceProgressCard Component
+ *
+ * Main progress display during FrontierScience discovery execution.
+ * Shows real-time progress with phase timeline, iteration tracking, and rubric scores.
+ */
+
+import { cn } from '@/lib/utils'
+import type { DiscoveryPhase, PhaseProgressDisplay } from '@/types/frontierscience'
+import { getPhaseMetadata } from '@/types/frontierscience'
+import { PhaseTimeline } from './PhaseTimeline'
+import { IterationBadge, IterationDots } from './IterationBadge'
+import { ThinkingIndicator, PulsingBrain } from './ThinkingIndicator'
+import { RubricScoreCard, RubricProgressBar } from './RubricScoreCard'
+import { QualityBadge } from './QualityBadge'
+import { X, Clock, Zap } from 'lucide-react'
+import { useState } from 'react'
+
+interface FrontierScienceProgressCardProps {
+  query: string
+  currentPhase: DiscoveryPhase | null
+  phaseProgress: Map<DiscoveryPhase, PhaseProgressDisplay>
+  overallProgress: number
+  elapsedTime: number
+  thinkingMessage: string | null
+  onCancel?: () => void
+  className?: string
+}
+
+export function FrontierScienceProgressCard({
+  query,
+  currentPhase,
+  phaseProgress,
+  overallProgress,
+  elapsedTime,
+  thinkingMessage,
+  onCancel,
+  className,
+}: FrontierScienceProgressCardProps) {
+  const [showRubricDetails, setShowRubricDetails] = useState(false)
+
+  const currentProgress = currentPhase ? phaseProgress.get(currentPhase) : null
+  const phaseMeta = currentPhase ? getPhaseMetadata(currentPhase) : null
+
+  // Format elapsed time
+  const formatTime = (ms: number) => {
+    const seconds = Math.floor(ms / 1000)
+    const minutes = Math.floor(seconds / 60)
+    const remainingSeconds = seconds % 60
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
+  }
+
+  // Estimate remaining time based on progress
+  const estimatedTotal = overallProgress > 0 ? (elapsedTime / overallProgress) * 100 : 0
+  const estimatedRemaining = Math.max(0, estimatedTotal - elapsedTime)
+
+  return (
+    <div className={cn('border rounded-xl overflow-hidden bg-card', className)}>
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b bg-muted/30">
+        <div className="flex items-center gap-3">
+          <PulsingBrain />
+          <div>
+            <h3 className="text-sm font-semibold text-foreground">
+              FrontierScience Discovery
+            </h3>
+            <p className="text-xs text-muted-foreground truncate max-w-[300px]">
+              {query}
+            </p>
+          </div>
+        </div>
+        {onCancel && (
+          <button
+            onClick={onCancel}
+            className="p-2 hover:bg-muted rounded-lg transition-colors"
+            title="Cancel discovery"
+          >
+            <X size={16} className="text-muted-foreground" />
+          </button>
+        )}
+      </div>
+
+      {/* Overall Progress */}
+      <div className="p-4 border-b">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm font-medium text-foreground">
+            Overall Progress
+          </span>
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <Clock size={12} />
+              {formatTime(elapsedTime)}
+            </span>
+            {estimatedRemaining > 0 && overallProgress > 10 && (
+              <span className="flex items-center gap-1">
+                <Zap size={12} />
+                ~{formatTime(estimatedRemaining)} left
+              </span>
+            )}
+          </div>
+        </div>
+        <div className="relative">
+          <div className="h-2 bg-muted rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-500"
+              style={{ width: `${Math.min(100, overallProgress)}%` }}
+            />
+          </div>
+          <span className="absolute right-0 top-3 text-xs text-muted-foreground">
+            {Math.round(overallProgress)}%
+          </span>
+        </div>
+      </div>
+
+      {/* Phase Timeline */}
+      <div className="p-4 border-b">
+        <div className="text-xs font-medium text-muted-foreground mb-3 uppercase tracking-wide">
+          Phase Timeline
+        </div>
+        <PhaseTimeline
+          phaseProgress={phaseProgress}
+          currentPhase={currentPhase}
+          showScores={true}
+          showLabels={true}
+          compact={false}
+        />
+      </div>
+
+      {/* Current Phase Details */}
+      {currentPhase && currentProgress && (
+        <div className="p-4 border-b bg-blue-500/5">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-foreground">
+                Current: {phaseMeta?.name}
+              </span>
+              <IterationBadge
+                current={currentProgress.currentIteration}
+                max={currentProgress.maxIterations}
+                score={currentProgress.score}
+                isActive={true}
+                size="sm"
+              />
+            </div>
+            <IterationDots
+              current={currentProgress.currentIteration}
+              max={currentProgress.maxIterations}
+            />
+          </div>
+
+          {/* Phase description */}
+          <p className="text-xs text-muted-foreground mb-3">
+            {phaseMeta?.description}
+          </p>
+
+          {/* Thinking indicator */}
+          {thinkingMessage && (
+            <ThinkingIndicator
+              message={thinkingMessage}
+              phase={phaseMeta?.shortName}
+              isActive={true}
+              variant="default"
+            />
+          )}
+
+          {/* Current rubric score if available */}
+          {currentProgress.judgeResult && (
+            <div className="mt-3">
+              <RubricScoreCard
+                judgeResult={currentProgress.judgeResult}
+                showDetails={showRubricDetails}
+                initialExpanded={false}
+              />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Completed Phases Summary */}
+      <CompletedPhasesSummary phaseProgress={phaseProgress} />
+    </div>
+  )
+}
+
+/**
+ * Summary of completed phases
+ */
+function CompletedPhasesSummary({
+  phaseProgress,
+}: {
+  phaseProgress: Map<DiscoveryPhase, PhaseProgressDisplay>
+}) {
+  const completedPhases = Array.from(phaseProgress.entries())
+    .filter(([_, p]) => p.status === 'completed')
+    .map(([phase, p]) => ({ ...p, phase }))
+
+  if (completedPhases.length === 0) return null
+
+  const passedCount = completedPhases.filter(p => p.passed).length
+  const avgScore = completedPhases.reduce((sum, p) => sum + (p.score || 0), 0) / completedPhases.length
+
+  return (
+    <div className="p-4">
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+          Completed Phases
+        </span>
+        <div className="flex items-center gap-2 text-xs">
+          <span className="text-emerald-600 font-medium">
+            {passedCount}/{completedPhases.length} passed
+          </span>
+          <span className="text-muted-foreground">
+            avg: {avgScore.toFixed(1)}/10
+          </span>
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {completedPhases.map(({ phase, score, passed }) => {
+          const meta = getPhaseMetadata(phase)
+          return (
+            <div
+              key={phase}
+              className={cn(
+                'flex items-center gap-1.5 px-2 py-1 rounded-md text-xs',
+                passed
+                  ? 'bg-emerald-500/10 text-emerald-600'
+                  : 'bg-amber-500/10 text-amber-600'
+              )}
+            >
+              <span>{meta.shortName}</span>
+              <span className="opacity-70">{score?.toFixed(1)}</span>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Minimal progress indicator for inline use
+ */
+interface MinimalProgressProps {
+  overallProgress: number
+  currentPhase: DiscoveryPhase | null
+  className?: string
+}
+
+export function MinimalProgress({
+  overallProgress,
+  currentPhase,
+  className,
+}: MinimalProgressProps) {
+  const phaseMeta = currentPhase ? getPhaseMetadata(currentPhase) : null
+
+  return (
+    <div className={cn('flex items-center gap-3', className)}>
+      <PulsingBrain className="shrink-0" />
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-xs text-muted-foreground truncate">
+            {phaseMeta?.shortName || 'Starting...'}
+          </span>
+          <span className="text-xs text-muted-foreground">
+            {Math.round(overallProgress)}%
+          </span>
+        </div>
+        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+          <div
+            className="h-full bg-blue-500 rounded-full transition-all duration-500"
+            style={{ width: `${Math.min(100, overallProgress)}%` }}
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default FrontierScienceProgressCard

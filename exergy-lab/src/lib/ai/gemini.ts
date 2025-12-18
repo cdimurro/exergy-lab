@@ -19,7 +19,7 @@ export type GeminiModel = 'flash' | 'flash-lite' | 'pro'
 const MODELS: Record<GeminiModel, string> = {
   'flash-lite': 'gemini-3-flash-preview', // Gemini 3 Flash - fast with Pro-grade reasoning
   flash: 'gemini-3-flash-preview', // Gemini 3 Flash - 3x faster than 2.5 Pro
-  pro: 'gemini-3-pro-preview', // Gemini 3 Pro - maximum quality
+  pro: 'gemini-3-flash-preview', // Gemini 3 Flash for all tasks (best available)
 }
 
 // Gemini 3 thinking levels for adaptive reasoning depth
@@ -74,9 +74,11 @@ export async function generateText(
       generationConfig.responseMimeType = responseMimeType
     }
 
-    // Add Gemini 3 thinking level for adaptive reasoning
+    // Add Gemini 3 thinking level for adaptive reasoning depth
     if (thinkingLevel) {
-      generationConfig.thinkingLevel = thinkingLevel
+      generationConfig.thinkingConfig = {
+        thinkingBudget: thinkingLevel === 'high' ? 24576 : thinkingLevel === 'medium' ? 8192 : thinkingLevel === 'low' ? 2048 : 1024
+      }
     }
 
     const generativeModel: GenerativeModel = genAI.getGenerativeModel({
@@ -133,9 +135,11 @@ export async function* streamText(
       topK,
     }
 
-    // Add Gemini 3 thinking level
+    // Add Gemini 3 thinking level for adaptive reasoning depth
     if (thinkingLevel) {
-      generationConfig.thinkingLevel = thinkingLevel
+      generationConfig.thinkingConfig = {
+        thinkingBudget: thinkingLevel === 'high' ? 24576 : thinkingLevel === 'medium' ? 8192 : thinkingLevel === 'low' ? 2048 : 1024
+      }
     }
 
     const generativeModel: GenerativeModel = genAI.getGenerativeModel({
@@ -176,9 +180,11 @@ export async function analyzeImage(
       maxOutputTokens,
     }
 
-    // Add Gemini 3 thinking level
+    // Add Gemini 3 thinking level for adaptive reasoning depth
     if (thinkingLevel) {
-      generationConfig.thinkingLevel = thinkingLevel
+      generationConfig.thinkingConfig = {
+        thinkingBudget: thinkingLevel === 'high' ? 24576 : thinkingLevel === 'medium' ? 8192 : thinkingLevel === 'low' ? 2048 : 1024
+      }
     }
 
     const generativeModel: GenerativeModel = genAI.getGenerativeModel({
@@ -214,15 +220,10 @@ export async function analyzeImage(
  * Chat interface for multi-turn conversations
  */
 export async function createChat(options: GeminiOptions = {}) {
-  const { model = 'flash', temperature = 1.0, thinkingLevel } = options // Gemini 3 recommended default
+  const { model = 'flash', temperature = 1.0 } = options
 
   const generationConfig: any = {
     temperature,
-  }
-
-  // Add Gemini 3 thinking level
-  if (thinkingLevel) {
-    generationConfig.thinkingLevel = thinkingLevel
   }
 
   const generativeModel: GenerativeModel = genAI.getGenerativeModel({
@@ -326,9 +327,11 @@ export async function generateWithTools(
       ...(responseMimeType && { responseMimeType }),
     }
 
-    // Add Gemini 3 thinking level for adaptive reasoning
+    // Add Gemini 3 thinking level for adaptive reasoning depth
     if (thinkingLevel) {
-      generationConfig.thinkingLevel = thinkingLevel
+      generationConfig.thinkingConfig = {
+        thinkingBudget: thinkingLevel === 'high' ? 24576 : thinkingLevel === 'medium' ? 8192 : thinkingLevel === 'low' ? 2048 : 1024
+      }
     }
 
     // Build model configuration
@@ -404,9 +407,11 @@ export async function continueWithFunctionResponse(
       maxOutputTokens,
     }
 
-    // Add Gemini 3 thinking level
+    // Add Gemini 3 thinking level for adaptive reasoning depth
     if (thinkingLevel) {
-      generationConfig.thinkingLevel = thinkingLevel
+      generationConfig.thinkingConfig = {
+        thinkingBudget: thinkingLevel === 'high' ? 24576 : thinkingLevel === 'medium' ? 8192 : thinkingLevel === 'low' ? 2048 : 1024
+      }
     }
 
     // Build model configuration
@@ -490,9 +495,11 @@ export async function generateStructuredOutput<T = any>(
       responseMimeType: 'application/json',
     }
 
-    // Add Gemini 3 thinking level
+    // Add Gemini 3 thinking level for adaptive reasoning depth
     if (thinkingLevel) {
-      generationConfig.thinkingLevel = thinkingLevel
+      generationConfig.thinkingConfig = {
+        thinkingBudget: thinkingLevel === 'high' ? 24576 : thinkingLevel === 'medium' ? 8192 : thinkingLevel === 'low' ? 2048 : 1024
+      }
     }
 
     const generativeModel: GenerativeModel = genAI.getGenerativeModel({

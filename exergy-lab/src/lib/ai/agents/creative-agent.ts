@@ -1,0 +1,493 @@
+/**
+ * Creative Agent
+ *
+ * Generates novel hypotheses and experiment designs based on research findings.
+ * Uses FrontierScience methodology to ensure quality and novelty.
+ */
+
+import { generateText } from '../model-router'
+import type { RefinementHints } from '../rubrics/types'
+import type {
+  ResearchResult,
+  Source,
+  KeyFinding,
+  TechnologicalGap,
+  MaterialData,
+} from './research-agent'
+
+// ============================================================================
+// Types
+// ============================================================================
+
+export interface Prediction {
+  statement: string
+  measurable: boolean
+  falsifiable: boolean
+  expectedValue?: number
+  unit?: string
+  tolerance?: number
+}
+
+export interface Variable {
+  name: string
+  type: 'independent' | 'dependent' | 'control'
+  description: string
+  range?: { min: number; max: number; unit: string }
+}
+
+export interface Mechanism {
+  steps: {
+    order: number
+    description: string
+    physicalPrinciple?: string
+  }[]
+}
+
+export interface Hypothesis {
+  id: string
+  title: string
+  statement: string
+  predictions: Prediction[]
+  supportingEvidence: {
+    finding: string
+    citation: string
+    relevance: number
+  }[]
+  contradictingEvidence?: {
+    finding: string
+    citation: string
+    howAddressed: string
+  }[]
+  mechanism: Mechanism
+  variables: {
+    independent: Variable[]
+    dependent: Variable[]
+    controls: Variable[]
+  }
+  noveltyScore: number
+  feasibilityScore: number
+  impactScore: number
+  validationMetrics: {
+    name: string
+    targetValue: number
+    unit: string
+    threshold: number
+  }[]
+  relatedGaps: TechnologicalGap[]
+  requiredMaterials: MaterialData[]
+}
+
+export interface ExperimentMaterial {
+  name: string
+  quantity: string
+  purity?: string
+  supplier?: string
+  alternatives?: string[]
+}
+
+export interface ExperimentEquipment {
+  name: string
+  specification: string
+  purpose: string
+  alternatives?: string[]
+}
+
+export interface ProcedureStep {
+  order: number
+  description: string
+  duration?: string
+  temperature?: string
+  criticalParameters?: string[]
+}
+
+export interface SafetyRequirement {
+  hazard: string
+  severity: 'low' | 'medium' | 'high' | 'critical'
+  mitigation: string
+  ppe?: string[]
+}
+
+export interface FailureMode {
+  mode: string
+  likelihood: 'low' | 'medium' | 'high'
+  impact: 'low' | 'medium' | 'high'
+  detection: string
+  mitigation: string
+}
+
+export interface ExperimentDesign {
+  id: string
+  hypothesisId: string
+  title: string
+  objective: string
+  type: 'synthesis' | 'characterization' | 'performance' | 'durability' | 'optimization'
+  materials: ExperimentMaterial[]
+  equipment: ExperimentEquipment[]
+  procedure: ProcedureStep[]
+  safetyRequirements: SafetyRequirement[]
+  failureModes: FailureMode[]
+  expectedOutputs: {
+    name: string
+    type: 'quantitative' | 'qualitative'
+    expectedRange?: { min: number; max: number; unit: string }
+  }[]
+  difficulty: 'low' | 'medium' | 'high'
+  estimatedDuration: string
+  estimatedCost?: number
+  reproducibilityScore: number
+}
+
+export interface CreativeConfig {
+  minHypotheses: number
+  maxHypotheses: number
+  minNoveltyScore: number
+  minFeasibilityScore: number
+  checkThermodynamics: boolean
+}
+
+const DEFAULT_CONFIG: CreativeConfig = {
+  minHypotheses: 5,
+  maxHypotheses: 10,
+  minNoveltyScore: 50,
+  minFeasibilityScore: 50,
+  checkThermodynamics: true,
+}
+
+// ============================================================================
+// Thermodynamic Limits
+// ============================================================================
+
+const THERMODYNAMIC_LIMITS = {
+  carnot: (tHot: number, tCold: number) => (tHot - tCold) / tHot,
+  betz: 0.593,
+  shockleyQueisser: 0.337,
+  concentratedSolar: 0.86,
+  electrolysisVoltage: 1.48, // Thermoneutral voltage
+  fuelCellEfficiency: 0.83,
+}
+
+// ============================================================================
+// Creative Agent Class
+// ============================================================================
+
+export class CreativeAgent {
+  private config: CreativeConfig
+
+  constructor(config: Partial<CreativeConfig> = {}) {
+    this.config = { ...DEFAULT_CONFIG, ...config }
+  }
+
+  /**
+   * Generate hypotheses from research findings
+   */
+  async generateHypotheses(
+    research: ResearchResult,
+    hints?: RefinementHints
+  ): Promise<Hypothesis[]> {
+    console.log(`[CreativeAgent] Generating hypotheses for: "${research.query}"`)
+
+    // Generate candidate hypotheses
+    const candidates = await this.generateCandidates(research, this.config.maxHypotheses)
+
+    // Enrich with materials data
+    const withMaterials = this.enrichWithMaterialsData(candidates, research.materialsData)
+
+    // Filter thermodynamically invalid
+    const valid = this.config.checkThermodynamics
+      ? withMaterials.filter(h => !this.violatesThermodynamics(h))
+      : withMaterials
+
+    // Score and rank
+    const scored = this.scoreHypotheses(valid)
+
+    // Filter by minimum scores
+    const filtered = scored.filter(
+      h => h.noveltyScore >= this.config.minNoveltyScore &&
+        h.feasibilityScore >= this.config.minFeasibilityScore
+    )
+
+    // Return top hypotheses
+    return filtered
+      .sort((a, b) => (b.noveltyScore + b.feasibilityScore) - (a.noveltyScore + a.feasibilityScore))
+      .slice(0, this.config.maxHypotheses)
+  }
+
+  /**
+   * Design experiments for hypotheses
+   */
+  async designExperiments(
+    hypotheses: Hypothesis[],
+    hints?: RefinementHints
+  ): Promise<ExperimentDesign[]> {
+    const designs: ExperimentDesign[] = []
+
+    for (const hypothesis of hypotheses) {
+      const design = await this.designExperimentForHypothesis(hypothesis, hints)
+      if (design) {
+        designs.push(design)
+      }
+    }
+
+    return designs
+  }
+
+  /**
+   * Generate candidate hypotheses using AI
+   */
+  private async generateCandidates(
+    research: ResearchResult,
+    count: number
+  ): Promise<Hypothesis[]> {
+    const prompt = `You are a scientific hypothesis generator for the ${research.domain} domain.
+
+Based on the following research:
+
+KEY FINDINGS:
+${research.keyFindings.slice(0, 5).map(f => `- ${f.finding}${f.value ? ` (${f.value} ${f.unit})` : ''}`).join('\n')}
+
+TECHNOLOGICAL GAPS:
+${research.technologicalGaps.map(g => `- ${g.description} (Impact: ${g.impact})`).join('\n')}
+
+AVAILABLE MATERIALS:
+${research.materialsData.slice(0, 5).map(m => `- ${m.formula}: bandGap=${m.bandGap}eV, ${m.stability}`).join('\n')}
+
+Generate ${count} novel, testable hypotheses that could advance the field.
+
+For each hypothesis, include:
+{
+  "id": "H1",
+  "title": "Short descriptive title",
+  "statement": "Clear hypothesis statement",
+  "predictions": [
+    {
+      "statement": "Measurable prediction",
+      "measurable": true,
+      "falsifiable": true,
+      "expectedValue": 85,
+      "unit": "%",
+      "tolerance": 5
+    }
+  ],
+  "supportingEvidence": [
+    {
+      "finding": "Key finding from literature",
+      "citation": "Author et al., 2023",
+      "relevance": 0.9
+    }
+  ],
+  "mechanism": {
+    "steps": [
+      { "order": 1, "description": "First step", "physicalPrinciple": "Principle" }
+    ]
+  },
+  "variables": {
+    "independent": [{ "name": "Variable", "type": "independent", "description": "...", "range": { "min": 0, "max": 100, "unit": "°C" } }],
+    "dependent": [{ "name": "Variable", "type": "dependent", "description": "..." }],
+    "controls": [{ "name": "Variable", "type": "control", "description": "..." }]
+  },
+  "noveltyScore": 75,
+  "feasibilityScore": 70,
+  "impactScore": 80,
+  "validationMetrics": [
+    { "name": "Metric", "targetValue": 85, "unit": "%", "threshold": 80 }
+  ]
+}
+
+Return ONLY a JSON array of ${count} hypothesis objects.`
+
+    try {
+      const result = await generateText('discovery', prompt, {
+        temperature: 0.9, // Higher temperature for creativity
+        maxTokens: 8000,
+      })
+
+      const cleaned = result.trim().replace(/```json\n?|\n?```/g, '')
+      const hypotheses = JSON.parse(cleaned) as Hypothesis[]
+
+      return hypotheses.map((h, i) => ({
+        ...h,
+        id: h.id || `H${i + 1}`,
+        relatedGaps: research.technologicalGaps.slice(0, 2),
+        requiredMaterials: [],
+      }))
+    } catch (error) {
+      console.error('Hypothesis generation failed:', error)
+      return []
+    }
+  }
+
+  /**
+   * Enrich hypotheses with materials data
+   */
+  private enrichWithMaterialsData(
+    hypotheses: Hypothesis[],
+    materials: MaterialData[]
+  ): Hypothesis[] {
+    return hypotheses.map(h => {
+      // Find relevant materials based on hypothesis content
+      const relevantMaterials = materials.filter(m => {
+        const formula = m.formula.toLowerCase()
+        const statement = h.statement.toLowerCase()
+        return statement.includes(formula) ||
+          formula.split(/[^a-z]/i).some(element =>
+            element.length > 1 && statement.includes(element.toLowerCase())
+          )
+      })
+
+      return {
+        ...h,
+        requiredMaterials: relevantMaterials.slice(0, 3),
+      }
+    })
+  }
+
+  /**
+   * Check if hypothesis violates thermodynamic limits
+   */
+  private violatesThermodynamics(hypothesis: Hypothesis): boolean {
+    for (const prediction of hypothesis.predictions) {
+      const value = prediction.expectedValue
+      if (value === undefined) continue
+
+      const statement = prediction.statement.toLowerCase()
+
+      // Check efficiency claims
+      if (statement.includes('efficiency') && value > 100) {
+        console.warn(`Thermodynamic violation: ${prediction.statement}`)
+        return true
+      }
+
+      // Check solar efficiency
+      if (statement.includes('solar') && statement.includes('efficiency')) {
+        if (value / 100 > THERMODYNAMIC_LIMITS.concentratedSolar) {
+          console.warn(`Solar efficiency ${value}% exceeds thermodynamic limit`)
+          return true
+        }
+      }
+
+      // Check wind efficiency
+      if (statement.includes('wind') && statement.includes('efficiency')) {
+        if (value / 100 > THERMODYNAMIC_LIMITS.betz) {
+          console.warn(`Wind efficiency ${value}% exceeds Betz limit`)
+          return true
+        }
+      }
+    }
+
+    return false
+  }
+
+  /**
+   * Score hypotheses based on multiple criteria
+   */
+  private scoreHypotheses(hypotheses: Hypothesis[]): Hypothesis[] {
+    return hypotheses.map(h => {
+      // Adjust novelty based on evidence
+      let noveltyAdjustment = 0
+      if (h.supportingEvidence.length < 2) noveltyAdjustment += 10 // More novel if less prior work
+      if (h.contradictingEvidence && h.contradictingEvidence.length > 0) noveltyAdjustment -= 10
+
+      // Adjust feasibility based on materials
+      let feasibilityAdjustment = 0
+      if (h.requiredMaterials.length > 0) feasibilityAdjustment += 10 // Better if materials exist
+      if (h.variables.controls.length < 2) feasibilityAdjustment -= 5 // Harder to control
+
+      return {
+        ...h,
+        noveltyScore: Math.min(100, Math.max(0, h.noveltyScore + noveltyAdjustment)),
+        feasibilityScore: Math.min(100, Math.max(0, h.feasibilityScore + feasibilityAdjustment)),
+      }
+    })
+  }
+
+  /**
+   * Design experiment for a single hypothesis
+   */
+  private async designExperimentForHypothesis(
+    hypothesis: Hypothesis,
+    hints?: RefinementHints
+  ): Promise<ExperimentDesign | null> {
+    let hintText = ''
+    if (hints?.failedCriteria.some(c => c.id.startsWith('E'))) {
+      hintText = `
+IMPORTANT: Previous experiment design failed validation. Address these issues:
+${hints.failedCriteria.filter(c => c.id.startsWith('E')).map(c => `- ${c.description}: ${c.passCondition}`).join('\n')}`
+    }
+
+    const prompt = `You are a scientific experiment designer.
+${hintText}
+Design a detailed experiment to test this hypothesis:
+
+HYPOTHESIS: ${hypothesis.title}
+${hypothesis.statement}
+
+PREDICTIONS TO TEST:
+${hypothesis.predictions.map(p => `- ${p.statement}${p.expectedValue ? ` (expected: ${p.expectedValue}${p.unit})` : ''}`).join('\n')}
+
+VARIABLES:
+- Independent: ${hypothesis.variables.independent.map(v => v.name).join(', ')}
+- Dependent: ${hypothesis.variables.dependent.map(v => v.name).join(', ')}
+- Controls: ${hypothesis.variables.controls.map(v => v.name).join(', ')}
+
+Design an experiment with:
+{
+  "id": "E1",
+  "hypothesisId": "${hypothesis.id}",
+  "title": "Experiment title",
+  "objective": "Clear objective",
+  "type": "synthesis|characterization|performance|durability|optimization",
+  "materials": [
+    { "name": "Material", "quantity": "100g", "purity": "99.9%", "supplier": "Sigma-Aldrich" }
+  ],
+  "equipment": [
+    { "name": "Equipment", "specification": "Spec", "purpose": "Purpose" }
+  ],
+  "procedure": [
+    { "order": 1, "description": "Step", "duration": "1h", "temperature": "25°C", "criticalParameters": ["param"] }
+  ],
+  "safetyRequirements": [
+    { "hazard": "Hazard", "severity": "medium", "mitigation": "Action", "ppe": ["gloves", "goggles"] }
+  ],
+  "failureModes": [
+    { "mode": "Failure", "likelihood": "low", "impact": "medium", "detection": "Method", "mitigation": "Action" }
+  ],
+  "expectedOutputs": [
+    { "name": "Output", "type": "quantitative", "expectedRange": { "min": 0, "max": 100, "unit": "%" } }
+  ],
+  "difficulty": "medium",
+  "estimatedDuration": "2 weeks",
+  "estimatedCost": 5000,
+  "reproducibilityScore": 85
+}
+
+Include:
+- At least 5 materials with suppliers
+- At least 5 pieces of equipment
+- At least 10 procedure steps
+- At least 3 safety requirements
+- At least 2 failure modes
+
+Return ONLY the JSON object.`
+
+    try {
+      const result = await generateText('experiment-design', prompt, {
+        temperature: 0.7,
+        maxTokens: 4000,
+      })
+
+      const cleaned = result.trim().replace(/```json\n?|\n?```/g, '')
+      return JSON.parse(cleaned) as ExperimentDesign
+    } catch (error) {
+      console.error(`Experiment design failed for ${hypothesis.id}:`, error)
+      return null
+    }
+  }
+}
+
+// ============================================================================
+// Factory Function
+// ============================================================================
+
+export function createCreativeAgent(config?: Partial<CreativeConfig>): CreativeAgent {
+  return new CreativeAgent(config)
+}
