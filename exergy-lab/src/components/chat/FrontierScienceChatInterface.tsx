@@ -32,7 +32,7 @@ interface FrontierScienceChatInterfaceProps {
 }
 
 export function FrontierScienceChatInterface({
-  pageTitle = 'FrontierScience Discovery',
+  pageTitle = 'Discovery Engine',
   pageSubtitle = 'AI-powered scientific discovery with rubric validation',
   onBack,
   onComplete,
@@ -236,7 +236,7 @@ function IdleState() {
         Start Your Discovery
       </h2>
       <p className="text-muted-foreground max-w-md mb-6">
-        Enter a scientific research query to begin the 12-phase FrontierScience discovery pipeline.
+        Enter a scientific research query to begin the 12-phase discovery pipeline.
         The AI will iteratively refine each phase until it reaches the 7/10 quality threshold.
       </p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-2xl">

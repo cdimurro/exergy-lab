@@ -64,7 +64,7 @@ export function FrontierScienceProgressCard({
           <PulsingBrain />
           <div>
             <h3 className="text-sm font-semibold text-foreground">
-              FrontierScience Discovery
+              Discovery Engine
             </h3>
             <p className="text-xs text-muted-foreground truncate max-w-[300px]">
               {query}

@@ -4,6 +4,7 @@
 
 // Main components
 export { AdminDebugViewer, DebugStatusIndicator } from './AdminDebugViewer'
+export { DebugProvider } from './DebugProvider'
 export { DebugDrawer } from './DebugDrawer'
 export { EventStreamItem, CompactEventItem } from './EventStreamItem'
 export { ExportDialog } from './ExportDialog'

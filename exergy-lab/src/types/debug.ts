@@ -239,6 +239,7 @@ export interface DebugContextValue {
   config: DebugConfig
   isEnabled: boolean
   isOpen: boolean
+  stats: DebugStats
 
   // Actions
   startSession: (discoveryId: string, query?: string) => void
@@ -247,7 +248,10 @@ export interface DebugContextValue {
   addApiCall: (apiCall: Omit<APICallLog, 'id'>) => void
   addError: (error: Omit<ErrorLog, 'id'>) => void
   clearSession: () => void
-  exportSession: (options: ExportOptions) => string
+  exportSession: (options?: Partial<ExportOptions>) => string
   toggleOpen: () => void
   setEnabled: (enabled: boolean) => void
+  setOpen: (open: boolean) => void
+  captureSSEEvent: (eventType: string, data: unknown, phase?: string) => void
+  copyToClipboard: (options?: Partial<ExportOptions>) => Promise<boolean>
 }

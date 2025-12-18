@@ -5,10 +5,10 @@
  *
  * Manages the FrontierScience discovery workflow with SSE streaming.
  * Provides real-time progress updates, iteration tracking, and rubric scores.
- * Integrates with debug capture for admin debugging.
+ * Integrates with debug capture for admin debugging via shared DebugContext.
  */
 
-import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
+import { useState, useCallback, useRef, useEffect, useMemo, useContext } from 'react'
 import type {
   DiscoveryPhase,
   DiscoveryQuality,
@@ -24,7 +24,7 @@ import type {
   SSEEvent,
   ALL_PHASES,
 } from '@/types/frontierscience'
-import { useDebugCapture } from '@/hooks/use-debug-capture'
+import { DebugContext } from '@/hooks/use-debug-capture'
 
 // All phases in order
 const DISCOVERY_PHASES: DiscoveryPhase[] = [
@@ -56,13 +56,8 @@ function createInitialPhaseProgress(): Map<DiscoveryPhase, PhaseProgressDisplay>
 }
 
 export function useFrontierScienceWorkflow(): UseFrontierScienceWorkflowReturn {
-  // Debug capture hook
-  const debugCapture = useDebugCapture({
-    enabled: typeof window !== 'undefined' && (
-      process.env.NODE_ENV === 'development' ||
-      process.env.NEXT_PUBLIC_ENABLE_DEBUG_VIEWER === 'true'
-    ),
-  })
+  // Get debug context from provider (shared with AdminDebugViewer)
+  const debugContext = useContext(DebugContext)
 
   // Core state
   const [discoveryId, setDiscoveryId] = useState<string | null>(null)
@@ -108,9 +103,9 @@ export function useFrontierScienceWorkflow(): UseFrontierScienceWorkflowReturn {
 
   // Handle SSE events
   const handleSSEEvent = useCallback((event: SSEEvent) => {
-    // Capture event for debugging
+    // Capture event for debugging (if debug context is available)
     const phase = 'phase' in event ? event.phase : undefined
-    debugCapture.captureSSEEvent(event.type, event, phase)
+    debugContext?.captureSSEEvent(event.type, event, phase)
 
     console.log('[FrontierScience UI] SSE Event received:', event.type, event)
 
@@ -214,7 +209,7 @@ export function useFrontierScienceWorkflow(): UseFrontierScienceWorkflowReturn {
         break
       }
     }
-  }, [cleanup, debugCapture])
+  }, [cleanup, debugContext])
 
   // Start discovery
   const startDiscovery = useCallback(async (query: string, options?: DiscoveryOptions) => {
@@ -230,7 +225,7 @@ export function useFrontierScienceWorkflow(): UseFrontierScienceWorkflowReturn {
     cleanup()
 
     // Clear previous debug session
-    debugCapture.clearSession()
+    debugContext?.clearSession()
 
     try {
       const apiStartTime = Date.now()
@@ -258,7 +253,7 @@ export function useFrontierScienceWorkflow(): UseFrontierScienceWorkflowReturn {
       if (!response.ok) {
         const errorData = await response.json()
         // Log failed API call
-        debugCapture.addApiCall({
+        debugContext?.addApiCall({
           timestamp: apiStartTime,
           method: 'POST',
           url: '/api/discovery/frontierscience',
@@ -275,7 +270,7 @@ export function useFrontierScienceWorkflow(): UseFrontierScienceWorkflowReturn {
       const newDiscoveryId = data.discoveryId
 
       // Log successful API call
-      debugCapture.addApiCall({
+      debugContext?.addApiCall({
         timestamp: apiStartTime,
         method: 'POST',
         url: '/api/discovery/frontierscience',
@@ -286,7 +281,7 @@ export function useFrontierScienceWorkflow(): UseFrontierScienceWorkflowReturn {
       })
 
       // Start debug session
-      debugCapture.startSession(newDiscoveryId, query)
+      debugContext?.startSession(newDiscoveryId, query)
 
       setDiscoveryId(newDiscoveryId)
       setStatus('running')
@@ -327,17 +322,17 @@ export function useFrontierScienceWorkflow(): UseFrontierScienceWorkflowReturn {
       setError(errorMessage)
 
       // Log error to debug capture
-      debugCapture.addError({
+      debugContext?.addError({
         timestamp: Date.now(),
         message: errorMessage,
         stack: err instanceof Error ? err.stack : undefined,
         context: { action: 'startDiscovery', query, options },
       })
-      debugCapture.endSession('failed')
+      debugContext?.endSession()
 
       cleanup()
     }
-  }, [cleanup, handleSSEEvent, startTimer, debugCapture])
+  }, [cleanup, handleSSEEvent, startTimer, debugContext])
 
   // Cancel discovery
   const cancelDiscovery = useCallback(() => {

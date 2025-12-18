@@ -5,16 +5,19 @@
  *
  * Main container for the debug viewer with floating toggle button.
  * Shows/hides the DebugDrawer slide-out panel.
+ *
+ * IMPORTANT: This component should be used inside a DebugProvider to share
+ * debug state with other components like useFrontierScienceWorkflow.
  */
 
 import * as React from 'react'
-import { Bug, X, Activity, AlertCircle, Copy, Check, Download } from 'lucide-react'
+import { Bug, X, Activity, Copy, Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { DebugDrawer } from './DebugDrawer'
-import { useDebugCapture, DebugContext } from '@/hooks/use-debug-capture'
-import type { DebugContextValue, ExportOptions } from '@/types/debug'
+import { DebugContext } from '@/hooks/use-debug-capture'
+import type { DebugContextValue } from '@/types/debug'
 
 // ============================================================================
 // Access Control
@@ -44,68 +47,38 @@ export function AdminDebugViewer({ className }: AdminDebugViewerProps) {
   const [copied, setCopied] = React.useState(false)
   const [isMounted, setIsMounted] = React.useState(false)
 
+  // Get debug context from provider (must be wrapped in DebugProvider)
+  const debugContext = React.useContext(DebugContext)
+
   // Prevent hydration mismatch by only rendering after mount
   React.useEffect(() => {
     setIsMounted(true)
   }, [])
 
-  const debugCapture = useDebugCapture({
-    enabled: canAccessDebugViewer(),
-  })
-
-  // Create context value
-  const contextValue: DebugContextValue = React.useMemo(
-    () => ({
-      session: debugCapture.session,
-      config: {
-        maxEvents: 1000,
-        maxApiCalls: 100,
-        maxErrors: 100,
-        maxSessionSizeMB: 10,
-        autoClearOnComplete: false,
-        persistToLocalStorage: true,
-        enableKeyboardShortcuts: true,
-        debounceMs: 100,
-      },
-      isEnabled: debugCapture.isEnabled,
-      isOpen: debugCapture.isOpen,
-      startSession: debugCapture.startSession,
-      endSession: () => debugCapture.endSession(),
-      addEvent: debugCapture.addEvent,
-      addApiCall: debugCapture.addApiCall,
-      addError: debugCapture.addError,
-      clearSession: debugCapture.clearSession,
-      exportSession: debugCapture.exportSession,
-      toggleOpen: debugCapture.toggleOpen,
-      setEnabled: debugCapture.setEnabled,
-    }),
-    [debugCapture]
-  )
-
-  // Don't render if not mounted (prevents hydration mismatch) or not enabled
-  if (!isMounted || !debugCapture.isEnabled) {
+  // Don't render if not mounted (prevents hydration mismatch) or no context
+  if (!isMounted || !debugContext || !debugContext.isEnabled) {
     return null
   }
 
   const handleCopyToClipboard = async () => {
-    const success = await debugCapture.copyToClipboard({ format: 'markdown' })
+    const success = await debugContext.copyToClipboard({ format: 'markdown' })
     if (success) {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     }
   }
 
-  const eventCount = debugCapture.session?.events.length || 0
-  const errorCount = debugCapture.session?.errors.length || 0
+  const eventCount = debugContext.session?.events.length || 0
+  const errorCount = debugContext.session?.errors.length || 0
   const hasErrors = errorCount > 0
-  const isActive = debugCapture.session?.status === 'running'
+  const isActive = debugContext.session?.status === 'running'
 
   return (
-    <DebugContext.Provider value={contextValue}>
+    <>
       {/* Floating Toggle Button */}
       <div className={cn('fixed bottom-6 right-6 z-50 flex flex-col gap-2', className)}>
         {/* Quick Actions (shown when drawer is closed and session exists) */}
-        {!debugCapture.isOpen && debugCapture.session && (
+        {!debugContext.isOpen && debugContext.session && (
           <div className="flex gap-2">
             <Button
               size="sm"
@@ -125,9 +98,9 @@ export function AdminDebugViewer({ className }: AdminDebugViewerProps) {
 
         {/* Main Toggle Button */}
         <Button
-          onClick={debugCapture.toggleOpen}
+          onClick={debugContext.toggleOpen}
           size="lg"
-          variant={debugCapture.isOpen ? 'primary' : 'outline'}
+          variant={debugContext.isOpen ? 'primary' : 'outline'}
           className={cn(
             'h-14 w-14 rounded-full shadow-lg',
             'transition-all duration-200',
@@ -136,7 +109,7 @@ export function AdminDebugViewer({ className }: AdminDebugViewerProps) {
           )}
           title="Toggle Debug Viewer (Ctrl+Shift+D)"
         >
-          {debugCapture.isOpen ? (
+          {debugContext.isOpen ? (
             <X size={20} />
           ) : (
             <div className="relative">
@@ -160,16 +133,16 @@ export function AdminDebugViewer({ className }: AdminDebugViewerProps) {
 
       {/* Debug Drawer */}
       <DebugDrawer
-        isOpen={debugCapture.isOpen}
-        onClose={() => debugCapture.setOpen(false)}
-        session={debugCapture.session}
-        stats={debugCapture.stats}
-        onClear={debugCapture.clearSession}
-        onExport={debugCapture.exportSession}
+        isOpen={debugContext.isOpen}
+        onClose={() => debugContext.setOpen(false)}
+        session={debugContext.session}
+        stats={debugContext.stats}
+        onClear={debugContext.clearSession}
+        onExport={debugContext.exportSession}
         onCopyToClipboard={handleCopyToClipboard}
         copied={copied}
       />
-    </DebugContext.Provider>
+    </>
   )
 }
 
@@ -182,13 +155,13 @@ interface DebugStatusIndicatorProps {
 }
 
 export function DebugStatusIndicator({ className }: DebugStatusIndicatorProps) {
-  const debugCapture = useDebugCapture()
+  const debugContext = React.useContext(DebugContext)
 
-  if (!debugCapture.isEnabled || !debugCapture.session) {
+  if (!debugContext || !debugContext.isEnabled || !debugContext.session) {
     return null
   }
 
-  const { session, stats } = debugCapture
+  const { session, stats } = debugContext
   const isRunning = session.status === 'running'
   const hasErrors = stats.totalErrors > 0
 

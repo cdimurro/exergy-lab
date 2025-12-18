@@ -81,7 +81,7 @@ export function PhaseTimeline({
       <div
         className={cn(
           layout === 'vertical' ? 'hidden' : layout === 'horizontal' ? 'flex' : 'hidden md:flex',
-          'items-start gap-1 min-w-max p-2'
+          'items-start justify-between w-full p-4'
         )}
       >
         {phases.map((phase, index) => {
@@ -176,8 +176,8 @@ function PhaseNode({
   Icon,
   name,
 }: PhaseNodeProps) {
-  const iconSize = compact ? 14 : 18
-  const nodeSize = compact ? 'w-8 h-8' : 'w-10 h-10'
+  const iconSize = compact ? 16 : 24
+  const nodeSize = compact ? 'w-10 h-10' : 'w-14 h-14'
 
   return (
     <div className="flex flex-col items-center gap-1">
@@ -217,7 +217,7 @@ function PhaseNode({
       {showLabel && (
         <span
           className={cn(
-            'text-xs font-medium text-center max-w-[60px] truncate',
+            'text-xs font-medium text-center max-w-[80px] truncate mt-1',
             status === 'pending' && 'text-muted-foreground',
             status === 'running' && 'text-blue-600',
             status === 'completed' && passed && 'text-emerald-600',
@@ -256,7 +256,7 @@ function PhaseConnector({
   return (
     <div
       className={cn(
-        'w-4 h-0.5 mx-0.5',
+        'flex-1 h-0.5 min-w-[8px] max-w-[24px] mx-1 mt-7',
         completed && 'bg-emerald-500',
         active && 'bg-blue-500',
         !completed && !active && 'bg-muted-foreground/30'
