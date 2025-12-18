@@ -53,6 +53,7 @@ interface PhaseTimelineProps {
   showScores?: boolean
   showLabels?: boolean
   compact?: boolean
+  onPhaseClick?: (phase: DiscoveryPhase) => void
   className?: string
 }
 
@@ -63,6 +64,7 @@ export function PhaseTimeline({
   showScores = true,
   showLabels = true,
   compact = false,
+  onPhaseClick,
   className,
 }: PhaseTimelineProps) {
   const phases = PHASE_METADATA
@@ -102,6 +104,7 @@ export function PhaseTimeline({
                 compact={compact}
                 Icon={Icon}
                 name={phase.shortName}
+                onClick={onPhaseClick}
               />
               {index < phases.length - 1 && (
                 <PhaseConnector
@@ -162,6 +165,7 @@ interface PhaseNodeProps {
   compact: boolean
   Icon: React.ComponentType<{ size?: number; className?: string }>
   name: string
+  onClick?: (phase: DiscoveryPhase) => void
 }
 
 function PhaseNode({
@@ -175,13 +179,18 @@ function PhaseNode({
   compact,
   Icon,
   name,
+  onClick,
 }: PhaseNodeProps) {
   const iconSize = compact ? 16 : 24
   const nodeSize = compact ? 'w-10 h-10' : 'w-14 h-14'
+  const isClickable = onClick && (status === 'completed' || status === 'running')
 
   return (
     <div className="flex flex-col items-center gap-1">
-      <div
+      <button
+        type="button"
+        disabled={!isClickable}
+        onClick={() => onClick?.(phase)}
         className={cn(
           nodeSize,
           'rounded-full flex items-center justify-center',
@@ -197,9 +206,12 @@ function PhaseNode({
           // Failed
           status === 'failed' && 'bg-red-500/10 border-red-500 text-red-600',
           // Active indicator
-          isActive && 'ring-2 ring-blue-400 ring-offset-2'
+          isActive && 'ring-2 ring-blue-400 ring-offset-2',
+          // Clickable styling
+          isClickable && 'cursor-pointer hover:scale-110 hover:shadow-lg',
+          !isClickable && 'cursor-default'
         )}
-        title={`${name}: ${status}${score !== undefined ? ` (${score.toFixed(1)}/10)` : ''}`}
+        title={`${name}: ${status}${score !== undefined ? ` (${score.toFixed(1)}/10)` : ''}${isClickable ? ' - Click to view details' : ''}`}
       >
         {status === 'running' ? (
           <Loader2 size={iconSize} className="animate-spin" />
@@ -212,7 +224,7 @@ function PhaseNode({
         ) : (
           <Icon size={iconSize} />
         )}
-      </div>
+      </button>
 
       {showLabel && (
         <span
