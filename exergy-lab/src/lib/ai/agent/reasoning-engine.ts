@@ -325,41 +325,38 @@ export class ReasoningEngine extends EventEmitter {
    * Break down user query into sub-goals and identify required tools
    */
   private async planExecution(userQuery: string): Promise<AgentPlan> {
-    const planningPrompt = `You are a planning agent. Given the user query, create an execution plan.
+    // Simplified prompt for Gemini 3 - native thinking handles reasoning
+    const planningPrompt = `Create an execution plan for this research query:
 
-User Query: "${userQuery}"
+Query: "${userQuery}"
 
 Available Tools:
 ${this.toolRegistry.getAllTools().map(tool => `- ${tool.name}: ${tool.description}`).join('\n')}
 
-Create a plan with:
-1. High-level steps to answer the query
-2. Specific tool calls needed (with parameters)
-3. Expected information gaps
-4. Estimated complexity (1-10)
+Return JSON with: steps[], tools[], expectedGaps[], complexity (1-10), estimatedDuration (ms)
 
-CRITICAL TYPE REQUIREMENTS:
-- "maxResults" MUST be a NUMBER (e.g., 20), NOT a string (NOT "20")
-- "iterations", "targetAccuracy" MUST be NUMBERS
-- Boolean fields like "includePapers" MUST be true/false (NOT "true"/"false")
+Type requirements:
+- maxResults: number (20, not "20")
+- Boolean fields: true/false (not "true"/"false")
 
-IMPORTANT: Respond with ONLY valid JSON, no markdown or explanation. Use this exact structure:
+JSON format:
 {
   "steps": ["step 1", "step 2"],
-  "tools": [{"name": "searchPapers", "params": {"query": "search terms", "maxResults": 20}, "rationale": "why needed"}],
-  "expectedGaps": ["potential gap 1"],
+  "tools": [{"name": "searchPapers", "params": {"query": "terms", "maxResults": 20}, "rationale": "why"}],
+  "expectedGaps": ["gap 1"],
   "complexity": 5,
   "estimatedDuration": 15000
 }
-
-Note: maxResults in the example above is the number 20, NOT the string "20".
 `
 
     // Try up to 2 times before falling back to default plan
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
         const planResult = await executeResilient(
-          () => executeWithTools(planningPrompt, { model: 'quality' }),
+          () => executeWithTools(planningPrompt, {
+            model: 'quality',
+            thinkingLevel: 'high' // Gemini 3: maximize reasoning for planning
+          }),
           'reasoning:plan'
         )
 
@@ -537,9 +534,8 @@ Note: maxResults in the example above is the number 20, NOT the string "20".
       console.log('[ReasoningEngine] Failed tool errors:', failedResults.map(r => r.error))
     }
 
-    const analysisPrompt = `You are an analysis agent. Synthesize the tool results and determine if more information is needed.
-
-Original Query: "${originalQuery}"
+    // Simplified prompt for Gemini 3 - native thinking handles synthesis
+    const analysisPrompt = `Synthesize these tool results for the query: "${originalQuery}"
 
 Tool Results:
 ${toolResults.map((result, i) => `
@@ -547,25 +543,24 @@ Tool ${i + 1}: ${result.success ? 'SUCCESS' : 'FAILED'}
 ${result.success ? JSON.stringify(result.data, null, 2) : `Error: ${result.error}`}
 `).join('\n')}
 
-Expected Gaps from Plan: ${(plan.expectedGaps || []).join(', ')}
+Expected Gaps: ${(plan.expectedGaps || []).join(', ')}
 
-Analyze the results and respond with JSON:
+Return JSON:
 {
   "synthesis": "summary of findings",
-  "gaps": ["remaining gap 1", "remaining gap 2"],
+  "gaps": ["remaining gaps"],
   "needsMoreInfo": false,
   "refinedQuery": null,
   "confidence": 85,
-  "keyFindings": ["finding 1", "finding 2"]
+  "keyFindings": ["key findings"]
 }
-
-Set "needsMoreInfo" to true if critical information is missing.
-Set "refinedQuery" to a more specific query if iteration is needed.
-Set "confidence" 0-100 based on how well the query can be answered.
 `
 
     const analysisResult = await executeResilient(
-      () => executeWithTools(analysisPrompt, { model: 'fast' }),
+      () => executeWithTools(analysisPrompt, {
+        model: 'quality',
+        thinkingLevel: 'high' // Gemini 3: deep synthesis for analysis
+      }),
       'reasoning:analyze'
     )
 
@@ -610,39 +605,36 @@ Set "confidence" 0-100 based on how well the query can be answered.
     analysis: AgentAnalysis,
     toolResults: ToolResult[]
   ): Promise<AgentResponse> {
-    const responsePrompt = `You are a response generation agent. Create a comprehensive answer to the user's query.
+    // Simplified prompt for Gemini 3 - native thinking handles comprehensive response
+    const responsePrompt = `Generate a comprehensive research response.
 
-User Query: "${originalQuery}"
+Query: "${originalQuery}"
 
-Analysis Summary: ${analysis.synthesis}
+Analysis: ${analysis.synthesis}
 
 Key Findings:
 ${analysis.keyFindings.map((finding, i) => `${i + 1}. ${finding}`).join('\n')}
 
-Tool Results Data:
+Sources:
 ${toolResults.filter(r => r.success).map((result, i) => `
-Source ${i + 1}:
-${JSON.stringify(result.data, null, 2)}
+Source ${i + 1}: ${JSON.stringify(result.data, null, 2)}
 `).join('\n')}
 
-Create a response with:
-1. Clear, comprehensive answer
-2. Proper citations to sources
-3. Key findings highlighted
-4. Recommendations if applicable
-
-Respond with JSON:
+Return JSON:
 {
   "answer": "comprehensive answer with citations",
   "sources": [{"title": "...", "url": "...", "relevance": 95}],
-  "keyFindings": ["finding 1", "finding 2"],
-  "recommendations": ["recommendation 1", "recommendation 2"],
+  "keyFindings": ["findings"],
+  "recommendations": ["recommendations"],
   "confidence": 90
 }
 `
 
     const responseResult = await executeResilient(
-      () => executeWithTools(responsePrompt, { model: 'quality' }),
+      () => executeWithTools(responsePrompt, {
+        model: 'quality',
+        thinkingLevel: 'high' // Gemini 3: comprehensive response generation
+      }),
       'reasoning:respond'
     )
 

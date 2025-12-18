@@ -339,10 +339,11 @@ export async function* streamText(
 
 import { FunctionDeclaration, GenerateResult } from '@/types/agent'
 import { getGlobalToolRegistry } from './tools/registry'
+import { ThinkingLevel } from './gemini'
 
 /**
  * Execute with function calling support (agent mode)
- * Uses Gemini as primary provider (flash-lite for dev/testing, flash for quality)
+ * Uses Gemini 3 as primary provider with adaptive thinking levels
  */
 export async function executeWithTools(
   prompt: string,
@@ -350,6 +351,7 @@ export async function executeWithTools(
     temperature?: number
     maxTokens?: number
     model?: 'fast' | 'quality'
+    thinkingLevel?: ThinkingLevel // Gemini 3 thinking level
   }
 ): Promise<GenerateResult> {
   // Check rate limits for Gemini (primary provider)
@@ -365,12 +367,13 @@ export async function executeWithTools(
     const toolRegistry = getGlobalToolRegistry()
     const tools = toolRegistry.toGeminiFunctionDeclarations()
 
-    // Use Gemini flash-lite for fast operations, flash for quality
+    // Use Gemini 3 flash for all operations (Pro-grade reasoning at Flash speed)
     const geminiModel = options?.model === 'quality' ? 'flash' : 'flash-lite'
     const result = await gemini.generateWithTools(prompt, tools, {
       model: geminiModel as any,
-      temperature: options?.temperature ?? 0.7,
+      temperature: options?.temperature ?? 1.0, // Gemini 3 recommended default
       maxOutputTokens: options?.maxTokens ?? 2048,
+      thinkingLevel: options?.thinkingLevel, // Pass through Gemini 3 thinking level
     })
 
     // Consume rate limit token
@@ -385,7 +388,7 @@ export async function executeWithTools(
 
 /**
  * Continue agent conversation after function calls
- * Uses Gemini as primary provider (flash-lite for dev/testing, flash for quality)
+ * Uses Gemini 3 as primary provider with adaptive thinking levels
  */
 export async function continueAfterFunctionCalls(
   prompt: string,
@@ -395,6 +398,7 @@ export async function continueAfterFunctionCalls(
     temperature?: number
     maxTokens?: number
     model?: 'fast' | 'quality'
+    thinkingLevel?: ThinkingLevel // Gemini 3 thinking level
   }
 ): Promise<string> {
   if (!rateLimiter.canExecute('gemini')) {
@@ -416,8 +420,9 @@ export async function continueAfterFunctionCalls(
       functionResponses,
       {
         model: geminiModel as any,
-        temperature: options?.temperature ?? 0.7,
+        temperature: options?.temperature ?? 1.0, // Gemini 3 recommended default
         maxOutputTokens: options?.maxTokens ?? 2048,
+        thinkingLevel: options?.thinkingLevel, // Pass through Gemini 3 thinking level
       }
     )
 
@@ -431,7 +436,7 @@ export async function continueAfterFunctionCalls(
 
 /**
  * Generate structured output with schema validation
- * Uses Gemini as primary provider (flash-lite for dev/testing, flash for quality)
+ * Uses Gemini 3 as primary provider with adaptive thinking levels
  */
 export async function generateStructured<T = any>(
   prompt: string,
@@ -440,6 +445,7 @@ export async function generateStructured<T = any>(
     temperature?: number
     maxTokens?: number
     model?: 'fast' | 'quality'
+    thinkingLevel?: ThinkingLevel // Gemini 3 thinking level
   }
 ): Promise<T> {
   if (!rateLimiter.canExecute('gemini')) {
@@ -455,8 +461,9 @@ export async function generateStructured<T = any>(
 
     const response = await gemini.generateText(fullPrompt, {
       model: geminiModel as any,
-      temperature: options?.temperature ?? 0.3,
+      temperature: options?.temperature ?? 0.3, // Keep lower for JSON output
       maxOutputTokens: options?.maxTokens ?? 2048,
+      thinkingLevel: options?.thinkingLevel, // Pass through Gemini 3 thinking level
     })
 
     rateLimiter.consume('gemini')

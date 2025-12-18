@@ -17,10 +17,13 @@ const genAI = new GoogleGenerativeAI(apiKey)
 export type GeminiModel = 'flash' | 'flash-lite' | 'pro'
 
 const MODELS: Record<GeminiModel, string> = {
-  'flash-lite': 'gemini-2.0-flash-lite', // Fastest, for dev/testing
-  flash: 'gemini-2.0-flash', // Fast, good for most tasks
-  pro: 'gemini-1.5-pro', // Slower, better quality
+  'flash-lite': 'gemini-3-flash-preview', // Gemini 3 Flash - fast with Pro-grade reasoning
+  flash: 'gemini-3-flash-preview', // Gemini 3 Flash - 3x faster than 2.5 Pro
+  pro: 'gemini-3-pro-preview', // Gemini 3 Pro - maximum quality
 }
+
+// Gemini 3 thinking levels for adaptive reasoning depth
+export type ThinkingLevel = 'minimal' | 'low' | 'medium' | 'high'
 
 export interface GeminiOptions {
   model?: GeminiModel
@@ -30,6 +33,7 @@ export interface GeminiOptions {
   topK?: number
   tools?: FunctionDeclaration[] // Function declarations for tool use
   responseMimeType?: string // For structured output (e.g., 'application/json')
+  thinkingLevel?: ThinkingLevel // Gemini 3 adaptive thinking (minimal/low/medium/high)
 }
 
 /**
@@ -41,16 +45,17 @@ export async function generateText(
 ): Promise<string> {
   const {
     model = 'flash',
-    temperature = 0.7,
+    temperature = 1.0, // Gemini 3 recommended default
     maxOutputTokens = 2048,
     topP = 0.95,
     topK = 40,
     responseMimeType,
+    thinkingLevel,
   } = options
 
   console.log(`[Gemini] === API Call ===`)
   console.log(`[Gemini] Model: ${MODELS[model]}`)
-  console.log(`[Gemini] Config: temp=${temperature}, maxTokens=${maxOutputTokens}`)
+  console.log(`[Gemini] Config: temp=${temperature}, maxTokens=${maxOutputTokens}${thinkingLevel ? `, thinking=${thinkingLevel}` : ''}`)
   console.log(`[Gemini] Prompt length: ${prompt.length} chars`)
   if (responseMimeType) {
     console.log(`[Gemini] Response MIME type: ${responseMimeType}`)
@@ -67,6 +72,11 @@ export async function generateText(
     // Add responseMimeType if specified (for JSON output)
     if (responseMimeType) {
       generationConfig.responseMimeType = responseMimeType
+    }
+
+    // Add Gemini 3 thinking level for adaptive reasoning
+    if (thinkingLevel) {
+      generationConfig.thinkingLevel = thinkingLevel
     }
 
     const generativeModel: GenerativeModel = genAI.getGenerativeModel({
@@ -108,21 +118,29 @@ export async function* streamText(
 ): AsyncGenerator<string> {
   const {
     model = 'flash',
-    temperature = 0.7,
+    temperature = 1.0, // Gemini 3 recommended default
     maxOutputTokens = 2048,
     topP = 0.95,
     topK = 40,
+    thinkingLevel,
   } = options
 
   try {
+    const generationConfig: any = {
+      temperature,
+      maxOutputTokens,
+      topP,
+      topK,
+    }
+
+    // Add Gemini 3 thinking level
+    if (thinkingLevel) {
+      generationConfig.thinkingLevel = thinkingLevel
+    }
+
     const generativeModel: GenerativeModel = genAI.getGenerativeModel({
       model: MODELS[model],
-      generationConfig: {
-        temperature,
-        maxOutputTokens,
-        topP,
-        topK,
-      },
+      generationConfig,
     })
 
     const result = await generativeModel.generateContentStream(prompt)
@@ -147,17 +165,25 @@ export async function analyzeImage(
 ): Promise<string> {
   const {
     model = 'flash',
-    temperature = 0.7,
+    temperature = 1.0, // Gemini 3 recommended default
     maxOutputTokens = 2048,
+    thinkingLevel,
   } = options
 
   try {
+    const generationConfig: any = {
+      temperature,
+      maxOutputTokens,
+    }
+
+    // Add Gemini 3 thinking level
+    if (thinkingLevel) {
+      generationConfig.thinkingLevel = thinkingLevel
+    }
+
     const generativeModel: GenerativeModel = genAI.getGenerativeModel({
       model: MODELS[model],
-      generationConfig: {
-        temperature,
-        maxOutputTokens,
-      },
+      generationConfig,
     })
 
     // Convert image data to proper format
@@ -188,13 +214,20 @@ export async function analyzeImage(
  * Chat interface for multi-turn conversations
  */
 export async function createChat(options: GeminiOptions = {}) {
-  const { model = 'flash', temperature = 0.7 } = options
+  const { model = 'flash', temperature = 1.0, thinkingLevel } = options // Gemini 3 recommended default
+
+  const generationConfig: any = {
+    temperature,
+  }
+
+  // Add Gemini 3 thinking level
+  if (thinkingLevel) {
+    generationConfig.thinkingLevel = thinkingLevel
+  }
 
   const generativeModel: GenerativeModel = genAI.getGenerativeModel({
     model: MODELS[model],
-    generationConfig: {
-      temperature,
-    },
+    generationConfig,
   })
 
   const chat = generativeModel.startChat({
@@ -275,24 +308,33 @@ export async function generateWithTools(
 ): Promise<GenerateResult> {
   const {
     model = 'flash',
-    temperature = 0.7,
+    temperature = 1.0, // Gemini 3 recommended default
     maxOutputTokens = 2048,
     topP = 0.95,
     topK = 40,
     responseMimeType,
+    thinkingLevel,
   } = options
 
   try {
+    // Build generation config with Gemini 3 thinking level
+    const generationConfig: any = {
+      temperature,
+      maxOutputTokens,
+      topP,
+      topK,
+      ...(responseMimeType && { responseMimeType }),
+    }
+
+    // Add Gemini 3 thinking level for adaptive reasoning
+    if (thinkingLevel) {
+      generationConfig.thinkingLevel = thinkingLevel
+    }
+
     // Build model configuration
     const modelConfig: any = {
       model: MODELS[model],
-      generationConfig: {
-        temperature,
-        maxOutputTokens,
-        topP,
-        topK,
-        ...(responseMimeType && { responseMimeType }),
-      },
+      generationConfig,
     }
 
     // Only add tools if we have valid function declarations
@@ -350,18 +392,27 @@ export async function continueWithFunctionResponse(
 ): Promise<string> {
   const {
     model = 'flash',
-    temperature = 0.7,
+    temperature = 1.0, // Gemini 3 recommended default
     maxOutputTokens = 2048,
+    thinkingLevel,
   } = options
 
   try {
+    // Build generation config with Gemini 3 thinking level
+    const generationConfig: any = {
+      temperature,
+      maxOutputTokens,
+    }
+
+    // Add Gemini 3 thinking level
+    if (thinkingLevel) {
+      generationConfig.thinkingLevel = thinkingLevel
+    }
+
     // Build model configuration
     const modelConfig: any = {
       model: MODELS[model],
-      generationConfig: {
-        temperature,
-        maxOutputTokens,
-      },
+      generationConfig,
     }
 
     // Only add tools if we have valid function declarations
@@ -425,20 +476,28 @@ export async function generateStructuredOutput<T = any>(
 ): Promise<T> {
   const {
     model = 'flash',
-    temperature = 0.3, // Lower temperature for structured output
+    temperature = 0.3, // Keep lower temperature for structured JSON output
     maxOutputTokens = 2048,
+    thinkingLevel,
   } = options
 
   try {
     const fullPrompt = `${prompt}\n\nRespond with valid JSON matching this schema:\n${schema}`
 
+    const generationConfig: any = {
+      temperature,
+      maxOutputTokens,
+      responseMimeType: 'application/json',
+    }
+
+    // Add Gemini 3 thinking level
+    if (thinkingLevel) {
+      generationConfig.thinkingLevel = thinkingLevel
+    }
+
     const generativeModel: GenerativeModel = genAI.getGenerativeModel({
       model: MODELS[model],
-      generationConfig: {
-        temperature,
-        maxOutputTokens,
-        responseMimeType: 'application/json',
-      },
+      generationConfig,
     })
 
     const result = await generativeModel.generateContent(fullPrompt)
