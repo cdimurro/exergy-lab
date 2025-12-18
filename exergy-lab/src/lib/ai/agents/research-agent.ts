@@ -232,9 +232,9 @@ Example: ["query 1", "query 2", "query 3", "query 4", "query 5"]`
 For the following research queries in the ${domain} domain:
 ${queries.map((q, i) => `${i + 1}. ${q}`).join('\n')}
 
-Generate a list of 25 realistic but hypothetical academic paper results that would be found in databases like Semantic Scholar, arXiv, PubMed, and OpenAlex.
+Generate a list of 22 realistic but hypothetical academic paper results that would be found in databases like Semantic Scholar, arXiv, PubMed, and OpenAlex.
 
-IMPORTANT: You MUST generate exactly 25 papers to meet the research quality threshold.
+IMPORTANT: You MUST generate exactly 22 papers to meet the research quality threshold.
 
 For each paper, include:
 - title: A realistic scientific paper title
@@ -246,13 +246,13 @@ For each paper, include:
 - citationCount: A realistic citation count (1-500)
 - relevanceScore: A score between 0.5-1.0
 
-CRITICAL: Return a COMPLETE, valid JSON array with ALL 25 papers. Do not truncate the output.
+CRITICAL: Return a COMPLETE, valid JSON array with ALL 22 papers. Do not truncate the output.
 The array must start with [ and end with ] and contain valid JSON objects.`
 
     try {
       const result = await generateText('discovery', prompt, {
         temperature: 0.8,
-        maxTokens: 12000, // Increased to prevent JSON truncation for 25 papers
+        maxTokens: 10000, // Optimized for 22 papers (reduced from 12000 for speed)
       })
 
       const cleaned = result.trim().replace(/```json\n?|\n?```/g, '')
@@ -293,7 +293,7 @@ CRITICAL: Return a COMPLETE, valid JSON array with ALL 10 patents. Do not trunca
     try {
       const result = await generateText('discovery', prompt, {
         temperature: 0.8,
-        maxTokens: 6000, // Increased to prevent truncation
+        maxTokens: 4000, // Optimized for speed (reduced from 6000)
       })
 
       const cleaned = result.trim().replace(/```json\n?|\n?```/g, '')
@@ -336,7 +336,7 @@ CRITICAL: Return a COMPLETE, valid JSON array with ALL 10 materials. Do not trun
     try {
       const result = await generateText('discovery', prompt, {
         temperature: 0.7,
-        maxTokens: 6000, // Increased to prevent truncation
+        maxTokens: 4000, // Optimized for speed (reduced from 6000)
       })
 
       const cleaned = result.trim().replace(/```json\n?|\n?```/g, '')
@@ -403,7 +403,7 @@ CRITICAL: Return a COMPLETE, valid JSON array with ALL 10 findings. Do not trunc
     try {
       const result = await generateText('discovery', prompt, {
         temperature: 0.5,
-        maxTokens: 6000, // Increased to prevent truncation
+        maxTokens: 4000, // Optimized for speed (reduced from 6000)
       })
 
       const cleaned = result.trim().replace(/```json\n?|\n?```/g, '')
@@ -449,7 +449,7 @@ CRITICAL: Return a COMPLETE, valid JSON array with ALL 5 gaps. Do not truncate t
     try {
       const result = await generateText('discovery', prompt, {
         temperature: 0.7,
-        maxTokens: 4000, // Increased to prevent truncation
+        maxTokens: 3000, // Optimized for speed (reduced from 4000)
       })
 
       const cleaned = result.trim().replace(/```json\n?|\n?```/g, '')
@@ -491,7 +491,7 @@ CRITICAL: Return a COMPLETE, valid JSON array with ALL 3 insights. Do not trunca
     try {
       const result = await generateText('discovery', prompt, {
         temperature: 0.8,
-        maxTokens: 4000, // Increased to prevent truncation
+        maxTokens: 3000, // Optimized for speed (reduced from 4000)
       })
 
       const cleaned = result.trim().replace(/```json\n?|\n?```/g, '')

@@ -339,7 +339,7 @@ Do not truncate. Ensure all hypotheses have ALL required fields filled in comple
     try {
       const result = await generateText('discovery', prompt, {
         temperature: 0.9, // Higher temperature for creativity
-        maxTokens: 16000, // Increased for complete hypothesis generation
+        maxTokens: 12000, // Optimized for speed (reduced from 16000)
       })
 
       const cleaned = result.trim().replace(/```json\n?|\n?```/g, '')
@@ -513,7 +513,7 @@ CRITICAL: Return a COMPLETE, valid JSON object with ALL required fields. Do not 
     try {
       const result = await generateText('experiment-design', prompt, {
         temperature: 0.7,
-        maxTokens: 8000, // Increased for complete experiment design
+        maxTokens: 6000, // Optimized for speed (reduced from 8000)
       })
 
       const cleaned = result.trim().replace(/```json\n?|\n?```/g, '')
