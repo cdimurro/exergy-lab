@@ -99,6 +99,7 @@ Format as markdown with ## headers for each section.`
     const content = await generateText('discovery', prompt, {
       temperature: 0.4,
       maxTokens: 2000,
+      model: 'quality', // Use Gemini 3 Pro for higher quality report generation
     })
 
     return {
@@ -173,6 +174,7 @@ Format as markdown with ## headers.`
     const content = await generateText('discovery', prompt, {
       temperature: 0.4,
       maxTokens: 2500,
+      model: 'quality', // Use Gemini 3 Pro for higher quality report generation
     })
 
     return {
@@ -247,6 +249,7 @@ Format as markdown with ## headers.`
     const content = await generateText('discovery', prompt, {
       temperature: 0.4,
       maxTokens: 2500,
+      model: 'quality', // Use Gemini 3 Pro for higher quality report generation
     })
 
     return {
@@ -321,6 +324,7 @@ Format as markdown with ## headers.`
     const content = await generateText('discovery', prompt, {
       temperature: 0.4,
       maxTokens: 2000,
+      model: 'quality', // Use Gemini 3 Pro for higher quality report generation
     })
 
     return {
@@ -398,6 +402,7 @@ Format as markdown with ## headers.`
     const content = await generateText('discovery', prompt, {
       temperature: 0.4,
       maxTokens: 2000,
+      model: 'quality', // Use Gemini 3 Pro for higher quality report generation
     })
 
     return {
@@ -485,6 +490,7 @@ Do not use markdown headers - write flowing paragraphs.`
     const summary = await generateText('discovery', prompt, {
       temperature: 0.4,
       maxTokens: 1000,
+      model: 'quality', // Use Gemini 3 Pro for higher quality executive summary
     })
 
     return summary || generateFallbackExecutiveSummary(request)
@@ -531,6 +537,7 @@ Do not use markdown headers - write flowing paragraphs.`
     const conclusions = await generateText('discovery', prompt, {
       temperature: 0.4,
       maxTokens: 800,
+      model: 'quality', // Use Gemini 3 Pro for higher quality conclusions
     })
 
     return conclusions || generateFallbackConclusions(request)

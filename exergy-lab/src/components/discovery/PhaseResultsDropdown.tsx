@@ -215,10 +215,42 @@ export function generatePhaseKeyFindings(
   result: any,
   judgeResult?: any
 ): PhaseKeyFindings | null {
-  if (!result) return null
+  // Can generate from either result or judgeResult
+  if (!result && !judgeResult) return null
 
   const passedCriteria = judgeResult?.itemScores?.filter((s: any) => s.passed) || []
   const failedCriteria = judgeResult?.itemScores?.filter((s: any) => !s.passed) || []
+
+  // If we only have judgeResult (during progress), generate summary from that
+  if (!result && judgeResult) {
+    const score = judgeResult.totalScore
+    const passed = judgeResult.passed
+    const phaseName = PHASE_DISPLAY_NAMES[phase] || phase
+
+    return {
+      summary: judgeResult.reasoning ||
+        `${phaseName} ${passed ? 'passed' : 'needs improvement'} with score ${score?.toFixed(1) || 'N/A'}/10. ${
+          passed
+            ? 'Met the quality threshold for this phase.'
+            : 'Additional refinement may improve results.'
+        }`,
+      keyFindings: [
+        ...(judgeResult.recommendations?.slice(0, 3) || []),
+        ...(passedCriteria.length > 0 ? [`${passedCriteria.length} criteria passed`] : []),
+        ...(failedCriteria.length > 0 ? [`${failedCriteria.length} criteria need attention`] : []),
+      ].filter(Boolean),
+      score: score,
+      highlights: {
+        whatWorked: passedCriteria.slice(0, 4).map((c: any) =>
+          c.reasoning ? `${c.description || c.itemId}: ${c.reasoning}` : (c.description || c.itemId)
+        ),
+        challenges: failedCriteria.slice(0, 4).map((c: any) =>
+          c.reasoning ? `${c.description || c.itemId}: ${c.reasoning}` : (c.description || c.itemId)
+        ),
+        refinements: judgeResult.recommendations?.slice(0, 3) || [],
+      },
+    }
+  }
 
   switch (phase) {
     case 'research':

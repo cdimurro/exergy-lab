@@ -151,63 +151,140 @@ export function FrontierScienceProgressCard({
         />
       </div>
 
-      {/* Selected Phase Details with AI Summary */}
-      {selectedPhase && (() => {
-        const selectedProgress = phaseProgress.get(selectedPhase)
-        const selectedMeta = getPhaseMetadata(selectedPhase)
-        const keyFindings = generatePhaseKeyFindings(selectedPhase, null, selectedProgress?.judgeResult)
+      {/* Phase Details Panel - Shows different content based on selected phase status */}
+      {(() => {
+        // Determine which phase to show details for
+        const displayPhase = selectedPhase || currentPhase
+        if (!displayPhase) return null
 
-        return selectedProgress && (
-          <div className="p-5 border-b bg-gradient-to-br from-blue-500/5 to-purple-500/5">
+        const displayProgress = phaseProgress.get(displayPhase)
+        const displayMeta = getPhaseMetadata(displayPhase)
+        const isCurrentPhase = displayPhase === currentPhase
+        const isCompleted = displayProgress?.status === 'completed'
+        const isRunning = displayProgress?.status === 'running'
+        const keyFindings = generatePhaseKeyFindings(displayPhase, null, displayProgress?.judgeResult)
+
+        // Determine background color based on status
+        const bgClass = isRunning
+          ? 'bg-blue-500/5'
+          : isCompleted && displayProgress?.passed
+            ? 'bg-gradient-to-br from-emerald-500/5 to-green-500/5'
+            : isCompleted && !displayProgress?.passed
+              ? 'bg-gradient-to-br from-amber-500/5 to-orange-500/5'
+              : 'bg-muted/30'
+
+        return displayProgress && (
+          <div className={cn('p-5 border-b', bgClass)}>
+            {/* Header */}
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <span className="text-base font-semibold text-foreground">
-                  {selectedMeta.name}
+                {/* Status indicator */}
+                <span className={cn(
+                  'text-xs px-2 py-0.5 rounded-full font-medium uppercase tracking-wide',
+                  isRunning && 'bg-blue-500/20 text-blue-600',
+                  isCompleted && displayProgress?.passed && 'bg-emerald-500/20 text-emerald-600',
+                  isCompleted && !displayProgress?.passed && 'bg-amber-500/20 text-amber-600',
+                  !isRunning && !isCompleted && 'bg-muted text-muted-foreground'
+                )}>
+                  {isRunning ? 'In Progress' : isCompleted ? (displayProgress?.passed ? 'Passed' : 'Completed') : 'Pending'}
                 </span>
-                {selectedProgress.score !== undefined && (
+                <span className="text-base font-semibold text-foreground">
+                  {displayMeta.name}
+                </span>
+                {displayProgress.score !== undefined && (
                   <span className={cn(
                     'text-sm px-2.5 py-1 rounded-full font-medium',
-                    selectedProgress.passed
+                    displayProgress.passed
                       ? 'bg-emerald-500/20 text-emerald-600'
                       : 'bg-amber-500/20 text-amber-600'
                   )}>
-                    {selectedProgress.score.toFixed(1)}/10
+                    {displayProgress.score.toFixed(1)}/10
                   </span>
                 )}
               </div>
-              <button
-                onClick={() => setSelectedPhase(null)}
-                className="text-muted-foreground hover:text-foreground p-1 rounded-md hover:bg-muted/50 transition-colors"
-              >
-                <X size={18} />
-              </button>
+              {selectedPhase && (
+                <button
+                  onClick={() => setSelectedPhase(null)}
+                  className="text-muted-foreground hover:text-foreground p-1 rounded-md hover:bg-muted/50 transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              )}
             </div>
 
             <p className="text-sm text-muted-foreground mb-4">
-              {selectedMeta.description}
+              {displayMeta.description}
             </p>
 
-            {/* AI-Generated Summary - Always Visible */}
-            {keyFindings && (
+            {/* === RUNNING PHASE: Show Real-Time Updates === */}
+            {isRunning && (
+              <div className="space-y-4">
+                {/* Iteration Progress */}
+                <div className="flex items-center justify-between bg-background/60 rounded-lg p-3 border border-border/50">
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-medium text-foreground">Iteration Progress</span>
+                    <IterationBadge
+                      current={displayProgress.currentIteration}
+                      max={displayProgress.maxIterations}
+                      score={displayProgress.score}
+                      isActive={true}
+                      size="sm"
+                    />
+                  </div>
+                  <IterationDots
+                    current={displayProgress.currentIteration}
+                    max={displayProgress.maxIterations}
+                  />
+                </div>
+
+                {/* Thinking indicator - Real-time status */}
+                {thinkingMessage && (
+                  <ThinkingIndicator
+                    message={thinkingMessage}
+                    phase={displayMeta?.shortName}
+                    isActive={true}
+                    variant="default"
+                  />
+                )}
+
+                {/* Current rubric score if available during iteration */}
+                {displayProgress.judgeResult && (
+                  <div className="mt-2">
+                    <RubricScoreCard
+                      judgeResult={displayProgress.judgeResult}
+                      showDetails={showRubricDetails}
+                      initialExpanded={false}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* === COMPLETED PHASE: Show AI Summary Results === */}
+            {isCompleted && keyFindings && (
               <div className="space-y-4">
                 {/* Summary */}
                 <div className="bg-background/60 rounded-lg p-4 border border-border/50">
+                  <h4 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                    Summary
+                  </h4>
                   <p className="text-sm text-foreground leading-relaxed">
                     {keyFindings.summary}
                   </p>
                 </div>
 
-                {/* Key Findings - Always Shown */}
+                {/* Key Findings */}
                 {keyFindings.keyFindings.length > 0 && (
                   <div className="bg-background/60 rounded-lg p-4 border border-border/50">
                     <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                      Key Findings
+                      Key Findings & Recommendations
                     </h4>
                     <ul className="space-y-2">
                       {keyFindings.keyFindings.map((finding, i) => (
                         <li key={i} className="text-sm text-foreground/90 flex items-start gap-2">
-                          <span className="text-muted-foreground mt-1.5 text-xs">-</span>
+                          <span className="text-muted-foreground mt-1.5 text-xs">•</span>
                           <span className="leading-relaxed">{finding}</span>
                         </li>
                       ))}
@@ -215,19 +292,19 @@ export function FrontierScienceProgressCard({
                   </div>
                 )}
 
-                {/* Highlights Grid - Always Shown */}
-                {keyFindings.highlights && (
+                {/* Highlights Grid */}
+                {keyFindings.highlights && (keyFindings.highlights.whatWorked.length > 0 || keyFindings.highlights.challenges.length > 0) && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {keyFindings.highlights.whatWorked.length > 0 && (
                       <div className="bg-emerald-500/5 rounded-lg p-4 border border-emerald-500/20">
                         <h4 className="text-sm font-semibold text-emerald-600 mb-2 flex items-center gap-2">
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                          What Worked
+                          Criteria Passed
                         </h4>
                         <ul className="space-y-1.5">
                           {keyFindings.highlights.whatWorked.map((item, i) => (
                             <li key={i} className="text-sm text-foreground/90 flex items-start gap-2">
-                              <span className="text-emerald-500 mt-0.5">-</span>
+                              <span className="text-emerald-500 mt-0.5 shrink-0">✓</span>
                               <span>{item}</span>
                             </li>
                           ))}
@@ -239,12 +316,12 @@ export function FrontierScienceProgressCard({
                       <div className="bg-amber-500/5 rounded-lg p-4 border border-amber-500/20">
                         <h4 className="text-sm font-semibold text-amber-600 mb-2 flex items-center gap-2">
                           <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                          Challenges
+                          Areas for Improvement
                         </h4>
                         <ul className="space-y-1.5">
                           {keyFindings.highlights.challenges.map((item, i) => (
                             <li key={i} className="text-sm text-foreground/90 flex items-start gap-2">
-                              <span className="text-amber-500 mt-0.5">!</span>
+                              <span className="text-amber-500 mt-0.5 shrink-0">!</span>
                               <span>{item}</span>
                             </li>
                           ))}
@@ -253,61 +330,38 @@ export function FrontierScienceProgressCard({
                     )}
                   </div>
                 )}
+
+                {/* Refinements Applied */}
+                {keyFindings.highlights?.refinements && keyFindings.highlights.refinements.length > 0 && (
+                  <div className="bg-blue-500/5 rounded-lg p-4 border border-blue-500/20">
+                    <h4 className="text-sm font-semibold text-blue-600 mb-2 flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                      Recommendations
+                    </h4>
+                    <ul className="space-y-1.5">
+                      {keyFindings.highlights.refinements.map((item, i) => (
+                        <li key={i} className="text-sm text-foreground/90 flex items-start gap-2">
+                          <span className="text-blue-500 mt-0.5 shrink-0">→</span>
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* === PENDING PHASE: Show what will happen === */}
+            {!isRunning && !isCompleted && (
+              <div className="bg-background/60 rounded-lg p-4 border border-border/50">
+                <p className="text-sm text-muted-foreground">
+                  This phase will begin after the current phase completes.
+                </p>
               </div>
             )}
           </div>
         )
       })()}
-
-      {/* Current Phase Details */}
-      {currentPhase && currentProgress && (
-        <div className="p-5 border-b bg-blue-500/5">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <span className="text-base font-semibold text-foreground">
-                Current: {phaseMeta?.name}
-              </span>
-              <IterationBadge
-                current={currentProgress.currentIteration}
-                max={currentProgress.maxIterations}
-                score={currentProgress.score}
-                isActive={true}
-                size="sm"
-              />
-            </div>
-            <IterationDots
-              current={currentProgress.currentIteration}
-              max={currentProgress.maxIterations}
-            />
-          </div>
-
-          {/* Phase description */}
-          <p className="text-sm text-muted-foreground mb-4">
-            {phaseMeta?.description}
-          </p>
-
-          {/* Thinking indicator */}
-          {thinkingMessage && (
-            <ThinkingIndicator
-              message={thinkingMessage}
-              phase={phaseMeta?.shortName}
-              isActive={true}
-              variant="default"
-            />
-          )}
-
-          {/* Current rubric score if available */}
-          {currentProgress.judgeResult && (
-            <div className="mt-4">
-              <RubricScoreCard
-                judgeResult={currentProgress.judgeResult}
-                showDetails={showRubricDetails}
-                initialExpanded={false}
-              />
-            </div>
-          )}
-        </div>
-      )}
 
         {/* Completed Phases Summary */}
         <CompletedPhasesSummary phaseProgress={phaseProgress} />
