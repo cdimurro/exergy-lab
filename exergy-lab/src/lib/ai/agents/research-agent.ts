@@ -143,16 +143,16 @@ export class ResearchAgent {
     // Rank by relevance
     const rankedSources = await this.rankByRelevance(allSources, query)
 
-    // Extract key findings
-    const keyFindings = await this.extractKeyFindings(rankedSources, domain)
+    // Extract findings, gaps, and cross-domain insights in parallel for speed
+    const [keyFindings, crossDomainInsights] = await Promise.all([
+      this.extractKeyFindings(rankedSources, domain),
+      this.detectCrossDomainPatterns(rankedSources, domain),
+    ])
 
-    // Identify technological gaps
+    // Gaps depends on findings, so run separately
     const gaps = await this.identifyGaps(rankedSources, keyFindings, domain, hints)
 
-    // Detect cross-domain patterns
-    const crossDomainInsights = await this.detectCrossDomainPatterns(rankedSources, domain)
-
-    // Identify state-of-the-art metrics
+    // Identify state-of-the-art metrics (depends on findings)
     const stateOfTheArt = await this.identifyStateOfTheArt(keyFindings, domain)
 
     return {
