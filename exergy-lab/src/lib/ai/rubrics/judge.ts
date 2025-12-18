@@ -28,7 +28,7 @@ export interface JudgeConfig {
 
 export const DEFAULT_JUDGE_CONFIG: JudgeConfig = {
   temperature: 0.3, // Low temperature for consistent grading
-  thinkingLevel: 'high', // High thinking for rigorous evaluation
+  thinkingLevel: 'medium', // Medium thinking for balanced speed and quality
   model: 'quality',
   maxRetries: 2,
   strictMode: false,
@@ -176,6 +176,46 @@ export class RubricJudge {
   }
 
   /**
+   * Compress response to essential evaluation data
+   * Reduces prompt size for faster judge evaluation
+   */
+  private compressResponse(response: any, phase: DiscoveryPhase): any {
+    if (typeof response === 'string') return response
+
+    // For research phase, we only need summary statistics
+    if (phase === 'research') {
+      return {
+        sourceCount: response.sources?.length || 0,
+        sourceTypes: [...new Set(response.sources?.map((s: any) => s.source) || [])],
+        recentSources: response.sources?.filter((s: any) => {
+          const year = new Date(s.publishedDate).getFullYear()
+          return year >= new Date().getFullYear() - 3
+        }).length || 0,
+        keyFindingsCount: response.keyFindings?.length || 0,
+        keyFindingsWithValues: response.keyFindings?.filter((f: any) => f.value && f.unit).length || 0,
+        gapsCount: response.technologicalGaps?.length || 0,
+        crossDomainCount: response.crossDomainInsights?.length || 0,
+        materialsCount: response.materialsData?.length || 0,
+        // Sample first 3 sources for verification
+        sampleSources: response.sources?.slice(0, 3).map((s: any) => ({
+          title: s.title,
+          source: s.source,
+          publishedDate: s.publishedDate,
+        })) || [],
+        // Sample findings for quality check
+        sampleFindings: response.keyFindings?.slice(0, 3).map((f: any) => ({
+          finding: f.finding.substring(0, 100),
+          hasValue: !!f.value,
+          hasUnit: !!f.unit,
+        })) || [],
+      }
+    }
+
+    // For other phases, return full response (they're smaller)
+    return response
+  }
+
+  /**
    * Build the FrontierScience-style judge prompt
    * Follows the exact structure from the paper
    */
@@ -185,9 +225,12 @@ export class RubricJudge {
     rubric: Rubric,
     itemsToJudge: RubricItem[]
   ): string {
-    const responseStr = typeof response === 'string'
-      ? response
-      : JSON.stringify(response, null, 2)
+    // Compress response for faster evaluation
+    const compressedResponse = this.compressResponse(response, rubric.phase)
+
+    const responseStr = typeof compressedResponse === 'string'
+      ? compressedResponse
+      : JSON.stringify(compressedResponse, null, 2)
 
     const rubricStr = itemsToJudge.map(item => {
       let itemStr = `- ${item.id} (${item.points} points): ${item.description}\n  Pass condition: ${item.passCondition}`
@@ -224,20 +267,13 @@ THE ATTEMPTED ANSWER:
 ${responseStr}
 ***
 
-First, think step-by-step about each rubric item. For each item:
-1. Quote the relevant part of the answer (if any)
-2. Explain whether it meets the pass condition
-3. If partial conditions exist, evaluate each one
-4. Assign points based on what was achieved
-
-Format your response as follows for EACH rubric item:
+Evaluate each rubric item concisely. For EACH item, output:
 
 ITEM: [item_id]
-RELEVANT_QUOTE: "[quote from answer or 'N/A']"
-ANALYSIS: [your step-by-step reasoning]
+ANALYSIS: [brief reasoning - 1-2 sentences]
 POINTS: [points awarded]/[max points]
 
-After evaluating all items, write a final line:
+After all items, write:
 VERDICT: [total_points]/[max_points]`
   }
 
