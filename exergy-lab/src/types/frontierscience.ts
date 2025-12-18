@@ -14,6 +14,7 @@ import type {
   ItemScore,
   RefinementHints,
 } from '@/lib/ai/rubrics/types'
+import type { ActivityItem } from '@/components/discovery/LiveActivityFeed'
 
 // Re-export for convenience
 export type {
@@ -190,6 +191,7 @@ export interface UseFrontierScienceWorkflowReturn {
   result: DiscoveryResult | null
   error: string | null
   thinkingMessage: string | null
+  activities: ActivityItem[]
 
   // Pause/Resume state
   isPaused: boolean

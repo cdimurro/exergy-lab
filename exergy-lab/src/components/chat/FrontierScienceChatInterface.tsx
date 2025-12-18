@@ -74,6 +74,7 @@ export function FrontierScienceChatInterface({
     result,
     error,
     thinkingMessage,
+    activities,
     startDiscovery,
     cancelDiscovery,
     pauseDiscovery,
@@ -337,6 +338,7 @@ export function FrontierScienceChatInterface({
               overallProgress={overallProgress}
               elapsedTime={elapsedTime}
               thinkingMessage={thinkingMessage}
+              activities={activities}
               onCancel={cancelDiscovery}
               className="h-full"
             />

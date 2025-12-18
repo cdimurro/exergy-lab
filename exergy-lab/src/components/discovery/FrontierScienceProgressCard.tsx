@@ -16,7 +16,8 @@ import { ThinkingIndicator, PulsingBrain } from './ThinkingIndicator'
 import { RubricScoreCard, RubricProgressBar } from './RubricScoreCard'
 import { QualityBadge } from './QualityBadge'
 import { PhaseResultsDropdown, generatePhaseKeyFindings } from './PhaseResultsDropdown'
-import { X, Clock, Zap, ChevronDown, ChevronUp } from 'lucide-react'
+import { LiveActivityFeed, type ActivityItem } from './LiveActivityFeed'
+import { X, Clock, Zap, ChevronDown, ChevronUp, Activity } from 'lucide-react'
 import React, { useState } from 'react'
 
 interface FrontierScienceProgressCardProps {
@@ -26,6 +27,7 @@ interface FrontierScienceProgressCardProps {
   overallProgress: number
   elapsedTime: number
   thinkingMessage: string | null
+  activities?: ActivityItem[]
   onCancel?: () => void
   className?: string
 }
@@ -37,12 +39,14 @@ export function FrontierScienceProgressCard({
   overallProgress,
   elapsedTime,
   thinkingMessage,
+  activities = [],
   onCancel,
   className,
 }: FrontierScienceProgressCardProps) {
   const [showRubricDetails, setShowRubricDetails] = useState(false)
   const [selectedPhase, setSelectedPhase] = useState<DiscoveryPhase | null>(null)
   const [lastCompletedPhase, setLastCompletedPhase] = useState<DiscoveryPhase | null>(null)
+  const [showActivityFeed, setShowActivityFeed] = useState(true)
 
   const currentProgress = currentPhase ? phaseProgress.get(currentPhase) : null
   const phaseMeta = currentPhase ? getPhaseMetadata(currentPhase) : null
@@ -150,6 +154,33 @@ export function FrontierScienceProgressCard({
           onPhaseClick={handlePhaseClick}
         />
       </div>
+
+      {/* Live Activity Feed - Real-time updates during discovery */}
+      {activities.length > 0 && (
+        <div className="p-5 border-b">
+          <div className="flex items-center justify-between mb-3">
+            <button
+              onClick={() => setShowActivityFeed(!showActivityFeed)}
+              className="flex items-center gap-2 text-sm font-medium text-muted-foreground uppercase tracking-wide hover:text-foreground transition-colors"
+            >
+              <Activity size={14} />
+              Live Activity Feed
+              {showActivityFeed ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            </button>
+            <span className="text-xs text-muted-foreground">
+              {activities.length} events
+            </span>
+          </div>
+          {showActivityFeed && (
+            <LiveActivityFeed
+              activities={activities}
+              currentPhase={currentPhase}
+              maxHeight="250px"
+              showTimestamps={true}
+            />
+          )}
+        </div>
+      )}
 
       {/* Phase Details Panel - Shows different content based on selected phase status */}
       {(() => {

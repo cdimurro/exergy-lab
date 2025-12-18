@@ -25,6 +25,13 @@ import type {
   ALL_PHASES,
 } from '@/types/frontierscience'
 import { DebugContext } from '@/hooks/use-debug-capture'
+import type { ActivityItem } from '@/components/discovery/LiveActivityFeed'
+import {
+  createActivityFromThinking,
+  createActivityFromIteration,
+  createActivityFromPhaseStart,
+  createActivityFromPhaseComplete,
+} from '@/components/discovery/LiveActivityFeed'
 
 // All phases in order
 const DISCOVERY_PHASES: DiscoveryPhase[] = [
@@ -85,6 +92,9 @@ export function useFrontierScienceWorkflow(): UseFrontierScienceWorkflowReturn {
   const [error, setError] = useState<string | null>(null)
   const [thinkingMessage, setThinkingMessage] = useState<string | null>(null)
 
+  // Activity feed state for real-time updates
+  const [activities, setActivities] = useState<ActivityItem[]>([])
+
   // Pause/Resume state
   const [isPaused, setIsPaused] = useState(false)
   const [pausedAtPhase, setPausedAtPhase] = useState<DiscoveryPhase | null>(null)
@@ -96,6 +106,7 @@ export function useFrontierScienceWorkflow(): UseFrontierScienceWorkflowReturn {
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const startTimeRef = useRef<number>(0)
   const pausedElapsedRef = useRef<number>(0)
+  const lastPhaseRef = useRef<DiscoveryPhase | null>(null)
 
   // Cleanup function
   const cleanup = useCallback(() => {
@@ -135,6 +146,20 @@ export function useFrontierScienceWorkflow(): UseFrontierScienceWorkflowReturn {
         const { phase, status: phaseStatus, iteration, maxIterations, score, passed, message } = event
         console.log('[FrontierScience UI] Progress update:', { phase, phaseStatus, iteration, score, passed })
         setCurrentPhase(phase)
+
+        // Create activity for phase start
+        if (phaseStatus === 'running' && lastPhaseRef.current !== phase) {
+          const phaseStartActivity = createActivityFromPhaseStart(phase)
+          setActivities(prev => [...prev, phaseStartActivity])
+          lastPhaseRef.current = phase
+        }
+
+        // Create activity for phase complete
+        if (phaseStatus === 'completed' && score !== undefined) {
+          const phaseCompleteActivity = createActivityFromPhaseComplete(phase, score, passed ?? false)
+          setActivities(prev => [...prev, phaseCompleteActivity])
+        }
+
         setPhaseProgress(prev => {
           const newMap = new Map(prev)
           const existing = newMap.get(phase) || {
@@ -161,6 +186,17 @@ export function useFrontierScienceWorkflow(): UseFrontierScienceWorkflowReturn {
 
       case 'iteration': {
         const { phase, iteration, maxIterations, judgeResult, previousScore } = event
+
+        // Create activity for iteration result
+        const iterationActivity = createActivityFromIteration(
+          phase,
+          iteration,
+          maxIterations,
+          judgeResult,
+          previousScore
+        )
+        setActivities(prev => [...prev, iterationActivity])
+
         setPhaseProgress(prev => {
           const newMap = new Map(prev)
           const existing = newMap.get(phase)
@@ -180,11 +216,17 @@ export function useFrontierScienceWorkflow(): UseFrontierScienceWorkflowReturn {
       }
 
       case 'thinking': {
-        const { message, details } = event
+        const { phase, message, details } = event
         const fullMessage = details?.length
           ? `${message}\n${details.map(d => `  - ${d}`).join('\n')}`
           : message
         setThinkingMessage(fullMessage)
+
+        // Create activity for thinking update (if we have a phase)
+        if (phase) {
+          const thinkingActivity = createActivityFromThinking(phase, message, details)
+          setActivities(prev => [...prev, thinkingActivity])
+        }
         break
       }
 
@@ -243,6 +285,8 @@ export function useFrontierScienceWorkflow(): UseFrontierScienceWorkflowReturn {
     setResult(null)
     setError(null)
     setThinkingMessage(null)
+    setActivities([])
+    lastPhaseRef.current = null
     cleanup()
 
     // Clear previous debug session
@@ -507,6 +551,7 @@ export function useFrontierScienceWorkflow(): UseFrontierScienceWorkflowReturn {
     result,
     error,
     thinkingMessage,
+    activities,
 
     // Pause/Resume state
     isPaused,
