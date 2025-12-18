@@ -37,7 +37,7 @@ import type { DiscoveryPhase } from '@/types/frontierscience'
 // Types
 // ============================================================================
 
-type ExportFormat = 'pdf' | 'json' | 'latex' | 'bibtex' | 'markdown'
+type ExportFormat = 'pdf' | 'json' | 'latex' | 'bibtex' | 'markdown' | 'ai-report'
 
 interface ExportOption {
   format: ExportFormat
@@ -46,6 +46,23 @@ interface ExportOption {
   icon: React.ReactNode
   extension: string
   mimeType: string
+  isAIEnhanced?: boolean
+}
+
+interface AIGeneratedReport {
+  title: string
+  executiveSummary: string
+  sections: { title: string; content: string }[]
+  conclusions: string
+  nextSteps: string[]
+  generatedAt: string
+  metadata: {
+    discoveryId: string
+    query: string
+    overallScore: number
+    totalDuration: number
+    phasesCompleted: number
+  }
 }
 
 interface ExportConfig {
@@ -74,17 +91,27 @@ interface ExportPanelProps {
 
 const EXPORT_OPTIONS: ExportOption[] = [
   {
+    format: 'ai-report',
+    label: 'AI-Enhanced Report',
+    description: 'Comprehensive AI-written analysis with detailed sections',
+    icon: <FileText className="w-5 h-5" />,
+    extension: '.md',
+    mimeType: 'text/markdown',
+    isAIEnhanced: true,
+  },
+  {
     format: 'pdf',
     label: 'PDF Report',
-    description: 'Formatted research report with visualizations',
+    description: 'Formatted PDF document for sharing',
     icon: <FileText className="w-5 h-5" />,
     extension: '.pdf',
     mimeType: 'application/pdf',
+    isAIEnhanced: true,
   },
   {
     format: 'markdown',
-    label: 'Markdown',
-    description: 'Human-readable summary for documentation',
+    label: 'Markdown (Basic)',
+    description: 'Quick summary for documentation',
     icon: <FileText className="w-5 h-5" />,
     extension: '.md',
     mimeType: 'text/markdown',
@@ -548,6 +575,277 @@ function generateLaTeX(
   return lines.join('\n')
 }
 
+/**
+ * Fetch AI-generated comprehensive report from API
+ */
+async function fetchAIReport(
+  result: DiscoveryResult,
+  query: string,
+  discoveryId: string
+): Promise<AIGeneratedReport> {
+  const response = await fetch('/api/discovery/generate-report', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      discoveryId,
+      query,
+      domain: result.domain || 'clean-energy',
+      overallScore: result.overallScore,
+      discoveryQuality: result.discoveryQuality,
+      phases: result.phases?.map(p => ({
+        phase: p.phase,
+        finalOutput: p.finalOutput,
+        finalScore: p.finalScore,
+        passed: p.passed,
+        iterations: p.iterations || [],
+        durationMs: p.durationMs || 0,
+      })) || [],
+      recommendations: result.recommendations || [],
+      totalDuration: result.totalDurationMs || 0,
+    }),
+  })
+
+  if (!response.ok) {
+    throw new Error('Failed to generate AI report')
+  }
+
+  return response.json()
+}
+
+/**
+ * Convert AI report to markdown format
+ */
+function aiReportToMarkdown(report: AIGeneratedReport, includeRawData?: boolean, result?: DiscoveryResult): string {
+  const lines: string[] = []
+
+  // Title
+  lines.push(`# ${report.title}`)
+  lines.push('')
+  lines.push(`**Generated:** ${new Date(report.generatedAt).toLocaleString()}`)
+  lines.push(`**Discovery ID:** ${report.metadata.discoveryId}`)
+  lines.push(`**Overall Score:** ${report.metadata.overallScore.toFixed(1)}/10`)
+  lines.push(`**Phases Completed:** ${report.metadata.phasesCompleted}`)
+  lines.push('')
+  lines.push('---')
+  lines.push('')
+
+  // Executive Summary
+  lines.push('## Executive Summary')
+  lines.push('')
+  lines.push(report.executiveSummary)
+  lines.push('')
+  lines.push('---')
+  lines.push('')
+
+  // Main Sections
+  for (const section of report.sections) {
+    lines.push(`## ${section.title}`)
+    lines.push('')
+    lines.push(section.content)
+    lines.push('')
+    lines.push('---')
+    lines.push('')
+  }
+
+  // Conclusions
+  lines.push('## Conclusions')
+  lines.push('')
+  lines.push(report.conclusions)
+  lines.push('')
+
+  // Next Steps
+  if (report.nextSteps && report.nextSteps.length > 0) {
+    lines.push('## Recommended Next Steps')
+    lines.push('')
+    for (let i = 0; i < report.nextSteps.length; i++) {
+      lines.push(`${i + 1}. ${report.nextSteps[i]}`)
+    }
+    lines.push('')
+  }
+
+  // Raw data section if requested
+  if (includeRawData && result) {
+    lines.push('---')
+    lines.push('')
+    lines.push('## Appendix: Raw Discovery Data')
+    lines.push('')
+    lines.push('```json')
+    lines.push(JSON.stringify(result, null, 2))
+    lines.push('```')
+    lines.push('')
+  }
+
+  // Footer
+  lines.push('---')
+  lines.push('')
+  lines.push('*This report was generated using AI-powered analysis by Exergy Lab Discovery Engine.*')
+  lines.push(`*Report generated at ${new Date().toLocaleString()}*`)
+
+  return lines.join('\n')
+}
+
+/**
+ * Generate PDF from markdown content using browser APIs
+ * Creates a styled HTML document and triggers print/save as PDF
+ */
+function generatePDFFromMarkdown(markdown: string, filename: string): void {
+  // Convert markdown to HTML (basic conversion)
+  let html = markdown
+    // Headers
+    .replace(/^### (.*$)/gm, '<h3>$1</h3>')
+    .replace(/^## (.*$)/gm, '<h2>$1</h2>')
+    .replace(/^# (.*$)/gm, '<h1>$1</h1>')
+    // Bold and italic
+    .replace(/\*\*\*(.*?)\*\*\*/g, '<strong><em>$1</em></strong>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    // Lists
+    .replace(/^\d+\. (.*$)/gm, '<li>$1</li>')
+    .replace(/^- (.*$)/gm, '<li>$1</li>')
+    .replace(/^✓ (.*$)/gm, '<li class="success">✓ $1</li>')
+    .replace(/^⚠ (.*$)/gm, '<li class="warning">⚠ $1</li>')
+    // Blockquotes
+    .replace(/^> (.*$)/gm, '<blockquote>$1</blockquote>')
+    // Code blocks
+    .replace(/```json([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+    .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+    // Inline code
+    .replace(/`(.*?)`/g, '<code>$1</code>')
+    // Horizontal rules
+    .replace(/^---$/gm, '<hr>')
+    // Paragraphs
+    .replace(/\n\n/g, '</p><p>')
+
+  // Wrap list items in ul
+  html = html.replace(/(<li[^>]*>.*?<\/li>\n?)+/g, (match) => `<ul>${match}</ul>`)
+
+  // Create styled HTML document
+  const styledHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>${filename}</title>
+  <style>
+    @media print {
+      body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      line-height: 1.6;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 40px;
+      color: #333;
+    }
+    h1 {
+      color: #1a1a1a;
+      border-bottom: 3px solid #3b82f6;
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+    }
+    h2 {
+      color: #1f2937;
+      border-bottom: 1px solid #e5e7eb;
+      padding-bottom: 8px;
+      margin-top: 30px;
+    }
+    h3 {
+      color: #374151;
+      margin-top: 20px;
+    }
+    p {
+      margin: 10px 0;
+    }
+    ul {
+      margin: 10px 0;
+      padding-left: 25px;
+    }
+    li {
+      margin: 5px 0;
+    }
+    li.success {
+      color: #059669;
+    }
+    li.warning {
+      color: #d97706;
+    }
+    blockquote {
+      border-left: 4px solid #3b82f6;
+      padding-left: 15px;
+      margin: 15px 0;
+      color: #4b5563;
+      font-style: italic;
+      background: #f3f4f6;
+      padding: 10px 15px;
+      border-radius: 0 8px 8px 0;
+    }
+    pre {
+      background: #1f2937;
+      color: #e5e7eb;
+      padding: 15px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-size: 12px;
+    }
+    code {
+      background: #f3f4f6;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.9em;
+    }
+    pre code {
+      background: none;
+      padding: 0;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #e5e7eb;
+      margin: 30px 0;
+    }
+    strong {
+      color: #111827;
+    }
+    .metadata {
+      background: #f9fafb;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <p>${html}</p>
+</body>
+</html>
+`
+
+  // Open in new window for printing
+  const printWindow = window.open('', '_blank')
+  if (printWindow) {
+    printWindow.document.write(styledHtml)
+    printWindow.document.close()
+
+    // Wait for content to load, then trigger print
+    printWindow.onload = () => {
+      setTimeout(() => {
+        printWindow.print()
+      }, 250)
+    }
+  } else {
+    // Fallback: download as HTML
+    const blob = new Blob([styledHtml], { type: 'text/html' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename.replace('.pdf', '.html')
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+}
+
 // ============================================================================
 // Export Format Card
 // ============================================================================
@@ -579,11 +877,16 @@ function FormatCard({ option, isSelected, onSelect, isExporting }: FormatCardPro
         {option.icon}
       </div>
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="font-medium text-foreground">{option.label}</span>
           <Badge variant="secondary" className="text-xs">
             {option.extension}
           </Badge>
+          {option.isAIEnhanced && (
+            <Badge variant="default" className="text-xs bg-gradient-to-r from-blue-500 to-purple-500">
+              AI Enhanced
+            </Badge>
+          )}
         </div>
         <p className="text-sm text-muted-foreground">{option.description}</p>
       </div>
@@ -630,6 +933,21 @@ export function ExportPanel({
       const selectedOption = EXPORT_OPTIONS.find((o) => o.format === selectedFormat)!
 
       switch (selectedFormat) {
+        case 'ai-report': {
+          // Fetch AI-generated comprehensive report
+          const aiReport = await fetchAIReport(result, query, discoveryId)
+          data = aiReportToMarkdown(aiReport, config.includeRawData, result)
+          break
+        }
+        case 'pdf': {
+          // Generate AI report then convert to PDF
+          const aiReport = await fetchAIReport(result, query, discoveryId)
+          const markdown = aiReportToMarkdown(aiReport, config.includeRawData, result)
+          // Use PDF generation with print dialog
+          generatePDFFromMarkdown(markdown, `discovery-${discoveryId}.pdf`)
+          setIsExporting(false)
+          return // Early return - PDF uses print dialog
+        }
         case 'markdown':
           data = generateMarkdown(result, query, discoveryId, config)
           break
@@ -642,16 +960,11 @@ export function ExportPanel({
         case 'latex':
           data = generateLaTeX(result, query, config)
           break
-        case 'pdf':
-          // PDF generation would require server-side processing
-          // For now, generate markdown and note that PDF is coming
-          data = generateMarkdown(result, query, discoveryId, config)
-          break
         default:
           data = generateJSON(result, config)
       }
 
-      // Trigger download
+      // Trigger download (for non-PDF formats)
       const blob = new Blob([data], { type: selectedOption.mimeType })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
@@ -667,6 +980,8 @@ export function ExportPanel({
       }
     } catch (error) {
       console.error('Export failed:', error)
+      // Show error to user (could add toast notification here)
+      alert('Export failed. Please try again.')
     } finally {
       setIsExporting(false)
     }
@@ -677,6 +992,13 @@ export function ExportPanel({
       let data: string
 
       switch (selectedFormat) {
+        case 'ai-report':
+        case 'pdf': {
+          // For AI-enhanced formats, fetch the AI report first
+          const aiReport = await fetchAIReport(result, query, discoveryId)
+          data = aiReportToMarkdown(aiReport, config.includeRawData, result)
+          break
+        }
         case 'markdown':
           data = generateMarkdown(result, query, discoveryId, config)
           break
@@ -698,6 +1020,7 @@ export function ExportPanel({
       setTimeout(() => setCopied(false), 2000)
     } catch (error) {
       console.error('Copy failed:', error)
+      alert('Copy failed. Please try again.')
     }
   }
 

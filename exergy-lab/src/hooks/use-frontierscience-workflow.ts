@@ -190,25 +190,25 @@ export function useFrontierScienceWorkflow(): UseFrontierScienceWorkflowReturn {
 
       case 'complete': {
         setStatus('completed')
-        // Parse the result summary into a full result
+        // Parse the full result including phase outputs
         const summary = event.result
         setResult({
           id: summary.id,
           query: summary.query,
           domain: summary.domain,
-          phases: summary.phases.map(p => ({
+          phases: summary.phases.map((p: any) => ({
             phase: p.phase,
-            finalOutput: null, // Not sent in summary
+            finalOutput: p.finalOutput, // Now includes full phase output
             finalScore: p.finalScore,
             passed: p.passed,
-            iterations: [],
-            durationMs: 0,
+            iterations: p.iterations || [], // Full iteration data
+            durationMs: p.durationMs || 0,
           })),
           overallScore: summary.overallScore,
           discoveryQuality: summary.discoveryQuality,
           recommendations: summary.recommendations,
-          startTime: new Date(),
-          endTime: new Date(),
+          startTime: summary.startTime ? new Date(summary.startTime) : new Date(),
+          endTime: summary.endTime ? new Date(summary.endTime) : new Date(),
           totalDurationMs: summary.totalDuration,
         } as DiscoveryResult)
         setThinkingMessage(null)

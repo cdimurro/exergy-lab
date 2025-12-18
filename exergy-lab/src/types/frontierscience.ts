@@ -125,9 +125,24 @@ export interface DiscoveryResultSummary {
     phase: DiscoveryPhase
     finalScore: number
     passed: boolean
-    iterations: number
+    iterationCount: number
+    durationMs?: number
+    finalOutput?: any
+    iterations?: {
+      iteration: number
+      judgeResult?: {
+        totalScore: number
+        passed: boolean
+        reasoning?: string
+        recommendations?: string[]
+        itemScores?: any[]
+      } | null
+      durationMs?: number
+    }[]
   }[]
   totalDuration: number
+  startTime?: string | Date
+  endTime?: string | Date
 }
 
 // ============================================================================

@@ -302,9 +302,26 @@ export async function GET(request: NextRequest) {
               phase: p.phase,
               finalScore: p.finalScore,
               passed: p.passed,
-              iterations: p.iterations.length,
+              iterationCount: p.iterations.length,
+              durationMs: p.durationMs,
+              // Include full phase output for report generation
+              finalOutput: p.finalOutput,
+              // Include iteration details for detailed reports
+              iterations: p.iterations.map(iter => ({
+                iteration: iter.iteration,
+                judgeResult: iter.judgeResult ? {
+                  totalScore: iter.judgeResult.totalScore,
+                  passed: iter.judgeResult.passed,
+                  reasoning: iter.judgeResult.reasoning,
+                  recommendations: iter.judgeResult.recommendations,
+                  itemScores: iter.judgeResult.itemScores?.slice(0, 10), // Limit to prevent huge payloads
+                } : null,
+                durationMs: iter.durationMs,
+              })),
             })),
             totalDuration: currentDiscovery.result.totalDurationMs,
+            startTime: currentDiscovery.result.startTime,
+            endTime: currentDiscovery.result.endTime,
           },
         }
         await writer.write(encoder.encode(`data: ${JSON.stringify(completeEvent)}\n\n`))
