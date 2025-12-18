@@ -8,11 +8,43 @@
 import type { Rubric, RubricItem, ItemScore } from '../types'
 
 // ============================================================================
+// Helper function to extract hypotheses from various input formats
+// ============================================================================
+
+function extractHypotheses(response: any): any[] {
+  // If response is null/undefined, return empty array
+  if (!response) return []
+
+  // If response is already an array of hypotheses (direct array input)
+  if (Array.isArray(response)) {
+    // Check if it looks like an array of hypothesis objects
+    if (response.length > 0 && (response[0].id || response[0].statement || response[0].predictions)) {
+      return response
+    }
+    // It's an array but not of hypotheses - return as-is for validation to fail gracefully
+    return response
+  }
+
+  // If response has a hypotheses property (wrapped format)
+  if (response.hypotheses && Array.isArray(response.hypotheses)) {
+    return response.hypotheses
+  }
+
+  // If response is a single hypothesis object, wrap it
+  if (response.id || response.statement || response.predictions) {
+    return [response]
+  }
+
+  // Fallback - return as single-item array (will fail validation gracefully)
+  return [response]
+}
+
+// ============================================================================
 // Automated Validation Functions
 // ============================================================================
 
 function validateFalsifiablePrediction(response: any): ItemScore {
-  const hypotheses = response?.hypotheses || [response]
+  const hypotheses = extractHypotheses(response)
 
   if (!Array.isArray(hypotheses) || hypotheses.length === 0) {
     return {
@@ -61,7 +93,7 @@ function validateFalsifiablePrediction(response: any): ItemScore {
 }
 
 function validateSupportingEvidence(response: any): ItemScore {
-  const hypotheses = response?.hypotheses || [response]
+  const hypotheses = extractHypotheses(response)
 
   if (!Array.isArray(hypotheses) || hypotheses.length === 0) {
     return {
@@ -110,7 +142,7 @@ function validateSupportingEvidence(response: any): ItemScore {
 }
 
 function validateNovelty(response: any): ItemScore {
-  const hypotheses = response?.hypotheses || [response]
+  const hypotheses = extractHypotheses(response)
 
   if (!Array.isArray(hypotheses) || hypotheses.length === 0) {
     return {
@@ -173,7 +205,7 @@ function validateNovelty(response: any): ItemScore {
 }
 
 function validateFeasibility(response: any): ItemScore {
-  const hypotheses = response?.hypotheses || [response]
+  const hypotheses = extractHypotheses(response)
 
   if (!Array.isArray(hypotheses) || hypotheses.length === 0) {
     return {
@@ -234,7 +266,7 @@ function validateFeasibility(response: any): ItemScore {
 }
 
 function validateVariables(response: any): ItemScore {
-  const hypotheses = response?.hypotheses || [response]
+  const hypotheses = extractHypotheses(response)
 
   if (!Array.isArray(hypotheses) || hypotheses.length === 0) {
     return {
