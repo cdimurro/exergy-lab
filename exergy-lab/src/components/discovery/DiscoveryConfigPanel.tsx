@@ -23,6 +23,7 @@ import {
   Timer,
   DollarSign,
   RotateCcw,
+  ArrowLeft,
 } from 'lucide-react'
 import type {
   DiscoveryConfiguration,
@@ -106,6 +107,46 @@ function PhaseToggle({ phase, enabled, onToggle, isRequired }: PhaseToggleProps)
 // Main Component
 // ============================================================================
 
+// Helper to infer domain from query text
+function inferDomainFromQuery(query: string): Domain | null {
+  const q = query.toLowerCase()
+  // SOEC, fuel cells
+  if (q.includes('soec') || q.includes('solid oxide') || q.includes('fuel cell')) {
+    return 'fuel-cells'
+  }
+  // Electrolyzers, hydrogen production
+  if (q.includes('electrolyzer') || q.includes('electrolysis') || q.includes('water splitting') || q.includes('hydrogen') || q.includes('h₂')) {
+    return 'electrolyzers'
+  }
+  // Solar
+  if (q.includes('perovskite') || q.includes('solar cell') || q.includes('photovoltaic') || q.includes('pv ')) {
+    return 'solar-photovoltaics'
+  }
+  if (q.includes('solar thermal') || q.includes('concentrated solar')) {
+    return 'solar-thermal'
+  }
+  // Batteries
+  if (q.includes('battery') || q.includes('electrolyte') || q.includes('lithium') || q.includes('solid-state') || q.includes('energy storage')) {
+    return 'battery-storage'
+  }
+  // Carbon capture
+  if (q.includes('carbon capture') || q.includes('co2 capture') || q.includes('co₂') || q.includes('sequestration')) {
+    return 'carbon-capture'
+  }
+  if (q.includes('direct air capture') || q.includes('dac ')) {
+    return 'direct-air-capture'
+  }
+  // Wind
+  if (q.includes('wind') || q.includes('turbine')) {
+    return 'wind-energy'
+  }
+  // Catalysis
+  if (q.includes('catalyst') || q.includes('catalysis') || q.includes('catalytic')) {
+    return 'catalysis'
+  }
+  return null
+}
+
 export function DiscoveryConfigPanel({
   initialConfig,
   onConfigChange,
@@ -114,9 +155,12 @@ export function DiscoveryConfigPanel({
   isLoading = false,
   className,
 }: DiscoveryConfigPanelProps) {
+  // Infer domain from query if not explicitly set
+  const inferredDomain = initialConfig?.query ? inferDomainFromQuery(initialConfig.query) : null
+
   // State
   const [domain, setDomain] = React.useState<Domain>(
-    initialConfig?.domain || DEFAULT_DISCOVERY_CONFIG.domain
+    initialConfig?.domain || inferredDomain || DEFAULT_DISCOVERY_CONFIG.domain
   )
   const [customDomain, setCustomDomain] = React.useState<string>(
     initialConfig?.customDomain || ''
@@ -241,40 +285,55 @@ export function DiscoveryConfigPanel({
 
   return (
     <div className={cn('w-full h-full flex flex-col bg-background', className)}>
-      {/* Header */}
+      {/* Header with Query Display */}
       <div className="shrink-0 border-b border-border px-8 py-6 bg-gradient-to-r from-primary/5 to-transparent">
-        <div className="flex items-center gap-3 mb-1">
+        <div className="flex items-center gap-3 mb-2">
           <Settings2 className="w-6 h-6 text-primary" />
-          <h1 className="text-3xl font-bold text-foreground">Discovery Configuration</h1>
+          <h1 className="text-3xl font-bold text-foreground">Configuration</h1>
         </div>
-        <p className="text-lg text-muted-foreground ml-9">
-          Configure your FrontierScience discovery parameters before starting
-        </p>
+        {initialConfig?.query && (
+          <div className="ml-9 mt-3 p-4 rounded-lg bg-muted/30 border border-border">
+            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
+              Your Query
+            </div>
+            <p className="text-sm text-foreground leading-relaxed line-clamp-2">
+              {initialConfig.query}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-4xl mx-auto px-8 py-8 space-y-8">
-        {/* Domain Selection */}
-        <div className="space-y-2">
-          <Select
-            label="Research Domain"
-            value={domain}
-            onChange={(value) => setDomain(value as Domain)}
-            options={domainOptions}
-          />
-          {domain === 'custom' && (
-            <input
-              type="text"
-              value={customDomain}
-              onChange={(e) => setCustomDomain(e.target.value)}
-              placeholder="Enter custom domain..."
-              className="w-full h-10 px-3 rounded-lg border border-input-border bg-input-background text-foreground text-sm"
+        {/* Required Settings Section */}
+        <div className="space-y-6">
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-bold text-foreground">Required Settings</h2>
+            <Badge variant="error" className="text-xs px-2 py-0.5">Required</Badge>
+          </div>
+
+          {/* Domain Selection */}
+          <div className="space-y-2">
+            <Select
+              label="Research Domain"
+              value={domain}
+              onChange={(value) => setDomain(value as Domain)}
+              options={domainOptions}
             />
-          )}
+            {domain === 'custom' && (
+              <input
+                type="text"
+                value={customDomain}
+                onChange={(e) => setCustomDomain(e.target.value)}
+                placeholder="Enter custom domain..."
+                className="w-full h-10 px-3 rounded-lg border border-input-border bg-input-background text-foreground text-sm"
+              />
+            )}
+          </div>
         </div>
 
-        {/* Quality Target */}
+        {/* Quality Target - Still in Required section */}
         <div className="space-y-4">
           <label className="flex items-center gap-2 text-base font-semibold text-foreground">
             <Target className="w-5 h-5 text-primary" />
@@ -308,6 +367,14 @@ export function DiscoveryConfigPanel({
                 <span>{option.label}</span>
               </button>
             ))}
+          </div>
+        </div>
+
+        {/* Optional Settings Divider */}
+        <div className="border-t-2 border-border pt-6">
+          <div className="flex items-center gap-2 mb-6">
+            <h2 className="text-lg font-bold text-foreground">Optional Settings</h2>
+            <Badge variant="secondary" className="text-xs px-2 py-0.5">Optional</Badge>
           </div>
         </div>
 
@@ -546,13 +613,14 @@ export function DiscoveryConfigPanel({
       {/* Footer */}
       <div className="shrink-0 border-t border-border px-8 py-4 bg-muted/30 flex justify-between items-center">
         <Button
-          variant="outline"
+          variant="ghost"
           onClick={onCancel}
           disabled={isLoading}
           size="lg"
-          className="px-8"
+          className="px-6 gap-2"
         >
-          Cancel
+          <ArrowLeft className="w-4 h-4" />
+          Back
         </Button>
         <Button
           onClick={handleStart}

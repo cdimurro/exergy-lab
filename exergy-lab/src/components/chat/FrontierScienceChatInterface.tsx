@@ -21,8 +21,7 @@ import {
   DiscoveryConfigPanel,
 } from '@/components/discovery'
 import type { DiscoveryOptions } from '@/types/frontierscience'
-import type { Domain } from '@/types/discovery'
-import type { DiscoveryConfiguration } from '@/types/intervention'
+import type { DiscoveryConfiguration, Domain } from '@/types/intervention'
 
 interface FrontierScienceChatInterfaceProps {
   pageTitle?: string
@@ -49,6 +48,7 @@ export function FrontierScienceChatInterface({
   const [hasAutoStarted, setHasAutoStarted] = React.useState(false)
   const [showConfig, setShowConfig] = React.useState(false)
   const [discoveryConfig, setDiscoveryConfig] = React.useState<DiscoveryConfiguration | null>(null)
+  const [suggestedDomain, setSuggestedDomain] = React.useState<Domain | undefined>(undefined)
   const inputRef = React.useRef<HTMLTextAreaElement>(null)
 
   const {
@@ -180,7 +180,10 @@ export function FrontierScienceChatInterface({
         {/* Configuration Panel */}
         {showConfig && status === 'idle' ? (
           <DiscoveryConfigPanel
-            initialConfig={{ query: inputValue }}
+            initialConfig={{
+              query: inputValue,
+              domain: suggestedDomain,
+            }}
             onConfigChange={setDiscoveryConfig}
             onStart={handleConfigStart}
             onCancel={handleConfigCancel}
@@ -204,7 +207,17 @@ export function FrontierScienceChatInterface({
           <div className="max-w-4xl mx-auto">
             {/* Idle State - Show Input Prompt */}
             {status === 'idle' && !result && !showConfig && (
-              <IdleState onConfigureClick={showConfigPanel ? () => setShowConfig(true) : undefined} />
+              <IdleState
+                onConfigureClick={showConfigPanel ? () => setShowConfig(true) : undefined}
+                onExampleClick={(query, domain) => {
+                  setInputValue(query)
+                  setSuggestedDomain(domain as Domain)
+                  // Auto-navigate to config panel when example is clicked
+                  if (showConfigPanel) {
+                    setShowConfig(true)
+                  }
+                }}
+              />
             )}
 
             {/* Starting State */}
@@ -238,110 +251,187 @@ export function FrontierScienceChatInterface({
         )}
       </div>
 
-      {/* Input Area */}
-      <div className="shrink-0 border-t border-border p-4">
-        <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
-          <div className="relative">
-            <textarea
-              ref={inputRef}
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={handleKeyDown}
-              disabled={isInputDisabled}
-              placeholder={
-                isInputDisabled
-                  ? 'Discovery in progress...'
-                  : 'Describe your scientific discovery query (e.g., "Novel approaches to high-temperature SOEC efficiency")'
-              }
-              className={cn(
-                'w-full min-h-[100px] max-h-[200px] p-4 pr-14',
-                'rounded-xl border border-border bg-background',
-                'text-foreground placeholder:text-muted-foreground',
-                'resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/50',
-                'disabled:opacity-50 disabled:cursor-not-allowed'
+      {/* Input Area - Hidden when config panel is shown */}
+      {!showConfig && (
+        <div className="shrink-0 border-t border-border p-4">
+          <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
+            <div className="relative">
+              <textarea
+                ref={inputRef}
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyDown={handleKeyDown}
+                disabled={isInputDisabled}
+                placeholder={
+                  isInputDisabled
+                    ? 'Discovery in progress...'
+                    : 'Describe your scientific discovery query (e.g., "Novel approaches to high-temperature SOEC efficiency")'
+                }
+                className={cn(
+                  'w-full min-h-[100px] max-h-[200px] p-4 pr-14',
+                  'rounded-xl border border-border bg-background',
+                  'text-foreground placeholder:text-muted-foreground',
+                  'resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/50',
+                  'disabled:opacity-50 disabled:cursor-not-allowed'
+                )}
+              />
+              <Button
+                type="submit"
+                size="sm"
+                disabled={isInputDisabled || !inputValue.trim()}
+                className="absolute bottom-3 right-3"
+              >
+                {isInputDisabled ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+            <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
+              <span>Press Enter to send, Shift+Enter for new line</span>
+              {status === 'running' && (
+                <span>
+                  {completedPhasesCount}/{totalPhasesCount} phases completed
+                </span>
               )}
-            />
-            <Button
-              type="submit"
-              size="sm"
-              disabled={isInputDisabled || !inputValue.trim()}
-              className="absolute bottom-3 right-3"
-            >
-              {isInputDisabled ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-            </Button>
-          </div>
-          <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
-            <span>Press Enter to send, Shift+Enter for new line</span>
-            {status === 'running' && (
-              <span>
-                {completedPhasesCount}/{totalPhasesCount} phases completed
-              </span>
-            )}
-          </div>
-        </form>
-      </div>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   )
 }
 
 /**
- * Idle state placeholder
+ * Idle state placeholder with improved UX
  */
-function IdleState({ onConfigureClick }: { onConfigureClick?: () => void }) {
+function IdleState({
+  onConfigureClick,
+  onExampleClick,
+}: {
+  onConfigureClick?: () => void
+  onExampleClick?: (query: string, domain: string) => void
+}) {
+  const examples = [
+    {
+      domain: 'fuel-cells',
+      title: 'Clean Energy',
+      query: 'Develop novel catalyst materials for solid oxide electrolysis cells (SOEC) that can achieve >85% efficiency at operating temperatures below 700°C, focusing on mixed ionic-electronic conductors with enhanced oxygen vacancy formation',
+    },
+    {
+      domain: 'solar-photovoltaics',
+      title: 'Materials Science',
+      query: 'Design thermally stable perovskite solar cell compositions using A-site cation engineering (Cs/FA/MA ratios) and 2D/3D heterojunction architectures to maintain >90% of initial efficiency after 1000 hours at 85°C',
+    },
+    {
+      domain: 'battery-storage',
+      title: 'Energy Storage',
+      query: 'Identify sulfide-based solid electrolyte compositions (Li₆PS₅X family) with ionic conductivity >10 mS/cm at room temperature and electrochemical stability window >5V for next-generation solid-state batteries',
+    },
+    {
+      domain: 'electrolyzers',
+      title: 'Hydrogen Production',
+      query: 'Evaluate low-cost, earth-abundant electrocatalysts (Ni-Mo, Co-P, Fe-Ni-S systems) for alkaline water electrolysis that can achieve <$2/kg H₂ production cost at industrial scale (>100 MW)',
+    },
+  ]
+
   return (
-    <div className="flex flex-col items-center justify-center py-12 text-center">
-      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500/10 to-purple-500/10 flex items-center justify-center mb-4">
+    <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
+      {/* Icon */}
+      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500/10 to-purple-500/10 flex items-center justify-center mb-6">
         <PulsingBrain className="w-8 h-8" />
       </div>
-      <h2 className="text-xl font-semibold text-foreground mb-2">
+
+      {/* Title */}
+      <h2 className="text-2xl font-bold text-foreground mb-3">
         Start Your Discovery
       </h2>
-      <p className="text-muted-foreground max-w-md mb-6">
-        Enter a scientific research query to begin the 12-phase discovery pipeline.
-        The AI will iteratively refine each phase until it reaches the 7/10 quality threshold.
+
+      {/* Subtitle */}
+      <p className="text-muted-foreground max-w-lg mb-8">
+        Enter a scientific research query to begin
       </p>
+
+      {/* Instructions */}
+      <div className="bg-muted/30 rounded-xl p-6 max-w-2xl mb-8 text-left border border-border">
+        <h3 className="text-sm font-semibold text-foreground mb-3 uppercase tracking-wide">
+          How to write an effective query
+        </h3>
+        <ul className="space-y-2 text-sm text-muted-foreground">
+          <li className="flex items-start gap-2">
+            <span className="text-primary font-bold">1.</span>
+            <span><strong className="text-foreground">Be specific</strong> — Include target metrics, materials, or performance thresholds</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="text-primary font-bold">2.</span>
+            <span><strong className="text-foreground">Define constraints</strong> — Mention cost, temperature, scalability, or availability requirements</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="text-primary font-bold">3.</span>
+            <span><strong className="text-foreground">State the goal</strong> — Describe what problem you&apos;re trying to solve or what you want to discover</span>
+          </li>
+        </ul>
+      </div>
+
+      {/* Example Queries */}
+      <div className="w-full max-w-3xl">
+        <h3 className="text-sm font-semibold text-muted-foreground mb-4 uppercase tracking-wide">
+          Example Queries — Click to use
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {examples.map((example) => (
+            <ExampleCard
+              key={example.domain}
+              title={example.title}
+              example={example.query}
+              onClick={() => onExampleClick?.(example.query, example.domain)}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Configure Button */}
       {onConfigureClick && (
         <Button
           variant="outline"
           onClick={onConfigureClick}
-          className="mb-6 gap-2"
+          className="mt-8 gap-2"
         >
           <Settings2 className="w-4 h-4" />
           Configure Discovery Options
         </Button>
       )}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-2xl">
-        <ExampleCard
-          title="Clean Energy"
-          example="Novel approaches to improve SOEC efficiency above 85%"
-        />
-        <ExampleCard
-          title="Materials Science"
-          example="Perovskite solar cells with improved thermal stability"
-        />
-        <ExampleCard
-          title="Energy Storage"
-          example="Solid-state battery electrolytes with high ionic conductivity"
-        />
-        <ExampleCard
-          title="Hydrogen Production"
-          example="Cost-effective green hydrogen from renewable sources"
-        />
-      </div>
     </div>
   )
 }
 
-function ExampleCard({ title, example }: { title: string; example: string }) {
+function ExampleCard({
+  title,
+  example,
+  onClick,
+}: {
+  title: string
+  example: string
+  onClick?: () => void
+}) {
   return (
-    <div className="p-3 rounded-lg border border-border bg-muted/30 text-left">
-      <div className="text-xs font-medium text-muted-foreground mb-1">{title}</div>
-      <div className="text-sm text-foreground">{example}</div>
-    </div>
+    <button
+      onClick={onClick}
+      className={cn(
+        'p-4 rounded-lg border border-border bg-muted/20 text-left transition-all',
+        'hover:bg-muted/40 hover:border-primary/40 hover:shadow-md',
+        'focus:outline-none focus:ring-2 focus:ring-primary/50',
+        'cursor-pointer group'
+      )}
+    >
+      <div className="text-xs font-semibold text-primary mb-2 uppercase tracking-wide group-hover:text-primary/80">
+        {title}
+      </div>
+      <div className="text-sm text-foreground line-clamp-3 leading-relaxed">
+        {example}
+      </div>
+    </button>
   )
 }
 
