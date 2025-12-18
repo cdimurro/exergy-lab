@@ -17,7 +17,7 @@ import { RubricScoreCard, RubricProgressBar } from './RubricScoreCard'
 import { QualityBadge } from './QualityBadge'
 import { PhaseResultsDropdown, generatePhaseKeyFindings } from './PhaseResultsDropdown'
 import { X, Clock, Zap, ChevronDown, ChevronUp } from 'lucide-react'
-import { useState } from 'react'
+import React, { useState } from 'react'
 
 interface FrontierScienceProgressCardProps {
   query: string
@@ -41,9 +41,28 @@ export function FrontierScienceProgressCard({
   className,
 }: FrontierScienceProgressCardProps) {
   const [showRubricDetails, setShowRubricDetails] = useState(false)
+  const [selectedPhase, setSelectedPhase] = useState<DiscoveryPhase | null>(null)
+  const [lastCompletedPhase, setLastCompletedPhase] = useState<DiscoveryPhase | null>(null)
 
   const currentProgress = currentPhase ? phaseProgress.get(currentPhase) : null
   const phaseMeta = currentPhase ? getPhaseMetadata(currentPhase) : null
+
+  // Auto-expand the most recently completed phase
+  React.useEffect(() => {
+    const completedPhases = Array.from(phaseProgress.entries())
+      .filter(([_, p]) => p.status === 'completed')
+      .map(([phase]) => phase)
+
+    const latestCompleted = completedPhases[completedPhases.length - 1]
+    if (latestCompleted && latestCompleted !== lastCompletedPhase) {
+      setLastCompletedPhase(latestCompleted)
+      setSelectedPhase(latestCompleted)
+    }
+  }, [phaseProgress, lastCompletedPhase])
+
+  const handlePhaseClick = (phase: DiscoveryPhase) => {
+    setSelectedPhase(phase === selectedPhase ? null : phase)
+  }
 
   // Format elapsed time
   const formatTime = (ms: number) => {
@@ -126,8 +145,57 @@ export function FrontierScienceProgressCard({
           showScores={true}
           showLabels={true}
           compact={false}
+          onPhaseClick={handlePhaseClick}
         />
       </div>
+
+      {/* Selected Phase Details */}
+      {selectedPhase && (() => {
+        const selectedProgress = phaseProgress.get(selectedPhase)
+        const selectedMeta = getPhaseMetadata(selectedPhase)
+        const keyFindings = generatePhaseKeyFindings(selectedPhase, null, selectedProgress?.judgeResult)
+
+        return selectedProgress && (
+          <div className="p-4 border-b bg-gradient-to-br from-blue-500/5 to-purple-500/5">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-foreground">
+                  {selectedMeta.name}
+                </span>
+                {selectedProgress.score !== undefined && (
+                  <span className={cn(
+                    'text-xs px-2 py-0.5 rounded-full',
+                    selectedProgress.passed
+                      ? 'bg-emerald-500/20 text-emerald-600'
+                      : 'bg-amber-500/20 text-amber-600'
+                  )}>
+                    {selectedProgress.score.toFixed(1)}/10
+                  </span>
+                )}
+              </div>
+              <button
+                onClick={() => setSelectedPhase(null)}
+                className="text-xs text-muted-foreground hover:text-foreground"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <p className="text-xs text-muted-foreground mb-3">
+              {selectedMeta.description}
+            </p>
+
+            {keyFindings && (
+              <PhaseResultsDropdown
+                phase={selectedPhase}
+                phaseName={selectedMeta.name}
+                status={selectedProgress.status as any}
+                results={keyFindings}
+              />
+            )}
+          </div>
+        )
+      })()}
 
       {/* Current Phase Details */}
       {currentPhase && currentProgress && (
