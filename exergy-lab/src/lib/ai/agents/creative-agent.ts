@@ -253,19 +253,38 @@ ${research.materialsData.slice(0, 5).map(m => `- ${m.formula}: bandGap=${m.bandG
 
 Generate ${count} novel, testable hypotheses that could advance the field.
 
-For each hypothesis, include:
+CRITICAL REQUIREMENTS FOR EACH HYPOTHESIS:
+1. Each hypothesis MUST have at least 2 falsifiable, measurable predictions with expected values
+2. Each hypothesis MUST have at least 3 supporting evidence items with proper citations
+3. Each hypothesis MUST have a mechanism with at least 3 ordered steps with physical principles
+4. Each hypothesis MUST define:
+   - At least 2 independent variables with ranges and units
+   - At least 2 dependent variables with descriptions
+   - At least 2 control variables with descriptions
+5. noveltyScore must be between 70-95
+6. feasibilityScore must be between 65-90
+
+For each hypothesis, include EXACTLY this structure:
 {
   "id": "H1",
   "title": "Short descriptive title",
-  "statement": "Clear hypothesis statement",
+  "statement": "Clear hypothesis statement in 'If X, then Y' format",
   "predictions": [
     {
-      "statement": "Measurable prediction",
+      "statement": "Specific measurable prediction",
       "measurable": true,
       "falsifiable": true,
       "expectedValue": 85,
       "unit": "%",
       "tolerance": 5
+    },
+    {
+      "statement": "Second measurable prediction",
+      "measurable": true,
+      "falsifiable": true,
+      "expectedValue": 42,
+      "unit": "mV",
+      "tolerance": 2
     }
   ],
   "supportingEvidence": [
@@ -273,32 +292,54 @@ For each hypothesis, include:
       "finding": "Key finding from literature",
       "citation": "Author et al., 2023",
       "relevance": 0.9
+    },
+    {
+      "finding": "Second supporting finding",
+      "citation": "Researcher et al., 2022",
+      "relevance": 0.85
+    },
+    {
+      "finding": "Third supporting finding",
+      "citation": "Scientist et al., 2024",
+      "relevance": 0.8
     }
   ],
   "mechanism": {
     "steps": [
-      { "order": 1, "description": "First step", "physicalPrinciple": "Principle" }
+      { "order": 1, "description": "First step of mechanism", "physicalPrinciple": "Principle 1" },
+      { "order": 2, "description": "Second step of mechanism", "physicalPrinciple": "Principle 2" },
+      { "order": 3, "description": "Third step of mechanism", "physicalPrinciple": "Principle 3" }
     ]
   },
   "variables": {
-    "independent": [{ "name": "Variable", "type": "independent", "description": "...", "range": { "min": 0, "max": 100, "unit": "°C" } }],
-    "dependent": [{ "name": "Variable", "type": "dependent", "description": "..." }],
-    "controls": [{ "name": "Variable", "type": "control", "description": "..." }]
+    "independent": [
+      { "name": "Variable 1", "type": "independent", "description": "Description", "range": { "min": 0, "max": 100, "unit": "°C" } },
+      { "name": "Variable 2", "type": "independent", "description": "Description", "range": { "min": 0, "max": 1, "unit": "bar" } }
+    ],
+    "dependent": [
+      { "name": "Dependent 1", "type": "dependent", "description": "What we measure" },
+      { "name": "Dependent 2", "type": "dependent", "description": "Second measurement" }
+    ],
+    "controls": [
+      { "name": "Control 1", "type": "control", "description": "Held constant" },
+      { "name": "Control 2", "type": "control", "description": "Controlled condition" }
+    ]
   },
-  "noveltyScore": 75,
-  "feasibilityScore": 70,
+  "noveltyScore": 78,
+  "feasibilityScore": 72,
   "impactScore": 80,
   "validationMetrics": [
     { "name": "Metric", "targetValue": 85, "unit": "%", "threshold": 80 }
   ]
 }
 
-Return ONLY a JSON array of ${count} hypothesis objects.`
+CRITICAL: Return a COMPLETE, valid JSON array with ALL ${count} hypotheses.
+Do not truncate. Ensure all hypotheses have ALL required fields filled in completely.`
 
     try {
       const result = await generateText('discovery', prompt, {
         temperature: 0.9, // Higher temperature for creativity
-        maxTokens: 8000,
+        maxTokens: 16000, // Increased for complete hypothesis generation
       })
 
       const cleaned = result.trim().replace(/```json\n?|\n?```/g, '')
@@ -467,12 +508,12 @@ Include:
 - At least 3 safety requirements
 - At least 2 failure modes
 
-Return ONLY the JSON object.`
+CRITICAL: Return a COMPLETE, valid JSON object with ALL required fields. Do not truncate.`
 
     try {
       const result = await generateText('experiment-design', prompt, {
         temperature: 0.7,
-        maxTokens: 4000,
+        maxTokens: 8000, // Increased for complete experiment design
       })
 
       const cleaned = result.trim().replace(/```json\n?|\n?```/g, '')

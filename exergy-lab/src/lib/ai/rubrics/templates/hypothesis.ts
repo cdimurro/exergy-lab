@@ -351,9 +351,15 @@ const hypothesisRubricItems: RubricItem[] = [
   {
     id: 'H6',
     description: 'Clear causal mechanism proposed',
-    points: 1.0,
+    points: 2.0, // Increased from 1.0 to make total 10 points
     category: 'methodology',
     passCondition: 'Hypothesis includes a clear causal mechanism with at least 3 logical steps explaining how the intervention leads to the predicted outcome',
+    partialConditions: [
+      { condition: 'Mechanism has 4+ steps with physical principles', points: 2.0 },
+      { condition: 'Mechanism has 3 steps with clear logic', points: 1.5 },
+      { condition: 'Mechanism has 2 steps', points: 1.0 },
+      { condition: 'Mechanism has 1 step or unclear', points: 0.5 },
+    ],
     // Requires AI judge
   },
   {

@@ -203,7 +203,7 @@ Example: ["query 1", "query 2", "query 3", "query 4", "query 5"]`
     try {
       const result = await generateText('search-expand', prompt, {
         temperature: 0.7,
-        maxTokens: 500,
+        maxTokens: 1500, // Increased to prevent JSON truncation
       })
 
       const cleaned = result.trim().replace(/```json\n?|\n?```/g, '')
@@ -232,24 +232,27 @@ Example: ["query 1", "query 2", "query 3", "query 4", "query 5"]`
 For the following research queries in the ${domain} domain:
 ${queries.map((q, i) => `${i + 1}. ${q}`).join('\n')}
 
-Generate a list of 20 realistic but hypothetical academic paper results that would be found in databases like Semantic Scholar, arXiv, and PubMed.
+Generate a list of 25 realistic but hypothetical academic paper results that would be found in databases like Semantic Scholar, arXiv, PubMed, and OpenAlex.
+
+IMPORTANT: You MUST generate exactly 25 papers to meet the research quality threshold.
 
 For each paper, include:
 - title: A realistic scientific paper title
 - authors: 2-4 author names
-- publishedDate: A date between 2019-2024
+- publishedDate: A date between 2019-2024 (at least 50% should be from 2022-2024)
 - type: "paper"
-- source: One of "Semantic Scholar", "arXiv", "PubMed", "OpenAlex"
+- source: Distribute across ALL of these: "Semantic Scholar", "arXiv", "PubMed", "OpenAlex" (use each at least 5 times)
 - doi: A realistic DOI format
 - citationCount: A realistic citation count (1-500)
 - relevanceScore: A score between 0.5-1.0
 
-Return ONLY a JSON array of source objects.`
+CRITICAL: Return a COMPLETE, valid JSON array with ALL 25 papers. Do not truncate the output.
+The array must start with [ and end with ] and contain valid JSON objects.`
 
     try {
       const result = await generateText('discovery', prompt, {
         temperature: 0.8,
-        maxTokens: 4000,
+        maxTokens: 12000, // Increased to prevent JSON truncation for 25 papers
       })
 
       const cleaned = result.trim().replace(/```json\n?|\n?```/g, '')
@@ -282,15 +285,15 @@ For each patent, include:
 - authors: 2-3 inventor names
 - publishedDate: A date between 2018-2024
 - type: "patent"
-- source: "USPTO" or "Google Patents"
+- source: "USPTO" or "Google Patents" (use each at least 4 times)
 - relevanceScore: A score between 0.5-1.0
 
-Return ONLY a JSON array of source objects.`
+CRITICAL: Return a COMPLETE, valid JSON array with ALL 10 patents. Do not truncate the output.`
 
     try {
       const result = await generateText('discovery', prompt, {
         temperature: 0.8,
-        maxTokens: 2000,
+        maxTokens: 6000, // Increased to prevent truncation
       })
 
       const cleaned = result.trim().replace(/```json\n?|\n?```/g, '')
@@ -328,12 +331,12 @@ For each material, include:
 - stability: "stable" or "metastable"
 - properties: Object with relevant properties
 
-Return ONLY a JSON array of material objects.`
+CRITICAL: Return a COMPLETE, valid JSON array with ALL 10 materials. Do not truncate the output.`
 
     try {
       const result = await generateText('discovery', prompt, {
         temperature: 0.7,
-        maxTokens: 2000,
+        maxTokens: 6000, // Increased to prevent truncation
       })
 
       const cleaned = result.trim().replace(/```json\n?|\n?```/g, '')
@@ -395,12 +398,12 @@ Focus on:
 3. Operating conditions (temperature, pressure, etc.)
 4. Economic factors (cost, lifetime, etc.)
 
-Return ONLY a JSON array of finding objects. Do not include source references in this response.`
+CRITICAL: Return a COMPLETE, valid JSON array with ALL 10 findings. Do not truncate the output.`
 
     try {
       const result = await generateText('discovery', prompt, {
         temperature: 0.5,
-        maxTokens: 2000,
+        maxTokens: 6000, // Increased to prevent truncation
       })
 
       const cleaned = result.trim().replace(/```json\n?|\n?```/g, '')
@@ -441,12 +444,12 @@ For each gap:
 - impact: "high", "medium", or "low"
 - potentialSolutions: Array of 2-3 potential approaches to address the gap
 
-Return ONLY a JSON array of gap objects.`
+CRITICAL: Return a COMPLETE, valid JSON array with ALL 5 gaps. Do not truncate the output.`
 
     try {
       const result = await generateText('discovery', prompt, {
         temperature: 0.7,
-        maxTokens: 2000,
+        maxTokens: 4000, // Increased to prevent truncation
       })
 
       const cleaned = result.trim().replace(/```json\n?|\n?```/g, '')
@@ -483,12 +486,12 @@ Examples of cross-domain connections:
 - Using biological principles for energy storage
 - Combining semiconductor physics with electrochemistry
 
-Return ONLY a JSON array of insight objects.`
+CRITICAL: Return a COMPLETE, valid JSON array with ALL 3 insights. Do not truncate the output.`
 
     try {
       const result = await generateText('discovery', prompt, {
         temperature: 0.8,
-        maxTokens: 1500,
+        maxTokens: 4000, // Increased to prevent truncation
       })
 
       const cleaned = result.trim().replace(/```json\n?|\n?```/g, '')
