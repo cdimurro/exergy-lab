@@ -111,10 +111,10 @@ export function EventStreamItem({
       )}
     >
       {/* Header */}
-      <button
+      <div
         onClick={onToggle}
         className={cn(
-          'w-full flex items-center gap-2 px-3 py-2 text-left',
+          'w-full flex items-center gap-2 px-3 py-2 cursor-pointer',
           colors.bg,
           'hover:bg-opacity-75 transition-colors'
         )}
@@ -178,7 +178,7 @@ export function EventStreamItem({
             <Copy size={10} className="text-muted-foreground" />
           )}
         </Button>
-      </button>
+      </div>
 
       {/* Expanded content */}
       {isExpanded && (
