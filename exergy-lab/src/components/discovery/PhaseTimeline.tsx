@@ -92,7 +92,7 @@ export function PhaseTimeline({
           const Icon = PHASE_ICONS[phase.id]
 
           return (
-            <div key={phase.id} className="flex items-center">
+            <div key={phase.id} className="flex items-start">
               <PhaseNode
                 phase={phase.id}
                 status={progress?.status || 'pending'}
