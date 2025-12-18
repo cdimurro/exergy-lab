@@ -112,9 +112,12 @@ export function useFrontierScienceWorkflow(): UseFrontierScienceWorkflowReturn {
     const phase = 'phase' in event ? event.phase : undefined
     debugCapture.captureSSEEvent(event.type, event, phase)
 
+    console.log('[FrontierScience UI] SSE Event received:', event.type, event)
+
     switch (event.type) {
       case 'progress': {
         const { phase, status: phaseStatus, iteration, maxIterations, score, passed, message } = event
+        console.log('[FrontierScience UI] Progress update:', { phase, phaseStatus, iteration, score, passed })
         setCurrentPhase(phase)
         setPhaseProgress(prev => {
           const newMap = new Map(prev)
@@ -297,10 +300,11 @@ export function useFrontierScienceWorkflow(): UseFrontierScienceWorkflowReturn {
 
       eventSource.onmessage = (event) => {
         try {
+          console.log('[FrontierScience UI] Raw SSE message:', event.data)
           const data = JSON.parse(event.data) as SSEEvent
           handleSSEEvent(data)
         } catch (err) {
-          console.error('[FrontierScience] Failed to parse SSE event:', err)
+          console.error('[FrontierScience] Failed to parse SSE event:', err, event.data)
         }
       }
 

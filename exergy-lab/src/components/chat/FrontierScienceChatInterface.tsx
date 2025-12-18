@@ -123,53 +123,54 @@ export function FrontierScienceChatInterface({
 
       {/* Main Content */}
       <div className="flex-1 overflow-y-auto px-4 py-6">
-        <div className="max-w-4xl mx-auto">
-          {/* Idle State - Show Input Prompt */}
-          {status === 'idle' && !result && (
-            <IdleState />
-          )}
+        {/* Full-screen progress card when running */}
+        {status === 'running' ? (
+          <FrontierScienceProgressCard
+            query={inputValue || initialQuery || 'Discovery in progress...'}
+            currentPhase={currentPhase}
+            phaseProgress={phaseProgress}
+            overallProgress={overallProgress}
+            elapsedTime={elapsedTime}
+            thinkingMessage={thinkingMessage}
+            onCancel={cancelDiscovery}
+            className="h-full"
+          />
+        ) : (
+          <div className="max-w-4xl mx-auto">
+            {/* Idle State - Show Input Prompt */}
+            {status === 'idle' && !result && (
+              <IdleState />
+            )}
 
-          {/* Starting State */}
-          {status === 'starting' && (
-            <StartingState query={inputValue} />
-          )}
+            {/* Starting State */}
+            {status === 'starting' && (
+              <StartingState query={inputValue} />
+            )}
 
-          {/* Running State - Show Progress */}
-          {status === 'running' && (
-            <FrontierScienceProgressCard
-              query={inputValue || initialQuery || 'Discovery in progress...'}
-              currentPhase={currentPhase}
-              phaseProgress={phaseProgress}
-              overallProgress={overallProgress}
-              elapsedTime={elapsedTime}
-              thinkingMessage={thinkingMessage}
-              onCancel={cancelDiscovery}
-            />
-          )}
+            {/* Completed State - Show Results */}
+            {status === 'completed' && result && (
+              <FrontierScienceResultsCard
+                result={result}
+                onExport={() => {
+                  // Export functionality
+                  console.log('Exporting results...')
+                }}
+              />
+            )}
 
-          {/* Completed State - Show Results */}
-          {status === 'completed' && result && (
-            <FrontierScienceResultsCard
-              result={result}
-              onExport={() => {
-                // Export functionality
-                console.log('Exporting results...')
-              }}
-            />
-          )}
-
-          {/* Error State */}
-          {status === 'failed' && (
-            <ErrorState
-              error={error}
-              onRetry={() => {
-                if (inputValue || initialQuery) {
-                  startDiscovery(inputValue || initialQuery!, initialOptions)
-                }
-              }}
-            />
-          )}
-        </div>
+            {/* Error State */}
+            {status === 'failed' && (
+              <ErrorState
+                error={error}
+                onRetry={() => {
+                  if (inputValue || initialQuery) {
+                    startDiscovery(inputValue || initialQuery!, initialOptions)
+                  }
+                }}
+              />
+            )}
+          </div>
+        )}
       </div>
 
       {/* Input Area */}
