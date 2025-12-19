@@ -270,7 +270,7 @@ export function SimulationsForm({
               className="w-full h-14 text-lg"
               loading={isSubmitting}
             >
-              <Cpu className="h-5 w-5 mr-2" />
+              <Bot className="h-5 w-5 mr-2" />
               {ACTION_BUTTON_LABELS.simulations}
             </Button>
           </div>
