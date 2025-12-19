@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { Cpu } from 'lucide-react'
+import { Bot } from 'lucide-react'
 import { FeatureWizard } from '@/components/feature-wizard'
 import type { Domain } from '@/types/discovery'
 
@@ -25,7 +25,7 @@ export default function SimulationsPage() {
         pageType="simulations"
         pageTitle="Simulations"
         pageSubtitle="3-tier computational system for clean energy simulations"
-        pageIcon={<Cpu className="h-5 w-5" />}
+        pageIcon={<Bot className="h-5 w-5" />}
         domains={DOMAINS}
       />
     </div>

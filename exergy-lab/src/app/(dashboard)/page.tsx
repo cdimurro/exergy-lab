@@ -7,7 +7,7 @@ import {
   Calculator,
   FlaskConical,
   Cpu,
-  Sparkles,
+  Bot,
   TrendingUp,
   FileText,
   Clock,
@@ -100,7 +100,7 @@ export default function DashboardPage() {
     {
       title: 'Run Simulation',
       description: 'Execute 3-tier computational simulations',
-      icon: Cpu,
+      icon: Bot,
       href: '/simulations',
       color: 'text-accent-amber',
       gradient: '',
@@ -108,7 +108,7 @@ export default function DashboardPage() {
     {
       title: 'Discover Ideas',
       description: 'Find novel cross-domain innovations',
-      icon: Sparkles,
+      icon: Cpu,
       href: '/discovery',
       color: 'text-accent-rose',
       gradient: '',
@@ -124,9 +124,9 @@ export default function DashboardPage() {
       case 'experiment':
         return FlaskConical
       case 'simulation':
-        return Cpu
+        return Bot
       case 'discovery':
-        return Sparkles
+        return Cpu
       default:
         return FileText
     }
@@ -230,7 +230,7 @@ export default function DashboardPage() {
                 <p className="text-2xl font-bold text-foreground">{stats.discoveries}</p>
               </div>
               <div className="p-3 rounded-xl bg-accent-rose/10">
-                <Sparkles className="w-6 h-6 text-accent-rose" />
+                <Cpu className="w-6 h-6 text-accent-rose" />
               </div>
             </div>
           </Card>
@@ -429,7 +429,7 @@ export default function DashboardPage() {
                   Start Searching
                 </Button>
                 <Button variant="secondary" onClick={() => router.push('/discovery')}>
-                  <Sparkles className="w-4 h-4 mr-2" />
+                  <Cpu className="w-4 h-4 mr-2" />
                   Discover Ideas
                 </Button>
               </div>

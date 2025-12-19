@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { Cpu, Monitor, Server, Cloud } from 'lucide-react'
+import { Bot, Monitor, Server, Cloud } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
@@ -248,7 +248,7 @@ export function SimulationsForm({
           <Card variant="elevated" className="bg-primary/5 border-primary/20">
             <CardContent className="p-6">
               <div className="flex gap-4">
-                <Cpu className="h-6 w-6 text-primary shrink-0 mt-0.5" />
+                <Bot className="h-6 w-6 text-primary shrink-0 mt-0.5" />
                 <div className="space-y-2">
                   <p className="text-lg font-medium text-foreground">Simulation tips</p>
                   <ul className="text-base text-foreground-muted space-y-2">

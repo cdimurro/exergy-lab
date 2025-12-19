@@ -9,7 +9,7 @@
  */
 
 import * as React from 'react'
-import { ArrowLeft, Send, Loader2, Settings2, X, Pencil, Save, RotateCcw, CheckCircle } from 'lucide-react'
+import { ArrowLeft, Send, Loader2, Settings2, X, Save, CheckCircle, Cpu } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { useFrontierScienceWorkflow } from '@/hooks/use-frontierscience-workflow'
@@ -17,7 +17,6 @@ import {
   FrontierScienceProgressCard,
   FrontierScienceResultsCard,
   QualityBadge,
-  PulsingBrain,
   DiscoveryConfigPanel,
   ExportPanel,
   PartialResultsCard,
@@ -50,17 +49,9 @@ export function FrontierScienceChatInterface({
   const [hasAutoStarted, setHasAutoStarted] = React.useState(false)
   const [showConfig, setShowConfig] = React.useState(false)
   const [showExportPanel, setShowExportPanel] = React.useState(false)
-  const [showPromptWindow, setShowPromptWindow] = React.useState(false)
   const [isAutoSaving, setIsAutoSaving] = React.useState(false)
   const [lastSavedTime, setLastSavedTime] = React.useState<Date | null>(null)
   const [checkpoints, setCheckpoints] = React.useState<Array<{phase: string; timestamp: Date; data: any}>>([])
-  const [changeRequestInput, setChangeRequestInput] = React.useState('')
-  const [isSubmittingChange, setIsSubmittingChange] = React.useState(false)
-  const [lastChangeResponse, setLastChangeResponse] = React.useState<{
-    response: string
-    changes: { phase: string; description: string; applied: boolean }[]
-    summary: string
-  } | null>(null)
   const [discoveryConfig, setDiscoveryConfig] = React.useState<DiscoveryConfiguration | null>(null)
   const [suggestedDomain, setSuggestedDomain] = React.useState<Domain | undefined>(undefined)
   const inputRef = React.useRef<HTMLTextAreaElement>(null)
@@ -75,22 +66,14 @@ export function FrontierScienceChatInterface({
     result,
     partialResult,
     recoveryRecommendations,
-    isPartialResult,
     error,
     thinkingMessage,
     activities,
     startDiscovery,
     cancelDiscovery,
-    pauseDiscovery,
-    resumeDiscovery,
-    submitChangeRequest,
-    isPaused,
-    pausedAtPhase,
-    pendingChangeRequest,
-    changeRequests,
     qualityTier,
-    completedPhasesCount,
-    totalPhasesCount,
+    passedPhases,
+    failedPhases,
   } = useFrontierScienceWorkflow()
 
   // Auto-start if configured
@@ -138,16 +121,6 @@ export function FrontierScienceChatInterface({
       }
     }
   }, [currentPhase, phaseProgress, overallProgress, elapsedTime, checkpoints])
-
-  // Handle rollback to last checkpoint
-  const handleRollbackToCheckpoint = (checkpointIndex: number) => {
-    const checkpoint = checkpoints[checkpointIndex]
-    if (checkpoint) {
-      console.log(`Rolling back to checkpoint: ${checkpoint.phase}`, checkpoint.data)
-      // Note: Full rollback implementation would require additional backend support
-      // For now, we just show the checkpoint data and allow retry from that point
-    }
-  }
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault()
@@ -229,7 +202,7 @@ export function FrontierScienceChatInterface({
             </Button>
           )}
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500/10 to-purple-500/10 text-blue-600">
-            <PulsingBrain />
+            <Cpu className="w-5 h-5" />
           </div>
           <div className="flex-1">
             <h1 className="text-2xl font-semibold text-foreground">{pageTitle}</h1>
@@ -241,7 +214,7 @@ export function FrontierScienceChatInterface({
 
           {/* Action Buttons - Right side */}
           <div className="flex items-center gap-2">
-            {/* Auto-Save Indicator */}
+            {/* Auto-Save Indicator - Only show when running */}
             {status === 'running' && (
               <div className={cn(
                 'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-300',
@@ -270,39 +243,7 @@ export function FrontierScienceChatInterface({
               </div>
             )}
 
-            {/* Make Changes / Resume Button - Only show when running or completed */}
-            {(status === 'running' || status === 'completed') && (
-              isPaused ? (
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={() => {
-                    setShowPromptWindow(false)
-                    setLastChangeResponse(null)
-                    resumeDiscovery()
-                  }}
-                  className="gap-1.5 bg-emerald-600 hover:bg-emerald-700"
-                >
-                  <Send className="h-4 w-4" />
-                  Resume Discovery
-                </Button>
-              ) : (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    pauseDiscovery()
-                    setShowPromptWindow(true)
-                  }}
-                  className="gap-1.5"
-                >
-                  <Pencil className="h-4 w-4" />
-                  Make Changes
-                </Button>
-              )
-            )}
-
-            {/* Close/Cancel Button */}
+            {/* Close/Cancel Button - Only show when running */}
             {status === 'running' && (
               <Button
                 variant="ghost"
@@ -332,18 +273,57 @@ export function FrontierScienceChatInterface({
             onCancel={handleConfigCancel}
             isLoading={false}
           />
-        ) : status === 'running' ? (
+        ) : (status === 'running' || status === 'failed') ? (
           <div className="h-full overflow-y-auto px-4 py-6">
-            {/* Full-screen progress card when running */}
+            {/* Full-screen progress card when running OR failed */}
             <FrontierScienceProgressCard
               query={inputValue || initialQuery || 'Discovery in progress...'}
+              status={status}
               currentPhase={currentPhase}
               phaseProgress={phaseProgress}
               overallProgress={overallProgress}
               elapsedTime={elapsedTime}
               thinkingMessage={thinkingMessage}
               activities={activities}
-              onCancel={cancelDiscovery}
+              error={error}
+              passedPhases={passedPhases}
+              failedPhases={failedPhases}
+              recoveryRecommendations={recoveryRecommendations}
+              failedCriteria={(() => {
+                // Extract failed criteria from the last failed phase
+                const lastFailedPhase = failedPhases[failedPhases.length - 1]
+                if (!lastFailedPhase) return []
+                const progress = phaseProgress.get(lastFailedPhase)
+                if (!progress?.judgeResult?.itemScores) return []
+                return progress.judgeResult.itemScores
+                  .filter(s => !s.passed)
+                  .map(s => ({
+                    id: s.itemId,
+                    issue: s.reasoning || `Failed criterion: ${s.itemId}`,
+                    suggestion: `Improve ${s.itemId} to score higher`,
+                  }))
+              })()}
+              onCancel={status === 'running' ? cancelDiscovery : undefined}
+              onRetryWithQuery={(query: string, fromCheckpoint?: boolean) => {
+                // Update the input value with the new query
+                setInputValue(query)
+                // Start discovery with the new/modified query
+                if (fromCheckpoint && passedPhases.length > 0) {
+                  // TODO: Implement checkpoint resume - for now, restart
+                  console.log('Checkpoint resume requested from:', passedPhases[passedPhases.length - 1])
+                }
+                startDiscovery(query, initialOptions)
+              }}
+              onExportResults={() => setShowExportPanel(true)}
+              onViewResults={() => {
+                // If we have partial results, show them
+                if (passedPhases.length > 0) {
+                  // Construct a partial result view from the completed phases
+                  console.log('Viewing partial results for phases:', passedPhases)
+                  // For now, open export panel which shows all available data
+                  setShowExportPanel(true)
+                }
+              }}
               className="h-full"
             />
           </div>
@@ -442,19 +422,7 @@ export function FrontierScienceChatInterface({
               </>
             )}
 
-            {/* Error State */}
-            {status === 'failed' && (
-              <ErrorState
-                error={error}
-                onRetry={() => {
-                  if (inputValue || initialQuery) {
-                    startDiscovery(inputValue || initialQuery!, initialOptions)
-                  }
-                }}
-                checkpoints={checkpoints}
-                onRollback={handleRollbackToCheckpoint}
-              />
-            )}
+            {/* Note: Failed state is now handled inline in FrontierScienceProgressCard */}
           </div>
         )}
       </div>
@@ -499,286 +467,89 @@ export function FrontierScienceChatInterface({
         </div>
       )}
 
-      {/* Make Changes Prompt Window - Floating overlay */}
-      {showPromptWindow && isPaused && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-full max-w-2xl px-4">
-          <div className="bg-background border border-border rounded-xl shadow-2xl p-4">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                <span className="text-sm font-medium text-foreground">
-                  Discovery Paused - Make Changes
-                </span>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setShowPromptWindow(false)
-                  setLastChangeResponse(null)
-                  resumeDiscovery()
-                }}
-                className="h-7 w-7 p-0"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-
-            {/* Paused Phase Info */}
-            {pausedAtPhase && (
-              <div className="text-xs text-muted-foreground mb-3 bg-muted/30 p-2 rounded">
-                Paused at: <span className="font-medium capitalize">{pausedAtPhase}</span> phase
-              </div>
-            )}
-
-            {/* AI Response Display */}
-            {lastChangeResponse && (
-              <div className="mb-4 p-3 rounded-lg bg-blue-500/5 border border-blue-500/20">
-                <div className="flex items-start gap-2 mb-2">
-                  <CheckCircle className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
-                  <div>
-                    <p className="text-sm font-medium text-foreground mb-1">AI Review Complete</p>
-                    <p className="text-sm text-muted-foreground">{lastChangeResponse.response}</p>
-                  </div>
-                </div>
-                {lastChangeResponse.changes.length > 0 && (
-                  <div className="mt-3 space-y-1">
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Changes Applied:</p>
-                    {lastChangeResponse.changes.map((change, i) => (
-                      <div key={i} className="flex items-center gap-2 text-xs">
-                        <span className={cn(
-                          'w-1.5 h-1.5 rounded-full',
-                          change.applied ? 'bg-emerald-500' : 'bg-amber-500'
-                        )} />
-                        <span className="capitalize text-muted-foreground">{change.phase}:</span>
-                        <span className="text-foreground">{change.description}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <p className="text-xs text-muted-foreground mt-3 pt-2 border-t border-border">
-                  {lastChangeResponse.summary}
-                </p>
-              </div>
-            )}
-
-            {/* Input Area */}
-            <div className="relative">
-              <textarea
-                value={changeRequestInput}
-                onChange={(e) => setChangeRequestInput(e.target.value)}
-                disabled={isSubmittingChange}
-                placeholder={lastChangeResponse
-                  ? "Need more changes? Describe them here, or click Resume to continue..."
-                  : "Describe the changes you want to make to the current discovery..."
-                }
-                className={cn(
-                  'w-full min-h-[80px] max-h-[150px] p-3 pr-12',
-                  'rounded-lg border border-border bg-muted/30',
-                  'text-foreground placeholder:text-muted-foreground',
-                  'resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/50',
-                  'disabled:opacity-50'
-                )}
-              />
-              <Button
-                type="button"
-                size="sm"
-                disabled={!changeRequestInput.trim() || isSubmittingChange}
-                onClick={async () => {
-                  if (!changeRequestInput.trim()) return
-                  setIsSubmittingChange(true)
-                  try {
-                    const result = await submitChangeRequest(changeRequestInput.trim())
-                    setLastChangeResponse({
-                      response: result.aiResponse || 'Changes processed',
-                      changes: result.changes || [],
-                      summary: result.status === 'applied'
-                        ? 'Your changes have been applied to the discovery.'
-                        : 'Some changes could not be applied.',
-                    })
-                    setChangeRequestInput('')
-                  } catch {
-                    setLastChangeResponse({
-                      response: 'Failed to process your change request.',
-                      changes: [],
-                      summary: 'Please try again or resume the discovery.',
-                    })
-                  }
-                  setIsSubmittingChange(false)
-                }}
-                className="absolute bottom-2 right-2"
-              >
-                {isSubmittingChange ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Send className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
-              <p className="text-xs text-muted-foreground">
-                {isSubmittingChange ? 'AI is reviewing your request...' : 'Describe changes and submit, or resume discovery'}
-              </p>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => {
-                  setShowPromptWindow(false)
-                  setLastChangeResponse(null)
-                  resumeDiscovery()
-                }}
-                className="gap-1.5 bg-emerald-600 hover:bg-emerald-700"
-              >
-                <Send className="h-4 w-4" />
-                Resume
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
 
 /**
- * Idle state placeholder with improved UX
+ * Idle state placeholder with clean, centered design
+ * Removed example queries section for cleaner UX
  */
 function IdleState({
   onConfigureClick,
-  onExampleClick,
 }: {
   onConfigureClick?: () => void
   onExampleClick?: (query: string, domain: string) => void
 }) {
-  const examples = [
-    {
-      domain: 'fuel-cells',
-      title: 'Clean Energy',
-      query: 'Develop novel catalyst materials for solid oxide electrolysis cells (SOEC) that can achieve >85% efficiency at operating temperatures below 700°C, focusing on mixed ionic-electronic conductors with enhanced oxygen vacancy formation',
-    },
-    {
-      domain: 'solar-photovoltaics',
-      title: 'Materials Science',
-      query: 'Design thermally stable perovskite solar cell compositions using A-site cation engineering (Cs/FA/MA ratios) and 2D/3D heterojunction architectures to maintain >90% of initial efficiency after 1000 hours at 85°C',
-    },
-    {
-      domain: 'battery-storage',
-      title: 'Energy Storage',
-      query: 'Identify sulfide-based solid electrolyte compositions (Li₆PS₅X family) with ionic conductivity >10 mS/cm at room temperature and electrochemical stability window >5V for next-generation solid-state batteries',
-    },
-    {
-      domain: 'electrolyzers',
-      title: 'Hydrogen Production',
-      query: 'Evaluate low-cost, earth-abundant electrocatalysts (Ni-Mo, Co-P, Fe-Ni-S systems) for alkaline water electrolysis that can achieve <$2/kg H₂ production cost at industrial scale (>100 MW)',
-    },
-  ]
-
   return (
-    <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
-      {/* Icon */}
-      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500/10 to-purple-500/10 flex items-center justify-center mb-6">
-        <PulsingBrain className="w-8 h-8" />
-      </div>
+    <div className="flex flex-col h-full">
+      {/* Main Content - Centered */}
+      <div className="flex-1 flex flex-col items-center justify-center py-8 px-4">
+        {/* Pulsing Cpu Icon */}
+        <div className="mb-8 relative flex justify-center">
+          <div className="relative inline-flex">
+            <Cpu size={60} className="text-blue-500 animate-pulse" />
+            <span className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full animate-ping" />
+          </div>
+        </div>
 
-      {/* Title */}
-      <h2 className="text-2xl font-bold text-foreground mb-3">
-        Start Your Discovery
-      </h2>
+        {/* Title - Bigger and responsive */}
+        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent text-center px-4">
+          Discovery Engine
+        </h1>
 
-      {/* Subtitle */}
-      <p className="text-muted-foreground max-w-lg mb-8">
-        Enter a scientific research query to begin
-      </p>
+        {/* Subtitle - Bigger */}
+        <p className="text-xl text-muted-foreground mb-12 text-center max-w-2xl">
+          AI-powered scientific hypothesis validation and research synthesis
+        </p>
 
-      {/* Instructions */}
-      <div className="bg-muted/30 rounded-xl p-6 max-w-2xl mb-8 text-left border border-border">
-        <h3 className="text-sm font-semibold text-foreground mb-3 uppercase tracking-wide">
-          How to write an effective query
-        </h3>
-        <ul className="space-y-2 text-sm text-muted-foreground">
-          <li className="flex items-start gap-2">
-            <span className="text-primary font-bold">1.</span>
-            <span><strong className="text-foreground">Be specific</strong> — Include target metrics, materials, or performance thresholds</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-primary font-bold">2.</span>
-            <span><strong className="text-foreground">Define constraints</strong> — Mention cost, temperature, scalability, or availability requirements</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-primary font-bold">3.</span>
-            <span><strong className="text-foreground">State the goal</strong> — Describe what problem you&apos;re trying to solve or what you want to discover</span>
-          </li>
-        </ul>
-      </div>
+        {/* Instructions Card - Bigger */}
+        <div className="bg-card rounded-xl p-8 max-w-2xl w-full border border-border shadow-lg">
+          <h3 className="text-lg font-semibold text-foreground mb-6">
+            Enter your research query or hypothesis
+          </h3>
+          <ul className="space-y-4 text-base text-muted-foreground">
+            <li className="flex items-start gap-4">
+              <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0 mt-0.5">
+                <span className="text-sm font-semibold text-blue-600">1</span>
+              </div>
+              <span><strong className="text-foreground">Be specific</strong> — Include target metrics, materials, or performance thresholds</span>
+            </li>
+            <li className="flex items-start gap-4">
+              <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0 mt-0.5">
+                <span className="text-sm font-semibold text-blue-600">2</span>
+              </div>
+              <span><strong className="text-foreground">Define constraints</strong> — Mention cost, temperature, scalability requirements</span>
+            </li>
+            <li className="flex items-start gap-4">
+              <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0 mt-0.5">
+                <span className="text-sm font-semibold text-blue-600">3</span>
+              </div>
+              <span><strong className="text-foreground">State the goal</strong> — What problem are you trying to solve?</span>
+            </li>
+          </ul>
 
-      {/* Example Queries */}
-      <div className="w-full max-w-3xl">
-        <h3 className="text-sm font-semibold text-muted-foreground mb-4 uppercase tracking-wide">
-          Example Queries — Click to use
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {examples.map((example) => (
-            <ExampleCard
-              key={example.domain}
-              title={example.title}
-              example={example.query}
-              onClick={() => onExampleClick?.(example.query, example.domain)}
-            />
-          ))}
+          {/* Configure Button */}
+          {onConfigureClick && (
+            <Button
+              variant="outline"
+              onClick={onConfigureClick}
+              className="mt-6 w-full gap-2"
+            >
+              <Settings2 className="w-4 h-4" />
+              Configure Discovery Options
+            </Button>
+          )}
         </div>
       </div>
-
-      {/* Configure Button */}
-      {onConfigureClick && (
-        <Button
-          variant="outline"
-          onClick={onConfigureClick}
-          className="mt-8 gap-2"
-        >
-          <Settings2 className="w-4 h-4" />
-          Configure Discovery Options
-        </Button>
-      )}
     </div>
-  )
-}
-
-function ExampleCard({
-  title,
-  example,
-  onClick,
-}: {
-  title: string
-  example: string
-  onClick?: () => void
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={cn(
-        'p-4 rounded-lg border border-border bg-muted/20 text-left transition-all',
-        'hover:bg-muted/40 hover:border-primary/40 hover:shadow-md',
-        'focus:outline-none focus:ring-2 focus:ring-primary/50',
-        'cursor-pointer group'
-      )}
-    >
-      <div className="text-xs font-semibold text-primary mb-2 uppercase tracking-wide group-hover:text-primary/80">
-        {title}
-      </div>
-      <div className="text-sm text-foreground line-clamp-3 leading-relaxed">
-        {example}
-      </div>
-    </button>
   )
 }
 
 /**
  * Starting state
  */
-function StartingState({ query }: { query: string }) {
+function StartingState({ query: _query }: { query: string }) {
   return (
     <div className="flex flex-col items-center justify-center py-12">
       <div className="relative mb-4">
@@ -793,79 +564,6 @@ function StartingState({ query }: { query: string }) {
       <p className="text-sm text-muted-foreground text-center max-w-md">
         Setting up the 12-phase discovery pipeline...
       </p>
-    </div>
-  )
-}
-
-/**
- * Error state with checkpoint rollback options
- */
-function ErrorState({
-  error,
-  onRetry,
-  checkpoints,
-  onRollback,
-}: {
-  error: string | null
-  onRetry: () => void
-  checkpoints?: Array<{phase: string; timestamp: Date; data: any}>
-  onRollback?: (index: number) => void
-}) {
-  return (
-    <div className="flex flex-col items-center justify-center py-12">
-      <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mb-4">
-        <svg
-          className="w-8 h-8 text-red-500"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-          />
-        </svg>
-      </div>
-      <h2 className="text-lg font-medium text-foreground mb-2">
-        Discovery Failed
-      </h2>
-      <p className="text-sm text-red-600 text-center max-w-md mb-4">
-        {error || 'An unexpected error occurred'}
-      </p>
-
-      <div className="flex flex-col gap-3 items-center">
-        <Button onClick={onRetry} variant="outline">
-          Try Again
-        </Button>
-
-        {/* Checkpoint Rollback Options */}
-        {checkpoints && checkpoints.length > 0 && onRollback && (
-          <div className="mt-4 w-full max-w-sm">
-            <p className="text-xs text-muted-foreground text-center mb-3">
-              Or rollback to a previous checkpoint:
-            </p>
-            <div className="flex flex-col gap-2">
-              {checkpoints.map((checkpoint, index) => (
-                <Button
-                  key={index}
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onRollback(index)}
-                  className="justify-start gap-2 text-left"
-                >
-                  <RotateCcw className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="capitalize">{checkpoint.phase}</span>
-                  <span className="text-xs text-muted-foreground ml-auto">
-                    {checkpoint.timestamp.toLocaleTimeString()}
-                  </span>
-                </Button>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
     </div>
   )
 }

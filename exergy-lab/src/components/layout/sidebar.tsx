@@ -10,7 +10,7 @@ import {
   Calculator,
   FlaskConical,
   Cpu,
-  Sparkles,
+  Bot,
   Settings,
   HelpCircle,
   Zap,
@@ -26,10 +26,10 @@ interface NavItem {
 
 const mainNavItems: NavItem[] = [
   { name: 'Dashboard', href: '/', icon: Home },
-  { name: 'Discovery Engine', href: '/discovery', icon: Sparkles },
+  { name: 'Discovery Engine', href: '/discovery', icon: Cpu },
   { name: 'Search', href: '/search', icon: Search },
   { name: 'Experiments', href: '/experiments', icon: FlaskConical },
-  { name: 'Simulations', href: '/simulations', icon: Cpu },
+  { name: 'Simulations', href: '/simulations', icon: Bot },
   { name: 'TEA Reports', href: '/tea-generator', icon: Calculator },
 ]
 
@@ -170,15 +170,24 @@ export function Sidebar() {
       </nav>
 
       {/* Footer */}
-      {!collapsed && (
-        <div className="p-4 border-t border-border">
-          <div className="px-3 py-2">
+      <div className="p-4 border-t border-border">
+        {!collapsed ? (
+          <div className="px-3 py-2 flex items-center justify-between">
             <p className="text-xs text-foreground-subtle">
               Powered by AI
             </p>
+            <span className="text-xs text-muted-foreground/60 font-mono">
+              v0.0.1
+            </span>
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="flex justify-center">
+            <span className="text-xs text-muted-foreground/60 font-mono">
+              v0.0.1
+            </span>
+          </div>
+        )}
+      </div>
     </aside>
     </>
   )
