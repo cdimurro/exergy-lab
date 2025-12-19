@@ -530,18 +530,6 @@ function IdleState({
               <span><strong className="text-foreground">State the goal</strong> — What problem are you trying to solve?</span>
             </li>
           </ul>
-
-          {/* Configure Button */}
-          {onConfigureClick && (
-            <Button
-              variant="outline"
-              onClick={onConfigureClick}
-              className="mt-6 w-full gap-2"
-            >
-              <Settings2 className="w-4 h-4" />
-              Configure Discovery Options
-            </Button>
-          )}
         </div>
       </div>
     </div>
