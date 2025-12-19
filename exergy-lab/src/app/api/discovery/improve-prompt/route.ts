@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
 
     // Call Gemini to generate improved prompt
     console.log('[improve-prompt] Calling Gemini API...')
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
+    const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' })
 
     let result
     try {

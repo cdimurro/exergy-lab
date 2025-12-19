@@ -127,8 +127,10 @@ export function extractFailedCriteria(
   judgeResult: {
     itemScores?: Array<{
       itemId: string
-      score: number
-      maxPoints: number
+      score?: number
+      points?: number
+      maxPoints?: number
+      maxScore?: number
       passed: boolean
       reasoning?: string
     }>
@@ -144,8 +146,8 @@ export function extractFailedCriteria(
       id: item.itemId,
       issue: item.reasoning || `Failed criterion: ${item.itemId}`,
       suggestion: `Improve ${item.itemId} to score higher`,
-      score: item.score,
-      maxScore: item.maxPoints,
+      score: item.score ?? item.points ?? 0,
+      maxScore: item.maxPoints ?? item.maxScore ?? 2,
     }))
 }
 

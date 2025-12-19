@@ -28,8 +28,8 @@ export interface JudgeConfig {
 
 export const DEFAULT_JUDGE_CONFIG: JudgeConfig = {
   temperature: 0.3, // Low temperature for consistent grading
-  thinkingLevel: 'medium', // Medium thinking for balanced speed and quality
-  model: 'quality',
+  thinkingLevel: 'high', // High thinking for rigorous evaluation
+  model: 'fast', // Gemini 3 Flash - fast with high thinking for cost savings
   maxRetries: 2,
   strictMode: false,
 }

@@ -191,6 +191,8 @@ export interface DiscoveryOptions {
   enableExergyAnalysis?: boolean
   enableTEAAnalysis?: boolean
   maxIterationsPerPhase?: number
+  /** Discovery mode: breakthrough, synthesis, validation, or parallel (all modes) */
+  discoveryMode?: 'breakthrough' | 'synthesis' | 'validation' | 'parallel'
 }
 
 // ============================================================================

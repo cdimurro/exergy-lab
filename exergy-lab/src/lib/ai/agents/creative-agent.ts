@@ -375,7 +375,7 @@ Do not truncate. Ensure all hypotheses have ALL required fields filled in comple
       const result = await generateText('discovery', prompt, {
         temperature: 0.6, // Lower for more consistent structured JSON output
         maxTokens: 12000, // Optimized for speed (reduced from 16000)
-        model: 'quality', // Use Gemini 3 Pro for better hypothesis quality
+        model: 'fast', // Use Gemini 3 Flash (high thinking) for cost savings
       })
 
       // Log raw response for debugging (first 500 chars)
@@ -651,7 +651,7 @@ CRITICAL: Return a COMPLETE, valid JSON object with ALL required fields. Do not 
       const result = await generateText('experiment-design', prompt, {
         temperature: 0.5, // Lower for more consistent structured experiment design
         maxTokens: 6000, // Optimized for speed (reduced from 8000)
-        model: 'quality', // Use Gemini 3 Pro for better experiment design quality
+        model: 'fast', // Use Gemini 3 Flash (high thinking) for cost savings
       })
 
       const cleaned = result.trim().replace(/```json\n?|\n?```/g, '')

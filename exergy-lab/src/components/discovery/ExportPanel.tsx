@@ -582,6 +582,18 @@ async function fetchAIReport(
   query: string,
   discoveryId: string
 ): Promise<AIGeneratedReport> {
+  // Safely extract phases, filtering out any invalid entries
+  const validPhases = (result.phases || [])
+    .filter(p => p && p.phase) // Ensure phase object exists and has a phase type
+    .map(p => ({
+      phase: p.phase,
+      finalOutput: p.finalOutput || null,
+      finalScore: p.finalScore ?? 0,
+      passed: p.passed ?? false,
+      iterations: p.iterations || [],
+      durationMs: p.durationMs || 0,
+    }))
+
   const response = await fetch('/api/discovery/generate-report', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -589,23 +601,17 @@ async function fetchAIReport(
       discoveryId,
       query,
       domain: result.domain || 'clean-energy',
-      overallScore: result.overallScore,
-      discoveryQuality: result.discoveryQuality,
-      phases: result.phases?.map(p => ({
-        phase: p.phase,
-        finalOutput: p.finalOutput,
-        finalScore: p.finalScore,
-        passed: p.passed,
-        iterations: p.iterations || [],
-        durationMs: p.durationMs || 0,
-      })) || [],
+      overallScore: result.overallScore ?? 0,
+      discoveryQuality: result.discoveryQuality || 'unknown',
+      phases: validPhases,
       recommendations: result.recommendations || [],
       totalDuration: result.totalDurationMs || 0,
     }),
   })
 
   if (!response.ok) {
-    throw new Error('Failed to generate AI report')
+    const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+    throw new Error(errorData.error || 'Failed to generate AI report')
   }
 
   return response.json()

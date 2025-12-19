@@ -99,7 +99,7 @@ Format as markdown with ## headers for each section.`
     const content = await generateText('discovery', prompt, {
       temperature: 0.4,
       maxTokens: 2000,
-      model: 'quality', // Use Gemini 3 Pro for higher quality report generation
+      model: 'fast', // Gemini 3 Flash - fast with good quality for report generation
     })
 
     return {
@@ -174,7 +174,7 @@ Format as markdown with ## headers.`
     const content = await generateText('discovery', prompt, {
       temperature: 0.4,
       maxTokens: 2500,
-      model: 'quality', // Use Gemini 3 Pro for higher quality report generation
+      model: 'fast', // Gemini 3 Flash - fast with good quality for report generation
     })
 
     return {
@@ -249,7 +249,7 @@ Format as markdown with ## headers.`
     const content = await generateText('discovery', prompt, {
       temperature: 0.4,
       maxTokens: 2500,
-      model: 'quality', // Use Gemini 3 Pro for higher quality report generation
+      model: 'fast', // Gemini 3 Flash - fast with good quality for report generation
     })
 
     return {
@@ -324,7 +324,7 @@ Format as markdown with ## headers.`
     const content = await generateText('discovery', prompt, {
       temperature: 0.4,
       maxTokens: 2000,
-      model: 'quality', // Use Gemini 3 Pro for higher quality report generation
+      model: 'fast', // Gemini 3 Flash - fast with good quality for report generation
     })
 
     return {
@@ -402,7 +402,7 @@ Format as markdown with ## headers.`
     const content = await generateText('discovery', prompt, {
       temperature: 0.4,
       maxTokens: 2000,
-      model: 'quality', // Use Gemini 3 Pro for higher quality report generation
+      model: 'fast', // Gemini 3 Flash - fast with good quality for report generation
     })
 
     return {
@@ -490,7 +490,7 @@ Do not use markdown headers - write flowing paragraphs.`
     const summary = await generateText('discovery', prompt, {
       temperature: 0.4,
       maxTokens: 1000,
-      model: 'quality', // Use Gemini 3 Pro for higher quality executive summary
+      model: 'fast', // Gemini 3 Flash - fast with good quality for executive summary
     })
 
     return summary || generateFallbackExecutiveSummary(request)
@@ -537,7 +537,7 @@ Do not use markdown headers - write flowing paragraphs.`
     const conclusions = await generateText('discovery', prompt, {
       temperature: 0.4,
       maxTokens: 800,
-      model: 'quality', // Use Gemini 3 Pro for higher quality conclusions
+      model: 'fast', // Gemini 3 Flash - fast with good quality for conclusions
     })
 
     return conclusions || generateFallbackConclusions(request)
@@ -561,6 +561,11 @@ Future work should focus on experimental validation of the top-ranked hypotheses
 
 async function generateFullReport(request: ReportRequest): Promise<GeneratedReport> {
   const sections: ReportSection[] = []
+
+  // Handle partial results (no phases completed)
+  if (!request.phases || request.phases.length === 0) {
+    return generatePartialReport(request)
+  }
 
   // Find specific phases
   const researchPhase = request.phases.find(p => p.phase === 'research')
@@ -617,9 +622,64 @@ async function generateFullReport(request: ReportRequest): Promise<GeneratedRepo
     metadata: {
       discoveryId: request.discoveryId,
       query: request.query,
-      overallScore: request.overallScore,
-      totalDuration: request.totalDuration,
+      overallScore: request.overallScore || 0,
+      totalDuration: request.totalDuration || 0,
       phasesCompleted: request.phases.filter(p => p.passed).length,
+    },
+  }
+}
+
+/**
+ * Generate a minimal report for partial results (when discovery was interrupted or failed early)
+ */
+function generatePartialReport(request: ReportRequest): GeneratedReport {
+  const executiveSummary = `This is a partial discovery report for the query: "${request.query}". The discovery process was interrupted before completing any phases, or the results data was not available. The query has been recorded for reference.`
+
+  const sections: ReportSection[] = [
+    {
+      title: 'Discovery Status',
+      content: `## Status: Partial Results
+
+This discovery did not complete any phases successfully. This may have occurred due to:
+- Discovery was interrupted or stopped early
+- Initial validation did not pass required thresholds
+- Results data was not properly captured
+
+### Original Query
+"${request.query}"
+
+### Domain
+${request.domain || 'Clean Energy'}
+
+### Recommendations
+To obtain complete results, consider:
+1. Re-running the discovery with a more specific query
+2. Checking if the query meets the scientific validity requirements
+3. Reviewing the Discovery Criteria page for guidance on query formulation`,
+    },
+  ]
+
+  const recommendations = request.recommendations?.length > 0
+    ? request.recommendations.slice(0, 5)
+    : [
+        'Consider re-running the discovery with a more specific query',
+        'Review the Discovery Criteria for query guidelines',
+        'Try breaking down complex queries into focused sub-questions',
+      ]
+
+  return {
+    title: `Partial Discovery Report: ${request.query.substring(0, 100)}`,
+    executiveSummary,
+    sections,
+    conclusions: 'This discovery did not produce complete results. Please review the recommendations above and consider re-running the discovery with an improved query.',
+    nextSteps: recommendations,
+    generatedAt: new Date().toISOString(),
+    metadata: {
+      discoveryId: request.discoveryId || 'unknown',
+      query: request.query,
+      overallScore: request.overallScore || 0,
+      totalDuration: request.totalDuration || 0,
+      phasesCompleted: 0,
     },
   }
 }
@@ -632,15 +692,22 @@ export async function POST(request: NextRequest) {
   try {
     const body: ReportRequest = await request.json()
 
-    if (!body.query || !body.phases || body.phases.length === 0) {
+    // Validate required fields - query is required, phases can be empty for partial results
+    if (!body.query) {
       return NextResponse.json(
-        { error: 'Invalid request: query and phases are required' },
+        { error: 'Invalid request: query is required' },
         { status: 400 }
       )
     }
 
-    console.log(`[ReportGenerator] Generating report for discovery: ${body.discoveryId}`)
+    // Ensure phases array exists (default to empty for partial results)
+    if (!body.phases) {
+      body.phases = []
+    }
 
+    console.log(`[ReportGenerator] Generating report for discovery: ${body.discoveryId}, phases: ${body.phases.length}`)
+
+    // Generate report (handles both complete and partial results)
     const report = await generateFullReport(body)
 
     console.log(`[ReportGenerator] Report generated with ${report.sections.length} sections`)

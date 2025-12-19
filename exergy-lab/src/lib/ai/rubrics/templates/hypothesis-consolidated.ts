@@ -18,9 +18,13 @@ function validateNovelty(response: any): ItemScore {
   const title = hypothesis?.title || ''
   const description = hypothesis?.description || hypothesis?.statement || ''
 
-  // Check for novelty indicators
-  const hasNoveltyScore = typeof noveltyAssessment.score === 'number'
-  const noveltyScore = noveltyAssessment.score || 0
+  // Check for novelty indicators - support both 0-10 and 0-100 scales
+  let noveltyScore = noveltyAssessment.score || hypothesis?.noveltyScore || 0
+  // Normalize 0-100 scores to 0-10
+  if (noveltyScore > 10) {
+    noveltyScore = noveltyScore / 10
+  }
+  const hasNoveltyScore = noveltyScore > 0
   const hasNovelElements = Array.isArray(noveltyAssessment.novelElements) && noveltyAssessment.novelElements.length > 0
   const hasDifferentiation = noveltyAssessment.differentiation || noveltyAssessment.beyondPriorArt
 
@@ -33,15 +37,17 @@ function validateNovelty(response: any): ItemScore {
   let points = 0
   let reasoning = ''
 
+  // Primary path: Use the noveltyScore which the agent explicitly computed
+  // This is the most reliable indicator as it reflects the agent's assessment
   if (noveltyScore >= 8 || (hasNovelElements && hasDifferentiation)) {
     points = 2.5
-    reasoning = `Excellent novelty: Score ${noveltyScore}/10, ${noveltyAssessment.novelElements?.length || 0} novel elements identified`
+    reasoning = `Excellent novelty: Score ${noveltyScore.toFixed(1)}/10, ${noveltyAssessment.novelElements?.length || 0} novel elements identified`
   } else if (noveltyScore >= 6 || hasNovelElements) {
     points = 2.0
-    reasoning = `Good novelty: Score ${noveltyScore}/10, clear differentiation from prior art`
+    reasoning = `Good novelty: Score ${noveltyScore.toFixed(1)}/10, clear differentiation from prior art`
   } else if (noveltyScore >= 4 || hasNoveltyLanguage) {
     points = 1.5
-    reasoning = `Moderate novelty: Some new elements identified`
+    reasoning = `Moderate novelty: Score ${noveltyScore.toFixed(1)}/10, some new elements identified`
   } else if (description.length > 50) {
     points = 1.0
     reasoning = 'Limited novelty: Hypothesis present but novelty unclear'
@@ -66,20 +72,35 @@ function validateTestability(response: any): ItemScore {
 
   const predictionCount = Array.isArray(predictions) ? predictions.length : 0
 
-  // Check for quantitative predictions
+  // Check for quantitative predictions - support both text-based and structured formats
   let quantitativePredictions = 0
   for (const pred of (predictions || [])) {
-    const predText = typeof pred === 'string' ? pred : (pred.prediction || pred.description || '')
+    // Check for structured prediction format with expectedValue/unit
+    const hasExpectedValue = typeof pred?.expectedValue === 'number' || typeof pred?.targetValue === 'number'
+    const hasUnit = !!pred?.unit
+    const hasTolerance = typeof pred?.tolerance === 'number'
+    const isMeasurable = pred?.measurable === true
+    const isFalsifiable = pred?.falsifiable === true
+
+    if (hasExpectedValue && hasUnit) {
+      quantitativePredictions++
+      continue
+    }
+
+    // Fallback to text-based detection
+    const predText = typeof pred === 'string' ? pred : (pred.prediction || pred.description || pred.statement || '')
     const hasNumbers = /\d+(\.\d+)?%?/.test(predText)
     const hasUnits = /(°C|K|MW|GW|kW|%|eV|nm|μm|kg|g|mol|J|kJ|MJ|Pa|bar|atm|Wh|Ah|V|A|S\/cm)/i.test(predText)
-    if (hasNumbers || hasUnits) {
+    if (hasNumbers || hasUnits || (isMeasurable && isFalsifiable)) {
       quantitativePredictions++
     }
   }
 
-  // Check for success criteria
+  // Check for success criteria - also check validationMetrics
   const successCriteria = experiment?.successCriteria || hypothesis?.successCriteria || []
-  const hasCriteria = Array.isArray(successCriteria) && successCriteria.length > 0
+  const validationMetrics = hypothesis?.validationMetrics || []
+  const hasCriteria = (Array.isArray(successCriteria) && successCriteria.length > 0) ||
+                      (Array.isArray(validationMetrics) && validationMetrics.length > 0)
 
   let points = 0
   let reasoning = ''
@@ -87,9 +108,15 @@ function validateTestability(response: any): ItemScore {
   if (predictionCount >= 3 && quantitativePredictions >= 2 && hasCriteria) {
     points = 2.0
     reasoning = `Excellent testability: ${predictionCount} predictions, ${quantitativePredictions} quantitative, clear success criteria`
+  } else if (predictionCount >= 2 && quantitativePredictions >= 2) {
+    points = 2.0
+    reasoning = `Excellent testability: ${predictionCount} predictions, all ${quantitativePredictions} quantitative with values/units`
   } else if (predictionCount >= 2 && quantitativePredictions >= 1) {
     points = 1.5
     reasoning = `Good testability: ${predictionCount} predictions with ${quantitativePredictions} quantitative`
+  } else if (predictionCount >= 1 && quantitativePredictions >= 1) {
+    points = 1.2
+    reasoning = `Adequate testability: ${predictionCount} prediction(s) with quantitative detail`
   } else if (predictionCount >= 1) {
     points = 1.0
     reasoning = `Basic testability: ${predictionCount} prediction(s) but limited quantitative detail`
@@ -111,29 +138,47 @@ function validateFeasibility(response: any): ItemScore {
   const hypothesis = response?.hypothesis || response
   const experiment = response?.experiment || response?.experimentalDesign || {}
 
+  // Check for feasibility score - support both 0-10 and 0-100 scales
   const feasibility = hypothesis?.feasibility || experiment?.feasibility || {}
-  const feasibilityScore = typeof feasibility === 'number' ? feasibility : (feasibility.score || 0)
+  let feasibilityScore = typeof feasibility === 'number' ? feasibility : (feasibility.score || hypothesis?.feasibilityScore || 0)
+  // Normalize 0-100 scores to 0-10
+  if (feasibilityScore > 10) {
+    feasibilityScore = feasibilityScore / 10
+  }
 
-  // Check equipment and resources
-  const equipment = experiment?.equipment || experiment?.requiredEquipment || []
+  // Check equipment and resources - also look in hypothesis.variables
+  const equipment = experiment?.equipment || experiment?.requiredEquipment || hypothesis?.requiredMaterials || []
   const timeline = experiment?.timeline || experiment?.expectedDuration || ''
   const hasTimeline = timeline.length > 0
-  const hasEquipment = Array.isArray(equipment) && equipment.length > 0
+
+  // Check for variables (independent, dependent, controls) - indicates methodological rigor
+  const variables = hypothesis?.variables || {}
+  const hasIndependentVars = Array.isArray(variables.independent) && variables.independent.length > 0
+  const hasDependentVars = Array.isArray(variables.dependent) && variables.dependent.length > 0
+  const hasControlVars = Array.isArray(variables.controls) && variables.controls.length > 0
+  const hasVariables = hasIndependentVars && hasDependentVars
+
+  // Check for equipment in various formats
+  const hasEquipment = (Array.isArray(equipment) && equipment.length > 0) || hasVariables
 
   // Check for practical constraints acknowledgment
   const constraints = experiment?.constraints || hypothesis?.constraints || []
   const hasConstraints = Array.isArray(constraints) && constraints.length > 0
 
+  // Check for supporting evidence (indicates feasibility research was done)
+  const supportingEvidence = hypothesis?.supportingEvidence || []
+  const hasSupportingEvidence = Array.isArray(supportingEvidence) && supportingEvidence.length > 0
+
   let points = 0
   let reasoning = ''
 
-  if (feasibilityScore >= 7 || (hasEquipment && hasTimeline && hasConstraints)) {
+  if (feasibilityScore >= 7 || (hasVariables && hasControlVars && hasSupportingEvidence)) {
     points = 2.0
-    reasoning = `Excellent feasibility: Score ${feasibilityScore || 'N/A'}, equipment list, timeline, constraints identified`
-  } else if (feasibilityScore >= 5 || (hasEquipment && hasTimeline)) {
+    reasoning = `Excellent feasibility: Score ${feasibilityScore.toFixed(1)}/10, variables defined, controls identified, evidence provided`
+  } else if (feasibilityScore >= 5 || (hasVariables && hasSupportingEvidence)) {
     points = 1.5
-    reasoning = `Good feasibility: Practical implementation path outlined`
-  } else if (hasEquipment || hasTimeline) {
+    reasoning = `Good feasibility: Score ${feasibilityScore.toFixed(1)}/10, practical implementation path outlined`
+  } else if (hasEquipment || hasTimeline || hasVariables) {
     points = 1.0
     reasoning = 'Basic feasibility: Some practical details provided'
   } else {
@@ -151,33 +196,57 @@ function validateFeasibility(response: any): ItemScore {
 }
 
 function validateProtocolQuality(response: any): ItemScore {
-  const experiment = response?.experiment || response?.experimentalDesign || response
+  const hypothesis = response?.hypothesis || response
+  const experiment = response?.experiment || response?.experimentalDesign || {}
   const protocol = experiment?.protocol || experiment?.methodology || ''
   const steps = experiment?.steps || experiment?.procedureSteps || []
 
+  // Also check mechanism steps in hypothesis - these describe the scientific process
+  const mechanismSteps = hypothesis?.mechanism?.steps || []
+  const mechanismStepCount = Array.isArray(mechanismSteps) ? mechanismSteps.length : 0
+
+  // Check for variables which indicate experimental design rigor
+  const variables = hypothesis?.variables || {}
+  const hasIndependentVars = Array.isArray(variables.independent) && variables.independent.length > 0
+  const hasDependentVars = Array.isArray(variables.dependent) && variables.dependent.length > 0
+  const hasControlVars = Array.isArray(variables.controls) && variables.controls.length > 0
+
   const protocolText = typeof protocol === 'string' ? protocol : JSON.stringify(protocol)
-  const stepCount = Array.isArray(steps) ? steps.length : 0
+  const mechanismText = JSON.stringify(mechanismSteps)
+  const combinedText = protocolText + ' ' + mechanismText
 
-  // Check for key protocol elements
-  const hasMaterials = /material|reagent|sample|substrate/i.test(protocolText) || experiment?.materials
-  const hasConditions = /temperature|pressure|time|duration|concentration/i.test(protocolText)
-  const hasMeasurements = /measure|characteriz|analyz|test/i.test(protocolText)
-  const hasControls = /control|baseline|reference|comparison/i.test(protocolText)
+  // Count steps from all sources
+  const stepCount = Math.max(
+    Array.isArray(steps) ? steps.length : 0,
+    mechanismStepCount
+  )
 
-  const qualityIndicators = [hasMaterials, hasConditions, hasMeasurements, hasControls].filter(Boolean).length
+  // Check for key protocol elements - search in both protocol and mechanism
+  const hasMaterials = /material|reagent|sample|substrate|layer|coating|film/i.test(combinedText) || experiment?.materials || hasIndependentVars
+  const hasConditions = /temperature|pressure|time|duration|concentration|nm|μm|°C|bar|atm/i.test(combinedText) || hasIndependentVars
+  const hasMeasurements = /measure|characteriz|analyz|test|efficien|output|performance/i.test(combinedText) || hasDependentVars
+  const hasControls = /control|baseline|reference|comparison|constant|fixed/i.test(combinedText) || hasControlVars
+
+  // Check for physical principles (indicates scientific rigor)
+  const hasPhysicalPrinciples = mechanismSteps.some((step: any) => step?.physicalPrinciple)
+
+  const qualityIndicators = [hasMaterials, hasConditions, hasMeasurements, hasControls, hasPhysicalPrinciples].filter(Boolean).length
 
   let points = 0
   let reasoning = ''
 
-  if (stepCount >= 5 && qualityIndicators >= 3) {
+  if ((stepCount >= 3 && qualityIndicators >= 4) || (mechanismStepCount >= 3 && hasPhysicalPrinciples && hasControlVars)) {
     points = 2.0
-    reasoning = `Excellent protocol: ${stepCount} steps, materials, conditions, measurements, controls`
-  } else if (stepCount >= 3 && qualityIndicators >= 2) {
+    reasoning = `Excellent protocol: ${stepCount} steps with physical principles, variables, and controls defined`
+  } else if (stepCount >= 3 && qualityIndicators >= 3) {
+    points = 1.8
+    reasoning = `Strong protocol: ${stepCount} steps with ${qualityIndicators} quality indicators`
+  } else if (stepCount >= 2 && qualityIndicators >= 2) {
     points = 1.5
     reasoning = `Good protocol: ${stepCount} steps with key elements`
-  } else if (stepCount >= 1 || protocolText.length > 100) {
+  } else if (stepCount >= 1 || protocolText.length > 100 || mechanismStepCount >= 1) {
     points = 1.0
-    reasoning = 'Basic protocol: Outline present but needs detail'
+    reasoning = `Basic protocol: ${stepCount || mechanismStepCount} step(s), outline present but needs detail`
   } else {
     points = 0.5
     reasoning = 'Minimal protocol: Methodology not well defined'
@@ -337,3 +406,149 @@ const totalPoints = hypothesisConsolidatedItems.reduce((sum, item) => sum + item
 if (Math.abs(totalPoints - 10) > 0.001) {
   console.warn(`Hypothesis consolidated rubric points sum to ${totalPoints}, expected 10`)
 }
+
+// ============================================================================
+// Mode-Adjusted Rubric Generation
+// ============================================================================
+
+import { type DiscoveryMode, getModeConfig, getAdjustedNoveltyPoints } from '../mode-configs'
+
+/**
+ * Create a novelty validation function with adjusted weights
+ */
+function createAdjustedNoveltyValidation(
+  noveltyPoints: number,
+  passThresholdPoints: number,
+  modeName: string
+): (response: any) => ItemScore {
+  return (response: any): ItemScore => {
+    const result = validateNovelty(response)
+    const scaleFactor = noveltyPoints / 2.5
+    const adjustedPoints = result.points * scaleFactor
+    return {
+      ...result,
+      points: Math.round(adjustedPoints * 100) / 100,
+      maxPoints: noveltyPoints,
+      passed: adjustedPoints >= passThresholdPoints,
+      reasoning: `${result.reasoning} (${modeName} mode: ${noveltyPoints}pt max)`,
+    }
+  }
+}
+
+/**
+ * Create a scaled validation function for non-novelty criteria
+ */
+function createScaledValidation(
+  originalValidation: (response: any) => Promise<ItemScore> | ItemScore,
+  scaleFactor: number,
+  newMaxPoints: number
+): (response: any) => Promise<ItemScore> | ItemScore {
+  return async (response: any): Promise<ItemScore> => {
+    const result = await originalValidation(response)
+    const adjustedPoints = result.points * scaleFactor
+    const adjustedPassThreshold = (result.maxPoints * 0.7) * scaleFactor // 70% of new max
+    return {
+      ...result,
+      points: Math.round(adjustedPoints * 100) / 100,
+      maxPoints: newMaxPoints,
+      passed: adjustedPoints >= adjustedPassThreshold,
+    }
+  }
+}
+
+/**
+ * Create a mode-adjusted hypothesis rubric
+ *
+ * Adjusts the novelty criterion (HC1) weight based on the discovery mode:
+ * - Breakthrough: 2.5 points (25%) - strict novelty requirement
+ * - Synthesis: 0.5 points (5%) - minimal novelty, focus on comprehensiveness
+ * - Validation: 1.0 points (10%) - moderate novelty, focus on testability
+ *
+ * Redistributes removed novelty points to other criteria proportionally.
+ */
+export function createModeAdjustedHypothesisRubric(mode: DiscoveryMode): Rubric {
+  const modeConfig = getModeConfig(mode)
+  const { noveltyPoints, redistributedPoints } = getAdjustedNoveltyPoints(mode)
+
+  // Calculate redistribution to other items (HC2, HC3, HC4, HC5)
+  // Original points: HC2=2.0, HC3=2.0, HC4=2.0, HC5=1.5 (total non-novelty = 7.5)
+  const originalNonNoveltyTotal = 7.5
+  const redistributionFactor = redistributedPoints / originalNonNoveltyTotal
+
+  // Create adjusted items
+  const adjustedItems: RubricItem[] = hypothesisConsolidatedItems.map(item => {
+    if (item.id === 'HC1') {
+      // Adjust novelty criterion
+      const passThresholdPoints = noveltyPoints * (modeConfig.rubricWeights.noveltyPassThreshold / 100)
+      return {
+        ...item,
+        points: noveltyPoints,
+        passCondition: noveltyPoints < 1.0
+          ? 'Novelty is de-emphasized in this mode - basic differentiation sufficient'
+          : item.passCondition,
+        partialConditions: item.partialConditions?.map(pc => ({
+          ...pc,
+          points: Math.round((pc.points * (noveltyPoints / 2.5)) * 100) / 100,
+        })),
+        automatedValidation: createAdjustedNoveltyValidation(
+          noveltyPoints,
+          passThresholdPoints,
+          modeConfig.name
+        ),
+      }
+    } else {
+      // Redistribute points to other criteria
+      const originalPoints = item.points
+      const bonusPoints = originalPoints * redistributionFactor
+      const newPoints = Math.round((originalPoints + bonusPoints) * 100) / 100
+      const scaleFactor = newPoints / originalPoints
+
+      return {
+        ...item,
+        points: newPoints,
+        partialConditions: item.partialConditions?.map(pc => ({
+          ...pc,
+          points: Math.round((pc.points * scaleFactor) * 100) / 100,
+        })),
+        automatedValidation: item.automatedValidation
+          ? createScaledValidation(item.automatedValidation, scaleFactor, newPoints)
+          : undefined,
+      }
+    }
+  })
+
+  // Verify points sum to 10
+  const adjustedTotal = adjustedItems.reduce((sum, item) => sum + item.points, 0)
+  if (Math.abs(adjustedTotal - 10) > 0.01) {
+    console.warn(`Mode-adjusted rubric points sum to ${adjustedTotal}, expected 10`)
+  }
+
+  return {
+    ...HYPOTHESIS_CONSOLIDATED_RUBRIC,
+    id: `hypothesis-${mode}-v1`,
+    name: `Hypothesis Phase (${modeConfig.name} Mode) Rubric`,
+    items: adjustedItems,
+    successThreshold: modeConfig.rubricWeights.overallPassThreshold,
+    maxIterations: modeConfig.iterationConfig.hypothesisMaxIterations,
+    metadata: {
+      ...HYPOTHESIS_CONSOLIDATED_RUBRIC.metadata,
+      sourceDataset: `Mode-adjusted from hypothesis-consolidated-v1 (${mode} mode, novelty=${noveltyPoints}pt)`,
+    },
+  }
+}
+
+/**
+ * Get the appropriate hypothesis rubric for a given mode
+ */
+export function getHypothesisRubricForMode(mode: DiscoveryMode | 'parallel' | undefined): Rubric {
+  // For parallel mode or undefined, use the default breakthrough rubric
+  if (!mode || mode === 'parallel') {
+    return HYPOTHESIS_CONSOLIDATED_RUBRIC
+  }
+  return createModeAdjustedHypothesisRubric(mode)
+}
+
+// Pre-create rubrics for each mode for caching
+export const HYPOTHESIS_BREAKTHROUGH_RUBRIC = createModeAdjustedHypothesisRubric('breakthrough')
+export const HYPOTHESIS_SYNTHESIS_RUBRIC = createModeAdjustedHypothesisRubric('synthesis')
+export const HYPOTHESIS_VALIDATION_RUBRIC = createModeAdjustedHypothesisRubric('validation')

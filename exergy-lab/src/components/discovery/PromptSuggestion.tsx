@@ -128,9 +128,31 @@ export function PromptSuggestion({
     )
   }
 
-  // No suggestion yet
+  // No suggestion yet - show a placeholder encouraging retry
   if (!suggestion) {
-    return null
+    return (
+      <div className={cn('border rounded-xl p-5 bg-card', className)}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+              <Sparkles className="text-muted-foreground" size={20} />
+            </div>
+            <div>
+              <span className="text-base font-semibold text-foreground">
+                Try an Improved Prompt
+              </span>
+              <p className="text-sm text-muted-foreground">
+                Retry with your original query or edit it to improve results
+              </p>
+            </div>
+          </div>
+          <Button variant="outline" onClick={onRetryWithOriginal}>
+            <RotateCcw size={16} className="mr-2" />
+            Retry Original
+          </Button>
+        </div>
+      </div>
+    )
   }
 
   return (

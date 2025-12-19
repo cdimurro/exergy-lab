@@ -75,6 +75,22 @@ export { HYPOTHESIS_CONSOLIDATED_RUBRIC } from './templates/hypothesis-consolida
 export { VALIDATION_CONSOLIDATED_RUBRIC } from './templates/validation-consolidated'
 export { OUTPUT_CONSOLIDATED_RUBRIC } from './templates/output-consolidated'
 
+// Criterion name mappings for UI display
+export {
+  getCriterionInfo,
+  getCriterionName,
+  getCriterionShortName,
+  getCriterionDescription,
+  getCategoryLabel,
+  getCriteriaForPhase,
+  RESEARCH_CRITERIA,
+  HYPOTHESIS_CRITERIA,
+  VALIDATION_CRITERIA,
+  OUTPUT_CRITERIA,
+  ALL_CRITERIA,
+} from './criterion-names'
+export type { CriterionInfo } from './criterion-names'
+
 // Import consolidated rubrics for RUBRICS map
 import { RESEARCH_CONSOLIDATED_RUBRIC } from './templates/research-consolidated'
 import { HYPOTHESIS_CONSOLIDATED_RUBRIC } from './templates/hypothesis-consolidated'

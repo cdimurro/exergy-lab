@@ -3,6 +3,10 @@
 /**
  * DiscoveryConfigPanel Component
  *
+ * @deprecated This component is deprecated. Use DiscoveryOptionsModal instead.
+ * The new modal-based approach integrates directly with the main discovery page
+ * and complements the DiscoveryModeSelector for a streamlined user experience.
+ *
  * Single-column configuration panel with color-coded presets at the top.
  */
 

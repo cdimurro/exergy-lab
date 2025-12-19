@@ -16,6 +16,7 @@ import {
   Zap,
   ChevronLeft,
   Activity,
+  ClipboardCheck,
 } from 'lucide-react'
 
 interface NavItem {
@@ -27,6 +28,7 @@ interface NavItem {
 const mainNavItems: NavItem[] = [
   { name: 'Dashboard', href: '/', icon: Home },
   { name: 'Discovery Engine', href: '/discovery', icon: Cpu },
+  { name: 'Criteria', href: '/criteria', icon: ClipboardCheck },
   { name: 'Search', href: '/search', icon: Search },
   { name: 'Experiments', href: '/experiments', icon: FlaskConical },
   { name: 'Simulations', href: '/simulations', icon: Bot },

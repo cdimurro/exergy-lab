@@ -17,10 +17,15 @@ import {
   FrontierScienceProgressCard,
   FrontierScienceResultsCard,
   QualityBadge,
-  DiscoveryConfigPanel,
   ExportPanel,
   PartialResultsCard,
+  DiscoveryModeSelector,
+  ModeBadge,
+  DiscoveryOptionsModal,
+  DiscoveryOptionsButton,
 } from '@/components/discovery'
+import type { DiscoveryAdvancedOptions } from '@/components/discovery'
+import type { DiscoveryMode } from '@/lib/ai/rubrics/mode-configs'
 import type { DiscoveryOptions } from '@/types/frontierscience'
 import type { DiscoveryConfiguration, Domain } from '@/types/intervention'
 
@@ -32,7 +37,14 @@ interface FrontierScienceChatInterfaceProps {
   initialQuery?: string
   initialOptions?: DiscoveryOptions
   autoStart?: boolean
-  showConfigPanel?: boolean
+}
+
+// Default advanced options
+const DEFAULT_ADVANCED_OPTIONS: DiscoveryAdvancedOptions = {
+  domain: 'solar-photovoltaics', // Most common default domain
+  enablePatentAnalysis: true,
+  enableExergyAnalysis: true,
+  enableTEAAnalysis: true,
 }
 
 export function FrontierScienceChatInterface({
@@ -43,17 +55,16 @@ export function FrontierScienceChatInterface({
   initialQuery,
   initialOptions,
   autoStart = false,
-  showConfigPanel = true,
 }: FrontierScienceChatInterfaceProps) {
   const [inputValue, setInputValue] = React.useState(initialQuery || '')
   const [hasAutoStarted, setHasAutoStarted] = React.useState(false)
-  const [showConfig, setShowConfig] = React.useState(false)
+  const [showOptionsModal, setShowOptionsModal] = React.useState(false)
   const [showExportPanel, setShowExportPanel] = React.useState(false)
   const [isAutoSaving, setIsAutoSaving] = React.useState(false)
   const [lastSavedTime, setLastSavedTime] = React.useState<Date | null>(null)
   const [checkpoints, setCheckpoints] = React.useState<Array<{phase: string; timestamp: Date; data: any}>>([])
-  const [discoveryConfig, setDiscoveryConfig] = React.useState<DiscoveryConfiguration | null>(null)
-  const [suggestedDomain, setSuggestedDomain] = React.useState<Domain | undefined>(undefined)
+  const [advancedOptions, setAdvancedOptions] = React.useState<DiscoveryAdvancedOptions>(DEFAULT_ADVANCED_OPTIONS)
+  const [selectedMode, setSelectedMode] = React.useState<DiscoveryMode | 'parallel' | null>(null)
   const inputRef = React.useRef<HTMLTextAreaElement>(null)
 
   const {
@@ -127,60 +138,38 @@ export function FrontierScienceChatInterface({
     e?.preventDefault()
     if (!inputValue.trim() || status === 'running' || status === 'starting') return
 
-    // If config panel is enabled and we have a query, show the config panel
-    if (showConfigPanel && !showConfig) {
-      setShowConfig(true)
-      return
-    }
-
-    // Start discovery with config or initial options
-    // In consolidated 4-phase model, exergy/TEA/patent are part of 'validation' phase
-    const validationEnabled = discoveryConfig?.enabledPhases?.has('validation') ?? true
-    const options: DiscoveryOptions | undefined = discoveryConfig
-      ? {
-          domain: discoveryConfig.domain,
-          targetQuality: discoveryConfig.targetQuality === 'exploratory'
-            ? 'validated'
-            : discoveryConfig.targetQuality === 'publication'
-            ? 'breakthrough'
-            : 'significant',
-          maxIterationsPerPhase: discoveryConfig.budget.maxIterations,
-          enableExergyAnalysis: validationEnabled, // Part of validation in consolidated model
-          enableTEAAnalysis: validationEnabled, // Part of validation in consolidated model
-          enablePatentAnalysis: validationEnabled, // Part of validation in consolidated model
-        }
-      : initialOptions
-
-    await startDiscovery(inputValue.trim(), options ?? {})
-    setInputValue('')
-    setShowConfig(false)
-  }
-
-  // Handle config panel start
-  const handleConfigStart = async (config: DiscoveryConfiguration) => {
-    setDiscoveryConfig(config)
-    // In consolidated 4-phase model, exergy/TEA/patent are part of 'validation' phase
-    const validationEnabled = config.enabledPhases.has('validation')
+    // Build discovery options from advanced options and selected mode
     const options: DiscoveryOptions = {
-      domain: config.domain,
-      targetQuality: config.targetQuality === 'exploratory'
-        ? 'validated'
-        : config.targetQuality === 'publication'
-        ? 'breakthrough'
-        : 'significant',
-      maxIterationsPerPhase: config.budget.maxIterations,
-      enableExergyAnalysis: validationEnabled, // Part of validation in consolidated model
-      enableTEAAnalysis: validationEnabled, // Part of validation in consolidated model
-      enablePatentAnalysis: validationEnabled, // Part of validation in consolidated model
+      ...initialOptions,
+      domain: advancedOptions.domain,
+      enableExergyAnalysis: advancedOptions.enableExergyAnalysis,
+      enableTEAAnalysis: advancedOptions.enableTEAAnalysis,
+      enablePatentAnalysis: advancedOptions.enablePatentAnalysis,
+      maxIterationsPerPhase: advancedOptions.maxIterationsOverride,
+      discoveryMode: selectedMode || 'synthesis',
     }
+
     await startDiscovery(inputValue.trim(), options)
-    setShowConfig(false)
+    setInputValue('')
+    setShowOptionsModal(false)
   }
 
-  // Handle config cancel
-  const handleConfigCancel = () => {
-    setShowConfig(false)
+  // Handle starting from the options modal
+  const handleStartFromModal = () => {
+    if (!inputValue.trim() || !selectedMode) return
+    handleSubmit()
   }
+
+  // Check if options have been customized from defaults
+  const hasCustomOptions = React.useMemo(() => {
+    return (
+      advancedOptions.domain !== DEFAULT_ADVANCED_OPTIONS.domain ||
+      advancedOptions.enablePatentAnalysis !== DEFAULT_ADVANCED_OPTIONS.enablePatentAnalysis ||
+      advancedOptions.enableExergyAnalysis !== DEFAULT_ADVANCED_OPTIONS.enableExergyAnalysis ||
+      advancedOptions.enableTEAAnalysis !== DEFAULT_ADVANCED_OPTIONS.enableTEAAnalysis ||
+      advancedOptions.maxIterationsOverride !== undefined
+    )
+  }, [advancedOptions])
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -215,6 +204,9 @@ export function FrontierScienceChatInterface({
           </div>
           {qualityTier && status === 'running' && (
             <QualityBadge quality={qualityTier} size="sm" />
+          )}
+          {selectedMode && (status === 'idle' || status === 'running') && (
+            <ModeBadge mode={selectedMode} size="sm" />
           )}
 
           {/* Action Buttons - Right side */}
@@ -264,21 +256,21 @@ export function FrontierScienceChatInterface({
         </div>
       </div>
 
+      {/* Discovery Options Modal */}
+      <DiscoveryOptionsModal
+        isOpen={showOptionsModal}
+        onClose={() => setShowOptionsModal(false)}
+        selectedMode={selectedMode}
+        query={inputValue}
+        options={advancedOptions}
+        onOptionsChange={setAdvancedOptions}
+        onStart={handleStartFromModal}
+        isStarting={status === 'starting'}
+      />
+
       {/* Main Content */}
       <div className="flex-1 overflow-hidden">
-        {/* Configuration Panel */}
-        {showConfig && status === 'idle' ? (
-          <DiscoveryConfigPanel
-            initialConfig={{
-              query: inputValue,
-              domain: suggestedDomain,
-            }}
-            onConfigChange={setDiscoveryConfig}
-            onStart={handleConfigStart}
-            onCancel={handleConfigCancel}
-            isLoading={false}
-          />
-        ) : (status === 'running' || status === 'failed') ? (
+        {(status === 'running' || status === 'failed') ? (
           <div className="h-full overflow-y-auto px-4 py-6">
             {/* Full-screen progress card when running OR failed */}
             <FrontierScienceProgressCard
@@ -343,7 +335,7 @@ export function FrontierScienceChatInterface({
                   // Reset workflow state and show input
                   resetDiscovery()
                   setInputValue(partialResult?.query || inputValue || initialQuery || '')
-                  setShowConfig(false)
+                  setShowOptionsModal(false)
                 }}
                 onRetryWithPrompt={(prompt: string) => {
                   // Start a new discovery with the improved/edited prompt
@@ -381,17 +373,13 @@ export function FrontierScienceChatInterface({
           <div className="h-full overflow-y-auto px-4 py-6">
             <div className="max-w-4xl mx-auto">
               {/* Idle State - Show Input Prompt */}
-              {status === 'idle' && !result && !showConfig && (
+              {status === 'idle' && !result && (
                 <IdleState
-                  onConfigureClick={showConfigPanel ? () => setShowConfig(true) : undefined}
-                  onExampleClick={(query, domain) => {
-                    setInputValue(query)
-                    setSuggestedDomain(domain as Domain)
-                    // Auto-navigate to config panel when example is clicked
-                    if (showConfigPanel) {
-                      setShowConfig(true)
-                    }
-                  }}
+                  selectedMode={selectedMode}
+                  onModeSelect={setSelectedMode}
+                  query={inputValue}
+                  onOpenOptions={() => setShowOptionsModal(true)}
+                  hasCustomOptions={hasCustomOptions}
                 />
               )}
 
@@ -440,11 +428,11 @@ export function FrontierScienceChatInterface({
         )}
       </div>
 
-      {/* Input Area - Show at bottom when idle OR when Make Changes is clicked */}
-      {(status === 'idle' && !showConfig) && (
-        <div className="shrink-0 border-t border-border p-4">
-          <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
-            <div className="relative">
+      {/* Input Area - Show at bottom when idle */}
+      {status === 'idle' && (
+        <div className="shrink-0 border-t border-border px-6 py-4">
+          <form onSubmit={handleSubmit} className="w-full">
+            <div className="flex gap-3 items-end">
               <textarea
                 ref={inputRef}
                 value={inputValue}
@@ -453,28 +441,27 @@ export function FrontierScienceChatInterface({
                 disabled={isInputDisabled}
                 placeholder="Describe your scientific discovery query (e.g., 'Novel approaches to high-temperature SOEC efficiency')"
                 className={cn(
-                  'w-full min-h-[100px] max-h-[200px] p-4 pr-14',
+                  'flex-1 min-h-[100px] max-h-[180px] p-4',
                   'rounded-xl border border-border bg-background',
                   'text-foreground placeholder:text-muted-foreground',
-                  'resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/50',
+                  'resize-y focus:outline-none focus:ring-2 focus:ring-blue-500/50',
                   'disabled:opacity-50 disabled:cursor-not-allowed'
                 )}
               />
               <Button
                 type="submit"
-                size="sm"
-                disabled={isInputDisabled || !inputValue.trim()}
-                className="absolute bottom-3 right-3"
+                disabled={isInputDisabled || !inputValue.trim() || !selectedMode}
+                className="h-[56px] px-8 shrink-0"
               >
                 {isInputDisabled ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className="h-5 w-5 animate-spin" />
                 ) : (
-                  <Send className="h-4 w-4" />
+                  <>
+                    <Send className="h-5 w-5 mr-2" />
+                    Submit Query
+                  </>
                 )}
               </Button>
-            </div>
-            <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
-              <span>Press Enter to send, Shift+Enter for new line</span>
             </div>
           </form>
         </div>
@@ -486,58 +473,56 @@ export function FrontierScienceChatInterface({
 
 /**
  * Idle state placeholder with clean, centered design
- * Removed example queries section for cleaner UX
+ * Now includes Discovery Mode selector for choosing research approach
  */
 function IdleState({
-  onConfigureClick,
+  selectedMode,
+  onModeSelect,
+  query,
+  onOpenOptions,
+  hasCustomOptions,
 }: {
-  onConfigureClick?: () => void
-  onExampleClick?: (query: string, domain: string) => void
+  selectedMode: DiscoveryMode | 'parallel' | null
+  onModeSelect: (mode: DiscoveryMode | 'parallel') => void
+  query?: string
+  onOpenOptions: () => void
+  hasCustomOptions: boolean
 }) {
   return (
     <div className="flex flex-col h-full">
       {/* Main Content - Centered */}
-      <div className="flex-1 flex flex-col items-center justify-center py-8 px-4">
+      <div className="flex-1 flex flex-col items-center justify-center py-4 px-4 min-h-0">
         {/* Large Cpu Icon - Simple green */}
-        <div className="mb-4 flex justify-center">
-          <Cpu size={96} className="text-emerald-600" />
+        <div className="mb-3 flex justify-center">
+          <Cpu size={72} className="text-emerald-600" />
         </div>
 
         {/* Title - Green accent color */}
-        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-6 text-center px-4 text-emerald-600">
+        <h1 className="text-4xl sm:text-5xl lg:text-5xl font-bold tracking-tight mb-3 text-center px-4 text-emerald-600">
           Discovery Engine
         </h1>
 
-        {/* Subtitle - Bigger */}
-        <p className="text-xl text-muted-foreground mb-12 text-center max-w-2xl">
+        {/* Subtitle */}
+        <p className="text-base text-muted-foreground mb-4 text-center max-w-2xl">
           AI-powered scientific hypothesis validation and research synthesis
         </p>
 
-        {/* Instructions Card - Bigger */}
-        <div className="bg-card rounded-xl p-8 max-w-2xl w-full border border-border shadow-lg">
-          <h3 className="text-lg font-semibold text-foreground mb-6">
-            Enter your research query or hypothesis
-          </h3>
-          <ul className="space-y-4 text-base text-muted-foreground">
-            <li className="flex items-start gap-4">
-              <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0 mt-0.5">
-                <span className="text-sm font-semibold text-emerald-600">1</span>
-              </div>
-              <span><strong className="text-foreground">Be specific</strong> — Include target metrics, materials, or performance thresholds</span>
-            </li>
-            <li className="flex items-start gap-4">
-              <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0 mt-0.5">
-                <span className="text-sm font-semibold text-emerald-600">2</span>
-              </div>
-              <span><strong className="text-foreground">Define constraints</strong> — Mention cost, temperature, scalability requirements</span>
-            </li>
-            <li className="flex items-start gap-4">
-              <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0 mt-0.5">
-                <span className="text-sm font-semibold text-emerald-600">3</span>
-              </div>
-              <span><strong className="text-foreground">State the goal</strong> — What problem are you trying to solve?</span>
-            </li>
-          </ul>
+        {/* Mode Selector */}
+        <div className="w-full max-w-3xl mb-3">
+          <DiscoveryModeSelector
+            selectedMode={selectedMode}
+            onModeSelect={onModeSelect}
+            query={query}
+            showParallelOption={true}
+          />
+        </div>
+
+        {/* Configuration Options Button - Right under mode selector */}
+        <div className="w-full max-w-3xl flex justify-center mb-2">
+          <DiscoveryOptionsButton
+            onClick={onOpenOptions}
+            hasCustomizations={hasCustomOptions}
+          />
         </div>
       </div>
     </div>

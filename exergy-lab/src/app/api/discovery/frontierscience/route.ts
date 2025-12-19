@@ -51,12 +51,19 @@ const activeDiscoveries = new Map<string, {
  *   domain?: string,         // Domain (default: clean-energy)
  *   targetQuality?: string,  // Target quality level
  *   options?: {
+ *     discoveryMode?: 'breakthrough' | 'synthesis' | 'validation' | 'parallel',
  *     enablePatentAnalysis?: boolean,
  *     enableExergyAnalysis?: boolean,
  *     enableTEAAnalysis?: boolean,
  *     maxIterationsPerPhase?: number,
  *   }
  * }
+ *
+ * Discovery Modes:
+ * - breakthrough: Novel discovery for publication/patents (25% novelty weight, 7.0 threshold)
+ * - synthesis: Comprehensive research analysis (5% novelty weight, 6.0 threshold) [DEFAULT]
+ * - validation: Validate existing ideas (10% novelty weight, 6.5 threshold)
+ * - parallel: Run all 3 modes simultaneously
  *
  * Response:
  * {
@@ -90,6 +97,7 @@ export async function POST(request: NextRequest) {
     const orchestrator = createDiscoveryOrchestrator({
       domain,
       targetQuality: targetQuality as any,
+      discoveryMode: options.discoveryMode ?? 'synthesis', // Default to synthesis for higher success rate
       enablePatentAnalysis: options.enablePatentAnalysis ?? true,
       enableExergyAnalysis: options.enableExergyAnalysis ?? true,
       enableTEAAnalysis: options.enableTEAAnalysis ?? true,
@@ -183,7 +191,7 @@ export async function POST(request: NextRequest) {
         console.error(`[FrontierScience] Discovery ${discoveryId} failed:`, error)
       })
 
-    console.log(`[FrontierScience] Started discovery ${discoveryId} for: "${query}"`)
+    console.log(`[FrontierScience] Started discovery ${discoveryId} (mode: ${options.discoveryMode ?? 'synthesis'}) for: "${query}"`)
 
     return NextResponse.json({
       discoveryId,

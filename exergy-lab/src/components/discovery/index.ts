@@ -18,6 +18,7 @@ export { ThinkingIndicator, ActivityIndicator, PulsingBrain } from './ThinkingIn
 
 // Rubric scoring
 export { RubricScoreCard, CompactRubricSummary, RubricProgressBar } from './RubricScoreCard'
+export { RubricTable } from './RubricTable'
 
 // Main cards
 export { FrontierScienceProgressCard, MinimalProgress } from './FrontierScienceProgressCard'
@@ -33,8 +34,8 @@ export { FeedbackPanel, ItemFeedback, QuickRating } from './FeedbackPanel'
 // Recommendations
 export { RecommendationsList, CompactRecommendations } from './RecommendationsList'
 
-// Configuration panel
-export { DiscoveryConfigPanel } from './DiscoveryConfigPanel'
+// Configuration panel (deprecated - use DiscoveryOptionsModal instead)
+// export { DiscoveryConfigPanel } from './DiscoveryConfigPanel'
 
 // Tier selectors
 export { ExperimentTierSelector, ExperimentTierBadge } from './ExperimentTierSelector'
@@ -62,3 +63,29 @@ export { FailureRecoveryPanel, FailureAlert } from './FailureRecoveryPanel'
 
 // Prompt improvement suggestion
 export { PromptSuggestion } from './PromptSuggestion'
+
+// Discovery mode selection
+export { DiscoveryModeSelector, ModeBadge } from './DiscoveryModeSelector'
+
+// Discovery options modal
+export { DiscoveryOptionsModal, DiscoveryOptionsButton } from './DiscoveryOptionsModal'
+export type { DiscoveryAdvancedOptions } from './DiscoveryOptionsModal'
+
+// Live insights feed (real-time streaming)
+export { LiveInsightsFeed, InsightFilterBar } from './LiveInsightsFeed'
+export type { InsightItem, InsightType } from './LiveInsightsFeed'
+
+// Research insights (comprehensive research value display)
+export { ResearchInsightsCard, ResearchInsightsSummary } from './ResearchInsightsCard'
+export type {
+  ResearchInsightsData,
+  ResearchSource,
+  KeyFinding,
+  TechnologicalGap,
+  CrossDomainInsight,
+  StateOfArt,
+} from './ResearchInsightsCard'
+
+// Refinement visualization (iteration progress display)
+export { RefinementVisualization, CompactRefinementProgress } from './RefinementVisualization'
+export type { IterationData, CriterionScore } from './RefinementVisualization'
