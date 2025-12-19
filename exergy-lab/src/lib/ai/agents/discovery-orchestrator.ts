@@ -786,14 +786,16 @@ export class DiscoveryOrchestrator {
    */
   private createFallbackResearch(query: string): ResearchResult {
     return {
+      query,
+      domain: 'unknown',
       sources: [
         {
           id: 'fallback-1',
           type: 'paper',
           title: `Fallback: Research on ${query.substring(0, 50)}`,
           authors: ['System Fallback'],
-          journal: 'Fallback Data',
-          year: new Date().getFullYear(),
+          source: 'Fallback Data',
+          publishedDate: new Date().toISOString(),
           doi: 'fallback/timeout',
           abstract: 'Minimal fallback data due to API timeout or error. Discovery continuing with limited research.',
           citationCount: 0,
@@ -803,24 +805,34 @@ export class DiscoveryOrchestrator {
       keyFindings: [
         {
           finding: `Investigating ${query.substring(0, 100)}`,
-          source: 'Fallback Data',
-          relevance: 0.3,
-        },
-        {
-          finding: 'Limited research data available due to API timeout',
-          source: 'System',
-          relevance: 0.2,
+          confidence: 0.3,
+          source: {
+            id: 'fallback-1',
+            type: 'paper',
+            title: 'Fallback Data',
+            authors: ['System'],
+            source: 'Fallback',
+          },
+          category: 'other',
         },
       ],
       technologicalGaps: [
         {
           description: 'API timeout prevented full gap analysis',
-          severity: 'medium',
-          potentialSolution: 'Retry with simpler query or check connectivity',
+          impact: 'medium',
+          potentialSolutions: ['Retry with simpler query or check connectivity'],
+          relatedSources: [],
         },
       ],
       materialsData: [],
       crossDomainInsights: [],
+      stateOfTheArt: [],
+      methodology: {
+        queriesUsed: [query],
+        databasesSearched: ['fallback'],
+        filteringCriteria: 'API timeout - minimal fallback data',
+        timestamp: new Date(),
+      },
     }
   }
 
