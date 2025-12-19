@@ -139,7 +139,7 @@ function ActivityItemCard({ activity, showTimestamp }: { activity: ActivityItem;
 
   return (
     <div className={cn(
-      'group relative pl-6 pb-4',
+      'group relative pl-6 pb-2',
       'before:absolute before:left-[7px] before:top-6 before:bottom-0 before:w-px before:bg-border',
       'last:before:hidden'
     )}>
@@ -150,7 +150,7 @@ function ActivityItemCard({ activity, showTimestamp }: { activity: ActivityItem;
 
       {/* Content */}
       <div className={cn(
-        'rounded-lg border p-3 transition-colors',
+        'rounded-lg border p-2 transition-colors',
         activity.type === 'iteration' && activity.passed && 'bg-emerald-500/5 border-emerald-500/20',
         activity.type === 'iteration' && !activity.passed && 'bg-amber-500/5 border-amber-500/20',
         activity.type === 'thinking' && 'bg-blue-500/5 border-blue-500/20',

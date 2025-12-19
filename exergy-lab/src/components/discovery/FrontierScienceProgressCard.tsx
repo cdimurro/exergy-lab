@@ -8,37 +8,78 @@
  */
 
 import { cn } from '@/lib/utils'
-import type { DiscoveryPhase, PhaseProgressDisplay } from '@/types/frontierscience'
+import type { DiscoveryPhase, PhaseProgressDisplay, RecoveryRecommendation } from '@/types/frontierscience'
 import { getPhaseMetadata } from '@/types/frontierscience'
 import { PhaseTimeline } from './PhaseTimeline'
-import { IterationBadge } from './IterationBadge'
 import { PulsingBrain } from './ThinkingIndicator'
 import { PhaseResultsDropdown, generatePhaseKeyFindings } from './PhaseResultsDropdown'
 import { LiveActivityFeed, type ActivityItem } from './LiveActivityFeed'
-import { X, Clock, Zap, ChevronDown, ChevronUp, Activity } from 'lucide-react'
-import React, { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import {
+  X,
+  Clock,
+  Zap,
+  ChevronDown,
+  ChevronUp,
+  Activity,
+  AlertTriangle,
+  CheckCircle,
+  RotateCcw,
+  Lightbulb,
+  Download,
+  Send,
+  Loader2,
+  MessageSquare,
+  ArrowRight,
+  Sparkles,
+} from 'lucide-react'
+import { Textarea } from '@/components/ui/textarea'
+import React, { useState, useCallback } from 'react'
+import type { RecoveryAgentResponse } from '@/app/api/discovery/recovery-agent/route'
+
+export type DiscoveryStatus = 'idle' | 'starting' | 'running' | 'completed' | 'completed_partial' | 'failed'
 
 interface FrontierScienceProgressCardProps {
   query: string
+  status: DiscoveryStatus
   currentPhase: DiscoveryPhase | null
   phaseProgress: Map<DiscoveryPhase, PhaseProgressDisplay>
   overallProgress: number
   elapsedTime: number
   thinkingMessage: string | null
   activities?: ActivityItem[]
+  // Failure handling props
+  error?: string | null
+  passedPhases?: DiscoveryPhase[]
+  failedPhases?: DiscoveryPhase[]
+  recoveryRecommendations?: RecoveryRecommendation[]
+  failedCriteria?: { id: string; issue: string; suggestion: string }[]
+  // Action handlers
   onCancel?: () => void
+  onRetryWithQuery?: (query: string, fromCheckpoint?: boolean) => void
+  onExportResults?: () => void
+  onViewResults?: () => void
   className?: string
 }
 
 export function FrontierScienceProgressCard({
   query,
+  status,
   currentPhase,
   phaseProgress,
   overallProgress,
   elapsedTime,
   thinkingMessage,
   activities = [],
+  error,
+  passedPhases = [],
+  failedPhases = [],
+  recoveryRecommendations = [],
+  failedCriteria = [],
   onCancel,
+  onRetryWithQuery,
+  onExportResults,
+  onViewResults,
   className,
 }: FrontierScienceProgressCardProps) {
   const [selectedPhase, setSelectedPhase] = useState<DiscoveryPhase | null>(null)
@@ -79,23 +120,33 @@ export function FrontierScienceProgressCard({
 
   return (
     <div className={cn('border rounded-xl overflow-hidden bg-card flex flex-col max-h-[80vh]', className)}>
-      {/* Header */}
+      {/* Header - Status indicator only (query shown in editor when failed) */}
       <div className="flex items-center justify-between p-4 border-b bg-muted/30">
-        <div className="flex items-center gap-3">
-          <PulsingBrain />
-          <div>
-            <h3 className="text-base font-semibold text-foreground">
-              Discovery Engine
-            </h3>
-            <p className="text-sm text-muted-foreground truncate max-w-[350px]">
-              {query}
-            </p>
-          </div>
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          {status === 'failed' ? (
+            <>
+              <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center">
+                <AlertTriangle size={16} className="text-amber-400" />
+              </div>
+              <div>
+                <span className="text-sm font-medium text-foreground">Discovery Paused</span>
+                <p className="text-xs text-muted-foreground">Review feedback and refine your query</p>
+              </div>
+            </>
+          ) : (
+            <>
+              <PulsingBrain />
+              <div>
+                <span className="text-sm font-medium text-foreground">Discovery in Progress</span>
+                <p className="text-xs text-muted-foreground">Analyzing and validating research...</p>
+              </div>
+            </>
+          )}
         </div>
-        {onCancel && (
+        {onCancel && status === 'running' && (
           <button
             onClick={onCancel}
-            className="p-2 hover:bg-muted rounded-lg transition-colors"
+            className="p-2 hover:bg-muted rounded-lg transition-colors shrink-0"
             title="Cancel discovery"
           >
             <X size={18} className="text-muted-foreground" />
@@ -131,7 +182,7 @@ export function FrontierScienceProgressCard({
               style={{ width: `${Math.min(100, overallProgress)}%` }}
             />
           </div>
-          <span className="absolute right-0 top-4 text-sm font-medium text-muted-foreground">
+          <span className="absolute right-0 -top-5 text-sm font-medium text-muted-foreground">
             {Math.round(overallProgress)}%
           </span>
         </div>
@@ -152,10 +203,10 @@ export function FrontierScienceProgressCard({
         />
       </div>
 
-      {/* Live Activity Feed - Real-time updates during discovery */}
+      {/* Live Activity Feed - Fills remaining space */}
       {activities.length > 0 && (
-        <div className="p-5 border-b">
-          <div className="flex items-center justify-between mb-3">
+        <div className="flex-1 flex flex-col min-h-0 border-b">
+          <div className="flex items-center justify-between p-4 pb-2">
             <button
               onClick={() => setShowActivityFeed(!showActivityFeed)}
               className="flex items-center gap-2 text-sm font-medium text-muted-foreground uppercase tracking-wide hover:text-foreground transition-colors"
@@ -169,39 +220,42 @@ export function FrontierScienceProgressCard({
             </span>
           </div>
           {showActivityFeed && (
-            <LiveActivityFeed
-              activities={activities}
-              currentPhase={currentPhase}
-              maxHeight="250px"
-              showTimestamps={true}
-            />
+            <div className="flex-1 min-h-0 px-4 pb-4">
+              <LiveActivityFeed
+                activities={activities}
+                currentPhase={currentPhase}
+                maxHeight="100%"
+                showTimestamps={true}
+                className="h-full"
+              />
+            </div>
           )}
         </div>
       )}
 
-      {/* Phase Details Panel - Shows different content based on selected phase status */}
+      {/* Phase Details Panel - Only shows for SELECTED completed or pending phases (not running) */}
       {(() => {
-        // Determine which phase to show details for
-        const displayPhase = selectedPhase || currentPhase
-        if (!displayPhase) return null
+        // Only show details for user-selected phases, NOT the currently running phase
+        // The Live Activity Feed handles running phase information
+        if (!selectedPhase) return null
 
-        const displayProgress = phaseProgress.get(displayPhase)
-        const displayMeta = getPhaseMetadata(displayPhase)
-        const isCurrentPhase = displayPhase === currentPhase
+        const displayProgress = phaseProgress.get(selectedPhase)
+        const displayMeta = getPhaseMetadata(selectedPhase)
         const isCompleted = displayProgress?.status === 'completed'
         const isRunning = displayProgress?.status === 'running'
-        const keyFindings = generatePhaseKeyFindings(displayPhase, null, displayProgress?.judgeResult)
+        const keyFindings = generatePhaseKeyFindings(selectedPhase, null, displayProgress?.judgeResult)
+
+        // Don't show the detail panel for running phases - Activity Feed handles that
+        if (isRunning) return null
 
         // Determine background color based on status
-        const bgClass = isRunning
-          ? 'bg-blue-500/5'
-          : isCompleted && displayProgress?.passed
-            ? 'bg-gradient-to-br from-emerald-500/5 to-green-500/5'
-            : isCompleted && !displayProgress?.passed
-              ? 'bg-gradient-to-br from-amber-500/5 to-orange-500/5'
-              : 'bg-muted/30'
+        const bgClass = isCompleted && displayProgress?.passed
+          ? 'bg-gradient-to-br from-emerald-500/5 to-green-500/5'
+          : isCompleted && !displayProgress?.passed
+            ? 'bg-gradient-to-br from-amber-500/5 to-orange-500/5'
+            : 'bg-muted/30'
 
-        return displayProgress && (
+        return (
           <div className={cn('p-5 border-b', bgClass)}>
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
@@ -209,17 +263,16 @@ export function FrontierScienceProgressCard({
                 {/* Status indicator */}
                 <span className={cn(
                   'text-xs px-2 py-0.5 rounded-full font-medium uppercase tracking-wide',
-                  isRunning && 'bg-blue-500/20 text-blue-600',
                   isCompleted && displayProgress?.passed && 'bg-emerald-500/20 text-emerald-600',
                   isCompleted && !displayProgress?.passed && 'bg-amber-500/20 text-amber-600',
-                  !isRunning && !isCompleted && 'bg-muted text-muted-foreground'
+                  !isCompleted && 'bg-muted text-muted-foreground'
                 )}>
-                  {isRunning ? 'In Progress' : isCompleted ? (displayProgress?.passed ? 'Passed' : 'Completed') : 'Pending'}
+                  {isCompleted ? (displayProgress?.passed ? 'Passed' : 'Completed') : 'Pending'}
                 </span>
                 <span className="text-base font-semibold text-foreground">
                   {displayMeta.name}
                 </span>
-                {displayProgress.score !== undefined && (
+                {displayProgress?.score !== undefined && (
                   <span className={cn(
                     'text-sm px-2.5 py-1 rounded-full font-medium',
                     displayProgress.passed
@@ -230,35 +283,17 @@ export function FrontierScienceProgressCard({
                   </span>
                 )}
               </div>
-              {selectedPhase && (
-                <button
-                  onClick={() => setSelectedPhase(null)}
-                  className="text-muted-foreground hover:text-foreground p-1 rounded-md hover:bg-muted/50 transition-colors"
-                >
-                  <X size={18} />
-                </button>
-              )}
+              <button
+                onClick={() => setSelectedPhase(null)}
+                className="text-muted-foreground hover:text-foreground p-1 rounded-md hover:bg-muted/50 transition-colors"
+              >
+                <X size={18} />
+              </button>
             </div>
 
             <p className="text-sm text-muted-foreground mb-4">
               {displayMeta.description}
             </p>
-
-            {/* === RUNNING PHASE: Minimal info since Live Activity Feed shows details === */}
-            {isRunning && (
-              <div className="flex items-center gap-3 bg-background/60 rounded-lg p-3 border border-border/50">
-                <span className="text-sm text-muted-foreground">
-                  See Live Activity Feed above for real-time updates
-                </span>
-                <IterationBadge
-                  current={displayProgress.currentIteration}
-                  max={displayProgress.maxIterations}
-                  score={displayProgress.score}
-                  isActive={true}
-                  size="sm"
-                />
-              </div>
-            )}
 
             {/* === COMPLETED PHASE: Show AI Summary Results === */}
             {isCompleted && keyFindings && (
@@ -352,7 +387,7 @@ export function FrontierScienceProgressCard({
             )}
 
             {/* === PENDING PHASE: Show what will happen === */}
-            {!isRunning && !isCompleted && (
+            {!isCompleted && (
               <div className="bg-background/60 rounded-lg p-4 border border-border/50">
                 <p className="text-sm text-muted-foreground">
                   This phase will begin after the current phase completes.
@@ -363,8 +398,26 @@ export function FrontierScienceProgressCard({
         )
       })()}
 
-        {/* Completed Phases Summary */}
-        <CompletedPhasesSummary phaseProgress={phaseProgress} />
+        {/* Recovery Editor - Shows inline when discovery fails */}
+        {status === 'failed' && (
+          <RecoveryEditor
+            originalQuery={query}
+            error={error}
+            passedPhases={passedPhases}
+            failedPhases={failedPhases}
+            phaseProgress={phaseProgress}
+            recoveryRecommendations={recoveryRecommendations}
+            failedCriteria={failedCriteria}
+            onRetryWithQuery={onRetryWithQuery}
+            onExportResults={onExportResults}
+            onViewResults={onViewResults}
+          />
+        )}
+
+        {/* Completed Phases Summary - Only show when not failed (failure banner handles this) */}
+        {status !== 'failed' && (
+          <CompletedPhasesSummary phaseProgress={phaseProgress} />
+        )}
       </div>
     </div>
   )
@@ -513,6 +566,268 @@ interface MinimalProgressProps {
   overallProgress: number
   currentPhase: DiscoveryPhase | null
   className?: string
+}
+
+/**
+ * Recovery Editor - Interactive editor for refining queries after failure
+ * Integrates with the Recovery Agent API for intelligent action routing
+ */
+interface RecoveryEditorProps {
+  originalQuery: string
+  error?: string | null
+  passedPhases: DiscoveryPhase[]
+  failedPhases: DiscoveryPhase[]
+  phaseProgress: Map<DiscoveryPhase, PhaseProgressDisplay>
+  recoveryRecommendations: RecoveryRecommendation[]
+  failedCriteria: { id: string; issue: string; suggestion: string }[]
+  onRetryWithQuery?: (query: string, fromCheckpoint?: boolean) => void
+  onExportResults?: () => void
+  onViewResults?: () => void
+}
+
+function RecoveryEditor({
+  originalQuery,
+  error,
+  passedPhases,
+  failedPhases,
+  phaseProgress,
+  recoveryRecommendations,
+  failedCriteria,
+  onRetryWithQuery,
+  onExportResults,
+  onViewResults,
+}: RecoveryEditorProps) {
+  const [inputValue, setInputValue] = useState(originalQuery)
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [agentResponse, setAgentResponse] = useState<RecoveryAgentResponse | null>(null)
+  const [showRecommendations, setShowRecommendations] = useState(true)
+
+  const lastFailedPhase = failedPhases.length > 0 ? failedPhases[failedPhases.length - 1] : null
+  const lastFailedScore = lastFailedPhase ? phaseProgress.get(lastFailedPhase)?.score : undefined
+  const hasPartialResults = passedPhases.length > 0
+
+  // Get prioritized recommendations
+  const highPriorityRecs = recoveryRecommendations.filter(r => r.priority === 'high').slice(0, 3)
+  const mediumPriorityRecs = recoveryRecommendations.filter(r => r.priority === 'medium').slice(0, 2)
+
+  const handleSubmit = useCallback(async () => {
+    if (!inputValue.trim() || isProcessing) return
+
+    setIsProcessing(true)
+    setAgentResponse(null)
+
+    try {
+      // Call the Recovery Agent API
+      const response = await fetch('/api/discovery/recovery-agent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userInput: inputValue,
+          originalQuery,
+          failedPhase: lastFailedPhase,
+          failedScore: lastFailedScore,
+          passedPhases,
+          failedCriteria,
+          recoveryRecommendations,
+          phaseProgress: Object.fromEntries(phaseProgress),
+        }),
+      })
+
+      const result: RecoveryAgentResponse = await response.json()
+      setAgentResponse(result)
+
+      // Handle action based on response
+      if (result.action === 'rerun_full' || result.action === 'rerun_from_checkpoint') {
+        // Trigger retry with the query (possibly modified)
+        const queryToUse = result.modifiedQuery || inputValue
+        const fromCheckpoint = result.action === 'rerun_from_checkpoint'
+        onRetryWithQuery?.(queryToUse, fromCheckpoint)
+      }
+      // For answer_question, modify_parameters, clarify - show the response in the UI
+    } catch (err) {
+      console.error('Recovery agent error:', err)
+      // Fallback: just retry with the current input
+      onRetryWithQuery?.(inputValue, false)
+    } finally {
+      setIsProcessing(false)
+    }
+  }, [inputValue, originalQuery, lastFailedPhase, lastFailedScore, passedPhases, failedCriteria, recoveryRecommendations, phaseProgress, onRetryWithQuery, isProcessing])
+
+  return (
+    <div className="p-5 space-y-4">
+      {/* Failure Context - Compact */}
+      <div className="border border-amber-500/30 rounded-xl bg-amber-500/10 p-4">
+        <div className="flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm text-foreground">
+              {error || 'The discovery process needs your input to continue.'}
+            </p>
+            {lastFailedPhase && (
+              <p className="text-xs text-amber-400 mt-1">
+                Issue at: <span className="font-medium">{getPhaseMetadata(lastFailedPhase).name}</span>
+                {lastFailedScore !== undefined && ` (Score: ${lastFailedScore.toFixed(1)}/10)`}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Recommendations - Collapsible */}
+      {(highPriorityRecs.length > 0 || mediumPriorityRecs.length > 0) && (
+        <div className="border border-border rounded-xl bg-card overflow-hidden">
+          <button
+            onClick={() => setShowRecommendations(!showRecommendations)}
+            className="w-full flex items-center justify-between p-4 hover:bg-muted/30 transition-colors"
+          >
+            <span className="flex items-center gap-2 text-sm font-medium text-foreground">
+              <Lightbulb className="w-4 h-4 text-amber-400" />
+              Suggestions for Improvement
+            </span>
+            {showRecommendations ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </button>
+          {showRecommendations && (
+            <div className="px-4 pb-4 space-y-2">
+              {highPriorityRecs.map((rec, i) => (
+                <div key={i} className="flex items-start gap-2 p-2 bg-red-500/10 rounded-lg border border-red-500/20">
+                  <span className="text-xs font-bold text-red-400 bg-red-500/20 w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
+                  <p className="text-sm text-foreground">{rec.suggestion}</p>
+                </div>
+              ))}
+              {mediumPriorityRecs.map((rec, i) => (
+                <div key={i} className="flex items-start gap-2 p-2 bg-muted/30 rounded-lg">
+                  <Lightbulb className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                  <p className="text-sm text-muted-foreground">{rec.suggestion}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Agent Response - Show when available */}
+      {agentResponse && agentResponse.action === 'answer_question' && (
+        <div className="border border-blue-500/30 rounded-xl bg-blue-500/10 p-4">
+          <div className="flex items-start gap-3">
+            <MessageSquare className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-foreground mb-1">{agentResponse.message}</p>
+              <p className="text-sm text-muted-foreground">{agentResponse.answer}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {agentResponse && agentResponse.action === 'clarify' && (
+        <div className="border border-purple-500/30 rounded-xl bg-purple-500/10 p-4">
+          <div className="flex items-start gap-3">
+            <MessageSquare className="w-5 h-5 text-purple-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-foreground mb-1">Need More Information</p>
+              <p className="text-sm text-muted-foreground">{agentResponse.clarificationQuestion}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Query Editor - Main Input */}
+      <div className="border border-border rounded-xl bg-background p-4">
+        <label className="block text-sm font-medium text-foreground mb-2">
+          Refine Your Query
+        </label>
+        <p className="text-xs text-muted-foreground mb-3">
+          Edit your query based on the suggestions above, ask a question, or describe what you'd like to change.
+        </p>
+        <Textarea
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          placeholder="Enter your refined query, ask a question, or describe changes..."
+          className="min-h-[100px] resize-none bg-muted/30 border-border"
+          disabled={isProcessing}
+        />
+        <div className="flex items-center justify-between mt-3">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>AI will analyze your input and determine the best action</span>
+          </div>
+          <Button
+            onClick={handleSubmit}
+            disabled={!inputValue.trim() || isProcessing}
+            className="gap-2"
+          >
+            {isProcessing ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Analyzing...
+              </>
+            ) : (
+              <>
+                <Send className="w-4 h-4" />
+                Submit
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
+
+      {/* Partial Results - Compact */}
+      {hasPartialResults && (
+        <div className="border border-emerald-500/30 rounded-xl bg-emerald-500/10 p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-emerald-400" />
+              <span className="text-sm font-medium text-foreground">
+                {passedPhases.length} phase{passedPhases.length !== 1 ? 's' : ''} completed
+              </span>
+              <div className="flex gap-1">
+                {passedPhases.slice(0, 3).map((phase) => (
+                  <span
+                    key={phase}
+                    className="text-xs px-2 py-0.5 bg-emerald-500/20 rounded-full text-emerald-300"
+                  >
+                    {getPhaseMetadata(phase).shortName}
+                  </span>
+                ))}
+                {passedPhases.length > 3 && (
+                  <span className="text-xs px-2 py-0.5 bg-emerald-500/20 rounded-full text-emerald-300">
+                    +{passedPhases.length - 3}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="flex gap-2">
+              {onExportResults && (
+                <Button size="sm" variant="outline" onClick={onExportResults} className="gap-1 text-xs border-emerald-500/30">
+                  <Download className="w-3 h-3" />
+                  Export
+                </Button>
+              )}
+              {onViewResults && (
+                <Button size="sm" onClick={onViewResults} className="gap-1 text-xs bg-emerald-600 hover:bg-emerald-700">
+                  <ArrowRight className="w-3 h-3" />
+                  View
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Quick Actions */}
+      <div className="flex items-center justify-center gap-4 pt-2">
+        <button
+          onClick={() => {
+            setInputValue(originalQuery)
+            onRetryWithQuery?.(originalQuery, false)
+          }}
+          className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+        >
+          <RotateCcw className="w-3.5 h-3.5" />
+          Retry with original query
+        </button>
+      </div>
+    </div>
+  )
 }
 
 export function MinimalProgress({

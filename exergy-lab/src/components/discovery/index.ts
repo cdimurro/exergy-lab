@@ -52,3 +52,10 @@ export { ExportPanel, QuickExportButton } from './ExportPanel'
 // Phase results display
 export { PhaseResultsDropdown, generatePhaseKeyFindings } from './PhaseResultsDropdown'
 export type { PhaseKeyFindings, PhaseResultsDropdownProps } from './PhaseResultsDropdown'
+
+// Phase detail panel (context-aware details for each phase status)
+export { PhaseDetailPanel } from './PhaseDetailPanel'
+export type { PhaseStatus, PhaseResult } from './PhaseDetailPanel'
+
+// Failure recovery (intelligent failure handling with recommendations)
+export { FailureRecoveryPanel, FailureAlert } from './FailureRecoveryPanel'

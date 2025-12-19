@@ -36,6 +36,34 @@ export interface GeminiOptions {
   thinkingLevel?: ThinkingLevel // Gemini 3 adaptive thinking (minimal/low/medium/high)
 }
 
+// Default timeout for API calls (2 minutes)
+const DEFAULT_API_TIMEOUT_MS = 120000
+
+// Timeout based on thinking level (higher thinking = longer timeout)
+const THINKING_LEVEL_TIMEOUTS: Record<ThinkingLevel, number> = {
+  minimal: 60000,   // 1 minute
+  low: 90000,       // 1.5 minutes
+  medium: 120000,   // 2 minutes
+  high: 180000,     // 3 minutes
+}
+
+/**
+ * Helper to wrap a promise with a timeout
+ */
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, operation: string): Promise<T> {
+  let timeoutId: NodeJS.Timeout
+
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error(`${operation} timed out after ${timeoutMs}ms`))
+    }, timeoutMs)
+  })
+
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    clearTimeout(timeoutId)
+  })
+}
+
 /**
  * Generate text using Gemini
  */
@@ -53,9 +81,14 @@ export async function generateText(
     thinkingLevel,
   } = options
 
+  // Determine timeout based on thinking level
+  const timeoutMs = thinkingLevel
+    ? THINKING_LEVEL_TIMEOUTS[thinkingLevel]
+    : DEFAULT_API_TIMEOUT_MS
+
   console.log(`[Gemini] === API Call ===`)
   console.log(`[Gemini] Model: ${MODELS[model]}`)
-  console.log(`[Gemini] Config: temp=${temperature}, maxTokens=${maxOutputTokens}${thinkingLevel ? `, thinking=${thinkingLevel}` : ''}`)
+  console.log(`[Gemini] Config: temp=${temperature}, maxTokens=${maxOutputTokens}${thinkingLevel ? `, thinking=${thinkingLevel}` : ''}, timeout=${timeoutMs}ms`)
   console.log(`[Gemini] Prompt length: ${prompt.length} chars`)
   if (responseMimeType) {
     console.log(`[Gemini] Response MIME type: ${responseMimeType}`)
@@ -87,11 +120,21 @@ export async function generateText(
     })
 
     console.log(`[Gemini] Sending request to ${MODELS[model]}...`)
-    const result = await generativeModel.generateContent(prompt)
+    const startTime = Date.now()
+
+    // Wrap the API call with a timeout
+    const result = await withTimeout(
+      generativeModel.generateContent(prompt),
+      timeoutMs,
+      `Gemini ${model} generation`
+    )
+
     const response = result.response
     const text = response.text()
+    const duration = Date.now() - startTime
 
     console.log(`[Gemini] === Response Received ===`)
+    console.log(`[Gemini] Duration: ${duration}ms`)
     console.log(`[Gemini] Response length: ${text.length} chars`)
     console.log(`[Gemini] Response preview (first 500 chars):`)
     console.log(text.substring(0, 500))
@@ -317,6 +360,11 @@ export async function generateWithTools(
     thinkingLevel,
   } = options
 
+  // Determine timeout based on thinking level
+  const timeoutMs = thinkingLevel
+    ? THINKING_LEVEL_TIMEOUTS[thinkingLevel]
+    : DEFAULT_API_TIMEOUT_MS
+
   try {
     // Build generation config with Gemini 3 thinking level
     const generationConfig: any = {
@@ -353,7 +401,12 @@ export async function generateWithTools(
 
     const generativeModel: GenerativeModel = genAI.getGenerativeModel(modelConfig)
 
-    const result = await generativeModel.generateContent(prompt)
+    // Wrap the API call with a timeout
+    const result = await withTimeout(
+      generativeModel.generateContent(prompt),
+      timeoutMs,
+      `Gemini ${model} generation with tools`
+    )
     const response = result.response
 
     // Check if AI decided to call functions

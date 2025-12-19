@@ -174,14 +174,21 @@ export class ResearchAgent {
     // Clear expired entries periodically
     clearExpiredCache()
 
-    // Check cache first (only if no hints - hints indicate refinement needed)
-    const cacheKey = generateCacheKey(query, domain)
-    if (!hints) {
-      const cached = researchCache.get(cacheKey)
-      if (cached) {
-        console.log(`[ResearchAgent] Cache HIT for: "${query}" (age: ${Math.round((Date.now() - cached.timestamp) / 1000)}s)`)
-        return cached.result
-      }
+    // Build cache key that includes hint iteration to differentiate refinement attempts
+    const hintKey = hints ? `-iter${hints.iterationNumber}` : ''
+    const cacheKey = generateCacheKey(query, domain) + hintKey
+
+    // Check cache - different iterations get different cache entries
+    const cached = researchCache.get(cacheKey)
+    if (cached) {
+      console.log(`[ResearchAgent] Cache HIT for: "${query}"${hintKey} (age: ${Math.round((Date.now() - cached.timestamp) / 1000)}s)`)
+      return cached.result
+    }
+
+    // Log refinement info if hints provided
+    if (hints) {
+      const failedIds = hints.failedCriteria.map(c => c.id).join(', ')
+      console.log(`[ResearchAgent] Refinement iteration ${hints.iterationNumber}, addressing: ${failedIds}`)
     }
 
     console.log(`[ResearchAgent] Cache MISS - Starting research for: "${query}" in domain: ${domain}`)
@@ -189,15 +196,15 @@ export class ResearchAgent {
     // Generate expanded queries for better coverage
     const expandedQueries = await this.expandQuery(query, domain)
 
-    // Search all sources in parallel
+    // Search all sources in parallel - pass hints for targeted improvement
     const [
       academicResults,
       patentResults,
       materialsResults,
     ] = await Promise.all([
-      this.searchAcademicDatabases(expandedQueries, domain),
-      this.config.includePatents ? this.searchPatentDatabases(expandedQueries) : [],
-      this.config.includeMaterials ? this.searchMaterialsProject(expandedQueries) : [],
+      this.searchAcademicDatabases(expandedQueries, domain, hints),
+      this.config.includePatents ? this.searchPatentDatabases(expandedQueries, hints) : [],
+      this.config.includeMaterials ? this.searchMaterialsProject(expandedQueries, hints) : [],
     ])
 
     // Combine and deduplicate sources
@@ -211,8 +218,8 @@ export class ResearchAgent {
 
     // Extract findings, gaps, and cross-domain insights in parallel for speed
     const [keyFindings, crossDomainInsights] = await Promise.all([
-      this.extractKeyFindings(rankedSources, domain),
-      this.detectCrossDomainPatterns(rankedSources, domain),
+      this.extractKeyFindings(rankedSources, domain, hints),
+      this.detectCrossDomainPatterns(rankedSources, domain, hints),
     ])
 
     // Gaps depends on findings, so run separately
@@ -294,7 +301,8 @@ Example: ["query 1", "query 2", "query 3", "query 4", "query 5"]`
    */
   private async searchAcademicDatabases(
     queries: string[],
-    domain: string
+    domain: string,
+    hints?: RefinementHints
   ): Promise<Source[]> {
     // In production, this would call real APIs:
     // - Semantic Scholar API
@@ -302,26 +310,46 @@ Example: ["query 1", "query 2", "query 3", "query 4", "query 5"]`
     // - PubMed API
     // - OpenAlex API
 
+    // Determine paper count based on hints - need more sources on refinement
+    const needsMoreSources = hints?.failedCriteria.some(c => c.id === 'R1')
+    const needsDiversity = hints?.failedCriteria.some(c => c.id === 'R2')
+    const needsRecency = hints?.failedCriteria.some(c => c.id === 'R3')
+
+    // Base: 25-35 papers, increase if source count/diversity/recency failed
+    const basePaperCount = 30
+    const paperCount = needsMoreSources ? 45 : needsDiversity ? 35 : basePaperCount
+    const recencyRequirement = needsRecency
+      ? 'at least 60% should be from 2023-2024'
+      : 'at least 50% should be from 2022-2024'
+
+    let refinementGuidance = ''
+    if (hints) {
+      const issues = hints.failedCriteria.map(c => `${c.id}: ${c.reasoning || c.description}`).join('; ')
+      refinementGuidance = `\nIMPROVEMENT FOCUS: This is a refinement attempt. Previous issues: ${issues}
+Ensure this response explicitly addresses these issues with improved content.`
+    }
+
     const prompt = `You are a scientific literature search engine.
 
 For the following research queries in the ${domain} domain:
 ${queries.map((q, i) => `${i + 1}. ${q}`).join('\n')}
+${refinementGuidance}
 
-Generate a list of 22 realistic but hypothetical academic paper results that would be found in databases like Semantic Scholar, arXiv, PubMed, and OpenAlex.
+Generate a list of ${paperCount} realistic but hypothetical academic paper results that would be found in databases like Semantic Scholar, arXiv, PubMed, and OpenAlex.
 
-IMPORTANT: You MUST generate exactly 22 papers to meet the research quality threshold.
+IMPORTANT: You MUST generate exactly ${paperCount} papers to meet the research quality threshold.
 
 For each paper, include:
 - title: A realistic scientific paper title
 - authors: 2-4 author names
-- publishedDate: A date between 2019-2024 (at least 50% should be from 2022-2024)
+- publishedDate: A date between 2019-2024 (${recencyRequirement})
 - type: "paper"
-- source: Distribute across ALL of these: "Semantic Scholar", "arXiv", "PubMed", "OpenAlex" (use each at least 5 times)
+- source: Distribute across ALL of these: "Semantic Scholar", "arXiv", "PubMed", "OpenAlex" (use each at least ${Math.floor(paperCount / 4)} times)
 - doi: A realistic DOI format
 - citationCount: A realistic citation count (1-500)
 - relevanceScore: A score between 0.5-1.0
 
-CRITICAL: Return a COMPLETE, valid JSON array with ALL 22 papers. Do not truncate the output.
+CRITICAL: Return a COMPLETE, valid JSON array with ALL ${paperCount} papers. Do not truncate the output.
 The array must start with [ and end with ] and contain valid JSON objects.`
 
     try {
@@ -347,23 +375,27 @@ The array must start with [ and end with ] and contain valid JSON objects.`
   /**
    * Search patent databases (simulated)
    */
-  private async searchPatentDatabases(queries: string[]): Promise<Source[]> {
+  private async searchPatentDatabases(queries: string[], hints?: RefinementHints): Promise<Source[]> {
+    // Increase patent count if we need more sources or diversity
+    const needsMoreSources = hints?.failedCriteria.some(c => c.id === 'R1')
+    const patentCount = needsMoreSources ? 15 : 12
+
     const prompt = `You are a patent search engine.
 
 For the following research queries:
 ${queries.slice(0, 3).map((q, i) => `${i + 1}. ${q}`).join('\n')}
 
-Generate a list of 10 realistic but hypothetical patent results from USPTO and Google Patents.
+Generate a list of ${patentCount} realistic but hypothetical patent results from USPTO and Google Patents.
 
 For each patent, include:
 - title: A realistic patent title
 - authors: 2-3 inventor names
 - publishedDate: A date between 2018-2024
 - type: "patent"
-- source: "USPTO" or "Google Patents" (use each at least 4 times)
+- source: "USPTO" or "Google Patents" (use each at least ${Math.floor(patentCount / 2)} times)
 - relevanceScore: A score between 0.5-1.0
 
-CRITICAL: Return a COMPLETE, valid JSON array with ALL 10 patents. Do not truncate the output.`
+CRITICAL: Return a COMPLETE, valid JSON array with ALL ${patentCount} patents. Do not truncate the output.`
 
     try {
       const result = await generateText('discovery', prompt, {
@@ -388,13 +420,17 @@ CRITICAL: Return a COMPLETE, valid JSON array with ALL 10 patents. Do not trunca
   /**
    * Search Materials Project (simulated)
    */
-  private async searchMaterialsProject(queries: string[]): Promise<MaterialData[]> {
+  private async searchMaterialsProject(queries: string[], hints?: RefinementHints): Promise<MaterialData[]> {
+    // Increase material count if R7 (materials data) failed
+    const needsMoreMaterials = hints?.failedCriteria.some(c => c.id === 'R7')
+    const materialCount = needsMoreMaterials ? 15 : 12
+
     const prompt = `You are a materials database search engine connected to Materials Project.
 
 For the following research queries:
 ${queries.slice(0, 2).map((q, i) => `${i + 1}. ${q}`).join('\n')}
 
-Generate a list of 10 relevant materials from the Materials Project database.
+Generate a list of ${materialCount} relevant materials from the Materials Project database.
 
 For each material, include:
 - formula: Chemical formula (e.g., "La0.6Sr0.4Co0.2Fe0.8O3")
@@ -406,7 +442,7 @@ For each material, include:
 - stability: "stable" or "metastable"
 - properties: Object with relevant properties
 
-CRITICAL: Return a COMPLETE, valid JSON array with ALL 10 materials. Do not truncate the output.`
+CRITICAL: Return a COMPLETE, valid JSON array with ALL ${materialCount} materials. Do not truncate the output.`
 
     try {
       const result = await generateText('discovery', prompt, {
@@ -454,26 +490,39 @@ CRITICAL: Return a COMPLETE, valid JSON array with ALL 10 materials. Do not trun
    */
   private async extractKeyFindings(
     sources: Source[],
-    domain: string
+    domain: string,
+    hints?: RefinementHints
   ): Promise<KeyFinding[]> {
+    // Need more quantitative findings if R4 failed
+    const needsMoreQuantitative = hints?.failedCriteria.some(c => c.id === 'R4')
+    const findingCount = needsMoreQuantitative ? 15 : 12
+
+    let refinementGuidance = ''
+    if (needsMoreQuantitative) {
+      refinementGuidance = `\nIMPROVEMENT FOCUS: Previous attempt lacked sufficient quantitative data.
+EVERY finding MUST include a numerical value with proper units (e.g., efficiency: 85%, temperature: 800°C, cost: $50/kWh).
+Do NOT include qualitative findings without numbers.`
+    }
+
     const prompt = `You are a scientific findings extractor.
 
-Given ${sources.length} research sources in the ${domain} domain, extract 10 key quantitative findings.
+Given ${sources.length} research sources in the ${domain} domain, extract ${findingCount} key quantitative findings.
+${refinementGuidance}
 
 Each finding should include:
-- finding: A concise statement of the finding
-- value: A numerical value (if applicable)
-- unit: The unit of measurement
+- finding: A concise statement WITH A NUMERICAL VALUE AND UNIT (e.g., "Solar cell efficiency reaches 26.7% under standard test conditions")
+- value: A numerical value (REQUIRED - do not leave empty)
+- unit: The unit of measurement (REQUIRED - e.g., %, °C, K, MW, kW, eV, nm, kg, mol, J, kJ, Pa, bar)
 - confidence: Confidence score 0-100
 - category: One of "performance", "cost", "efficiency", "safety", "environmental", "other"
 
 Focus on:
-1. Performance metrics (efficiency, power output, etc.)
-2. Material properties (conductivity, stability, etc.)
-3. Operating conditions (temperature, pressure, etc.)
-4. Economic factors (cost, lifetime, etc.)
+1. Performance metrics (efficiency, power output, capacity, etc.)
+2. Material properties (conductivity, stability, band gap, etc.)
+3. Operating conditions (temperature, pressure, voltage, etc.)
+4. Economic factors (cost per unit, lifetime, LCOE, etc.)
 
-CRITICAL: Return a COMPLETE, valid JSON array with ALL 10 findings. Do not truncate the output.`
+CRITICAL: Return a COMPLETE, valid JSON array with ALL ${findingCount} findings. EVERY finding must have a value and unit.`
 
     try {
       const result = await generateText('discovery', prompt, {
@@ -545,23 +594,41 @@ CRITICAL: Return a COMPLETE, valid JSON array with ALL 5 gaps. Do not truncate t
    */
   private async detectCrossDomainPatterns(
     sources: Source[],
-    domain: string
+    domain: string,
+    hints?: RefinementHints
   ): Promise<CrossDomainInsight[]> {
+    // If R6 (cross-domain) failed, we need better patterns
+    const needsBetterCrossDomain = hints?.failedCriteria.some(c => c.id === 'R6')
+    const insightCount = needsBetterCrossDomain ? 5 : 4
+
+    let refinementGuidance = ''
+    if (needsBetterCrossDomain) {
+      const r6Feedback = hints?.failedCriteria.find(c => c.id === 'R6')?.reasoning || ''
+      refinementGuidance = `\nIMPROVEMENT FOCUS: Previous cross-domain analysis was insufficient.
+Issue: ${r6Feedback}
+You MUST provide SPECIFIC, NOVEL connections with CONCRETE examples of how techniques/methods from other fields apply to ${domain}.
+Each insight should describe a transferable method, not just a general observation.`
+    }
+
     const prompt = `You are a cross-domain pattern detector.
 
-Analyze research from the ${domain} domain and identify 3 connections to other scientific fields that could enable innovation.
+Analyze research from the ${domain} domain and identify ${insightCount} SPECIFIC, ACTIONABLE connections to other scientific fields that could enable innovation.
+${refinementGuidance}
 
 For each insight:
-- domains: Array of 2-3 domain names involved (include "${domain}" and others)
-- insight: Description of the cross-domain connection
-- noveltyScore: Score 0-100 for how novel this connection is
+- domains: Array of 2-3 domain names involved (include "${domain}" and at least one other field like "machine learning", "biology", "semiconductor physics", "electrochemistry", "materials science", "thermodynamics", "nanotechnology", etc.)
+- insight: A DETAILED description of the cross-domain connection explaining:
+  1. What technique/method from the other field applies
+  2. How it could be specifically used in ${domain}
+  3. What problem it could solve or improvement it could enable
+- noveltyScore: Score 0-100 for how novel this connection is (higher for less obvious connections)
 
-Examples of cross-domain connections:
-- Applying machine learning to materials discovery
-- Using biological principles for energy storage
-- Combining semiconductor physics with electrochemistry
+Examples of GOOD cross-domain insights:
+- "Applying gradient descent optimization from machine learning to tune electrochemical cell operating parameters, potentially improving efficiency by 5-10% through automated parameter sweeps"
+- "Using bio-inspired hierarchical structures from plant xylem to design better water transport in PEM fuel cells, addressing membrane hydration issues"
+- "Adapting semiconductor defect engineering techniques to create controlled vacancy sites in battery electrode materials for improved ion transport"
 
-CRITICAL: Return a COMPLETE, valid JSON array with ALL 3 insights. Do not truncate the output.`
+CRITICAL: Return a COMPLETE, valid JSON array with ALL ${insightCount} insights. Each insight must be specific and actionable, not vague.`
 
     try {
       const result = await generateText('discovery', prompt, {

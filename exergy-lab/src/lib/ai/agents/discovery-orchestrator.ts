@@ -160,6 +160,11 @@ export class DiscoveryOrchestrator {
   private multiBenchmarkResult?: AggregatedValidation
   private selfCritiqueResult?: SelfCritiqueResult
 
+  // Heartbeat tracking for long-running operations
+  private heartbeatInterval?: NodeJS.Timeout
+  private lastHeartbeatTime: number = 0
+  private phaseStartTime: number = 0
+
   constructor(config: Partial<DiscoveryConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config }
     this.researchAgent = createResearchAgent()
@@ -245,11 +250,50 @@ export class DiscoveryOrchestrator {
   }
 
   /**
+   * Start heartbeat updates every 30 seconds for long-running operations
+   */
+  private startHeartbeat(): void {
+    this.stopHeartbeat() // Clear any existing interval
+    this.phaseStartTime = Date.now()
+    this.lastHeartbeatTime = Date.now()
+
+    this.heartbeatInterval = setInterval(() => {
+      const elapsed = Date.now() - this.phaseStartTime
+      const elapsedSeconds = Math.floor(elapsed / 1000)
+
+      if (this.currentPhase && this.thinkingCallback) {
+        const phaseDisplay = this.currentPhase.charAt(0).toUpperCase() + this.currentPhase.slice(1)
+        this.thinkingCallback({
+          phase: this.currentPhase,
+          activity: 'generating',
+          message: `Still processing ${phaseDisplay} phase... (${elapsedSeconds}s elapsed)`,
+        })
+      }
+
+      this.lastHeartbeatTime = Date.now()
+    }, 30000) // 30 seconds
+  }
+
+  /**
+   * Stop heartbeat updates
+   */
+  private stopHeartbeat(): void {
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval)
+      this.heartbeatInterval = undefined
+    }
+  }
+
+  /**
    * Execute the full discovery pipeline
    */
   async executeDiscovery(query: string): Promise<DiscoveryResult | PartialDiscoveryResult> {
     const startTime = new Date()
     const phases: PhaseResult[] = []
+
+    // Clear research cache at the start of each new discovery to ensure fresh results
+    ResearchAgent.clearCache()
+    this.log('Research cache cleared - starting fresh discovery')
 
     // Reset tracking arrays for this discovery run
     this.completedPhases = []
@@ -542,29 +586,41 @@ export class DiscoveryOrchestrator {
     this.currentPhase = 'research'
     this.emitThinking('generating', 'Searching 14+ scientific databases (arXiv, PubMed, Google Scholar, IEEE)...')
 
-    const result = await this.refinementEngine.refineUntilPass(
-      query,
-      async (hints?: RefinementHints) => {
-        if (hints) {
-          this.emitThinking('refining', `Refining search strategy (previous score: ${hints.previousScore?.toFixed(1)}/10)`, hints.iterationNumber)
-        } else {
-          this.emitThinking('generating', 'Analyzing scientific papers and extracting key findings...')
-        }
-        const research = await this.researchAgent.execute(query, this.config.domain, hints)
-        this.emitThinking('validating', `Found ${research.sources?.length || 0} sources, ${research.keyFindings?.length || 0} key findings`)
-        this.emitThinking('judging', 'Evaluating research quality against rubric criteria...')
-        return research
-      },
-      RESEARCH_RUBRIC
-    )
+    // Start heartbeat for this potentially long-running phase
+    this.startHeartbeat()
 
-    return {
-      phase: 'research',
-      finalOutput: result.finalOutput,
-      finalScore: result.finalScore,
-      passed: result.passed,
-      iterations: result.iterations,
-      durationMs: result.totalDurationMs,
+    try {
+      const result = await this.refinementEngine.refineUntilPass(
+        query,
+        async (hints?: RefinementHints) => {
+          if (hints) {
+            this.emitThinking('refining', `Refining search strategy (previous score: ${hints.previousScore?.toFixed(1)}/10)`, hints.iterationNumber)
+          } else {
+            this.emitThinking('generating', 'Analyzing scientific papers and extracting key findings...')
+          }
+          const research = await this.researchAgent.execute(query, this.config.domain, hints)
+          this.emitThinking('validating', `Found ${research.sources?.length || 0} sources, ${research.keyFindings?.length || 0} key findings`)
+          this.emitThinking('judging', 'Evaluating research quality against rubric criteria...')
+          return research
+        },
+        RESEARCH_RUBRIC
+      )
+
+      // Stop heartbeat after completion
+      this.stopHeartbeat()
+
+      return {
+        phase: 'research',
+        finalOutput: result.finalOutput,
+        finalScore: result.finalScore,
+        passed: result.passed,
+        iterations: result.iterations,
+        durationMs: result.totalDurationMs,
+      }
+    } catch (error) {
+      // Stop heartbeat on error
+      this.stopHeartbeat()
+      throw error
     }
   }
 
@@ -604,35 +660,157 @@ export class DiscoveryOrchestrator {
 
   /**
    * Execute hypothesis generation phase
+   * Includes timeout handling for API failures
    */
   private async executeHypothesisPhase(research: ResearchResult): Promise<PhaseResult<Hypothesis[]>> {
     this.log('Phase 3: Hypothesis Generation')
     this.currentPhase = 'hypothesis'
     this.emitThinking('generating', 'Synthesizing research into testable hypotheses...')
 
-    const result = await this.refinementEngine.refineUntilPass(
-      research.query,
-      async (hints?: RefinementHints) => {
-        if (hints) {
-          this.emitThinking('refining', `Refining hypotheses (targeting: ${hints.failedCriteria.map(c => c.id).join(', ')})`, hints.iterationNumber)
-        } else {
-          this.emitThinking('generating', 'Analyzing research gaps and generating novel research directions...')
-        }
-        const hypotheses = await this.creativeAgent.generateHypotheses(research, hints)
-        this.emitThinking('validating', `Generated ${hypotheses.length} hypotheses with testable predictions`)
-        this.emitThinking('judging', 'Evaluating novelty, feasibility, and impact potential...')
-        return hypotheses
-      },
-      HYPOTHESIS_RUBRIC
-    )
+    const startTime = Date.now()
+
+    // Start heartbeat for this long-running phase
+    this.startHeartbeat()
+
+    try {
+      const result = await this.refinementEngine.refineUntilPass(
+        research.query,
+        async (hints?: RefinementHints) => {
+          if (hints) {
+            this.emitThinking('refining', `Refining hypotheses (targeting: ${hints.failedCriteria.map(c => c.id).join(', ')})`, hints.iterationNumber)
+          } else {
+            this.emitThinking('generating', 'Analyzing research gaps and generating novel research directions...')
+          }
+          const hypotheses = await this.creativeAgent.generateHypotheses(research, hints)
+          this.emitThinking('validating', `Generated ${hypotheses.length} hypotheses with testable predictions`)
+          this.emitThinking('judging', 'Evaluating novelty, feasibility, and impact potential...')
+          return hypotheses
+        },
+        HYPOTHESIS_RUBRIC
+      )
+
+      // Stop heartbeat after completion
+      this.stopHeartbeat()
+
+      return {
+        phase: 'hypothesis',
+        finalOutput: result.finalOutput,
+        finalScore: result.finalScore,
+        passed: result.passed,
+        iterations: result.iterations,
+        durationMs: result.totalDurationMs,
+      }
+    } catch (error) {
+      // Stop heartbeat on error
+      this.stopHeartbeat()
+      // Handle timeout or other errors gracefully
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      const isTimeout = errorMessage.includes('timed out')
+
+      this.log(`Hypothesis phase error: ${errorMessage}`)
+      this.emitThinking('validating', isTimeout
+        ? 'AI generation timed out - using fallback hypothesis'
+        : `Generation error: ${errorMessage.substring(0, 100)}`
+      )
+
+      // Create a minimal fallback result so discovery can continue
+      const fallbackHypothesis = this.createFallbackHypothesis(research)
+      const durationMs = Date.now() - startTime
+
+      return {
+        phase: 'hypothesis',
+        finalOutput: [fallbackHypothesis],
+        finalScore: 4.0, // Low score indicates failure
+        passed: false,
+        iterations: [{
+          iteration: 1,
+          output: [fallbackHypothesis],
+          judgeResult: {
+            rubricId: 'hypothesis-v1',
+            phase: 'hypothesis',
+            totalScore: 4.0,
+            passed: false,
+            itemScores: [],
+            reasoning: isTimeout ? 'AI generation timed out' : `Error: ${errorMessage}`,
+            failedItems: [],
+            passedItems: [],
+            recommendations: ['Retry with a simpler query', 'Check API connectivity'],
+            confidenceScore: 30,
+            timestamp: new Date(),
+            judgeModel: 'fallback',
+          },
+          durationMs,
+        }],
+        durationMs,
+      }
+    }
+  }
+
+  /**
+   * Create a fallback hypothesis when generation fails
+   * Ensures discovery can continue with graceful degradation
+   */
+  private createFallbackHypothesis(research: ResearchResult): Hypothesis {
+    const finding = research.keyFindings[0]?.finding || 'system optimization'
+    const gap = research.technologicalGaps[0]?.description || 'efficiency improvement'
 
     return {
-      phase: 'hypothesis',
-      finalOutput: result.finalOutput,
-      finalScore: result.finalScore,
-      passed: result.passed,
-      iterations: result.iterations,
-      durationMs: result.totalDurationMs,
+      id: 'H1-FALLBACK',
+      title: `Investigating ${gap.substring(0, 50)}`,
+      statement: `If we optimize key parameters identified in research, then we can achieve measurable improvements in ${finding.substring(0, 50)}.`,
+      predictions: [
+        {
+          statement: 'Expected improvement in system efficiency of at least 10%',
+          measurable: true,
+          falsifiable: true,
+          expectedValue: 10,
+          unit: '%',
+          tolerance: 5,
+        },
+        {
+          statement: 'Reduction in operational costs',
+          measurable: true,
+          falsifiable: true,
+          expectedValue: 8,
+          unit: '%',
+          tolerance: 3,
+        },
+      ],
+      supportingEvidence: research.keyFindings.slice(0, 3).map(f => ({
+        finding: f.finding,
+        citation: 'Research synthesis, 2024',
+        relevance: 0.7,
+      })),
+      contradictingEvidence: [],
+      mechanism: {
+        steps: [
+          { order: 1, description: 'Identify key optimization parameters', physicalPrinciple: 'Systems analysis' },
+          { order: 2, description: 'Apply targeted improvements', physicalPrinciple: 'Process optimization' },
+          { order: 3, description: 'Validate performance gains', physicalPrinciple: 'Empirical measurement' },
+        ],
+      },
+      variables: {
+        independent: [
+          { name: 'Operating temperature', type: 'independent', description: 'Process temperature', range: { min: 20, max: 100, unit: '°C' } },
+          { name: 'Flow rate', type: 'independent', description: 'Material flow', range: { min: 0.1, max: 10, unit: 'L/min' } },
+        ],
+        dependent: [
+          { name: 'Efficiency', type: 'dependent', description: 'System efficiency' },
+          { name: 'Output', type: 'dependent', description: 'Production output' },
+        ],
+        controls: [
+          { name: 'Ambient conditions', type: 'control', description: 'Maintained at standard' },
+          { name: 'Material purity', type: 'control', description: 'Controlled input quality' },
+        ],
+      },
+      relatedGaps: research.technologicalGaps.slice(0, 2),
+      requiredMaterials: research.materialsData.slice(0, 2),
+      noveltyScore: 55,
+      feasibilityScore: 65,
+      impactScore: 50,
+      validationMetrics: [
+        { name: 'Efficiency improvement', targetValue: 10, unit: '%', threshold: 5 },
+      ],
     }
   }
 
@@ -728,6 +906,9 @@ export class DiscoveryOrchestrator {
     this.currentPhase = 'simulation'
     this.emitThinking('generating', `Initializing ${this.config.simulationTier.toUpperCase()} simulation engine...`)
     this.emitThinking('generating', `Running ${experiments.length} computational simulations...`)
+
+    // Start heartbeat for this potentially long-running phase
+    this.startHeartbeat()
 
     const startTime = Date.now()
 
@@ -832,19 +1013,28 @@ export class DiscoveryOrchestrator {
 
     this.emitThinking('judging', `Evaluating simulation convergence and physical validity...`)
 
-    const result = await this.refinementEngine.refineUntilPass(
-      `Simulation for ${experiments.length} experiments`,
-      async () => simulationResults,
-      SIMULATION_RUBRIC
-    )
+    try {
+      const result = await this.refinementEngine.refineUntilPass(
+        `Simulation for ${experiments.length} experiments`,
+        async () => simulationResults,
+        SIMULATION_RUBRIC
+      )
 
-    return {
-      phase: 'simulation',
-      finalOutput: result.finalOutput,
-      finalScore: result.finalScore,
-      passed: result.passed,
-      iterations: result.iterations,
-      durationMs: result.totalDurationMs,
+      // Stop heartbeat after completion
+      this.stopHeartbeat()
+
+      return {
+        phase: 'simulation',
+        finalOutput: result.finalOutput,
+        finalScore: result.finalScore,
+        passed: result.passed,
+        iterations: result.iterations,
+        durationMs: result.totalDurationMs,
+      }
+    } catch (error) {
+      // Stop heartbeat on error
+      this.stopHeartbeat()
+      throw error
     }
   }
 

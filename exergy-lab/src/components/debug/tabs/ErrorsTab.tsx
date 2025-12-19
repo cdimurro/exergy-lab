@@ -99,9 +99,12 @@ export function ErrorsTab({ errors }: ErrorsTabProps) {
             className="border border-red-500/30 rounded-lg overflow-hidden"
           >
             {/* Error Header */}
-            <button
+            <div
+              role="button"
+              tabIndex={0}
               onClick={() => toggleError(error.id)}
-              className="w-full flex items-center gap-3 p-3 text-left hover:bg-red-500/5 transition-colors"
+              onKeyDown={(e) => e.key === 'Enter' && toggleError(error.id)}
+              className="w-full flex items-center gap-3 p-3 text-left hover:bg-red-500/5 transition-colors cursor-pointer"
             >
               <span className="text-muted-foreground shrink-0">
                 {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
@@ -140,7 +143,7 @@ export function ErrorsTab({ errors }: ErrorsTabProps) {
                   <Copy size={12} className="text-muted-foreground" />
                 )}
               </Button>
-            </button>
+            </div>
 
             {/* Expanded Content */}
             {isExpanded && (

@@ -274,6 +274,160 @@ function validateMaterialsData(response: any): ItemScore {
   }
 }
 
+function validateCrossDomainPatterns(response: any): ItemScore {
+  const insights = response?.crossDomainInsights || []
+
+  if (!Array.isArray(insights) || insights.length === 0) {
+    return {
+      itemId: 'R6',
+      points: 0,
+      maxPoints: 1.0,
+      passed: false,
+      reasoning: 'No cross-domain insights found in response',
+    }
+  }
+
+  // Check quality: each insight should have multiple domains and substantive description
+  let validInsights = 0
+  const issues: string[] = []
+
+  for (const insight of insights) {
+    const domains = insight.domains || []
+    const description = insight.insight || ''
+
+    // Must have at least 2 domains
+    if (domains.length < 2) {
+      issues.push('Insight missing multiple domains')
+      continue
+    }
+
+    // Description should be substantial (>50 chars) and specific
+    if (description.length < 50) {
+      issues.push('Insight description too brief')
+      continue
+    }
+
+    // Check for actionability - should mention specific techniques or applications
+    const hasActionableContent =
+      /apply|use|adapt|combine|transfer|leverage|implement|integrate/i.test(description)
+
+    if (!hasActionableContent) {
+      issues.push('Insight lacks actionable content')
+      continue
+    }
+
+    validInsights++
+  }
+
+  let points = 0
+  let reasoning = ''
+
+  if (validInsights >= 3) {
+    points = 1.0
+    reasoning = `Excellent: ${validInsights} valid cross-domain patterns identified with actionable connections`
+  } else if (validInsights >= 2) {
+    points = 0.75
+    reasoning = `Good: ${validInsights} cross-domain patterns found. ${issues.length > 0 ? `Issues: ${issues.slice(0, 2).join('; ')}` : ''}`
+  } else if (validInsights >= 1) {
+    points = 0.5
+    reasoning = `Limited: Only ${validInsights} valid cross-domain pattern. Need more specific, actionable connections.`
+  } else {
+    points = 0.25
+    reasoning = `Insufficient: No valid cross-domain patterns. Issues: ${issues.slice(0, 3).join('; ')}`
+  }
+
+  return {
+    itemId: 'R6',
+    points,
+    maxPoints: 1.0,
+    passed: points >= 0.7,
+    reasoning,
+  }
+}
+
+function validatePhysicalLawsConsistency(response: any): ItemScore {
+  const findings = response?.keyFindings || []
+  const stateOfTheArt = response?.stateOfTheArt || []
+
+  if (!Array.isArray(findings) || findings.length === 0) {
+    return {
+      itemId: 'R8',
+      points: 0.5, // Partial credit - can't verify but also no violations
+      maxPoints: 1.0,
+      passed: false,
+      reasoning: 'No findings to validate against physical laws',
+    }
+  }
+
+  const violations: string[] = []
+
+  // Check for obvious thermodynamic violations
+  const PHYSICAL_LIMITS = {
+    efficiency: { max: 100, unit: '%', name: 'efficiency' },
+    carnot: { max: 85, unit: '%', name: 'Carnot efficiency at typical temps' },
+    solarCell: { max: 47, unit: '%', name: 'single-junction solar cell (Shockley-Queisser)' },
+    batteryEnergy: { max: 500, unit: 'Wh/kg', name: 'battery gravimetric energy density' },
+    temperature: { min: -273.15, unit: '°C', name: 'absolute zero' },
+  }
+
+  for (const finding of findings) {
+    const value = finding.value
+    const unit = finding.unit?.toLowerCase() || ''
+    const description = (finding.finding || '').toLowerCase()
+
+    // Check efficiency claims
+    if (unit === '%' && value !== undefined) {
+      if (value > 100) {
+        violations.push(`Efficiency ${value}% exceeds 100% (thermodynamically impossible)`)
+      }
+      if (description.includes('solar') && description.includes('single') && value > 47) {
+        violations.push(`Single-junction solar efficiency ${value}% exceeds Shockley-Queisser limit of ~47%`)
+      }
+    }
+
+    // Check battery energy density claims
+    if ((unit.includes('wh/kg') || unit.includes('wh kg')) && value !== undefined) {
+      if (value > 500 && !description.includes('theoretical')) {
+        violations.push(`Battery energy density ${value} Wh/kg exceeds practical limits without 'theoretical' qualifier`)
+      }
+    }
+
+    // Check for negative absolute temperature
+    if ((unit === '°c' || unit === 'c' || unit === 'celsius') && value !== undefined) {
+      if (value < -273.15) {
+        violations.push(`Temperature ${value}°C is below absolute zero`)
+      }
+    }
+    if ((unit === 'k' || unit === 'kelvin') && value !== undefined) {
+      if (value < 0) {
+        violations.push(`Temperature ${value}K is negative (impossible)`)
+      }
+    }
+  }
+
+  let points = 0
+  let reasoning = ''
+
+  if (violations.length === 0) {
+    points = 1.0
+    reasoning = `All ${findings.length} findings are consistent with known physical laws and limits`
+  } else if (violations.length <= 1) {
+    points = 0.5
+    reasoning = `Minor violation found: ${violations[0]}`
+  } else {
+    points = 0
+    reasoning = `Multiple physical law violations: ${violations.slice(0, 3).join('; ')}`
+  }
+
+  return {
+    itemId: 'R8',
+    points,
+    maxPoints: 1.0,
+    passed: points >= 0.7,
+    reasoning,
+  }
+}
+
 // ============================================================================
 // Rubric Items
 // ============================================================================
@@ -354,8 +508,14 @@ const researchRubricItems: RubricItem[] = [
     description: 'Cross-domain patterns identified',
     points: 1.0,
     category: 'novelty',
-    passCondition: 'At least 1 cross-domain pattern or connection identified between different research areas',
-    // No automated validation - requires AI judge
+    passCondition: 'At least 2 actionable cross-domain patterns identified with specific techniques from other fields',
+    partialConditions: [
+      { condition: '3+ valid cross-domain patterns', points: 1.0 },
+      { condition: '2 valid patterns', points: 0.75 },
+      { condition: '1 valid pattern', points: 0.5 },
+      { condition: 'No valid patterns', points: 0.25 },
+    ],
+    automatedValidation: validateCrossDomainPatterns,
   },
   {
     id: 'R7',
@@ -377,7 +537,12 @@ const researchRubricItems: RubricItem[] = [
     points: 1.0,
     category: 'accuracy',
     passCondition: 'All findings are consistent with established physical laws (thermodynamics, conservation laws, etc.)',
-    // No automated validation - requires AI judge
+    partialConditions: [
+      { condition: 'No violations', points: 1.0 },
+      { condition: '1 minor violation', points: 0.5 },
+      { condition: 'Multiple violations', points: 0 },
+    ],
+    automatedValidation: validatePhysicalLawsConsistency,
   },
   {
     id: 'R9',
