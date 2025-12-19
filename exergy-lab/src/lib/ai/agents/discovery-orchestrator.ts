@@ -624,7 +624,7 @@ export class DiscoveryOrchestrator {
       // Graceful degradation: Create fallback research result
       const errorMsg = error instanceof Error ? error.message : 'Unknown error'
       console.error('Research phase failed, creating fallback result:', errorMsg)
-      this.emitThinking('error', `Research API timeout or error: ${errorMsg}. Using fallback research data.`)
+      this.emitThinking('validating', `Research API timeout or error: ${errorMsg}. Using fallback research data.`)
 
       const durationMs = Date.now() - (this.phaseStartTime || Date.now())
       const fallbackResearch = this.createFallbackResearch(query)
