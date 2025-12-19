@@ -620,7 +620,40 @@ export class DiscoveryOrchestrator {
     } catch (error) {
       // Stop heartbeat on error
       this.stopHeartbeat()
-      throw error
+
+      // Graceful degradation: Create fallback research result
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error'
+      console.error('Research phase failed, creating fallback result:', errorMsg)
+      this.emitThinking('error', `Research API timeout or error: ${errorMsg}. Using fallback research data.`)
+
+      const durationMs = Date.now() - (this.phaseStartTime || Date.now())
+      const fallbackResearch = this.createFallbackResearch(query)
+
+      return {
+        phase: 'research',
+        finalOutput: fallbackResearch,
+        finalScore: 4.0, // Low score to indicate failure
+        passed: false, // Mark as failed but allow continuation
+        iterations: [{
+          iterationNumber: 1,
+          output: fallbackResearch,
+          evaluation: {
+            score: 4.0,
+            passed: false,
+            feedback: `Research phase failed due to timeout or API error: ${errorMsg}. Using minimal fallback data to allow discovery to continue.`,
+            strengths: [],
+            weaknesses: ['API timeout or error prevented full research'],
+            failedCriteria: ['Source Coverage', 'Research Quality'],
+            passedItems: [],
+            recommendations: ['Retry with a simpler query', 'Check API connectivity', 'Reduce search scope'],
+            confidenceScore: 20,
+            timestamp: new Date(),
+            judgeModel: 'fallback',
+          },
+          durationMs,
+        }],
+        durationMs,
+      }
     }
   }
 
@@ -743,6 +776,50 @@ export class DiscoveryOrchestrator {
         }],
         durationMs,
       }
+    }
+  }
+
+  /**
+   * Create a fallback research result when API fails
+   * Ensures discovery can continue with minimal data
+   */
+  private createFallbackResearch(query: string): ResearchResult {
+    return {
+      sources: [
+        {
+          id: 'fallback-1',
+          type: 'paper',
+          title: `Fallback: Research on ${query.substring(0, 50)}`,
+          authors: ['System Fallback'],
+          journal: 'Fallback Data',
+          year: new Date().getFullYear(),
+          doi: 'fallback/timeout',
+          abstract: 'Minimal fallback data due to API timeout or error. Discovery continuing with limited research.',
+          citationCount: 0,
+          relevanceScore: 0.3,
+        },
+      ],
+      keyFindings: [
+        {
+          finding: `Investigating ${query.substring(0, 100)}`,
+          source: 'Fallback Data',
+          relevance: 0.3,
+        },
+        {
+          finding: 'Limited research data available due to API timeout',
+          source: 'System',
+          relevance: 0.2,
+        },
+      ],
+      technologicalGaps: [
+        {
+          description: 'API timeout prevented full gap analysis',
+          severity: 'medium',
+          potentialSolution: 'Retry with simpler query or check connectivity',
+        },
+      ],
+      materialsData: [],
+      crossDomainInsights: [],
     }
   }
 
