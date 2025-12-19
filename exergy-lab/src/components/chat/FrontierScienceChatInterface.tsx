@@ -201,8 +201,10 @@ export function FrontierScienceChatInterface({
               <ArrowLeft className="h-5 w-5" />
             </Button>
           )}
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500/10 to-purple-500/10 text-blue-600">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500/10 to-purple-500/10 text-blue-600 relative">
             <Cpu className="w-5 h-5" />
+            <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-blue-500 rounded-full animate-ping" />
+            <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-blue-500 rounded-full" />
           </div>
           <div className="flex-1">
             <h1 className="text-2xl font-semibold text-foreground">{pageTitle}</h1>
@@ -485,12 +487,9 @@ function IdleState({
     <div className="flex flex-col h-full">
       {/* Main Content - Centered */}
       <div className="flex-1 flex flex-col items-center justify-center py-8 px-4">
-        {/* Pulsing Cpu Icon */}
+        {/* Large Cpu Icon - Color pulse only */}
         <div className="mb-8 relative flex justify-center">
-          <div className="relative inline-flex">
-            <Cpu size={60} className="text-blue-500 animate-pulse" />
-            <span className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full animate-ping" />
-          </div>
+          <Cpu size={80} className="text-blue-500 animate-pulse" />
         </div>
 
         {/* Title - Bigger and responsive */}
