@@ -258,15 +258,12 @@ export class DiscoveryOrchestrator {
     this.lastHeartbeatTime = Date.now()
 
     this.heartbeatInterval = setInterval(() => {
-      const elapsed = Date.now() - this.phaseStartTime
-      const elapsedSeconds = Math.floor(elapsed / 1000)
-
       if (this.currentPhase && this.thinkingCallback) {
         const phaseDisplay = this.currentPhase.charAt(0).toUpperCase() + this.currentPhase.slice(1)
         this.thinkingCallback({
           phase: this.currentPhase,
           activity: 'generating',
-          message: `Still processing ${phaseDisplay} phase... (${elapsedSeconds}s elapsed)`,
+          message: `Still processing ${phaseDisplay} phase...`,
         })
       }
 
