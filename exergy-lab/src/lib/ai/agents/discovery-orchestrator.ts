@@ -635,15 +635,16 @@ export class DiscoveryOrchestrator {
         finalScore: 4.0, // Low score to indicate failure
         passed: false, // Mark as failed but allow continuation
         iterations: [{
-          iterationNumber: 1,
+          iteration: 1,
           output: fallbackResearch,
-          evaluation: {
-            score: 4.0,
+          judgeResult: {
+            rubricId: 'research-rubric',
+            phase: 'research',
+            totalScore: 4.0,
             passed: false,
-            feedback: `Research phase failed due to timeout or API error: ${errorMsg}. Using minimal fallback data to allow discovery to continue.`,
-            strengths: [],
-            weaknesses: ['API timeout or error prevented full research'],
-            failedCriteria: ['Source Coverage', 'Research Quality'],
+            itemScores: [],
+            reasoning: `Research phase failed due to timeout or API error: ${errorMsg}. Using minimal fallback data to allow discovery to continue.`,
+            failedItems: [],
             passedItems: [],
             recommendations: ['Retry with a simpler query', 'Check API connectivity', 'Reduce search scope'],
             confidenceScore: 20,
