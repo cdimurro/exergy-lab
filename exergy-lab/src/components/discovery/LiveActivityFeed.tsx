@@ -61,25 +61,24 @@ interface LiveActivityFeedProps {
 // ============================================================================
 
 function getActivityIcon(type: ActivityType, phase?: DiscoveryPhase) {
+  // Neutral icons - use muted/foreground colors throughout
   switch (type) {
     case 'thinking':
-      // Different icons based on phase for more context
-      // Consolidated 4-phase model: research, hypothesis, validation, output
-      if (phase === 'research') return <Search size={14} className="text-blue-500" />
-      if (phase === 'hypothesis') return <Lightbulb size={14} className="text-amber-500" />
-      if (phase === 'validation') return <FlaskConical size={14} className="text-purple-500" />
-      if (phase === 'output') return <CheckCircle2 size={14} className="text-emerald-500" />
-      return <Brain size={14} className="text-blue-500" />
+      if (phase === 'research') return <Search size={14} className="text-muted-foreground" />
+      if (phase === 'hypothesis') return <Lightbulb size={14} className="text-muted-foreground" />
+      if (phase === 'validation') return <FlaskConical size={14} className="text-muted-foreground" />
+      if (phase === 'output') return <CheckCircle2 size={14} className="text-muted-foreground" />
+      return <Brain size={14} className="text-muted-foreground" />
     case 'iteration':
-      return <Sparkles size={14} className="text-indigo-500" />
+      return <Sparkles size={14} className="text-muted-foreground" />
     case 'score':
-      return <TrendingUp size={14} className="text-emerald-500" />
+      return <TrendingUp size={14} className="text-muted-foreground" />
     case 'phase_start':
-      return <ArrowRight size={14} className="text-blue-500" />
+      return <ArrowRight size={14} className="text-muted-foreground" />
     case 'phase_complete':
-      return <CheckCircle2 size={14} className="text-emerald-500" />
+      return <CheckCircle2 size={14} className="text-foreground" />
     case 'phase_failed':
-      return <AlertTriangle size={14} className="text-amber-500" />
+      return <AlertTriangle size={14} className="text-foreground" />
     default:
       return <Brain size={14} className="text-muted-foreground" />
   }
@@ -107,10 +106,7 @@ function ScoreChange({ current, previous }: { current: number; previous?: number
         {current.toFixed(1)}/10
       </span>
       {change !== 0 && (
-        <span className={cn(
-          'flex items-center text-xs font-medium',
-          isImprovement ? 'text-emerald-600' : 'text-amber-600'
-        )}>
+        <span className="flex items-center text-xs font-medium text-muted-foreground">
           {isImprovement ? (
             <TrendingUp size={12} className="mr-0.5" />
           ) : (
@@ -150,16 +146,10 @@ function ActivityItemCard({ activity, showTimestamp }: { activity: ActivityItem;
         {getActivityIcon(activity.type, activity.phase)}
       </div>
 
-      {/* Content */}
+      {/* Content - Neutral styling for all activity types */}
       <div className={cn(
-        'rounded-lg border p-2 transition-colors',
-        activity.type === 'iteration' && activity.passed && 'bg-emerald-500/5 border-emerald-500/20',
-        activity.type === 'iteration' && !activity.passed && 'bg-amber-500/5 border-amber-500/20',
-        activity.type === 'thinking' && 'bg-blue-500/5 border-blue-500/20',
-        activity.type === 'phase_complete' && 'bg-emerald-500/5 border-emerald-500/20',
-        activity.type === 'phase_failed' && 'bg-amber-500/10 border-amber-500/30',
-        activity.type === 'phase_start' && 'bg-muted/50 border-border',
-        !['iteration', 'thinking', 'phase_complete', 'phase_failed', 'phase_start'].includes(activity.type) && 'bg-card border-border'
+        'rounded-lg border p-2 transition-colors bg-card border-border',
+        activity.type === 'phase_start' && 'bg-muted/50'
       )}>
         {/* Header */}
         <div className="flex items-start justify-between gap-2">
@@ -213,13 +203,13 @@ function ActivityItemCard({ activity, showTimestamp }: { activity: ActivityItem;
                   </ul>
                 )}
 
-                {/* Judge result details */}
+                {/* Judge result details - Neutral styling */}
                 {hasJudgeResult && activity.judgeResult && (
                   <div className="space-y-2">
                     {/* Passed criteria */}
                     {activity.judgeResult.itemScores?.filter(s => s.passed).length > 0 && (
                       <div>
-                        <span className="text-xs font-medium text-emerald-600 flex items-center gap-1 mb-1">
+                        <span className="text-xs font-medium text-foreground flex items-center gap-1 mb-1">
                           <CheckCircle2 size={10} />
                           Criteria Passed
                         </span>
@@ -229,7 +219,7 @@ function ActivityItemCard({ activity, showTimestamp }: { activity: ActivityItem;
                             .slice(0, 3)
                             .map((s, i) => (
                               <li key={i} className="flex items-center gap-1">
-                                <span className="text-emerald-500">✓</span>
+                                <span className="text-foreground">✓</span>
                                 {s.itemId}: {s.points}/{s.maxPoints}
                               </li>
                             ))}
@@ -240,7 +230,7 @@ function ActivityItemCard({ activity, showTimestamp }: { activity: ActivityItem;
                     {/* Failed criteria */}
                     {activity.judgeResult.itemScores?.filter(s => !s.passed).length > 0 && (
                       <div>
-                        <span className="text-xs font-medium text-amber-600 flex items-center gap-1 mb-1">
+                        <span className="text-xs font-medium text-foreground flex items-center gap-1 mb-1">
                           <AlertCircle size={10} />
                           Needs Improvement
                         </span>
@@ -250,7 +240,7 @@ function ActivityItemCard({ activity, showTimestamp }: { activity: ActivityItem;
                             .slice(0, 3)
                             .map((s, i) => (
                               <li key={i} className="flex items-center gap-1">
-                                <span className="text-amber-500">!</span>
+                                <span className="text-foreground">!</span>
                                 {s.itemId}: {s.points}/{s.maxPoints}
                               </li>
                             ))}
@@ -261,7 +251,7 @@ function ActivityItemCard({ activity, showTimestamp }: { activity: ActivityItem;
                     {/* Recommendations */}
                     {activity.judgeResult.recommendations && activity.judgeResult.recommendations.length > 0 && (
                       <div>
-                        <span className="text-xs font-medium text-blue-600 flex items-center gap-1 mb-1">
+                        <span className="text-xs font-medium text-foreground flex items-center gap-1 mb-1">
                           <Lightbulb size={10} />
                           Recommendations
                         </span>

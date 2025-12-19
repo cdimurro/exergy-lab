@@ -148,12 +148,12 @@ export function PartialResultsCard({
   })
 
   return (
-    <div className={cn('border rounded-xl overflow-hidden bg-card flex flex-col max-h-[85vh]', className)}>
-      {/* Header - Matches FrontierScienceProgressCard style */}
-      <div className="flex items-center justify-between p-5 border-b bg-muted/30">
+    <div className={cn('border rounded-xl overflow-hidden bg-card flex flex-col h-full max-h-[calc(100vh-8rem)]', className)}>
+      {/* Header - With subtle amber accent for warning state */}
+      <div className="flex items-center justify-between p-5 border-b bg-muted/30 shrink-0">
         <div className="flex items-center gap-4 flex-1 min-w-0">
-          <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center shrink-0">
-            <AlertTriangle className="text-muted-foreground" size={20} />
+          <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center shrink-0">
+            <AlertTriangle className="text-amber-600" size={20} />
           </div>
           <div>
             <span className="text-base font-semibold text-foreground">Partial Results Available</span>
@@ -255,11 +255,13 @@ export function PartialResultsCard({
           </div>
         )}
 
-        {/* Recovery Recommendations */}
+        {/* Recovery Recommendations - With green accent for improvement */}
         {result.recoveryRecommendations && result.recoveryRecommendations.length > 0 && (
           <div className="p-5 border-b">
             <div className="flex items-center gap-2 mb-4">
-              <Lightbulb size={18} className="text-muted-foreground" />
+              <div className="w-6 h-6 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                <Lightbulb size={14} className="text-emerald-600" />
+              </div>
               <span className="text-base font-semibold text-foreground uppercase tracking-wide">
                 How to Improve
               </span>
@@ -285,11 +287,13 @@ export function PartialResultsCard({
           </div>
         )}
 
-        {/* Completed Steps */}
+        {/* Completed Steps - With green accent */}
         {result.completedPhases.length > 0 && (
           <div className="p-5 border-b">
             <div className="flex items-center gap-2 mb-4">
-              <Check size={18} className="text-muted-foreground" />
+              <div className="w-6 h-6 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                <Check size={14} className="text-emerald-600" />
+              </div>
               <span className="text-base font-semibold text-foreground uppercase tracking-wide">
                 Completed Steps ({result.completedPhases.length})
               </span>
@@ -310,11 +314,13 @@ export function PartialResultsCard({
           </div>
         )}
 
-        {/* Failed Steps */}
+        {/* Failed Steps - With subtle red accent */}
         {result.failedPhases.length > 0 && (
           <div className="p-5 border-b">
             <div className="flex items-center gap-2 mb-4">
-              <X size={18} className="text-muted-foreground" />
+              <div className="w-6 h-6 rounded-full bg-red-500/10 flex items-center justify-center">
+                <X size={14} className="text-red-500" />
+              </div>
               <span className="text-base font-semibold text-foreground uppercase tracking-wide">
                 Failed Steps ({result.failedPhases.length})
               </span>
@@ -514,8 +520,8 @@ function PhaseResultRow({ phase, isExpanded, onToggle, status, onRetry }: PhaseR
               className={cn(
                 'w-8 h-8 rounded-full flex items-center justify-center shrink-0',
                 status === 'completed'
-                  ? 'bg-foreground/10 text-foreground'
-                  : 'bg-muted text-muted-foreground'
+                  ? 'bg-emerald-500/10 text-emerald-600'
+                  : 'bg-red-500/10 text-red-500'
               )}
             >
               {status === 'completed' ? <Check size={16} /> : <X size={16} />}

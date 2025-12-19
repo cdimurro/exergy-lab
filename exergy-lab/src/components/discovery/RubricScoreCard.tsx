@@ -52,9 +52,7 @@ export function RubricScoreCard({
           <div
             className={cn(
               'px-2 py-1 rounded-md text-xs font-medium',
-              judgeResult.passed
-                ? 'bg-emerald-500/10 text-emerald-600'
-                : 'bg-amber-500/10 text-amber-600'
+              'bg-muted text-foreground'
             )}
           >
             {judgeResult.passed ? 'PASSED' : 'NEEDS WORK'}
@@ -67,13 +65,10 @@ export function RubricScoreCard({
         </div>
       </button>
 
-      {/* Progress bar */}
+      {/* Progress bar - Neutral styling */}
       <div className="h-1 bg-muted">
         <div
-          className={cn(
-            'h-full transition-all duration-500',
-            judgeResult.passed ? 'bg-emerald-500' : 'bg-amber-500'
-          )}
+          className="h-full transition-all duration-500 bg-foreground/60"
           style={{ width: `${percentage}%` }}
         />
       </div>
@@ -88,15 +83,15 @@ export function RubricScoreCard({
             ))}
           </div>
 
-          {/* Iteration hint */}
+          {/* Iteration hint - Neutral styling */}
           {judgeResult.iterationHint && (
-            <div className="flex items-start gap-2 p-3 rounded-md bg-blue-500/5 border border-blue-200/50">
-              <Lightbulb size={16} className="text-blue-500 mt-0.5 shrink-0" />
+            <div className="flex items-start gap-2 p-3 rounded-md bg-muted/50 border border-border">
+              <Lightbulb size={16} className="text-muted-foreground mt-0.5 shrink-0" />
               <div>
-                <div className="text-xs font-medium text-blue-600 mb-0.5">
+                <div className="text-xs font-medium text-foreground mb-0.5">
                   Improvement Hint
                 </div>
-                <div className="text-sm text-blue-700">
+                <div className="text-sm text-muted-foreground">
                   {judgeResult.iterationHint}
                 </div>
               </div>
@@ -126,7 +121,7 @@ export function RubricScoreCard({
 }
 
 /**
- * Circular score display
+ * Circular score display - Neutral styling
  */
 function ScoreCircle({
   score,
@@ -147,11 +142,8 @@ function ScoreCircle({
     <div
       className={cn(
         'rounded-full flex items-center justify-center font-bold',
-        'border-2',
-        sizeClasses[size],
-        passed
-          ? 'bg-emerald-500/10 border-emerald-500 text-emerald-600'
-          : 'bg-amber-500/10 border-amber-500 text-amber-600'
+        'border-2 bg-muted border-border text-foreground',
+        sizeClasses[size]
       )}
     >
       {score.toFixed(1)}
@@ -160,21 +152,19 @@ function ScoreCircle({
 }
 
 /**
- * Individual rubric item row
+ * Individual rubric item row - Neutral styling
  */
 function RubricItemRow({ item }: { item: ItemScore }) {
-  const percentage = (item.points / item.maxPoints) * 100
-
   return (
     <div className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50 transition-colors">
-      {/* Status icon */}
+      {/* Status icon - Neutral colors */}
       <div
         className={cn(
           'w-5 h-5 rounded-full flex items-center justify-center shrink-0',
           item.passed
-            ? 'bg-emerald-500 text-white'
+            ? 'bg-foreground/80 text-background'
             : item.points > 0
-              ? 'bg-amber-400 text-white'
+              ? 'bg-muted-foreground/60 text-background'
               : 'bg-muted text-muted-foreground'
         )}
       >
@@ -193,12 +183,7 @@ function RubricItemRow({ item }: { item: ItemScore }) {
           <span className="text-sm font-medium text-foreground truncate">
             {item.itemId}
           </span>
-          <span
-            className={cn(
-              'text-xs tabular-nums shrink-0',
-              item.passed ? 'text-emerald-600' : 'text-amber-600'
-            )}
-          >
+          <span className="text-xs tabular-nums shrink-0 text-muted-foreground">
             {item.points.toFixed(1)}/{item.maxPoints.toFixed(1)}
           </span>
         </div>
@@ -229,14 +214,7 @@ export function CompactRubricSummary({
 
   return (
     <div className={cn('flex items-center gap-2', className)}>
-      <div
-        className={cn(
-          'flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium',
-          judgeResult.passed
-            ? 'bg-emerald-500/10 text-emerald-600'
-            : 'bg-amber-500/10 text-amber-600'
-        )}
-      >
+      <div className="flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-muted text-foreground">
         {judgeResult.passed ? <Check size={12} /> : <Circle size={12} />}
         <span>{judgeResult.totalScore.toFixed(1)}/10</span>
       </div>
@@ -259,16 +237,15 @@ export function RubricProgressBar({ scores, className }: RubricProgressBarProps)
   return (
     <div className={cn('flex gap-0.5 h-2 rounded-full overflow-hidden', className)}>
       {scores.map((item, index) => {
-        const percentage = (item.points / item.maxPoints) * 100
         return (
           <div
             key={item.itemId || index}
             className={cn(
               'flex-1 transition-all duration-300',
               item.passed
-                ? 'bg-emerald-500'
+                ? 'bg-foreground/70'
                 : item.points > 0
-                  ? 'bg-amber-400'
+                  ? 'bg-muted-foreground/50'
                   : 'bg-muted'
             )}
             title={`${item.itemId}: ${item.points.toFixed(1)}/${item.maxPoints.toFixed(1)}`}

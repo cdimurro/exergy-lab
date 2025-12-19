@@ -206,7 +206,7 @@ export function FrontierScienceChatInterface({
               <ArrowLeft className="h-5 w-5" />
             </Button>
           )}
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500/10 to-purple-500/10 text-blue-600">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500/10 to-teal-500/10 text-emerald-600">
             <Cpu className="w-5 h-5 animate-pulse" />
           </div>
           <div className="flex-1">
@@ -498,18 +498,13 @@ function IdleState({
     <div className="flex flex-col h-full">
       {/* Main Content - Centered */}
       <div className="flex-1 flex flex-col items-center justify-center py-8 px-4">
-        {/* Large Cpu Icon - Enhanced pulsing effect */}
-        <div className="mb-8 relative flex justify-center">
-          <div className="relative">
-            <Cpu size={80} className="text-blue-600 animate-[pulse_2s_ease-in-out_infinite]" />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-full h-full rounded-lg bg-blue-500/20 animate-[ping_2s_ease-in-out_infinite]" />
-            </div>
-          </div>
+        {/* Large Cpu Icon - Simple green */}
+        <div className="mb-4 flex justify-center">
+          <Cpu size={96} className="text-emerald-600" />
         </div>
 
-        {/* Title - Solid blue with proper overflow handling */}
-        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-4 text-blue-600 text-center px-4 overflow-visible">
+        {/* Title - Green accent color */}
+        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-6 text-center px-4 text-emerald-600">
           Discovery Engine
         </h1>
 
@@ -525,20 +520,20 @@ function IdleState({
           </h3>
           <ul className="space-y-4 text-base text-muted-foreground">
             <li className="flex items-start gap-4">
-              <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0 mt-0.5">
-                <span className="text-sm font-semibold text-blue-600">1</span>
+              <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0 mt-0.5">
+                <span className="text-sm font-semibold text-emerald-600">1</span>
               </div>
               <span><strong className="text-foreground">Be specific</strong> — Include target metrics, materials, or performance thresholds</span>
             </li>
             <li className="flex items-start gap-4">
-              <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0 mt-0.5">
-                <span className="text-sm font-semibold text-blue-600">2</span>
+              <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0 mt-0.5">
+                <span className="text-sm font-semibold text-emerald-600">2</span>
               </div>
               <span><strong className="text-foreground">Define constraints</strong> — Mention cost, temperature, scalability requirements</span>
             </li>
             <li className="flex items-start gap-4">
-              <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0 mt-0.5">
-                <span className="text-sm font-semibold text-blue-600">3</span>
+              <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0 mt-0.5">
+                <span className="text-sm font-semibold text-emerald-600">3</span>
               </div>
               <span><strong className="text-foreground">State the goal</strong> — What problem are you trying to solve?</span>
             </li>

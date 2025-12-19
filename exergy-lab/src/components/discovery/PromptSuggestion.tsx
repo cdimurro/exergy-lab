@@ -135,11 +135,11 @@ export function PromptSuggestion({
 
   return (
     <div className={cn('border rounded-xl overflow-hidden bg-card', className)}>
-      {/* Header */}
+      {/* Header - With green accent */}
       <div className="flex items-center justify-between p-5 border-b bg-muted/20">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-            <Sparkles className="text-foreground" size={20} />
+          <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center">
+            <Sparkles className="text-emerald-600" size={20} />
           </div>
           <div>
             <span className="text-base font-semibold text-foreground">
