@@ -11,7 +11,6 @@ import { cn } from '@/lib/utils'
 import type { DiscoveryPhase, PhaseProgressDisplay, RecoveryRecommendation } from '@/types/frontierscience'
 import { getPhaseMetadata } from '@/types/frontierscience'
 import { PhaseTimeline } from './PhaseTimeline'
-import { PulsingBrain } from './ThinkingIndicator'
 import { PhaseResultsDropdown, generatePhaseKeyFindings } from './PhaseResultsDropdown'
 import { LiveActivityFeed, type ActivityItem } from './LiveActivityFeed'
 import { Button } from '@/components/ui/button'
@@ -28,6 +27,7 @@ import {
   Lightbulb,
   Download,
   Send,
+  Cpu,
   Loader2,
   MessageSquare,
   ArrowRight,
@@ -135,7 +135,7 @@ export function FrontierScienceProgressCard({
             </>
           ) : (
             <>
-              <PulsingBrain />
+              <Cpu className="w-5 h-5 text-blue-500 animate-pulse shrink-0" />
               <div>
                 <span className="text-sm font-medium text-foreground">Discovery in Progress</span>
                 <p className="text-xs text-muted-foreground">Analyzing and validating research...</p>
@@ -839,7 +839,7 @@ export function MinimalProgress({
 
   return (
     <div className={cn('flex items-center gap-3', className)}>
-      <PulsingBrain className="shrink-0" />
+      <Cpu className="w-5 h-5 text-blue-500 animate-pulse shrink-0" />
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between mb-1">
           <span className="text-xs text-muted-foreground truncate">

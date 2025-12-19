@@ -201,10 +201,8 @@ export function FrontierScienceChatInterface({
               <ArrowLeft className="h-5 w-5" />
             </Button>
           )}
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500/10 to-purple-500/10 text-blue-600 relative">
-            <Cpu className="w-5 h-5" />
-            <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-blue-500 rounded-full animate-ping" />
-            <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-blue-500 rounded-full" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500/10 to-purple-500/10 text-blue-600">
+            <Cpu className="w-5 h-5 animate-pulse" />
           </div>
           <div className="flex-1">
             <h1 className="text-2xl font-semibold text-foreground">{pageTitle}</h1>

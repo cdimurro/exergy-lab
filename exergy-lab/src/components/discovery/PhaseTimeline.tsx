@@ -272,7 +272,7 @@ function PhaseNode({
       >
         {/* Status indicator badges */}
         {status === 'running' && (
-          <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-blue-500 rounded-full animate-ping" />
+          <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-blue-500 rounded-full" />
         )}
         {status === 'completed' && passed && (
           <CheckCircle className="absolute -top-1.5 -right-1.5 w-5 h-5 text-emerald-500 bg-white rounded-full" />
