@@ -485,13 +485,18 @@ function IdleState({
     <div className="flex flex-col h-full">
       {/* Main Content - Centered */}
       <div className="flex-1 flex flex-col items-center justify-center py-8 px-4">
-        {/* Large Cpu Icon - Color pulse only */}
+        {/* Large Cpu Icon - Enhanced pulsing effect */}
         <div className="mb-8 relative flex justify-center">
-          <Cpu size={80} className="text-blue-500 animate-pulse" />
+          <div className="relative">
+            <Cpu size={80} className="text-blue-600 animate-[pulse_2s_ease-in-out_infinite]" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-full h-full rounded-lg bg-blue-500/20 animate-[ping_2s_ease-in-out_infinite]" />
+            </div>
+          </div>
         </div>
 
-        {/* Title - Bigger and responsive */}
-        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent text-center px-4">
+        {/* Title - Solid blue with proper overflow handling */}
+        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-4 text-blue-600 text-center px-4 overflow-visible">
           Discovery Engine
         </h1>
 
