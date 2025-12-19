@@ -120,7 +120,7 @@ export class SelfCritiqueAgent {
     // Log the critique
     diagnosticLogger.logAgentReasoning({
       agentType: 'self_critique',
-      phase: 'synthesis',
+      phase: 'output', // Consolidated: self-critique is part of output phase
       reasoning: [{
         step: 1,
         timestamp: Date.now(),
@@ -304,6 +304,9 @@ export class SelfCritiqueAgent {
   ): ImprovementSuggestion | null {
     const highImpactCount = weaknesses.filter(w => w.impact === 'high').length
 
+    // Map to consolidated 4-phase model:
+    // research (research + synthesis + screening), hypothesis (hypothesis + experiment),
+    // validation (simulation + exergy + tea + patent + validation), output (rubric_eval + publication)
     const categoryImprovements: Record<CritiqueCategory, {
       phase: DiscoveryPhase | 'general'
       current: string
@@ -319,14 +322,14 @@ export class SelfCritiqueAgent {
         difficulty: 'moderate',
       },
       physical_validity: {
-        phase: 'simulation',
+        phase: 'validation', // Consolidated: simulation is now part of validation
         current: 'Some physical constraints may not be properly enforced',
         suggested: 'Add explicit checks for thermodynamic limits and material constraints',
         impact: 'Ensures discovery respects fundamental physical laws',
         difficulty: 'moderate',
       },
       practical_feasibility: {
-        phase: 'synthesis',
+        phase: 'research', // Consolidated: synthesis is now part of research
         current: 'Practical implementation challenges not fully addressed',
         suggested: 'Include cost estimates, scalability analysis, and supply chain considerations',
         impact: 'Better alignment with real-world implementation requirements',
@@ -340,7 +343,7 @@ export class SelfCritiqueAgent {
         difficulty: 'easy',
       },
       numerical_quality: {
-        phase: 'simulation',
+        phase: 'validation', // Consolidated: simulation is now part of validation
         current: 'Simulation convergence or numerical stability issues detected',
         suggested: 'Review mesh quality, time stepping, and convergence criteria',
         impact: 'More reliable simulation results',
@@ -396,12 +399,13 @@ export class SelfCritiqueAgent {
     const topFailedItem = failedItems[0]
     const suggestion = topFailedItem.suggestions?.[0] || 'Review and improve this area'
 
+    // Map to consolidated 4-phase model
     const phaseMap: Record<BenchmarkType, DiscoveryPhase | 'general'> = {
       frontierscience: 'general',
-      domain_specific: 'simulation',
-      practicality: 'synthesis',
+      domain_specific: 'validation', // Consolidated: simulation is now part of validation
+      practicality: 'research', // Consolidated: synthesis is now part of research
       literature: 'research',
-      simulation_convergence: 'simulation',
+      simulation_convergence: 'validation', // Consolidated: simulation is now part of validation
     }
 
     return {

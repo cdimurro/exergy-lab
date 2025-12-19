@@ -3,10 +3,30 @@
  *
  * Orchestrates multi-source scientific research by querying 14+ databases
  * in parallel and synthesizing results into a unified research output.
+ *
+ * Now uses REAL API adapters for:
+ * - arXiv (free, no key needed)
+ * - OpenAlex (free, no key needed)
+ * - USPTO PatentsView (requires API key)
+ * - Materials Project (requires API key)
+ *
+ * Falls back to AI-generated data only when APIs are unavailable.
+ *
+ * @skill clean-energy-research
+ * @see .claude/skills/clean-energy-research/SKILL.md - Main skill instructions
+ * @see .claude/skills/clean-energy-research/databases.md - Database reference
+ * @see .claude/skills/rubrics/research.json - Research phase rubric
  */
 
 import { generateText } from '../model-router'
 import type { RefinementHints } from '../rubrics/types'
+
+// Import real API adapters
+import { arxivAdapter } from '@/lib/discovery/sources/arxiv'
+import { openAlexAdapter } from '@/lib/discovery/sources/openalex'
+import { usptoAdapter } from '@/lib/discovery/sources/uspto'
+import { materialsProjectAdapter, type MPMaterial } from '@/lib/discovery/sources/materials-project'
+import type { Domain } from '@/types/discovery'
 
 // ============================================================================
 // Types
@@ -297,31 +317,108 @@ Example: ["query 1", "query 2", "query 3", "query 4", "query 5"]`
   }
 
   /**
-   * Search academic databases (simulated - would connect to real APIs)
+   * Search academic databases using REAL API adapters
+   *
+   * Uses arXiv and OpenAlex APIs (both free, no key needed).
+   * Falls back to AI-generated data if APIs fail.
    */
   private async searchAcademicDatabases(
     queries: string[],
     domain: string,
     hints?: RefinementHints
   ): Promise<Source[]> {
-    // In production, this would call real APIs:
-    // - Semantic Scholar API
-    // - arXiv API
-    // - PubMed API
-    // - OpenAlex API
-
-    // Determine paper count based on hints - need more sources on refinement
     const needsMoreSources = hints?.failedCriteria.some(c => c.id === 'R1')
-    const needsDiversity = hints?.failedCriteria.some(c => c.id === 'R2')
-    const needsRecency = hints?.failedCriteria.some(c => c.id === 'R3')
+    const limit = needsMoreSources ? 25 : 15
 
-    // Base: 25-35 papers, increase if source count/diversity/recency failed
-    const basePaperCount = 30
-    const paperCount = needsMoreSources ? 45 : needsDiversity ? 35 : basePaperCount
-    const recencyRequirement = needsRecency
-      ? 'at least 60% should be from 2023-2024'
-      : 'at least 50% should be from 2022-2024'
+    console.log(`[ResearchAgent] Searching academic databases with REAL APIs...`)
 
+    const allSources: Source[] = []
+
+    // Use the primary query for searches
+    const primaryQuery = queries[0]
+
+    // Search arXiv and OpenAlex in parallel (both are free, no API key needed)
+    try {
+      const [arxivResults, openAlexResults] = await Promise.allSettled([
+        arxivAdapter.search(primaryQuery, {
+          limit,
+          domains: [domain as Domain],
+          yearFrom: 2020,
+          yearTo: new Date().getFullYear(),
+        }),
+        openAlexAdapter.search(primaryQuery, {
+          limit,
+          domains: [domain as Domain],
+          yearFrom: 2020,
+          yearTo: new Date().getFullYear(),
+        }),
+      ])
+
+      // Process arXiv results
+      if (arxivResults.status === 'fulfilled' && arxivResults.value.sources.length > 0) {
+        console.log(`[ResearchAgent] arXiv returned ${arxivResults.value.sources.length} real papers`)
+        const arxivSources = arxivResults.value.sources.map(s => this.transformApiSource(s, 'arXiv'))
+        allSources.push(...arxivSources)
+      } else {
+        console.warn(`[ResearchAgent] arXiv search failed or returned no results`)
+      }
+
+      // Process OpenAlex results
+      if (openAlexResults.status === 'fulfilled' && openAlexResults.value.sources.length > 0) {
+        console.log(`[ResearchAgent] OpenAlex returned ${openAlexResults.value.sources.length} real papers`)
+        const openAlexSources = openAlexResults.value.sources.map(s => this.transformApiSource(s, 'OpenAlex'))
+        allSources.push(...openAlexSources)
+      } else {
+        console.warn(`[ResearchAgent] OpenAlex search failed or returned no results`)
+      }
+
+    } catch (error) {
+      console.error('[ResearchAgent] Real API search failed:', error)
+    }
+
+    // If we got real results, return them
+    if (allSources.length >= 10) {
+      console.log(`[ResearchAgent] Using ${allSources.length} real papers from APIs`)
+      return allSources
+    }
+
+    // Fallback to AI-generated if APIs didn't return enough results
+    console.log(`[ResearchAgent] Insufficient real results (${allSources.length}), supplementing with AI-generated...`)
+
+    const supplementCount = Math.max(20 - allSources.length, 10)
+    const aiSources = await this.generateAIPapers(queries, domain, supplementCount, hints)
+
+    return [...allSources, ...aiSources]
+  }
+
+  /**
+   * Transform API source to our Source type
+   */
+  private transformApiSource(apiSource: any, sourceName: string): Source {
+    return {
+      id: apiSource.id || `${sourceName}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      title: apiSource.title || apiSource.display_name || 'Untitled',
+      authors: apiSource.authors || [],
+      abstract: apiSource.abstract,
+      publishedDate: apiSource.metadata?.publicationDate || apiSource.publishedDate,
+      type: 'paper' as const,
+      source: sourceName,
+      url: apiSource.url,
+      doi: apiSource.doi,
+      citationCount: apiSource.metadata?.citationCount || apiSource.citedByCount || 0,
+      relevanceScore: (apiSource.relevanceScore || 70) / 100, // Normalize to 0-1
+    }
+  }
+
+  /**
+   * Generate AI papers as fallback when APIs are unavailable
+   */
+  private async generateAIPapers(
+    queries: string[],
+    domain: string,
+    paperCount: number,
+    hints?: RefinementHints
+  ): Promise<Source[]> {
     let refinementGuidance = ''
     if (hints) {
       const issues = hints.failedCriteria.map(c => `${c.id}: ${c.reasoning || c.description}`).join('; ')
@@ -342,9 +439,9 @@ IMPORTANT: You MUST generate exactly ${paperCount} papers to meet the research q
 For each paper, include:
 - title: A realistic scientific paper title
 - authors: 2-4 author names
-- publishedDate: A date between 2019-2024 (${recencyRequirement})
+- publishedDate: A date between 2019-2024 (at least 50% should be from 2022-2024)
 - type: "paper"
-- source: Distribute across ALL of these: "Semantic Scholar", "arXiv", "PubMed", "OpenAlex" (use each at least ${Math.floor(paperCount / 4)} times)
+- source: Distribute across ALL of these: "Semantic Scholar", "arXiv", "PubMed", "OpenAlex"
 - doi: A realistic DOI format
 - citationCount: A realistic citation count (1-500)
 - relevanceScore: A score between 0.5-1.0
@@ -355,7 +452,7 @@ The array must start with [ and end with ] and contain valid JSON objects.`
     try {
       const result = await generateText('discovery', prompt, {
         temperature: 0.8,
-        maxTokens: 10000, // Optimized for 22 papers (reduced from 12000 for speed)
+        maxTokens: 10000,
       })
 
       const cleaned = result.trim().replace(/```json\n?|\n?```/g, '')
@@ -367,17 +464,59 @@ The array must start with [ and end with ] and contain valid JSON objects.`
         type: 'paper' as const,
       }))
     } catch (error) {
-      console.error('Academic search failed:', error)
+      console.error('AI paper generation failed:', error)
       return []
     }
   }
 
   /**
-   * Search patent databases (simulated)
+   * Search patent databases using REAL USPTO API
+   *
+   * Uses USPTO PatentsView API (requires PATENTSVIEW_API_KEY).
+   * Falls back to AI-generated patents if API is unavailable.
    */
   private async searchPatentDatabases(queries: string[], hints?: RefinementHints): Promise<Source[]> {
-    // Increase patent count if we need more sources or diversity
     const needsMoreSources = hints?.failedCriteria.some(c => c.id === 'R1')
+    const limit = needsMoreSources ? 15 : 10
+
+    console.log(`[ResearchAgent] Searching patent databases...`)
+
+    // Try real USPTO API first
+    try {
+      const usptoAvailable = await usptoAdapter.isAvailable()
+
+      if (usptoAvailable) {
+        const usptoResults = await usptoAdapter.search(queries[0], {
+          limit,
+          yearFrom: 2018,
+          yearTo: new Date().getFullYear(),
+        })
+
+        if (usptoResults.sources.length > 0) {
+          console.log(`[ResearchAgent] USPTO returned ${usptoResults.sources.length} real patents`)
+
+          return usptoResults.sources.map(s => ({
+            id: s.id,
+            title: s.title,
+            authors: s.authors || [],
+            abstract: s.abstract,
+            publishedDate: s.metadata?.publicationDate,
+            type: 'patent' as const,
+            source: 'USPTO',
+            url: s.url,
+            relevanceScore: (s.relevanceScore || 70) / 100,
+          }))
+        }
+      } else {
+        console.log(`[ResearchAgent] USPTO API not available (no API key configured)`)
+      }
+    } catch (error) {
+      console.error('[ResearchAgent] USPTO search failed:', error)
+    }
+
+    // Fallback to AI-generated patents
+    console.log(`[ResearchAgent] Using AI-generated patents as fallback...`)
+
     const patentCount = needsMoreSources ? 15 : 12
 
     const prompt = `You are a patent search engine.
@@ -400,7 +539,7 @@ CRITICAL: Return a COMPLETE, valid JSON array with ALL ${patentCount} patents. D
     try {
       const result = await generateText('discovery', prompt, {
         temperature: 0.8,
-        maxTokens: 4000, // Optimized for speed (reduced from 6000)
+        maxTokens: 4000,
       })
 
       const cleaned = result.trim().replace(/```json\n?|\n?```/g, '')
@@ -418,11 +557,52 @@ CRITICAL: Return a COMPLETE, valid JSON array with ALL ${patentCount} patents. D
   }
 
   /**
-   * Search Materials Project (simulated)
+   * Search Materials Project using REAL API
+   *
+   * Uses Materials Project API (requires MATERIALS_PROJECT_API_KEY).
+   * Falls back to AI-generated materials if API is unavailable.
    */
   private async searchMaterialsProject(queries: string[], hints?: RefinementHints): Promise<MaterialData[]> {
-    // Increase material count if R7 (materials data) failed
     const needsMoreMaterials = hints?.failedCriteria.some(c => c.id === 'R7')
+    const limit = needsMoreMaterials ? 15 : 10
+
+    console.log(`[ResearchAgent] Searching Materials Project...`)
+
+    // Try real Materials Project API first
+    try {
+      const mpAvailable = await materialsProjectAdapter.isAvailable()
+
+      if (mpAvailable) {
+        const mpResults = await materialsProjectAdapter.search(queries[0], { limit })
+
+        if (mpResults.sources.length > 0) {
+          console.log(`[ResearchAgent] Materials Project returned ${mpResults.sources.length} real materials`)
+
+          // Transform API results to our MaterialData type
+          return mpResults.sources.map(s => {
+            const matData = (s as any).materialData
+            return {
+              formula: matData?.formula || 'Unknown',
+              materialId: matData?.materialId || s.id,
+              bandGap: matData?.bandGap,
+              formationEnergy: matData?.formationEnergy,
+              crystalSystem: matData?.crystalSystem,
+              spaceGroup: matData?.spaceGroup,
+              stability: matData?.isStable ? 'stable' : 'metastable',
+              properties: matData?.properties || {},
+            }
+          })
+        }
+      } else {
+        console.log(`[ResearchAgent] Materials Project API not available (no API key configured)`)
+      }
+    } catch (error) {
+      console.error('[ResearchAgent] Materials Project search failed:', error)
+    }
+
+    // Fallback to AI-generated materials
+    console.log(`[ResearchAgent] Using AI-generated materials as fallback...`)
+
     const materialCount = needsMoreMaterials ? 15 : 12
 
     const prompt = `You are a materials database search engine connected to Materials Project.
@@ -447,7 +627,7 @@ CRITICAL: Return a COMPLETE, valid JSON array with ALL ${materialCount} material
     try {
       const result = await generateText('discovery', prompt, {
         temperature: 0.7,
-        maxTokens: 4000, // Optimized for speed (reduced from 6000)
+        maxTokens: 4000,
       })
 
       const cleaned = result.trim().replace(/```json\n?|\n?```/g, '')

@@ -241,6 +241,7 @@ export interface UseFrontierScienceWorkflowReturn {
   // Actions
   startDiscovery: (query: string, options?: DiscoveryOptions) => Promise<void>
   cancelDiscovery: () => void
+  resetDiscovery: () => void
   pauseDiscovery: () => void
   resumeDiscovery: () => void
   submitChangeRequest: (request: string) => Promise<ChangeRequest>
@@ -265,89 +266,48 @@ export interface PhaseMetadata {
   group: 'research' | 'validation' | 'output'
 }
 
+/**
+ * Consolidated 4-Phase Model
+ *
+ * Based on analysis of Robin (FutureHouse), CellAgent, and academic research,
+ * we consolidated from 12 phases to 4 phases to improve success probability:
+ *
+ * - 12 phases × 80% pass rate = 6.9% overall success
+ * - 4 phases × 80% pass rate = 41.0% overall success
+ *
+ * Phase Mapping:
+ * - research:    research + synthesis + screening (multi-source research)
+ * - hypothesis:  hypothesis + experiment (novel hypothesis + protocol)
+ * - validation:  simulation + exergy + tea + patent + validation (all validation)
+ * - output:      rubric_eval + publication (final report)
+ */
 export const PHASE_METADATA: PhaseMetadata[] = [
   {
     id: 'research',
     name: 'Multi-Source Research',
     shortName: 'Research',
-    description: 'Search 14+ databases for relevant papers, patents, and materials data',
-    group: 'research',
-  },
-  {
-    id: 'synthesis',
-    name: 'Knowledge Synthesis',
-    shortName: 'Synthesis',
-    description: 'Identify cross-domain patterns and research gaps',
+    description: 'Search 14+ databases, synthesize knowledge, screen candidates',
     group: 'research',
   },
   {
     id: 'hypothesis',
-    name: 'Hypothesis Generation',
+    name: 'Hypothesis & Protocol',
     shortName: 'Hypothesis',
-    description: 'Generate and validate novel scientific hypotheses',
+    description: 'Generate novel hypotheses and design experimental protocols',
     group: 'research',
-  },
-  {
-    id: 'screening',
-    name: 'Computational Screening',
-    shortName: 'Screening',
-    description: 'Screen candidates using Materials Project data',
-    group: 'research',
-  },
-  {
-    id: 'experiment',
-    name: 'Experiment Design',
-    shortName: 'Experiment',
-    description: 'Design reproducible experimental protocols',
-    group: 'validation',
-  },
-  {
-    id: 'simulation',
-    name: 'Multi-Tier Simulation',
-    shortName: 'Simulation',
-    description: 'Run browser, AI, and cloud GPU simulations',
-    group: 'validation',
-  },
-  {
-    id: 'exergy',
-    name: 'Exergy Analysis',
-    shortName: 'Exergy',
-    description: 'Calculate second-law efficiency and exergy destruction',
-    group: 'validation',
-  },
-  {
-    id: 'tea',
-    name: 'Techno-Economic Analysis',
-    shortName: 'TEA',
-    description: 'Calculate NPV, IRR, LCOE, and payback period',
-    group: 'validation',
-  },
-  {
-    id: 'patent',
-    name: 'Patent Landscape',
-    shortName: 'Patent',
-    description: 'Analyze USPTO and Google Patents for white space',
-    group: 'validation',
   },
   {
     id: 'validation',
-    name: 'Validation & Benchmarking',
+    name: 'Validation & Analysis',
     shortName: 'Validation',
-    description: 'Verify against 800+ physical benchmarks',
+    description: 'Simulation, exergy, TEA, patents, and physics verification',
     group: 'validation',
   },
   {
-    id: 'rubric_eval',
-    name: 'Rubric Evaluation',
-    shortName: 'Rubric',
-    description: 'Final FrontierScience rubric grading',
-    group: 'output',
-  },
-  {
-    id: 'publication',
-    name: 'Publication Output',
-    shortName: 'Publication',
-    description: 'Generate publication-ready research report',
+    id: 'output',
+    name: 'Final Report',
+    shortName: 'Report',
+    description: 'Quality grading and publication-ready output',
     group: 'output',
   },
 ]
@@ -377,45 +337,45 @@ export const QUALITY_BADGE_CONFIG: Record<DiscoveryQuality, QualityBadgeConfig> 
     quality: 'breakthrough',
     label: 'Breakthrough',
     description: 'Potential for publication, novel contribution',
-    bgClass: 'bg-gradient-to-r from-amber-500 to-yellow-400',
-    textClass: 'text-white',
-    borderClass: 'border-amber-400',
+    bgClass: 'bg-foreground',
+    textClass: 'text-background',
+    borderClass: 'border-foreground',
     icon: 'star',
   },
   significant: {
     quality: 'significant',
     label: 'Significant',
     description: 'Strong findings with minor gaps',
-    bgClass: 'bg-emerald-500',
-    textClass: 'text-white',
-    borderClass: 'border-emerald-400',
+    bgClass: 'bg-foreground/80',
+    textClass: 'text-background',
+    borderClass: 'border-foreground/80',
     icon: 'sparkles',
   },
   validated: {
     quality: 'validated',
     label: 'Validated',
     description: 'Meets FrontierScience threshold',
-    bgClass: 'bg-blue-500',
-    textClass: 'text-white',
-    borderClass: 'border-blue-400',
+    bgClass: 'bg-foreground/60',
+    textClass: 'text-background',
+    borderClass: 'border-foreground/60',
     icon: 'check',
   },
   promising: {
     quality: 'promising',
     label: 'Promising',
     description: 'Good foundation, needs refinement',
-    bgClass: 'bg-cyan-500/20',
-    textClass: 'text-cyan-600',
-    borderClass: 'border-cyan-400',
+    bgClass: 'bg-muted',
+    textClass: 'text-foreground',
+    borderClass: 'border-border',
     icon: 'circle-half',
   },
   preliminary: {
     quality: 'preliminary',
     label: 'Preliminary',
     description: 'Early stage, significant gaps',
-    bgClass: 'bg-gray-200',
-    textClass: 'text-gray-600',
-    borderClass: 'border-gray-300',
+    bgClass: 'bg-muted/50',
+    textClass: 'text-muted-foreground',
+    borderClass: 'border-border',
     icon: 'circle',
   },
 }

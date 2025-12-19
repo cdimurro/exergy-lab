@@ -1,0 +1,220 @@
+{
+  "domain": "battery",
+  "lastUpdated": "2024-12",
+  "physicalLimits": {
+    "lithiumMetal": {
+      "name": "Lithium Metal Theoretical Capacity",
+      "value": 3860,
+      "unit": "mAh/g",
+      "description": "Maximum capacity for pure Li metal anode",
+      "source": "F/MW calculation"
+    },
+    "graphite": {
+      "name": "Graphite Theoretical Capacity",
+      "value": 372,
+      "unit": "mAh/g",
+      "description": "Maximum capacity for LiC6 intercalation",
+      "source": "LiC6 stoichiometry"
+    },
+    "silicon": {
+      "name": "Silicon Theoretical Capacity",
+      "value": 4200,
+      "unit": "mAh/g",
+      "description": "Maximum capacity for Li22Si5 alloy",
+      "volumeExpansion": 400,
+      "source": "Li22Si5 stoichiometry"
+    },
+    "lcoCapacity": {
+      "name": "LiCoO2 Theoretical Capacity",
+      "value": 274,
+      "unit": "mAh/g",
+      "practicalLimit": 165,
+      "description": "Limited by structural stability to ~60% Li extraction"
+    },
+    "nmc811Capacity": {
+      "name": "NMC811 Theoretical Capacity",
+      "value": 275,
+      "unit": "mAh/g",
+      "practicalLimit": 200,
+      "description": "LiNi0.8Mn0.1Co0.1O2"
+    },
+    "lfpCapacity": {
+      "name": "LiFePO4 Theoretical Capacity",
+      "value": 170,
+      "unit": "mAh/g",
+      "practicalLimit": 160,
+      "description": "Limited by 1e- per formula unit"
+    },
+    "sulfurCapacity": {
+      "name": "Sulfur Theoretical Capacity",
+      "value": 1675,
+      "unit": "mAh/g",
+      "description": "S8 + 16Li -> 8Li2S",
+      "challenges": ["polysulfide shuttle", "volume expansion"]
+    },
+    "sodiumMetal": {
+      "name": "Sodium Metal Theoretical Capacity",
+      "value": 1166,
+      "unit": "mAh/g",
+      "description": "Maximum capacity for pure Na metal anode"
+    }
+  },
+  "stateOfArt": {
+    "lfp": {
+      "name": "LFP (Lithium Iron Phosphate)",
+      "energyDensity": {
+        "gravimetric": 180,
+        "unit": "Wh/kg"
+      },
+      "cycleLife": 6000,
+      "voltage": 3.2,
+      "safety": "excellent",
+      "cost": "low",
+      "applications": ["EVs", "grid storage"]
+    },
+    "nmc811": {
+      "name": "NMC811",
+      "energyDensity": {
+        "gravimetric": 270,
+        "unit": "Wh/kg"
+      },
+      "cycleLife": 1000,
+      "voltage": 3.7,
+      "safety": "moderate",
+      "cost": "medium",
+      "applications": ["EVs", "consumer electronics"]
+    },
+    "nmcHighNickel": {
+      "name": "NMC (Ni>90%)",
+      "energyDensity": {
+        "gravimetric": 300,
+        "unit": "Wh/kg"
+      },
+      "cycleLife": 500,
+      "voltage": 3.7,
+      "safety": "lower",
+      "status": "emerging"
+    },
+    "solidState": {
+      "name": "Solid-State (various)",
+      "energyDensity": {
+        "gravimetric": 400,
+        "unit": "Wh/kg"
+      },
+      "cycleLife": 500,
+      "holder": "Various (Toyota, QuantumScape)",
+      "year": 2024,
+      "status": "development",
+      "challenges": ["interface resistance", "manufacturing cost"]
+    },
+    "liSulfur": {
+      "name": "Lithium-Sulfur",
+      "energyDensity": {
+        "gravimetric": 500,
+        "unit": "Wh/kg",
+        "theoretical": 2600
+      },
+      "cycleLife": 200,
+      "status": "research",
+      "challenges": ["polysulfide shuttle", "low cycle life"]
+    },
+    "sodiumIon": {
+      "name": "Sodium-Ion",
+      "energyDensity": {
+        "gravimetric": 160,
+        "unit": "Wh/kg"
+      },
+      "cycleLife": 3000,
+      "voltage": 3.0,
+      "cost": "very low",
+      "holder": "CATL",
+      "year": 2024,
+      "advantages": ["abundant materials", "safety", "cost"]
+    },
+    "redoxFlow": {
+      "name": "Vanadium Redox Flow",
+      "energyDensity": {
+        "gravimetric": 25,
+        "unit": "Wh/kg"
+      },
+      "cycleLife": 20000,
+      "applications": ["grid storage"],
+      "advantages": ["long duration", "scalable", "long life"]
+    }
+  },
+  "metrics": {
+    "gravimetricEnergy": {
+      "name": "Gravimetric Energy Density",
+      "unit": "Wh/kg",
+      "cellLevel": true,
+      "packPenalty": 0.6
+    },
+    "volumetricEnergy": {
+      "name": "Volumetric Energy Density",
+      "unit": "Wh/L",
+      "cellLevel": true
+    },
+    "cycleLife": {
+      "name": "Cycle Life",
+      "unit": "cycles",
+      "definition": "Number of cycles to 80% capacity retention",
+      "conditions": "Typically at 1C rate, room temperature"
+    },
+    "cRate": {
+      "name": "C-Rate",
+      "unit": "C",
+      "definition": "Current that discharges cell in 1/C hours",
+      "fastCharging": {
+        "standard": 1,
+        "fast": 3,
+        "ultrafast": 6
+      }
+    },
+    "coulombicEfficiency": {
+      "name": "Coulombic Efficiency",
+      "unit": "%",
+      "description": "Ratio of discharge to charge capacity",
+      "acceptable": 99.5,
+      "excellent": 99.9
+    },
+    "impedance": {
+      "name": "Internal Impedance",
+      "unit": "mOhm",
+      "measurementMethod": "EIS at 1kHz"
+    }
+  },
+  "validationRules": [
+    {
+      "id": "capacity_limit",
+      "rule": "Anode capacity cannot exceed theoretical limit for material",
+      "materials": {
+        "graphite": 372,
+        "silicon": 4200,
+        "lithium": 3860
+      },
+      "severity": "error"
+    },
+    {
+      "id": "energy_density_limit",
+      "rule": "Cell energy density limited by cathode + anode + electrolyte",
+      "practicalMax": 500,
+      "severity": "warning"
+    },
+    {
+      "id": "cycle_energy_tradeoff",
+      "rule": "High energy density typically trades off with cycle life",
+      "severity": "warning"
+    },
+    {
+      "id": "fast_charge_degradation",
+      "rule": "Fast charging (>3C) accelerates degradation",
+      "severity": "info"
+    },
+    {
+      "id": "ce_requirement",
+      "rule": "CE < 99% indicates significant side reactions",
+      "threshold": 99,
+      "severity": "warning"
+    }
+  ]
+}

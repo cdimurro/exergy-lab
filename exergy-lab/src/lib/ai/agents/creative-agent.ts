@@ -3,6 +3,14 @@
  *
  * Generates novel hypotheses and experiment designs based on research findings.
  * Uses FrontierScience methodology to ensure quality and novelty.
+ *
+ * @skill hypothesis-generation
+ * @skill experiment-design
+ * @see .claude/skills/hypothesis-generation/SKILL.md - Hypothesis criteria
+ * @see .claude/skills/experiment-design/SKILL.md - Protocol patterns
+ * @see .claude/skills/experiment-design/safety-protocols.md - Safety requirements
+ * @see .claude/skills/rubrics/hypothesis.json - Hypothesis rubric
+ * @see .claude/skills/rubrics/experiment.json - Experiment rubric
  */
 
 import { generateText } from '../model-router'

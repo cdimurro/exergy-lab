@@ -6,10 +6,32 @@
  */
 
 // ============================================================================
-// Discovery Phases
+// Discovery Phases (Consolidated 4-Phase Architecture)
 // ============================================================================
 
+/**
+ * Consolidated 4-Phase Discovery Architecture
+ *
+ * Based on research from:
+ * - FutureHouse Robin: 3-phase scientific discovery
+ * - CellAgent: 3-role architecture with 92% completion rate
+ * - Agentic AI for Scientific Discovery survey (arXiv:2503.08979)
+ *
+ * Mathematical justification:
+ * - 12 phases × 80% pass rate = 6.9% overall success
+ * - 4 phases × 80% pass rate = 41.0% overall success
+ */
 export type DiscoveryPhase =
+  | 'research'    // Combines: research + synthesis + screening
+  | 'hypothesis'  // Combines: hypothesis + experiment
+  | 'validation'  // Combines: simulation + exergy + tea + patent + validation
+  | 'output'      // Combines: rubric_eval + publication
+
+/**
+ * Legacy 12-phase types for backward compatibility
+ * Used during migration period to support existing discoveries
+ */
+export type LegacyDiscoveryPhase =
   | 'research'
   | 'synthesis'
   | 'hypothesis'
@@ -22,6 +44,34 @@ export type DiscoveryPhase =
   | 'validation'
   | 'rubric_eval'
   | 'publication'
+
+/**
+ * Map legacy phases to consolidated phases
+ */
+export const LEGACY_TO_CONSOLIDATED_PHASE: Record<LegacyDiscoveryPhase, DiscoveryPhase> = {
+  'research': 'research',
+  'synthesis': 'research',
+  'screening': 'research',
+  'hypothesis': 'hypothesis',
+  'experiment': 'hypothesis',
+  'simulation': 'validation',
+  'exergy': 'validation',
+  'tea': 'validation',
+  'patent': 'validation',
+  'validation': 'validation',
+  'rubric_eval': 'output',
+  'publication': 'output',
+}
+
+/**
+ * All consolidated phases in execution order
+ */
+export const ALL_DISCOVERY_PHASES: DiscoveryPhase[] = [
+  'research',
+  'hypothesis',
+  'validation',
+  'output',
+]
 
 export type RubricCategory =
   | 'completeness'
@@ -142,11 +192,43 @@ export interface RefinementConfig {
   earlyStopOnPass: boolean
 }
 
+/**
+ * Default refinement configuration
+ *
+ * Updated from stress test analysis:
+ * - Increased maxIterations from 3 to 5 (critical phases often need more iterations)
+ * - Reduced improvementThreshold to 0.2 (0.5 was too strict, caused early stops)
+ * - Extended timeout to allow more complex queries to complete
+ */
 export const DEFAULT_REFINEMENT_CONFIG: RefinementConfig = {
-  maxIterations: 3,
-  improvementThreshold: 0.5, // Need at least 0.5 point improvement
-  timeoutMs: 300000, // 5 minutes
+  maxIterations: 5,
+  improvementThreshold: 0.2, // Reduced from 0.5 - continue even with small improvements
+  timeoutMs: 360000, // 6 minutes (up from 5)
   earlyStopOnPass: true,
+}
+
+/**
+ * Phase-specific refinement configurations
+ * Critical phases get more iterations
+ */
+export const PHASE_REFINEMENT_CONFIG: Record<DiscoveryPhase, Partial<RefinementConfig>> = {
+  research: {
+    maxIterations: 4,
+    timeoutMs: 300000, // 5 min - research can be faster
+  },
+  hypothesis: {
+    maxIterations: 5,
+    timeoutMs: 420000, // 7 min - creative phase needs time
+    improvementThreshold: 0.1, // Very permissive - keep iterating
+  },
+  validation: {
+    maxIterations: 4,
+    timeoutMs: 360000, // 6 min
+  },
+  output: {
+    maxIterations: 3,
+    timeoutMs: 240000, // 4 min - report generation is fast
+  },
 }
 
 export interface RefinementResult<T> {
@@ -319,21 +401,24 @@ export function validateRubric(rubric: Rubric): { valid: boolean; errors: string
   return { valid: errors.length === 0, errors }
 }
 
+/**
+ * Calculate overall discovery score from phase results
+ *
+ * Weights for consolidated 4-phase architecture:
+ * - Research: 1.0 (foundation for all subsequent work)
+ * - Hypothesis: 1.5 (critical creative phase - core value proposition)
+ * - Validation: 1.3 (scientific rigor - must be correct)
+ * - Output: 0.8 (important but derivative of validation quality)
+ */
 export function calculateOverallScore(phaseResults: PhaseResult[]): number {
   if (phaseResults.length === 0) return 0
 
-  // Weighted average with critical phases weighted higher
-  const weights: Partial<Record<DiscoveryPhase, number>> = {
-    research: 1.0,
-    synthesis: 0.8,
-    hypothesis: 1.5, // Critical phase
-    screening: 0.8,
-    experiment: 1.2,
-    simulation: 1.5, // Critical phase
-    exergy: 1.0,
-    tea: 1.0,
-    patent: 0.7,
-    validation: 1.3, // Critical phase
+  // Weights for 4-phase consolidated architecture
+  const weights: Record<DiscoveryPhase, number> = {
+    research: 1.0,     // Foundation phase
+    hypothesis: 1.5,   // Critical creative phase
+    validation: 1.3,   // Scientific rigor
+    output: 0.8,       // Report quality
   }
 
   let weightedSum = 0
@@ -341,6 +426,38 @@ export function calculateOverallScore(phaseResults: PhaseResult[]): number {
 
   for (const result of phaseResults) {
     const weight = weights[result.phase] ?? 1.0
+    weightedSum += result.finalScore * weight
+    totalWeight += weight
+  }
+
+  return totalWeight > 0 ? weightedSum / totalWeight : 0
+}
+
+/**
+ * Legacy score calculation for backward compatibility
+ * Used when processing discoveries from 12-phase architecture
+ */
+export function calculateOverallScoreLegacy(phaseResults: PhaseResult<any>[]): number {
+  if (phaseResults.length === 0) return 0
+
+  const legacyWeights: Partial<Record<LegacyDiscoveryPhase, number>> = {
+    research: 1.0,
+    synthesis: 0.8,
+    hypothesis: 1.5,
+    screening: 0.8,
+    experiment: 1.2,
+    simulation: 1.5,
+    exergy: 1.0,
+    tea: 1.0,
+    patent: 0.7,
+    validation: 1.3,
+  }
+
+  let weightedSum = 0
+  let totalWeight = 0
+
+  for (const result of phaseResults) {
+    const weight = legacyWeights[result.phase as LegacyDiscoveryPhase] ?? 1.0
     weightedSum += result.finalScore * weight
     totalWeight += weight
   }

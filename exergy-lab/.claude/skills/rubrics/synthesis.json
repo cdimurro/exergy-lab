@@ -1,0 +1,128 @@
+{
+  "id": "synthesis-v1",
+  "name": "Synthesis Phase Rubric",
+  "phase": "synthesis",
+  "domain": "clean-energy",
+  "totalPoints": 10,
+  "successThreshold": 7,
+  "maxIterations": 2,
+  "metadata": {
+    "version": "1.0.0",
+    "author": "FrontierScience Discovery Engine",
+    "lastUpdated": "2024-12-17",
+    "sourceDataset": "Based on OpenAI FrontierScience methodology"
+  },
+  "items": [
+    {
+      "id": "SY1",
+      "description": "Comprehensive summary of findings",
+      "points": 2.0,
+      "category": "completeness",
+      "passCondition": "Summary integrates all research phases with key quantitative results",
+      "partialConditions": [
+        { "condition": "All phases synthesized with metrics", "points": 2.0 },
+        { "condition": "Most phases covered", "points": 1.5 },
+        { "condition": "Partial coverage", "points": 1.0 },
+        { "condition": "Minimal synthesis", "points": 0.5 }
+      ]
+    },
+    {
+      "id": "SY2",
+      "description": "TEA metrics calculated",
+      "points": 2.0,
+      "category": "economics",
+      "passCondition": "Techno-economic analysis includes LCOE/LCOH, NPV, IRR, and payback period",
+      "partialConditions": [
+        { "condition": "All 4 metrics calculated", "points": 2.0 },
+        { "condition": "3 metrics calculated", "points": 1.5 },
+        { "condition": "2 metrics calculated", "points": 1.0 },
+        { "condition": "1 metric calculated", "points": 0.5 }
+      ]
+    },
+    {
+      "id": "SY3",
+      "description": "Competitive positioning analyzed",
+      "points": 1.0,
+      "category": "economics",
+      "passCondition": "Results compared to current market alternatives with cost/performance benchmarks",
+      "partialConditions": [
+        { "condition": "Full competitive analysis", "points": 1.0 },
+        { "condition": "Basic comparison", "points": 0.5 },
+        { "condition": "No comparison", "points": 0 }
+      ]
+    },
+    {
+      "id": "SY4",
+      "description": "Novelty claims supported",
+      "points": 1.5,
+      "category": "novelty",
+      "passCondition": "All novelty claims supported by literature comparison and quantitative differentiation",
+      "partialConditions": [
+        { "condition": "All claims supported", "points": 1.5 },
+        { "condition": "Most claims supported", "points": 1.0 },
+        { "condition": "Some claims supported", "points": 0.5 },
+        { "condition": "Unsupported claims", "points": 0 }
+      ]
+    },
+    {
+      "id": "SY5",
+      "description": "Limitations acknowledged",
+      "points": 1.0,
+      "category": "methodology",
+      "passCondition": "Key limitations and assumptions explicitly stated with potential impact",
+      "partialConditions": [
+        { "condition": "Comprehensive limitations section", "points": 1.0 },
+        { "condition": "Some limitations noted", "points": 0.5 },
+        { "condition": "No limitations", "points": 0 }
+      ]
+    },
+    {
+      "id": "SY6",
+      "description": "Future work roadmap",
+      "points": 1.0,
+      "category": "completeness",
+      "passCondition": "Clear next steps with specific experiments or development milestones",
+      "partialConditions": [
+        { "condition": "Detailed roadmap with milestones", "points": 1.0 },
+        { "condition": "General next steps", "points": 0.5 },
+        { "condition": "No future work", "points": 0 }
+      ]
+    },
+    {
+      "id": "SY7",
+      "description": "Environmental impact assessed",
+      "points": 0.5,
+      "category": "sustainability",
+      "passCondition": "Life cycle considerations or carbon footprint addressed",
+      "partialConditions": [
+        { "condition": "Quantitative LCA", "points": 0.5 },
+        { "condition": "Qualitative discussion", "points": 0.25 },
+        { "condition": "Not addressed", "points": 0 }
+      ]
+    },
+    {
+      "id": "SY8",
+      "description": "Scalability assessment",
+      "points": 0.5,
+      "category": "feasibility",
+      "passCondition": "Scale-up considerations and manufacturing challenges addressed",
+      "partialConditions": [
+        { "condition": "Detailed scalability analysis", "points": 0.5 },
+        { "condition": "Basic discussion", "points": 0.25 },
+        { "condition": "Not addressed", "points": 0 }
+      ]
+    },
+    {
+      "id": "SY9",
+      "description": "IP landscape considered",
+      "points": 0.5,
+      "category": "commercialization",
+      "passCondition": "Patent landscape or freedom-to-operate considerations mentioned",
+      "partialConditions": [
+        { "condition": "IP analysis included", "points": 0.5 },
+        { "condition": "Brief mention", "points": 0.25 },
+        { "condition": "Not addressed", "points": 0 }
+      ]
+    }
+  ]
+}

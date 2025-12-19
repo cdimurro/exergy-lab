@@ -1,0 +1,118 @@
+{
+  "id": "hypothesis-v1",
+  "name": "Hypothesis Generation Rubric",
+  "phase": "hypothesis",
+  "domain": "clean-energy",
+  "totalPoints": 10,
+  "successThreshold": 7,
+  "maxIterations": 2,
+  "metadata": {
+    "version": "1.0.0",
+    "author": "FrontierScience Discovery Engine",
+    "lastUpdated": "2024-12-17",
+    "sourceDataset": "Based on OpenAI FrontierScience methodology"
+  },
+  "items": [
+    {
+      "id": "H1",
+      "description": "Falsifiable prediction with measurable outcome",
+      "points": 1.5,
+      "category": "methodology",
+      "passCondition": "Each hypothesis includes at least one prediction that is falsifiable and has a measurable outcome",
+      "partialConditions": [
+        { "condition": "80%+ hypotheses have falsifiable predictions", "points": 1.5 },
+        { "condition": "60-79% have falsifiable predictions", "points": 1.0 },
+        { "condition": "40-59% have falsifiable predictions", "points": 0.75 },
+        { "condition": "<40% have falsifiable predictions", "points": 0.25 }
+      ],
+      "validationFunction": "validateFalsifiablePrediction"
+    },
+    {
+      "id": "H2",
+      "description": "3+ supporting evidence with citations",
+      "points": 1.5,
+      "category": "evidence",
+      "passCondition": "Each hypothesis has at least 3 pieces of supporting evidence, each with proper citations",
+      "partialConditions": [
+        { "condition": "80%+ well-supported", "points": 1.5 },
+        { "condition": "60-79% well-supported", "points": 1.0 },
+        { "condition": "40-59% well-supported", "points": 0.75 },
+        { "condition": "<40% well-supported", "points": 0.25 }
+      ],
+      "validationFunction": "validateSupportingEvidence"
+    },
+    {
+      "id": "H3",
+      "description": "Novel contribution (not in literature)",
+      "points": 1.0,
+      "category": "novelty",
+      "passCondition": "Hypothesis represents a novel contribution not explicitly found in existing literature, with novelty score ≥70",
+      "partialConditions": [
+        { "condition": "Novelty score ≥80", "points": 1.0 },
+        { "condition": "Novelty score 70-79", "points": 0.75 },
+        { "condition": "Novelty score 50-69", "points": 0.5 },
+        { "condition": "Novelty score <50", "points": 0.25 }
+      ],
+      "validationFunction": "validateNovelty"
+    },
+    {
+      "id": "H4",
+      "description": "Thermodynamically feasible",
+      "points": 1.5,
+      "category": "thermodynamics",
+      "passCondition": "Hypothesis does not violate thermodynamic laws (Carnot efficiency, Betz limit, Shockley-Queisser limit, conservation laws)",
+      "requiresAIJudge": true,
+      "physicsChecks": [
+        "carnot_efficiency",
+        "shockley_queisser",
+        "betz_limit",
+        "conservation_laws"
+      ]
+    },
+    {
+      "id": "H5",
+      "description": "Materials available (Materials Project check)",
+      "points": 1.0,
+      "category": "feasibility",
+      "passCondition": "Required materials are available in Materials Project database or commercially available",
+      "requiresAIJudge": true,
+      "externalDataSource": "materials_project"
+    },
+    {
+      "id": "H6",
+      "description": "Clear causal mechanism proposed",
+      "points": 2.0,
+      "category": "methodology",
+      "passCondition": "Hypothesis includes a clear causal mechanism with at least 3 logical steps explaining how the intervention leads to the predicted outcome",
+      "partialConditions": [
+        { "condition": "Mechanism has 4+ steps with physical principles", "points": 2.0 },
+        { "condition": "Mechanism has 3 steps with clear logic", "points": 1.75 },
+        { "condition": "Mechanism has 2 steps", "points": 1.25 },
+        { "condition": "Mechanism has 1 step or unclear", "points": 0.5 }
+      ],
+      "validationFunction": "validateCausalMechanism"
+    },
+    {
+      "id": "H7",
+      "description": "Defined variables (IV, DV, controls)",
+      "points": 1.0,
+      "category": "methodology",
+      "passCondition": "Hypothesis clearly defines independent variable(s), dependent variable(s), and control variables",
+      "validationFunction": "validateVariables"
+    },
+    {
+      "id": "H8",
+      "description": "Feasibility score ≥ 65",
+      "points": 0.5,
+      "category": "feasibility",
+      "passCondition": "Overall feasibility score is at least 65%",
+      "partialConditions": [
+        { "condition": "Feasibility ≥75", "points": 0.5 },
+        { "condition": "Feasibility 65-74", "points": 0.375 },
+        { "condition": "Feasibility 50-64", "points": 0.25 },
+        { "condition": "Feasibility <50", "points": 0.125 }
+      ],
+      "validationFunction": "validateFeasibility"
+    }
+  ]
+}

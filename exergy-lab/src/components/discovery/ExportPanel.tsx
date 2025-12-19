@@ -142,19 +142,14 @@ const EXPORT_OPTIONS: ExportOption[] = [
   },
 ]
 
+/**
+ * Phase names for consolidated 4-phase model
+ */
 const PHASE_NAMES: Record<DiscoveryPhase, string> = {
-  research: 'Research',
-  synthesis: 'Synthesis',
-  hypothesis: 'Hypotheses',
-  screening: 'Screening',
-  experiment: 'Experiments',
-  simulation: 'Simulations',
-  exergy: 'Exergy Analysis',
-  tea: 'TEA Analysis',
-  patent: 'Patent Analysis',
-  validation: 'Validation',
-  rubric_eval: 'Rubric Evaluation',
-  publication: 'Publication',
+  research: 'Multi-Source Research',
+  hypothesis: 'Hypothesis & Protocol',
+  validation: 'Validation & Analysis',
+  output: 'Final Report',
 }
 
 // ============================================================================
@@ -300,9 +295,9 @@ function generateMarkdown(
           }
         }
 
-        // Experiment phase
-        if (phase.phase === 'experiment') {
-          const experiments = output.experiments || output
+        // Hypothesis phase - includes experiments in consolidated model
+        if (phase.phase === 'hypothesis') {
+          const experiments = output.experiments || output.experiment?.experiments || []
           if (Array.isArray(experiments) && experiments.length > 0) {
             lines.push('#### Designed Experiments')
             lines.push('')
@@ -319,66 +314,70 @@ function generateMarkdown(
           }
         }
 
-        // Simulation phase
-        if (phase.phase === 'simulation' && output.results) {
-          lines.push('#### Simulation Results')
-          lines.push('')
-          const results = Array.isArray(output.results) ? output.results : [output.results]
-          for (const r of results.slice(0, 3)) {
-            lines.push(`**${r.experimentId || 'Simulation'}**`)
+        // Validation phase - includes simulation, TEA, exergy in consolidated model
+        if (phase.phase === 'validation') {
+          // Simulation results
+          const simResults = output.simulation?.results || output.results
+          if (simResults) {
+            lines.push('#### Simulation Results')
             lines.push('')
-            if (r.convergenceMetrics) {
-              lines.push(`- Converged: ${r.convergenceMetrics.converged ? 'Yes' : 'No'}`)
-              lines.push(`- Iterations: ${r.convergenceMetrics.iterations}`)
-            }
-            if (r.outputs && Array.isArray(r.outputs)) {
+            const results = Array.isArray(simResults) ? simResults : [simResults]
+            for (const r of results.slice(0, 3)) {
+              lines.push(`**${r.experimentId || 'Simulation'}**`)
               lines.push('')
-              lines.push('*Key Outputs:*')
-              for (const o of r.outputs.slice(0, 5)) {
-                lines.push(`- ${o.name}: ${typeof o.value === 'number' ? o.value.toFixed(3) : o.value} ${o.unit || ''}`)
+              if (r.convergenceMetrics) {
+                lines.push(`- Converged: ${r.convergenceMetrics.converged ? 'Yes' : 'No'}`)
+                lines.push(`- Iterations: ${r.convergenceMetrics.iterations}`)
+              }
+              if (r.outputs && Array.isArray(r.outputs)) {
+                lines.push('')
+                lines.push('*Key Outputs:*')
+                for (const o of r.outputs.slice(0, 5)) {
+                  lines.push(`- ${o.name}: ${typeof o.value === 'number' ? o.value.toFixed(3) : o.value} ${o.unit || ''}`)
+                }
+              }
+              lines.push('')
+            }
+          }
+
+          // TEA results
+          const teaData = output.economics || output.tea
+          if (teaData) {
+            lines.push('#### Economic Analysis')
+            lines.push('')
+            const econ = teaData
+            if (econ.npv !== undefined) lines.push(`- **NPV:** $${econ.npv.toLocaleString()}`)
+            if (econ.irr !== undefined) lines.push(`- **IRR:** ${(econ.irr * 100).toFixed(1)}%`)
+            if (econ.lcoe !== undefined) lines.push(`- **LCOE:** $${econ.lcoe.toFixed(4)}/kWh`)
+            if (econ.paybackPeriod !== undefined) lines.push(`- **Payback Period:** ${econ.paybackPeriod.toFixed(1)} years`)
+            lines.push('')
+            if (econ.risks && econ.risks.length > 0) {
+              lines.push('*Identified Risks:*')
+              for (const risk of econ.risks.slice(0, 3)) {
+                lines.push(`- ⚠ ${risk}`)
+              }
+              lines.push('')
+            }
+          }
+
+          // Exergy results
+          const exergyData = output.exergy || output
+          if (exergyData.overallSecondLawEfficiency !== undefined) {
+            lines.push('#### Exergy Analysis')
+            lines.push('')
+            lines.push(`- **Second Law Efficiency:** ${(exergyData.overallSecondLawEfficiency * 100).toFixed(1)}%`)
+            if (exergyData.totalExergyDestruction !== undefined) {
+              lines.push(`- **Total Exergy Destruction:** ${exergyData.totalExergyDestruction.toFixed(1)} ${exergyData.unit || 'kJ'}`)
+            }
+            if (exergyData.recommendations && exergyData.recommendations.length > 0) {
+              lines.push('')
+              lines.push('*Recommendations:*')
+              for (const rec of exergyData.recommendations.slice(0, 3)) {
+                lines.push(`- ${rec}`)
               }
             }
             lines.push('')
           }
-        }
-
-        // TEA phase
-        if (phase.phase === 'tea' && output.economics) {
-          lines.push('#### Economic Analysis')
-          lines.push('')
-          const econ = output.economics
-          if (econ.npv !== undefined) lines.push(`- **NPV:** $${econ.npv.toLocaleString()}`)
-          if (econ.irr !== undefined) lines.push(`- **IRR:** ${(econ.irr * 100).toFixed(1)}%`)
-          if (econ.lcoe !== undefined) lines.push(`- **LCOE:** $${econ.lcoe.toFixed(4)}/kWh`)
-          if (econ.paybackPeriod !== undefined) lines.push(`- **Payback Period:** ${econ.paybackPeriod.toFixed(1)} years`)
-          lines.push('')
-          if (econ.risks && econ.risks.length > 0) {
-            lines.push('*Identified Risks:*')
-            for (const risk of econ.risks.slice(0, 3)) {
-              lines.push(`- ⚠ ${risk}`)
-            }
-            lines.push('')
-          }
-        }
-
-        // Exergy phase
-        if (phase.phase === 'exergy') {
-          lines.push('#### Exergy Analysis')
-          lines.push('')
-          if (output.overallSecondLawEfficiency !== undefined) {
-            lines.push(`- **Second Law Efficiency:** ${(output.overallSecondLawEfficiency * 100).toFixed(1)}%`)
-          }
-          if (output.totalExergyDestruction !== undefined) {
-            lines.push(`- **Total Exergy Destruction:** ${output.totalExergyDestruction.toFixed(1)} ${output.unit || 'kJ'}`)
-          }
-          if (output.recommendations && output.recommendations.length > 0) {
-            lines.push('')
-            lines.push('*Recommendations:*')
-            for (const rec of output.recommendations.slice(0, 3)) {
-              lines.push(`- ${rec}`)
-            }
-          }
-          lines.push('')
         }
       }
 
@@ -912,10 +911,8 @@ export function ExportPanel({
   const [copied, setCopied] = React.useState(false)
   const [showConfig, setShowConfig] = React.useState(false)
   const [config, setConfig] = React.useState<ExportConfig>({
-    includePhases: new Set([
-      'research', 'hypothesis', 'experiment', 'simulation',
-      'exergy', 'tea', 'validation'
-    ]),
+    // Consolidated 4-phase model
+    includePhases: new Set(['research', 'hypothesis', 'validation', 'output'] as DiscoveryPhase[]),
     includeRubricScores: true,
     includeIterationHistory: false,
     includeRawData: false,
@@ -1274,10 +1271,8 @@ export function QuickExportButton({
 
     try {
       const config: ExportConfig = {
-        includePhases: new Set([
-          'research', 'hypothesis', 'experiment', 'simulation',
-          'exergy', 'tea', 'validation'
-        ]),
+        // Consolidated 4-phase model
+        includePhases: new Set(['research', 'hypothesis', 'validation', 'output'] as DiscoveryPhase[]),
         includeRubricScores: true,
         includeIterationHistory: false,
         includeRawData: false,

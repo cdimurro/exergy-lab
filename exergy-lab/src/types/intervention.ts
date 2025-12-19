@@ -79,22 +79,18 @@ export interface DiscoveryConfiguration {
   preferredMaterials?: string[]  // Preferred materials
 }
 
+/**
+ * Default discovery configuration using consolidated 4-phase model
+ */
 export const DEFAULT_DISCOVERY_CONFIG: Omit<DiscoveryConfiguration, 'query'> = {
   domain: 'solar-photovoltaics',
   targetQuality: 'validated',
   enabledPhases: new Set([
-    'research',
-    'synthesis',
-    'hypothesis',
-    'screening',
-    'experiment',
-    'simulation',
-    'exergy',
-    'tea',
-    'validation',
-    'rubric_eval',
-    'publication',
-  ]),
+    'research',    // Combines: research + synthesis + screening
+    'hypothesis',  // Combines: hypothesis + experiment
+    'validation',  // Combines: simulation + exergy + tea + patent + validation
+    'output',      // Combines: rubric_eval + publication
+  ] as DiscoveryPhase[]),
   phaseSettings: new Map(),
   experimentTier: 'auto',
   simulationTier: 'auto',
@@ -395,6 +391,10 @@ export interface DomainConfig {
   typicalSimulationTier: SimulationTierNumber
 }
 
+/**
+ * Domain configurations using consolidated 4-phase model
+ * All domains enable all 4 consolidated phases by default
+ */
 export const DOMAIN_CONFIGS: DomainConfig[] = [
   {
     id: 'solar-photovoltaics',
@@ -403,7 +403,7 @@ export const DOMAIN_CONFIGS: DomainConfig[] = [
     icon: 'Sun',
     defaultPriorityMetrics: ['efficiency', 'stability', 'cost'],
     suggestedMaterials: ['perovskite', 'silicon', 'CIGS', 'CdTe'],
-    relevantPhases: ['research', 'hypothesis', 'experiment', 'simulation', 'exergy', 'tea'],
+    relevantPhases: ['research', 'hypothesis', 'validation', 'output'] as DiscoveryPhase[],
     typicalExperimentTier: 2,
     typicalSimulationTier: 2,
   },
@@ -414,7 +414,7 @@ export const DOMAIN_CONFIGS: DomainConfig[] = [
     icon: 'Battery',
     defaultPriorityMetrics: ['energy-density', 'cycle-life', 'safety', 'cost'],
     suggestedMaterials: ['LFP', 'NMC', 'solid-electrolyte', 'lithium-metal'],
-    relevantPhases: ['research', 'hypothesis', 'experiment', 'simulation', 'tea'],
+    relevantPhases: ['research', 'hypothesis', 'validation', 'output'] as DiscoveryPhase[],
     typicalExperimentTier: 2,
     typicalSimulationTier: 2,
   },
@@ -425,7 +425,7 @@ export const DOMAIN_CONFIGS: DomainConfig[] = [
     icon: 'Cloud',
     defaultPriorityMetrics: ['capacity', 'selectivity', 'regeneration-energy', 'cost'],
     suggestedMaterials: ['MOF', 'zeolite', 'amine-sorbent', 'ionic-liquid'],
-    relevantPhases: ['research', 'hypothesis', 'screening', 'simulation', 'exergy', 'tea'],
+    relevantPhases: ['research', 'hypothesis', 'validation', 'output'] as DiscoveryPhase[],
     typicalExperimentTier: 2,
     typicalSimulationTier: 2,
   },
@@ -436,7 +436,7 @@ export const DOMAIN_CONFIGS: DomainConfig[] = [
     icon: 'Wind',
     defaultPriorityMetrics: ['energy-efficiency', 'cost-per-ton', 'durability'],
     suggestedMaterials: ['sorbent', 'membrane', 'electrocatalyst'],
-    relevantPhases: ['research', 'hypothesis', 'experiment', 'simulation', 'exergy', 'tea'],
+    relevantPhases: ['research', 'hypothesis', 'validation', 'output'] as DiscoveryPhase[],
     typicalExperimentTier: 2,
     typicalSimulationTier: 2,
   },
@@ -447,7 +447,7 @@ export const DOMAIN_CONFIGS: DomainConfig[] = [
     icon: 'Zap',
     defaultPriorityMetrics: ['power-density', 'efficiency', 'durability', 'cost'],
     suggestedMaterials: ['platinum', 'SOFC-cathode', 'PEM-membrane', 'catalyst'],
-    relevantPhases: ['research', 'hypothesis', 'experiment', 'simulation', 'exergy', 'tea'],
+    relevantPhases: ['research', 'hypothesis', 'validation', 'output'] as DiscoveryPhase[],
     typicalExperimentTier: 2,
     typicalSimulationTier: 3,
   },
@@ -458,7 +458,7 @@ export const DOMAIN_CONFIGS: DomainConfig[] = [
     icon: 'Droplets',
     defaultPriorityMetrics: ['efficiency', 'current-density', 'durability', 'cost'],
     suggestedMaterials: ['PEM-catalyst', 'SOEC-electrode', 'alkaline-membrane'],
-    relevantPhases: ['research', 'hypothesis', 'experiment', 'simulation', 'exergy', 'tea'],
+    relevantPhases: ['research', 'hypothesis', 'validation', 'output'] as DiscoveryPhase[],
     typicalExperimentTier: 2,
     typicalSimulationTier: 3,
   },
@@ -469,7 +469,7 @@ export const DOMAIN_CONFIGS: DomainConfig[] = [
     icon: 'Atom',
     defaultPriorityMetrics: ['gravimetric-capacity', 'volumetric-capacity', 'kinetics'],
     suggestedMaterials: ['metal-hydride', 'MOF', 'carbon-nanotube', 'ammonia'],
-    relevantPhases: ['research', 'hypothesis', 'screening', 'simulation', 'exergy', 'tea'],
+    relevantPhases: ['research', 'hypothesis', 'validation', 'output'] as DiscoveryPhase[],
     typicalExperimentTier: 2,
     typicalSimulationTier: 2,
   },
@@ -480,7 +480,7 @@ export const DOMAIN_CONFIGS: DomainConfig[] = [
     icon: 'FlaskConical',
     defaultPriorityMetrics: ['activity', 'selectivity', 'stability', 'cost'],
     suggestedMaterials: ['transition-metal', 'single-atom', 'bimetallic', 'zeolite'],
-    relevantPhases: ['research', 'hypothesis', 'experiment', 'simulation', 'tea'],
+    relevantPhases: ['research', 'hypothesis', 'validation', 'output'] as DiscoveryPhase[],
     typicalExperimentTier: 3,
     typicalSimulationTier: 3,
   },
@@ -491,7 +491,7 @@ export const DOMAIN_CONFIGS: DomainConfig[] = [
     icon: 'Thermometer',
     defaultPriorityMetrics: ['ZT', 'power-factor', 'thermal-stability'],
     suggestedMaterials: ['bismuth-telluride', 'skutterudite', 'half-heusler'],
-    relevantPhases: ['research', 'hypothesis', 'experiment', 'simulation', 'exergy'],
+    relevantPhases: ['research', 'hypothesis', 'validation', 'output'] as DiscoveryPhase[],
     typicalExperimentTier: 2,
     typicalSimulationTier: 3,
   },
@@ -502,7 +502,7 @@ export const DOMAIN_CONFIGS: DomainConfig[] = [
     icon: 'Settings',
     defaultPriorityMetrics: [],
     suggestedMaterials: [],
-    relevantPhases: ['research', 'synthesis', 'hypothesis', 'experiment', 'simulation', 'validation'],
+    relevantPhases: ['research', 'hypothesis', 'validation', 'output'] as DiscoveryPhase[],
     typicalExperimentTier: 2,
     typicalSimulationTier: 2,
   },
@@ -516,19 +516,20 @@ export function getDomainConfig(domain: Domain): DomainConfig {
   return DOMAIN_CONFIGS.find(d => d.id === domain) || DOMAIN_CONFIGS[DOMAIN_CONFIGS.length - 1]
 }
 
+/**
+ * Get default phase settings for a domain using consolidated 4-phase model
+ */
 export function getDefaultPhaseSettings(domain: Domain): Map<DiscoveryPhase, PhaseSettings> {
   const config = getDomainConfig(domain)
   const settings = new Map<DiscoveryPhase, PhaseSettings>()
 
-  const allPhases: DiscoveryPhase[] = [
-    'research', 'synthesis', 'hypothesis', 'screening', 'experiment',
-    'simulation', 'exergy', 'tea', 'patent', 'validation', 'rubric_eval', 'publication'
-  ]
+  // Consolidated 4-phase model
+  const allPhases: DiscoveryPhase[] = ['research', 'hypothesis', 'validation', 'output']
 
   allPhases.forEach(phase => {
     settings.set(phase, {
       enabled: config.relevantPhases.includes(phase),
-      maxIterations: 3,
+      maxIterations: phase === 'hypothesis' ? 5 : phase === 'validation' ? 4 : 3, // Phase-specific iterations
     })
   })
 
@@ -542,10 +543,9 @@ export function isPhaseInterventionRequired(
   if (interactionLevel === 'autonomous') return false
   if (interactionLevel === 'manual') return true
 
-  // 'guided' mode - only key decision points
+  // 'guided' mode - only key decision points in consolidated 4-phase model
   const guidedInterventionPhases: DiscoveryPhase[] = [
-    'hypothesis',   // Select hypotheses to pursue
-    'experiment',   // Approve protocols
+    'hypothesis',   // Select hypotheses and approve protocols
     'validation',   // Accept/reject findings
   ]
 

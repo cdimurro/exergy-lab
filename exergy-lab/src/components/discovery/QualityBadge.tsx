@@ -59,14 +59,12 @@ export function QualityBadge({
           config.bgClass,
           config.textClass,
           config.borderClass,
-          sizeClasses[size],
-          quality === 'breakthrough' && 'shadow-lg shadow-amber-500/25'
+          sizeClasses[size]
         )}
       >
         <Icon
           size={iconSizes[size]}
           className={cn(
-            quality === 'breakthrough' && 'animate-pulse',
             config.icon === 'circle-half' && 'fill-current opacity-50'
           )}
         />
@@ -105,7 +103,6 @@ export function QualityScoreDisplay({
   showLabel = true,
   className,
 }: QualityScoreDisplayProps) {
-  const config = getQualityConfig(quality)
   const percentage = (score / maxScore) * 100
 
   return (
@@ -125,14 +122,7 @@ export function QualityScoreDisplay({
         </div>
         <div className="flex-1 h-3 bg-muted rounded-full overflow-hidden">
           <div
-            className={cn(
-              'h-full rounded-full transition-all duration-500',
-              quality === 'breakthrough' && 'bg-gradient-to-r from-amber-500 to-yellow-400',
-              quality === 'significant' && 'bg-emerald-500',
-              quality === 'validated' && 'bg-blue-500',
-              quality === 'promising' && 'bg-cyan-500',
-              quality === 'preliminary' && 'bg-gray-400'
-            )}
+            className="h-full rounded-full transition-all duration-500 bg-foreground/60"
             style={{ width: `${percentage}%` }}
           />
         </div>
@@ -159,16 +149,14 @@ export function CompactQualityIndicator({
     <div
       className={cn(
         'flex items-center gap-1.5 px-2 py-0.5 rounded-md text-sm font-medium',
-        passed
-          ? 'bg-emerald-500/10 text-emerald-600'
-          : 'bg-amber-500/10 text-amber-600',
+        'bg-muted text-foreground',
         className
       )}
     >
       {passed ? (
-        <Check size={14} className="text-emerald-500" />
+        <Check size={14} className="text-foreground" />
       ) : (
-        <Circle size={14} className="text-amber-500" />
+        <Circle size={14} className="text-muted-foreground" />
       )}
       <span>{score.toFixed(1)}/10</span>
     </div>

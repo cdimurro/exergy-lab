@@ -3,6 +3,12 @@
  *
  * Validates scientific outputs against physical laws, literature,
  * and FrontierScience rubrics. Acts as a rigorous quality gate.
+ *
+ * @skill physical-validation
+ * @see .claude/skills/physical-validation/SKILL.md - Validation workflow
+ * @see .claude/skills/physical-validation/benchmarks/ - Physics limits and records
+ * @see .claude/skills/rubrics/validation.json - Validation rubric
+ * @see .claude/skills/rubrics/simulation.json - Simulation rubric
  */
 
 import { generateText } from '../model-router'

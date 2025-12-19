@@ -1,0 +1,259 @@
+{
+  "domain": "carbon-capture",
+  "lastUpdated": "2024-12",
+  "physicalLimits": {
+    "minimumSeparationEnergy": {
+      "name": "Thermodynamic Minimum Separation Energy",
+      "value": 0.13,
+      "unit": "GJ/tCO2",
+      "description": "Theoretical minimum energy to separate CO2 from air at 400 ppm",
+      "source": "Gibbs free energy of mixing"
+    },
+    "minimumCompressionEnergy": {
+      "name": "Compression Energy (to 150 bar)",
+      "value": 0.36,
+      "unit": "GJ/tCO2",
+      "description": "Energy to compress CO2 for transport/storage"
+    },
+    "co2Concentration": {
+      "atmosphere": {
+        "value": 420,
+        "unit": "ppm"
+      },
+      "flueGas": {
+        "coal": 15,
+        "naturalGas": 4,
+        "unit": "%"
+      }
+    },
+    "adsorptionCapacityLimit": {
+      "name": "Maximum Physical Adsorption",
+      "value": 15,
+      "unit": "mmol/g",
+      "description": "Upper limit based on sorbent porosity and CO2 molecular size"
+    }
+  },
+  "stateOfArt": {
+    "meaAbsorption": {
+      "name": "MEA Absorption (Post-combustion)",
+      "capacity": {
+        "value": 1.5,
+        "unit": "mol CO2/mol amine"
+      },
+      "regenerationEnergy": {
+        "value": 3.5,
+        "range": [3.2, 4.0],
+        "unit": "GJ/tCO2"
+      },
+      "captureRate": {
+        "value": 90,
+        "unit": "%"
+      },
+      "cost": {
+        "value": 60,
+        "range": [50, 80],
+        "unit": "$/tCO2"
+      },
+      "trl": 9,
+      "degradation": "amine oxidation, thermal degradation"
+    },
+    "advancedAmines": {
+      "name": "Advanced Amine Solvents",
+      "capacity": {
+        "value": 2.0,
+        "unit": "mol CO2/mol amine"
+      },
+      "regenerationEnergy": {
+        "value": 2.5,
+        "range": [2.2, 3.0],
+        "unit": "GJ/tCO2"
+      },
+      "examples": ["piperazine blends", "sterically hindered amines"]
+    },
+    "solidSorbents": {
+      "name": "Solid Sorbents (TSA/PSA)",
+      "capacity": {
+        "value": 4,
+        "range": [2, 8],
+        "unit": "mmol/g"
+      },
+      "regenerationEnergy": {
+        "value": 2.5,
+        "range": [2.0, 3.5],
+        "unit": "GJ/tCO2"
+      },
+      "materials": ["amine-grafted silica", "MOFs", "zeolites"],
+      "cost": {
+        "value": 100,
+        "range": [70, 150],
+        "unit": "$/tCO2"
+      },
+      "trl": 6
+    },
+    "mofs": {
+      "name": "Metal-Organic Frameworks",
+      "capacity": {
+        "best": 8,
+        "typical": 4,
+        "unit": "mmol/g"
+      },
+      "selectivity": {
+        "co2n2": 200,
+        "description": "CO2/N2 selectivity"
+      },
+      "examples": ["Mg-MOF-74", "CALF-20", "SIFSIX-3-Zn"],
+      "challenges": ["water stability", "cost", "scale-up"],
+      "trl": 5
+    },
+    "dacLiquid": {
+      "name": "Direct Air Capture (Liquid)",
+      "energyRequirement": {
+        "value": 9,
+        "range": [8, 10],
+        "unit": "GJ/tCO2",
+        "type": "thermal"
+      },
+      "cost": {
+        "value": 400,
+        "range": [250, 600],
+        "unit": "$/tCO2"
+      },
+      "company": "Carbon Engineering",
+      "process": "KOH solution + calcium looping",
+      "trl": 8
+    },
+    "dacSolid": {
+      "name": "Direct Air Capture (Solid)",
+      "energyRequirement": {
+        "value": 6,
+        "range": [5, 8],
+        "unit": "GJ/tCO2",
+        "type": "low-grade heat"
+      },
+      "cost": {
+        "value": 450,
+        "range": [300, 600],
+        "unit": "$/tCO2"
+      },
+      "company": "Climeworks",
+      "process": "Amine-functionalized sorbent + TSA",
+      "trl": 8
+    },
+    "membranes": {
+      "name": "Membrane Separation",
+      "permeance": {
+        "value": 3000,
+        "unit": "GPU",
+        "material": "polymer"
+      },
+      "selectivity": {
+        "co2n2": 50,
+        "typical": [30, 100]
+      },
+      "advantages": ["low energy", "no chemicals", "compact"],
+      "challenges": ["selectivity-permeability tradeoff"]
+    },
+    "calciumLooping": {
+      "name": "Calcium Looping",
+      "capacity": {
+        "value": 17.8,
+        "unit": "mmol/g",
+        "material": "CaO"
+      },
+      "regenerationTemp": {
+        "value": 900,
+        "unit": "C"
+      },
+      "cycleStability": "degrades over cycles",
+      "advantages": ["cheap sorbent", "high capacity"]
+    }
+  },
+  "metrics": {
+    "adsorptionCapacity": {
+      "name": "CO2 Adsorption Capacity",
+      "unit": "mmol/g",
+      "conditions": "typically at 25C, 1 bar pure CO2"
+    },
+    "workingCapacity": {
+      "name": "Working Capacity",
+      "unit": "mmol/g",
+      "description": "Capacity difference between adsorption and desorption conditions"
+    },
+    "selectivity": {
+      "name": "CO2/N2 Selectivity",
+      "unit": "dimensionless",
+      "description": "Ratio of CO2 to N2 adsorption",
+      "acceptable": 20,
+      "excellent": 100
+    },
+    "regenerationEnergy": {
+      "name": "Regeneration Energy",
+      "unit": "GJ/tCO2",
+      "description": "Energy to release captured CO2",
+      "target": 2.0
+    },
+    "cycleStability": {
+      "name": "Cycle Stability",
+      "unit": "cycles",
+      "description": "Number of adsorption/desorption cycles before 10% capacity loss"
+    },
+    "captureRate": {
+      "name": "Capture Rate",
+      "unit": "%",
+      "description": "Percentage of CO2 captured from stream",
+      "typical": 90
+    },
+    "purity": {
+      "name": "CO2 Purity",
+      "unit": "%",
+      "description": "Purity of captured CO2 stream",
+      "forStorage": 95,
+      "forUtilization": 99
+    }
+  },
+  "costTargets": {
+    "pointSource": {
+      "current": 60,
+      "target": 30,
+      "unit": "$/tCO2",
+      "timeline": 2030
+    },
+    "dac": {
+      "current": 400,
+      "target": 100,
+      "unit": "$/tCO2",
+      "timeline": 2035
+    }
+  },
+  "validationRules": [
+    {
+      "id": "capacity_limit",
+      "rule": "Adsorption capacity cannot exceed physical limits (~15 mmol/g)",
+      "threshold": 15,
+      "severity": "error"
+    },
+    {
+      "id": "energy_floor",
+      "rule": "Regeneration energy cannot be below thermodynamic minimum",
+      "threshold": 0.13,
+      "severity": "error"
+    },
+    {
+      "id": "practical_energy",
+      "rule": "Claims <2 GJ/tCO2 regeneration need verification",
+      "threshold": 2.0,
+      "severity": "warning"
+    },
+    {
+      "id": "dac_cost",
+      "rule": "DAC costs <$100/tCO2 in 2024 are exceptional claims",
+      "threshold": 100,
+      "severity": "warning"
+    },
+    {
+      "id": "water_stability",
+      "rule": "Sorbent must be stable under humid conditions for practical use",
+      "severity": "info"
+    }
+  ]
+}

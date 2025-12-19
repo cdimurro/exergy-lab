@@ -64,9 +64,11 @@ function getActivityIcon(type: ActivityType, phase?: DiscoveryPhase) {
   switch (type) {
     case 'thinking':
       // Different icons based on phase for more context
+      // Consolidated 4-phase model: research, hypothesis, validation, output
       if (phase === 'research') return <Search size={14} className="text-blue-500" />
       if (phase === 'hypothesis') return <Lightbulb size={14} className="text-amber-500" />
-      if (phase === 'experiment') return <FlaskConical size={14} className="text-purple-500" />
+      if (phase === 'validation') return <FlaskConical size={14} className="text-purple-500" />
+      if (phase === 'output') return <CheckCircle2 size={14} className="text-emerald-500" />
       return <Brain size={14} className="text-blue-500" />
     case 'iteration':
       return <Sparkles size={14} className="text-indigo-500" />

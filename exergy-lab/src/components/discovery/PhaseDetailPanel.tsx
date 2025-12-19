@@ -68,96 +68,48 @@ interface PhaseDetailPanelProps {
 // Phase step descriptions for future phases
 // ============================================================================
 
+/**
+ * Phase steps for consolidated 4-phase model
+ */
 const PHASE_STEPS: Record<DiscoveryPhase, string[]> = {
   research: [
-    'Search academic databases (arXiv, PubMed, Google Scholar)',
-    'Query patent databases and technical reports',
-    'Retrieve materials science databases',
-    'Extract key findings and methodologies',
+    'Search academic databases (arXiv, OpenAlex, Semantic Scholar)',
+    'Query patent databases and materials project',
+    'Synthesize knowledge across domains',
+    'Screen candidates using computational methods',
     'Identify research gaps and opportunities',
   ],
-  synthesis: [
-    'Combine findings from multiple sources',
-    'Identify common themes and patterns',
-    'Resolve conflicting information',
-    'Build comprehensive knowledge base',
-  ],
   hypothesis: [
-    'Synthesize research findings',
-    'Identify novel mechanisms or approaches',
-    'Formulate testable scientific hypotheses',
-    'Evaluate plausibility and novelty',
-    'Assess alignment with existing literature',
-  ],
-  screening: [
-    'Apply thermodynamic constraints',
-    'Check physical feasibility bounds',
-    'Filter impractical approaches',
-    'Rank hypotheses by potential',
-  ],
-  experiment: [
+    'Generate novel scientific hypotheses',
+    'Evaluate novelty and testability',
     'Design experimental protocols',
     'Specify materials and equipment',
-    'Define success criteria',
-    'Outline safety considerations',
-  ],
-  simulation: [
-    'Set up computational models',
-    'Define simulation parameters',
-    'Run numerical experiments',
-    'Validate against known benchmarks',
-  ],
-  exergy: [
-    'Analyze energy flows and losses',
-    'Calculate thermodynamic efficiency',
-    'Identify improvement opportunities',
-    'Compare with theoretical limits',
-  ],
-  tea: [
-    'Estimate capital and operating costs',
-    'Project market potential',
-    'Assess economic viability',
-    'Compare with existing technologies',
-  ],
-  patent: [
-    'Search patent databases',
-    'Identify prior art',
-    'Assess patentability',
-    'Draft claims outline',
+    'Define success criteria and safety requirements',
   ],
   validation: [
-    'Cross-validate findings',
-    'Check consistency across phases',
-    'Identify remaining uncertainties',
-    'Generate confidence scores',
+    'Run simulations and numerical experiments',
+    'Perform exergy and thermodynamic analysis',
+    'Conduct techno-economic assessment (TEA)',
+    'Analyze patent landscape and IP freedom',
+    'Verify against 800+ physical benchmarks',
   ],
-  rubric_eval: [
+  output: [
     'Evaluate against FrontierScience rubric',
-    'Score individual criteria',
-    'Generate detailed feedback',
-    'Identify improvement areas',
-  ],
-  publication: [
-    'Structure findings for publication',
-    'Generate abstract and key points',
+    'Generate publication-ready report',
+    'Create abstract and key findings',
     'Format citations and references',
-    'Create publication-ready summary',
+    'Assess overall discovery quality',
   ],
 }
 
+/**
+ * Estimated durations for consolidated 4-phase model
+ */
 const PHASE_DURATIONS: Record<DiscoveryPhase, string> = {
-  research: '30-60 seconds',
-  synthesis: '20-40 seconds',
-  hypothesis: '45-90 seconds',
-  screening: '15-30 seconds',
-  experiment: '30-60 seconds',
-  simulation: '60-120 seconds',
-  exergy: '20-40 seconds',
-  tea: '30-60 seconds',
-  patent: '20-40 seconds',
-  validation: '30-60 seconds',
-  rubric_eval: '45-90 seconds',
-  publication: '30-60 seconds',
+  research: '60-120 seconds',   // Combines: research + synthesis + screening
+  hypothesis: '90-180 seconds', // Combines: hypothesis + experiment
+  validation: '120-240 seconds', // Combines: simulation + exergy + tea + patent + validation
+  output: '60-120 seconds',     // Combines: rubric_eval + publication
 }
 
 // ============================================================================

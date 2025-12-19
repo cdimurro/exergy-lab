@@ -150,19 +150,14 @@ const ACTION_STYLES: Record<
 // Phase Display Names
 // ============================================================================
 
+/**
+ * Phase display names for consolidated 4-phase model
+ */
 const PHASE_NAMES: Record<DiscoveryPhase, string> = {
-  research: 'Research',
-  synthesis: 'Synthesis',
-  hypothesis: 'Hypothesis Generation',
-  screening: 'Screening',
-  experiment: 'Experiment Design',
-  simulation: 'Simulation',
-  exergy: 'Exergy Analysis',
-  tea: 'TEA Analysis',
-  patent: 'Patent Analysis',
-  validation: 'Validation',
-  rubric_eval: 'Rubric Evaluation',
-  publication: 'Publication',
+  research: 'Multi-Source Research',
+  hypothesis: 'Hypothesis & Protocol',
+  validation: 'Validation & Analysis',
+  output: 'Final Report',
 }
 
 // ============================================================================

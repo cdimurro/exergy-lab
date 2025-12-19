@@ -1,0 +1,144 @@
+{
+  "id": "research-v1",
+  "name": "Research Phase Rubric",
+  "phase": "research",
+  "domain": "clean-energy",
+  "totalPoints": 10,
+  "successThreshold": 7,
+  "maxIterations": 3,
+  "metadata": {
+    "version": "1.0.0",
+    "author": "FrontierScience Discovery Engine",
+    "lastUpdated": "2024-12-17",
+    "sourceDataset": "Based on OpenAI FrontierScience methodology"
+  },
+  "items": [
+    {
+      "id": "R1",
+      "description": "20+ relevant sources found from academic databases",
+      "points": 1.0,
+      "category": "completeness",
+      "passCondition": "At least 20 relevant sources from Semantic Scholar, arXiv, PubMed, or other academic databases",
+      "partialConditions": [
+        { "condition": "50+ sources", "points": 1.0 },
+        { "condition": "30-49 sources", "points": 0.75 },
+        { "condition": "20-29 sources", "points": 0.5 },
+        { "condition": "10-19 sources", "points": 0.25 }
+      ],
+      "validationFunction": "validateSourceCount"
+    },
+    {
+      "id": "R2",
+      "description": "3+ source types (papers, patents, datasets, materials data)",
+      "points": 1.0,
+      "category": "completeness",
+      "passCondition": "Sources include at least 3 different types: academic papers, patents, datasets, materials databases, or technical reports",
+      "partialConditions": [
+        { "condition": "4+ source types", "points": 1.0 },
+        { "condition": "3 source types", "points": 0.75 },
+        { "condition": "2 source types", "points": 0.5 },
+        { "condition": "1 source type", "points": 0.25 }
+      ],
+      "validationFunction": "validateSourceDiversity"
+    },
+    {
+      "id": "R3",
+      "description": "40%+ sources from last 3 years",
+      "points": 1.0,
+      "category": "completeness",
+      "passCondition": "At least 40% of sources are from the last 3 years to ensure research currency",
+      "partialConditions": [
+        { "condition": "50%+ recent", "points": 1.0 },
+        { "condition": "40-49% recent", "points": 0.75 },
+        { "condition": "25-39% recent", "points": 0.5 },
+        { "condition": "<25% recent", "points": 0.25 }
+      ],
+      "validationFunction": "validateRecency"
+    },
+    {
+      "id": "R4",
+      "description": "5+ quantitative findings with units",
+      "points": 1.5,
+      "category": "accuracy",
+      "passCondition": "At least 5 key findings include specific numerical values with proper units (e.g., 'efficiency of 85%', 'temperature of 800°C')",
+      "partialConditions": [
+        { "condition": "10+ quantitative findings", "points": 1.5 },
+        { "condition": "7-9 quantitative findings", "points": 1.125 },
+        { "condition": "5-6 quantitative findings", "points": 0.75 },
+        { "condition": "3-4 quantitative findings", "points": 0.5 }
+      ],
+      "validationFunction": "validateQuantitativeFindings"
+    },
+    {
+      "id": "R5",
+      "description": "3+ technological gaps identified",
+      "points": 1.5,
+      "category": "novelty",
+      "passCondition": "At least 3 technological gaps or research opportunities identified from the literature",
+      "partialConditions": [
+        { "condition": "5+ gaps", "points": 1.5 },
+        { "condition": "4 gaps", "points": 1.25 },
+        { "condition": "3 gaps", "points": 1.0 },
+        { "condition": "2 gaps", "points": 0.5 }
+      ],
+      "validationFunction": "validateGapIdentification"
+    },
+    {
+      "id": "R6",
+      "description": "Cross-domain patterns identified",
+      "points": 1.0,
+      "category": "novelty",
+      "passCondition": "At least 2 actionable cross-domain patterns identified with specific techniques from other fields",
+      "partialConditions": [
+        { "condition": "3+ valid cross-domain patterns", "points": 1.0 },
+        { "condition": "2 valid patterns", "points": 0.75 },
+        { "condition": "1 valid pattern", "points": 0.5 },
+        { "condition": "No valid patterns", "points": 0.25 }
+      ],
+      "validationFunction": "validateCrossDomainPatterns"
+    },
+    {
+      "id": "R7",
+      "description": "Materials Project data integrated",
+      "points": 1.0,
+      "category": "completeness",
+      "passCondition": "At least 5 materials from Materials Project database integrated with crystal structures or properties",
+      "partialConditions": [
+        { "condition": "10+ materials", "points": 1.0 },
+        { "condition": "5-9 materials", "points": 0.75 },
+        { "condition": "3-4 materials", "points": 0.5 },
+        { "condition": "1-2 materials", "points": 0.25 }
+      ],
+      "validationFunction": "validateMaterialsData"
+    },
+    {
+      "id": "R8",
+      "description": "No contradictions with established physics",
+      "points": 1.0,
+      "category": "accuracy",
+      "passCondition": "All findings are consistent with established physical laws (thermodynamics, conservation laws, etc.)",
+      "partialConditions": [
+        { "condition": "No violations", "points": 1.0 },
+        { "condition": "1 minor violation", "points": 0.5 },
+        { "condition": "Multiple violations", "points": 0 }
+      ],
+      "validationFunction": "validatePhysicalLawsConsistency"
+    },
+    {
+      "id": "R9",
+      "description": "State-of-the-art performance metrics cited",
+      "points": 0.5,
+      "category": "accuracy",
+      "passCondition": "Current state-of-the-art performance metrics are cited for the technology area",
+      "requiresAIJudge": true
+    },
+    {
+      "id": "R10",
+      "description": "Research methodology documented",
+      "points": 0.5,
+      "category": "methodology",
+      "passCondition": "Search queries, databases used, and filtering criteria are documented",
+      "requiresAIJudge": true
+    }
+  ]
+}

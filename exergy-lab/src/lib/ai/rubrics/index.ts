@@ -8,6 +8,7 @@
 // Core types
 export type {
   DiscoveryPhase,
+  LegacyDiscoveryPhase,
   RubricCategory,
   PartialCondition,
   RubricItem,
@@ -22,6 +23,9 @@ export type {
   DiscoveryQuality,
   PhaseResult,
   DiscoveryResult,
+  PartialDiscoveryResult,
+  FailureMode,
+  RecoveryRecommendation,
   PublicationPackage,
   Citation,
   Figure,
@@ -31,10 +35,14 @@ export type {
 // Type utilities
 export {
   DEFAULT_REFINEMENT_CONFIG,
+  PHASE_REFINEMENT_CONFIG,
+  ALL_DISCOVERY_PHASES,
+  LEGACY_TO_CONSOLIDATED_PHASE,
   classifyDiscoveryQuality,
   getQualityDescription,
   validateRubric,
   calculateOverallScore,
+  calculateOverallScoreLegacy,
 } from './types'
 
 // Judge
@@ -56,29 +64,45 @@ export {
 } from './refinement-engine'
 export type { RefinementEngineConfig } from './refinement-engine'
 
-// Rubric Templates
+// Rubric Templates (Legacy - 12 phases)
 export { RESEARCH_RUBRIC } from './templates/research'
 export { HYPOTHESIS_RUBRIC } from './templates/hypothesis'
 export { SIMULATION_RUBRIC, THERMODYNAMIC_LIMITS } from './templates/simulation'
 
-// All rubrics in a convenient map
+// Rubric Templates (Consolidated - 4 phases)
+export { RESEARCH_CONSOLIDATED_RUBRIC } from './templates/research-consolidated'
+export { HYPOTHESIS_CONSOLIDATED_RUBRIC } from './templates/hypothesis-consolidated'
+export { VALIDATION_CONSOLIDATED_RUBRIC } from './templates/validation-consolidated'
+export { OUTPUT_CONSOLIDATED_RUBRIC } from './templates/output-consolidated'
+
+// Import consolidated rubrics for RUBRICS map
+import { RESEARCH_CONSOLIDATED_RUBRIC } from './templates/research-consolidated'
+import { HYPOTHESIS_CONSOLIDATED_RUBRIC } from './templates/hypothesis-consolidated'
+import { VALIDATION_CONSOLIDATED_RUBRIC } from './templates/validation-consolidated'
+import { OUTPUT_CONSOLIDATED_RUBRIC } from './templates/output-consolidated'
+import type { Rubric, DiscoveryPhase } from './types'
+
+/**
+ * Consolidated 4-phase rubrics map
+ * This is the primary rubric map for the discovery engine
+ */
+export const RUBRICS: Record<DiscoveryPhase, Rubric> = {
+  research: RESEARCH_CONSOLIDATED_RUBRIC,
+  hypothesis: HYPOTHESIS_CONSOLIDATED_RUBRIC,
+  validation: VALIDATION_CONSOLIDATED_RUBRIC,
+  output: OUTPUT_CONSOLIDATED_RUBRIC,
+}
+
+// Legacy rubrics for backward compatibility
 import { RESEARCH_RUBRIC } from './templates/research'
 import { HYPOTHESIS_RUBRIC } from './templates/hypothesis'
 import { SIMULATION_RUBRIC } from './templates/simulation'
-import type { Rubric, DiscoveryPhase } from './types'
+import type { LegacyDiscoveryPhase } from './types'
 
-export const RUBRICS: Partial<Record<DiscoveryPhase, Rubric>> = {
+export const LEGACY_RUBRICS: Partial<Record<LegacyDiscoveryPhase, Rubric>> = {
   research: RESEARCH_RUBRIC,
   hypothesis: HYPOTHESIS_RUBRIC,
   simulation: SIMULATION_RUBRIC,
-  // Additional rubrics to be added:
-  // synthesis: SYNTHESIS_RUBRIC,
-  // screening: SCREENING_RUBRIC,
-  // experiment: EXPERIMENT_RUBRIC,
-  // exergy: EXERGY_RUBRIC,
-  // tea: TEA_RUBRIC,
-  // patent: PATENT_RUBRIC,
-  // validation: VALIDATION_RUBRIC,
 }
 
 /**

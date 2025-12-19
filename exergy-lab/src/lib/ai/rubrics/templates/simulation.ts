@@ -461,10 +461,14 @@ const simulationRubricItems: RubricItem[] = [
 // Simulation Rubric Export
 // ============================================================================
 
+/**
+ * Legacy simulation rubric - kept for backward compatibility.
+ * In the consolidated 4-phase model, simulation is part of the 'validation' phase.
+ */
 export const SIMULATION_RUBRIC: Rubric = {
   id: 'simulation-v1',
-  name: 'Simulation Phase Rubric',
-  phase: 'simulation',
+  name: 'Simulation Phase Rubric (Legacy)',
+  phase: 'validation' as any, // Legacy: maps to validation in consolidated model
   domain: 'clean-energy',
   items: simulationRubricItems,
   totalPoints: 10,
@@ -474,7 +478,7 @@ export const SIMULATION_RUBRIC: Rubric = {
     version: '1.0.0',
     author: 'FrontierScience Discovery Engine',
     lastUpdated: new Date('2024-12-17'),
-    sourceDataset: 'Based on OpenAI FrontierScience methodology',
+    sourceDataset: 'Based on OpenAI FrontierScience methodology (Legacy)',
   },
 }
 

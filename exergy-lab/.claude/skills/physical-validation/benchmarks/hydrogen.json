@@ -1,0 +1,269 @@
+{
+  "domain": "hydrogen",
+  "lastUpdated": "2024-12",
+  "physicalLimits": {
+    "waterSplitting": {
+      "name": "Water Splitting Thermodynamic Voltage",
+      "value": 1.23,
+      "unit": "V",
+      "description": "Minimum voltage for water electrolysis at standard conditions",
+      "source": "ΔG°/nF = 237.2 kJ/mol / (2 * 96485 C/mol)"
+    },
+    "thermoneutralVoltage": {
+      "name": "Thermoneutral Voltage",
+      "value": 1.48,
+      "unit": "V",
+      "description": "Voltage at which electrolysis is thermally neutral",
+      "source": "ΔH°/nF = 285.8 kJ/mol / (2 * 96485 C/mol)"
+    },
+    "faradaicEfficiency": {
+      "name": "Faradaic Efficiency Limit",
+      "value": 100,
+      "unit": "%",
+      "description": "Maximum current-to-hydrogen conversion efficiency"
+    },
+    "lhvHydrogen": {
+      "name": "Lower Heating Value of H2",
+      "value": 120,
+      "unit": "MJ/kg",
+      "description": "Energy content of hydrogen (excluding water vaporization)"
+    },
+    "hhvHydrogen": {
+      "name": "Higher Heating Value of H2",
+      "value": 142,
+      "unit": "MJ/kg",
+      "description": "Energy content including water condensation"
+    },
+    "carnotLimit": {
+      "name": "Carnot Efficiency for Thermal Processes",
+      "description": "η = 1 - Tc/Th, where T in Kelvin",
+      "example": {
+        "Tc": 298,
+        "Th": 1073,
+        "efficiency": 72.2
+      }
+    }
+  },
+  "stateOfArt": {
+    "pemElectrolysis": {
+      "name": "PEM Electrolysis",
+      "efficiency": {
+        "value": 65,
+        "range": [60, 80],
+        "unit": "%",
+        "basis": "HHV"
+      },
+      "currentDensity": {
+        "value": 2,
+        "range": [1, 3],
+        "unit": "A/cm2"
+      },
+      "durability": {
+        "value": 60000,
+        "unit": "hours"
+      },
+      "catalystLoading": {
+        "anode": {"material": "IrO2", "loading": 2, "unit": "mg/cm2"},
+        "cathode": {"material": "Pt/C", "loading": 0.5, "unit": "mg/cm2"}
+      },
+      "operatingTemp": {
+        "value": 80,
+        "unit": "C"
+      },
+      "cost": {
+        "capex": 1000,
+        "unit": "$/kW"
+      }
+    },
+    "alkalineElectrolysis": {
+      "name": "Alkaline Electrolysis",
+      "efficiency": {
+        "value": 65,
+        "range": [60, 70],
+        "unit": "%",
+        "basis": "HHV"
+      },
+      "currentDensity": {
+        "value": 0.35,
+        "range": [0.2, 0.5],
+        "unit": "A/cm2"
+      },
+      "durability": {
+        "value": 90000,
+        "unit": "hours"
+      },
+      "electrolyte": "30% KOH",
+      "operatingTemp": {
+        "value": 80,
+        "unit": "C"
+      },
+      "cost": {
+        "capex": 500,
+        "unit": "$/kW"
+      },
+      "advantages": ["no PGM catalysts", "mature technology", "lower cost"]
+    },
+    "soec": {
+      "name": "Solid Oxide Electrolysis (SOEC)",
+      "efficiency": {
+        "value": 85,
+        "range": [80, 90],
+        "unit": "%",
+        "basis": "HHV",
+        "note": "High temp reduces electrical energy requirement"
+      },
+      "currentDensity": {
+        "value": 1,
+        "range": [0.5, 1.5],
+        "unit": "A/cm2"
+      },
+      "durability": {
+        "value": 20000,
+        "unit": "hours",
+        "degradation": "1-2%/1000h"
+      },
+      "operatingTemp": {
+        "value": 800,
+        "range": [600, 900],
+        "unit": "C"
+      },
+      "advantages": ["highest efficiency", "reversible operation", "no PGM"]
+    },
+    "aemElectrolysis": {
+      "name": "AEM Electrolysis",
+      "efficiency": {
+        "value": 70,
+        "range": [65, 75],
+        "unit": "%"
+      },
+      "currentDensity": {
+        "value": 1.5,
+        "range": [1, 2],
+        "unit": "A/cm2"
+      },
+      "durability": {
+        "value": 10000,
+        "unit": "hours"
+      },
+      "status": "emerging",
+      "advantages": ["lower cost than PEM", "higher current than alkaline"]
+    },
+    "pemFuelCell": {
+      "name": "PEM Fuel Cell",
+      "efficiency": {
+        "value": 60,
+        "range": [50, 68],
+        "unit": "%"
+      },
+      "powerDensity": {
+        "value": 1,
+        "unit": "W/cm2"
+      },
+      "durability": {
+        "automotive": 8000,
+        "stationary": 40000,
+        "unit": "hours"
+      }
+    }
+  },
+  "catalystBenchmarks": {
+    "her": {
+      "name": "Hydrogen Evolution Reaction (HER)",
+      "best": {
+        "material": "Pt/C",
+        "overpotential10": 30,
+        "unit": "mV",
+        "tafelSlope": 30,
+        "tafelUnit": "mV/dec"
+      },
+      "pgmFree": {
+        "material": "MoS2",
+        "overpotential10": 150,
+        "unit": "mV"
+      }
+    },
+    "oer": {
+      "name": "Oxygen Evolution Reaction (OER)",
+      "best": {
+        "material": "IrO2",
+        "overpotential10": 280,
+        "unit": "mV"
+      },
+      "pgmFree": {
+        "material": "NiFe-LDH",
+        "overpotential10": 250,
+        "unit": "mV"
+      }
+    },
+    "orr": {
+      "name": "Oxygen Reduction Reaction (ORR)",
+      "best": {
+        "material": "Pt/C",
+        "massActivity": 0.5,
+        "unit": "A/mgPt",
+        "halfWavePotential": 0.9,
+        "potentialUnit": "V vs RHE"
+      }
+    }
+  },
+  "metrics": {
+    "efficiency": {
+      "name": "Stack Efficiency",
+      "unit": "%",
+      "basis": ["HHV", "LHV"],
+      "calculation": "E_thermoneutral/E_cell * 100"
+    },
+    "currentDensity": {
+      "name": "Current Density",
+      "unit": "A/cm2",
+      "description": "Current per unit active area"
+    },
+    "overpotential": {
+      "name": "Overpotential",
+      "unit": "mV",
+      "description": "Voltage above thermodynamic minimum",
+      "components": ["activation", "ohmic", "mass transport"]
+    },
+    "tafelSlope": {
+      "name": "Tafel Slope",
+      "unit": "mV/dec",
+      "description": "Rate of overpotential increase per decade of current",
+      "ideal": 30
+    },
+    "asrResistance": {
+      "name": "Area Specific Resistance",
+      "unit": "Ohm*cm2",
+      "target": 0.1
+    }
+  },
+  "validationRules": [
+    {
+      "id": "minimum_voltage",
+      "rule": "Cell voltage cannot be below 1.23V for water splitting",
+      "threshold": 1.23,
+      "severity": "error"
+    },
+    {
+      "id": "efficiency_limit",
+      "rule": "HHV efficiency cannot exceed 100%",
+      "threshold": 100,
+      "severity": "error"
+    },
+    {
+      "id": "practical_efficiency",
+      "rule": "Stack efficiency >90% HHV is exceptional",
+      "threshold": 90,
+      "severity": "warning"
+    },
+    {
+      "id": "durability_context",
+      "rule": "High current density often trades off with durability",
+      "severity": "info"
+    },
+    {
+      "id": "system_efficiency",
+      "rule": "System efficiency is 5-15% lower than stack efficiency",
+      "severity": "info"
+    }
+  ]
+}

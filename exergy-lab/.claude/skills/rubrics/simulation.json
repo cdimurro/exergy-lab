@@ -1,0 +1,131 @@
+{
+  "id": "simulation-v1",
+  "name": "Simulation Phase Rubric",
+  "phase": "simulation",
+  "domain": "clean-energy",
+  "totalPoints": 10,
+  "successThreshold": 7,
+  "maxIterations": 2,
+  "metadata": {
+    "version": "1.0.0",
+    "author": "FrontierScience Discovery Engine",
+    "lastUpdated": "2024-12-17",
+    "sourceDataset": "Based on OpenAI FrontierScience methodology"
+  },
+  "items": [
+    {
+      "id": "S1",
+      "description": "Model equations documented",
+      "points": 2.0,
+      "category": "methodology",
+      "passCondition": "All governing equations explicitly stated with variable definitions",
+      "partialConditions": [
+        { "condition": "All equations with derivations", "points": 2.0 },
+        { "condition": "All equations documented", "points": 1.5 },
+        { "condition": "Main equations only", "points": 1.0 },
+        { "condition": "Equations referenced but not shown", "points": 0.5 }
+      ]
+    },
+    {
+      "id": "S2",
+      "description": "Input parameters with sources",
+      "points": 1.5,
+      "category": "accuracy",
+      "passCondition": "All input parameters listed with literature sources or experimental basis",
+      "partialConditions": [
+        { "condition": "All parameters sourced", "points": 1.5 },
+        { "condition": "Most parameters sourced (>80%)", "points": 1.0 },
+        { "condition": "Some parameters sourced (50-80%)", "points": 0.75 },
+        { "condition": "Few parameters sourced (<50%)", "points": 0.25 }
+      ]
+    },
+    {
+      "id": "S3",
+      "description": "Boundary conditions specified",
+      "points": 1.0,
+      "category": "completeness",
+      "passCondition": "All boundary conditions clearly defined with physical justification",
+      "partialConditions": [
+        { "condition": "All boundaries with justification", "points": 1.0 },
+        { "condition": "All boundaries stated", "points": 0.75 },
+        { "condition": "Partial boundaries", "points": 0.5 },
+        { "condition": "Missing boundaries", "points": 0.25 }
+      ]
+    },
+    {
+      "id": "S4",
+      "description": "Convergence criteria defined",
+      "points": 1.0,
+      "category": "methodology",
+      "passCondition": "Convergence criteria specified with tolerance values",
+      "partialConditions": [
+        { "condition": "Criteria with sensitivity analysis", "points": 1.0 },
+        { "condition": "Criteria with tolerance values", "points": 0.75 },
+        { "condition": "Basic convergence mentioned", "points": 0.5 },
+        { "condition": "No convergence criteria", "points": 0 }
+      ]
+    },
+    {
+      "id": "S5",
+      "description": "Results validated against benchmarks",
+      "points": 1.5,
+      "category": "accuracy",
+      "passCondition": "Simulation results compared to experimental data or established models",
+      "partialConditions": [
+        { "condition": "Multiple validation sources", "points": 1.5 },
+        { "condition": "One validation source", "points": 1.0 },
+        { "condition": "Qualitative validation only", "points": 0.5 },
+        { "condition": "No validation", "points": 0 }
+      ]
+    },
+    {
+      "id": "S6",
+      "description": "Sensitivity analysis performed",
+      "points": 1.0,
+      "category": "robustness",
+      "passCondition": "Key parameters varied to assess sensitivity of results",
+      "partialConditions": [
+        { "condition": "Comprehensive sensitivity (5+ params)", "points": 1.0 },
+        { "condition": "Moderate sensitivity (3-4 params)", "points": 0.75 },
+        { "condition": "Basic sensitivity (1-2 params)", "points": 0.5 },
+        { "condition": "No sensitivity analysis", "points": 0 }
+      ]
+    },
+    {
+      "id": "S7",
+      "description": "Physical limits respected",
+      "points": 1.0,
+      "category": "accuracy",
+      "passCondition": "Results do not violate thermodynamic limits or physical constraints",
+      "partialConditions": [
+        { "condition": "All limits respected", "points": 1.0 },
+        { "condition": "Minor edge case violations", "points": 0.5 },
+        { "condition": "Multiple violations", "points": 0 }
+      ]
+    },
+    {
+      "id": "S8",
+      "description": "Uncertainty quantified",
+      "points": 0.5,
+      "category": "accuracy",
+      "passCondition": "Uncertainty bounds provided for key results",
+      "partialConditions": [
+        { "condition": "Error bars/confidence intervals", "points": 0.5 },
+        { "condition": "Qualitative uncertainty discussion", "points": 0.25 },
+        { "condition": "No uncertainty", "points": 0 }
+      ]
+    },
+    {
+      "id": "S9",
+      "description": "Code/software documented",
+      "points": 0.5,
+      "category": "reproducibility",
+      "passCondition": "Software used, version, and key settings documented",
+      "partialConditions": [
+        { "condition": "Full documentation", "points": 0.5 },
+        { "condition": "Software named", "points": 0.25 },
+        { "condition": "No documentation", "points": 0 }
+      ]
+    }
+  ]
+}

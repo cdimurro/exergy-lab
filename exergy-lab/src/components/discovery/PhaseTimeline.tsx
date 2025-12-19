@@ -3,14 +3,14 @@
 /**
  * PhaseTimeline Component
  *
- * Displays the 12-phase discovery pipeline with status indicators.
+ * Displays the 4-step discovery pipeline with status indicators.
  * Supports horizontal (desktop) and vertical (mobile) layouts.
  *
  * Color System:
- * - Future/Pending: slate grey (clear future state)
- * - In Progress: blue (active work)
- * - Completed/Passed: emerald green (success)
- * - Completed/Failed: amber (warning, needs attention)
+ * - Future/Pending: muted grey (clear future state)
+ * - In Progress: subtle indicator (active work)
+ * - Completed: foreground (success)
+ * - Failed: muted (needs attention)
  */
 
 import { cn } from '@/lib/utils'
@@ -78,20 +78,18 @@ function getPhaseColors(status: string, passed?: boolean) {
   return PHASE_COLORS.future
 }
 
-// Phase icons mapping
+/**
+ * Phase icons for consolidated 4-phase model:
+ * - research: Multi-source research (combines research + synthesis + screening)
+ * - hypothesis: Hypothesis & Protocol (combines hypothesis + experiment)
+ * - validation: Validation & Analysis (combines simulation + exergy + tea + patent + validation)
+ * - output: Final Report (combines rubric_eval + publication)
+ */
 const PHASE_ICONS: Record<DiscoveryPhase, React.ComponentType<{ size?: number; className?: string }>> = {
   research: BookOpen,
-  synthesis: Combine,
   hypothesis: Lightbulb,
-  screening: Filter,
-  experiment: FlaskConical,
-  simulation: Cpu,
-  exergy: Flame,
-  tea: Calculator,
-  patent: FileText,
   validation: CheckCircle,
-  rubric_eval: ClipboardCheck,
-  publication: FileOutput,
+  output: FileOutput,
 }
 
 interface PhaseTimelineProps {
@@ -131,7 +129,7 @@ export function PhaseTimeline({
       <div
         className={cn(
           layout === 'vertical' ? 'hidden' : layout === 'horizontal' ? 'flex' : 'hidden md:flex',
-          'items-start w-full'
+          'items-start w-full px-8'
         )}
       >
         {phases.map((phase, index) => {
@@ -239,9 +237,9 @@ function PhaseNode({
   name,
   onClick,
 }: PhaseNodeProps) {
-  // Increased icon sizes for better visibility
-  const iconSize = compact ? 20 : 28
-  const nodeSize = compact ? 'w-12 h-12' : 'w-14 h-14'
+  // Larger icon sizes for better visibility with 4 phases
+  const iconSize = compact ? 24 : 32
+  const nodeSize = compact ? 'w-14 h-14' : 'w-16 h-16'
   const colors = getPhaseColors(status, passed)
 
   // All phases are now clickable
@@ -355,7 +353,7 @@ function PhaseConnector({
   }
 
   return (
-    <div className="flex-1 relative h-1 mx-2 mt-7 self-start min-w-[12px]">
+    <div className="flex-1 relative h-1.5 mx-3 mt-8 self-start min-w-[16px]">
       {/* Background track */}
       <div className="absolute inset-0 bg-slate-200 rounded-full" />
 

@@ -35,20 +35,20 @@ import {
   createActivityFromPhaseComplete,
 } from '@/components/discovery/LiveActivityFeed'
 
-// All phases in order
+/**
+ * Consolidated 4-Phase Model
+ *
+ * Based on analysis of Robin (FutureHouse), CellAgent, and academic research,
+ * we consolidated from 12 phases to 4 phases to improve success probability:
+ *
+ * - 12 phases × 80% pass rate = 6.9% overall success
+ * - 4 phases × 80% pass rate = 41.0% overall success
+ */
 const DISCOVERY_PHASES: DiscoveryPhase[] = [
-  'research',
-  'synthesis',
-  'hypothesis',
-  'screening',
-  'experiment',
-  'simulation',
-  'exergy',
-  'tea',
-  'patent',
-  'validation',
-  'rubric_eval',
-  'publication',
+  'research',    // Combines: research + synthesis + screening
+  'hypothesis',  // Combines: hypothesis + experiment
+  'validation',  // Combines: simulation + exergy + tea + patent + validation
+  'output',      // Combines: rubric_eval + publication
 ]
 
 function createInitialPhaseProgress(): Map<DiscoveryPhase, PhaseProgressDisplay> {
@@ -487,6 +487,27 @@ export function useFrontierScienceWorkflow(): UseFrontierScienceWorkflowReturn {
     // Note: We don't reset other state so user can see what was completed
   }, [cleanup])
 
+  // Reset discovery - fully clears all state back to initial
+  const resetDiscovery = useCallback(() => {
+    cleanup()
+    setDiscoveryId(null)
+    setStatus('idle')
+    setCurrentPhase(null)
+    setPhaseProgress(createInitialPhaseProgress())
+    setElapsedTime(0)
+    setResult(null)
+    setPartialResult(null)
+    setRecoveryRecommendations([])
+    setError(null)
+    setThinkingMessage(null)
+    setActivities([])
+    setIsPaused(false)
+    setPausedAtPhase(null)
+    setChangeRequests([])
+    setPendingChangeRequest(null)
+    lastPhaseRef.current = null
+  }, [cleanup])
+
   // Pause discovery for making changes
   const pauseDiscovery = useCallback(() => {
     if (status !== 'running') return
@@ -645,6 +666,7 @@ export function useFrontierScienceWorkflow(): UseFrontierScienceWorkflowReturn {
     // Actions
     startDiscovery,
     cancelDiscovery,
+    resetDiscovery,
     pauseDiscovery,
     resumeDiscovery,
     submitChangeRequest,

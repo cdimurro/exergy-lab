@@ -260,7 +260,8 @@ export function DiscoveryConfigPanel({
   const [gracefulDegradation, setGracefulDegradation] = React.useState<boolean>(true)
   const [activePreset, setActivePreset] = React.useState<string>('Standard')
 
-  const requiredPhases: DiscoveryPhase[] = ['validation', 'rubric_eval']
+  // In consolidated 4-phase model, 'output' is required (was rubric_eval + publication)
+  const requiredPhases: DiscoveryPhase[] = ['validation', 'output']
 
   // Update phases when domain changes
   React.useEffect(() => {
@@ -344,10 +345,10 @@ export function DiscoveryConfigPanel({
   // Domain options (custom is already included in DOMAIN_CONFIGS)
   const domainOptions = DOMAIN_CONFIGS.map(d => ({ value: d.id, label: d.name }))
 
-  // Phase groups
-  const researchPhases: DiscoveryPhase[] = ['research', 'synthesis', 'hypothesis', 'screening']
-  const validationPhases: DiscoveryPhase[] = ['experiment', 'simulation', 'exergy', 'tea', 'patent', 'validation']
-  const outputPhases: DiscoveryPhase[] = ['rubric_eval', 'publication']
+  // Consolidated 4-phase groups
+  const researchPhases: DiscoveryPhase[] = ['research', 'hypothesis']
+  const validationPhases: DiscoveryPhase[] = ['validation']
+  const outputPhases: DiscoveryPhase[] = ['output']
 
   return (
     <div className={cn('w-full h-full flex flex-col bg-background', className)}>

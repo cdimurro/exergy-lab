@@ -1,0 +1,218 @@
+{
+  "domain": "solar",
+  "lastUpdated": "2024-12",
+  "physicalLimits": {
+    "shockleyQueisser": {
+      "name": "Shockley-Queisser Limit",
+      "value": 33.7,
+      "unit": "%",
+      "description": "Maximum efficiency for single-junction solar cell under AM1.5G",
+      "optimalBandGap": 1.34,
+      "source": "Detailed balance calculation"
+    },
+    "thermodynamicLimit": {
+      "name": "Thermodynamic Limit",
+      "value": 86.8,
+      "unit": "%",
+      "description": "Maximum efficiency with infinite junctions and full concentration",
+      "source": "Landsberg limit"
+    },
+    "tandemTwoJunction": {
+      "name": "Two-Junction Tandem Limit",
+      "value": 46,
+      "unit": "%",
+      "description": "Maximum efficiency for series-connected two-junction tandem",
+      "optimalBandGaps": [1.9, 1.0],
+      "source": "Detailed balance"
+    },
+    "tandemThreeJunction": {
+      "name": "Three-Junction Tandem Limit",
+      "value": 52,
+      "unit": "%",
+      "description": "Maximum efficiency for series-connected three-junction tandem",
+      "source": "Detailed balance"
+    },
+    "concentratedSolar": {
+      "name": "Concentrated Solar Limit",
+      "value": 41.1,
+      "unit": "%",
+      "description": "Single junction under 1000x concentration",
+      "source": "Detailed balance"
+    }
+  },
+  "stateOfArt": {
+    "crystallineSi": {
+      "name": "Crystalline Silicon",
+      "record": 26.7,
+      "unit": "%",
+      "holder": "LONGi Green Energy",
+      "year": 2022,
+      "certified": true,
+      "certifiedBy": "ISFH CalTeC",
+      "area": 274.4,
+      "areaUnit": "cm2",
+      "technology": "HJT"
+    },
+    "perovskite": {
+      "name": "Perovskite",
+      "record": 26.1,
+      "unit": "%",
+      "holder": "EPFL/UNIST",
+      "year": 2024,
+      "certified": true,
+      "certifiedBy": "NREL",
+      "area": 1.0,
+      "areaUnit": "cm2",
+      "composition": "FAPbI3-based"
+    },
+    "tandemPerovskiteSi": {
+      "name": "Perovskite/Silicon Tandem",
+      "record": 33.9,
+      "unit": "%",
+      "holder": "KAUST/LONGi",
+      "year": 2024,
+      "certified": true,
+      "certifiedBy": "Fraunhofer ISE",
+      "area": 1.0,
+      "areaUnit": "cm2"
+    },
+    "tandemPerovskitePerovskite": {
+      "name": "All-Perovskite Tandem",
+      "record": 29.1,
+      "unit": "%",
+      "holder": "Nanjing University",
+      "year": 2024,
+      "certified": true
+    },
+    "gaAs": {
+      "name": "GaAs (single crystal)",
+      "record": 29.1,
+      "unit": "%",
+      "holder": "Alta Devices",
+      "year": 2018,
+      "certified": true,
+      "certifiedBy": "NREL"
+    },
+    "cigs": {
+      "name": "CIGS",
+      "record": 23.6,
+      "unit": "%",
+      "holder": "Solar Frontier",
+      "year": 2022,
+      "certified": true
+    },
+    "cdte": {
+      "name": "CdTe",
+      "record": 22.1,
+      "unit": "%",
+      "holder": "First Solar",
+      "year": 2022,
+      "certified": true
+    },
+    "organic": {
+      "name": "Organic (OPV)",
+      "record": 19.2,
+      "unit": "%",
+      "holder": "Shanghai Jiao Tong University",
+      "year": 2023,
+      "certified": false
+    },
+    "quantumDot": {
+      "name": "Quantum Dot",
+      "record": 18.1,
+      "unit": "%",
+      "holder": "UNIST",
+      "year": 2022,
+      "certified": true
+    },
+    "dyeSensitized": {
+      "name": "Dye-Sensitized (DSSC)",
+      "record": 13.0,
+      "unit": "%",
+      "holder": "EPFL",
+      "year": 2021,
+      "certified": true
+    },
+    "concentratorMultijunction": {
+      "name": "Concentrator Multi-junction",
+      "record": 47.6,
+      "unit": "%",
+      "holder": "NREL",
+      "year": 2022,
+      "concentration": 665,
+      "junctions": 6
+    }
+  },
+  "metrics": {
+    "pce": {
+      "name": "Power Conversion Efficiency",
+      "unit": "%",
+      "standardConditions": "AM1.5G, 100 mW/cm2, 25C"
+    },
+    "voc": {
+      "name": "Open Circuit Voltage",
+      "unit": "V",
+      "typicalRange": {
+        "silicon": [0.65, 0.75],
+        "perovskite": [1.0, 1.2],
+        "organic": [0.8, 1.0]
+      }
+    },
+    "jsc": {
+      "name": "Short Circuit Current Density",
+      "unit": "mA/cm2",
+      "theoreticalMax": 46,
+      "typicalRange": {
+        "silicon": [38, 43],
+        "perovskite": [22, 26],
+        "organic": [15, 20]
+      }
+    },
+    "ff": {
+      "name": "Fill Factor",
+      "unit": "%",
+      "theoreticalMax": 89,
+      "practicalLimit": 85,
+      "typicalRange": [70, 82]
+    },
+    "stability": {
+      "name": "Operational Stability",
+      "unit": "hours at T80",
+      "stateOfArt": {
+        "silicon": 87600,
+        "perovskite": 5000,
+        "organic": 10000
+      }
+    }
+  },
+  "validationRules": [
+    {
+      "id": "pce_limit",
+      "rule": "PCE cannot exceed Shockley-Queisser limit for single junction",
+      "threshold": 33.7,
+      "severity": "error"
+    },
+    {
+      "id": "voc_bandgap",
+      "rule": "Voc cannot exceed Eg/q",
+      "severity": "error"
+    },
+    {
+      "id": "ff_limit",
+      "rule": "Fill Factor cannot exceed 90%",
+      "threshold": 90,
+      "severity": "error"
+    },
+    {
+      "id": "jsc_spectrum",
+      "rule": "Jsc cannot exceed integrated AM1.5G spectrum",
+      "threshold": 46,
+      "severity": "error"
+    },
+    {
+      "id": "10x_improvement",
+      "rule": "Claims >10% above record need verification",
+      "severity": "warning"
+    }
+  ]
+}

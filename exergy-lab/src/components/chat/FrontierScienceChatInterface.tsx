@@ -4,7 +4,7 @@
  * FrontierScienceChatInterface Component
  *
  * A specialized chat interface for FrontierScience discovery workflows.
- * Integrates the new 12-phase discovery pipeline with real-time progress visualization.
+ * Integrates the consolidated 4-step discovery pipeline with real-time progress visualization.
  * Now includes pre-discovery configuration with tier selection and interaction modes.
  */
 
@@ -71,6 +71,7 @@ export function FrontierScienceChatInterface({
     activities,
     startDiscovery,
     cancelDiscovery,
+    resetDiscovery,
     qualityTier,
     passedPhases,
     failedPhases,
@@ -133,6 +134,8 @@ export function FrontierScienceChatInterface({
     }
 
     // Start discovery with config or initial options
+    // In consolidated 4-phase model, exergy/TEA/patent are part of 'validation' phase
+    const validationEnabled = discoveryConfig?.enabledPhases?.has('validation') ?? true
     const options: DiscoveryOptions | undefined = discoveryConfig
       ? {
           domain: discoveryConfig.domain,
@@ -142,9 +145,9 @@ export function FrontierScienceChatInterface({
             ? 'breakthrough'
             : 'significant',
           maxIterationsPerPhase: discoveryConfig.budget.maxIterations,
-          enableExergyAnalysis: discoveryConfig.enabledPhases.has('exergy'),
-          enableTEAAnalysis: discoveryConfig.enabledPhases.has('tea'),
-          enablePatentAnalysis: discoveryConfig.enabledPhases.has('patent'),
+          enableExergyAnalysis: validationEnabled, // Part of validation in consolidated model
+          enableTEAAnalysis: validationEnabled, // Part of validation in consolidated model
+          enablePatentAnalysis: validationEnabled, // Part of validation in consolidated model
         }
       : initialOptions
 
@@ -156,6 +159,8 @@ export function FrontierScienceChatInterface({
   // Handle config panel start
   const handleConfigStart = async (config: DiscoveryConfiguration) => {
     setDiscoveryConfig(config)
+    // In consolidated 4-phase model, exergy/TEA/patent are part of 'validation' phase
+    const validationEnabled = config.enabledPhases.has('validation')
     const options: DiscoveryOptions = {
       domain: config.domain,
       targetQuality: config.targetQuality === 'exploratory'
@@ -164,9 +169,9 @@ export function FrontierScienceChatInterface({
         ? 'breakthrough'
         : 'significant',
       maxIterationsPerPhase: config.budget.maxIterations,
-      enableExergyAnalysis: config.enabledPhases.has('exergy'),
-      enableTEAAnalysis: config.enabledPhases.has('tea'),
-      enablePatentAnalysis: config.enabledPhases.has('patent'),
+      enableExergyAnalysis: validationEnabled, // Part of validation in consolidated model
+      enableTEAAnalysis: validationEnabled, // Part of validation in consolidated model
+      enablePatentAnalysis: validationEnabled, // Part of validation in consolidated model
     }
     await startDiscovery(inputValue.trim(), options)
     setShowConfig(false)
@@ -327,102 +332,110 @@ export function FrontierScienceChatInterface({
               className="h-full"
             />
           </div>
-        ) : (
-          <div className="max-w-4xl mx-auto">
-            {/* Idle State - Show Input Prompt */}
-            {status === 'idle' && !result && !showConfig && (
-              <IdleState
-                onConfigureClick={showConfigPanel ? () => setShowConfig(true) : undefined}
-                onExampleClick={(query, domain) => {
-                  setInputValue(query)
-                  setSuggestedDomain(domain as Domain)
-                  // Auto-navigate to config panel when example is clicked
-                  if (showConfigPanel) {
-                    setShowConfig(true)
-                  }
+        ) : status === 'completed_partial' && partialResult ? (
+          <>
+            {/* Full-width Partial Results - same layout as progress card */}
+            <div className="h-full overflow-y-auto px-4 py-6">
+              <PartialResultsCard
+                result={partialResult}
+                onExport={() => setShowExportPanel(true)}
+                onModifyQuery={() => {
+                  // Reset workflow state and show input
+                  resetDiscovery()
+                  setInputValue(partialResult?.query || inputValue || initialQuery || '')
+                  setShowConfig(false)
+                }}
+                onRetryWithPrompt={(prompt: string) => {
+                  // Start a new discovery with the improved/edited prompt
+                  setInputValue(prompt)
+                  startDiscovery(prompt, initialOptions)
                 }}
               />
+            </div>
+
+            {/* Export Panel Modal for Partial Results */}
+            {showExportPanel && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                <div className="bg-background rounded-xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-auto m-4 relative">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowExportPanel(false)}
+                    className="absolute top-3 right-3 z-10 h-8 w-8 p-0"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                  <ExportPanel
+                    result={partialResult as any}
+                    query={inputValue || initialQuery || ''}
+                    discoveryId={discoveryId || 'unknown'}
+                    onExport={() => {
+                      // Optionally close after export
+                    }}
+                  />
+                </div>
+              </div>
             )}
-
-            {/* Starting State */}
-            {status === 'starting' && (
-              <StartingState query={inputValue} />
-            )}
-
-            {/* Completed State - Show Results */}
-            {status === 'completed' && result && (
-              <>
-                <FrontierScienceResultsCard
-                  result={result}
-                  onExport={() => setShowExportPanel(true)}
-                />
-
-                {/* Export Panel Modal */}
-                {showExportPanel && (
-                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-                    <div className="bg-background rounded-xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-auto m-4 relative">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setShowExportPanel(false)}
-                        className="absolute top-3 right-3 z-10 h-8 w-8 p-0"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                      <ExportPanel
-                        result={result}
-                        query={inputValue || initialQuery || ''}
-                        discoveryId={discoveryId || 'unknown'}
-                        onExport={() => {
-                          // Optionally close after export
-                        }}
-                      />
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-
-            {/* Partial Completion State - Show Partial Results with Recommendations */}
-            {status === 'completed_partial' && partialResult && (
-              <>
-                <PartialResultsCard
-                  result={partialResult}
-                  onExport={() => setShowExportPanel(true)}
-                  onModifyQuery={() => {
-                    // Reset to allow new query
-                    setInputValue(inputValue || initialQuery || '')
-                    setShowConfig(false)
+          </>
+        ) : (
+          <div className="h-full overflow-y-auto px-4 py-6">
+            <div className="max-w-4xl mx-auto">
+              {/* Idle State - Show Input Prompt */}
+              {status === 'idle' && !result && !showConfig && (
+                <IdleState
+                  onConfigureClick={showConfigPanel ? () => setShowConfig(true) : undefined}
+                  onExampleClick={(query, domain) => {
+                    setInputValue(query)
+                    setSuggestedDomain(domain as Domain)
+                    // Auto-navigate to config panel when example is clicked
+                    if (showConfigPanel) {
+                      setShowConfig(true)
+                    }
                   }}
                 />
+              )}
 
-                {/* Export Panel Modal for Partial Results */}
-                {showExportPanel && (
-                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-                    <div className="bg-background rounded-xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-auto m-4 relative">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setShowExportPanel(false)}
-                        className="absolute top-3 right-3 z-10 h-8 w-8 p-0"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                      <ExportPanel
-                        result={partialResult as any}
-                        query={inputValue || initialQuery || ''}
-                        discoveryId={discoveryId || 'unknown'}
-                        onExport={() => {
-                          // Optionally close after export
-                        }}
-                      />
+              {/* Starting State */}
+              {status === 'starting' && (
+                <StartingState query={inputValue} />
+              )}
+
+              {/* Completed State - Show Results */}
+              {status === 'completed' && result && (
+                <>
+                  <FrontierScienceResultsCard
+                    result={result}
+                    onExport={() => setShowExportPanel(true)}
+                  />
+
+                  {/* Export Panel Modal */}
+                  {showExportPanel && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                      <div className="bg-background rounded-xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-auto m-4 relative">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setShowExportPanel(false)}
+                          className="absolute top-3 right-3 z-10 h-8 w-8 p-0"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                        <ExportPanel
+                          result={result}
+                          query={inputValue || initialQuery || ''}
+                          discoveryId={discoveryId || 'unknown'}
+                          onExport={() => {
+                            // Optionally close after export
+                          }}
+                        />
+                      </div>
                     </div>
-                  </div>
-                )}
-              </>
-            )}
+                  )}
+                </>
+              )}
 
-            {/* Note: Failed state is now handled inline in FrontierScienceProgressCard */}
+              {/* Note: Failed state is now handled inline in FrontierScienceProgressCard */}
+            </div>
           </div>
         )}
       </div>
@@ -552,7 +565,7 @@ function StartingState({ query: _query }: { query: string }) {
         Initializing Discovery
       </h2>
       <p className="text-sm text-muted-foreground text-center max-w-md">
-        Setting up the 12-phase discovery pipeline...
+        Setting up the 4-step discovery pipeline...
       </p>
     </div>
   )

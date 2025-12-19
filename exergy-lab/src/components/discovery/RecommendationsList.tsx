@@ -126,26 +126,26 @@ function PrioritySection({ priority, recommendations, onRetryPhase }: PrioritySe
     high: {
       icon: AlertTriangle,
       label: 'High Priority',
-      iconClass: 'text-red-500',
-      labelClass: 'text-red-600',
-      bgClass: 'bg-red-500/5',
-      borderClass: 'border-red-500/20',
+      iconClass: 'text-foreground',
+      labelClass: 'text-foreground',
+      bgClass: 'bg-muted/50',
+      borderClass: 'border-border',
     },
     medium: {
       icon: AlertCircle,
       label: 'Medium Priority',
-      iconClass: 'text-amber-500',
-      labelClass: 'text-amber-600',
-      bgClass: 'bg-amber-500/5',
-      borderClass: 'border-amber-500/20',
+      iconClass: 'text-muted-foreground',
+      labelClass: 'text-muted-foreground',
+      bgClass: 'bg-muted/30',
+      borderClass: 'border-border',
     },
     low: {
       icon: Info,
       label: 'Low Priority',
-      iconClass: 'text-blue-500',
-      labelClass: 'text-blue-600',
-      bgClass: 'bg-blue-500/5',
-      borderClass: 'border-blue-500/20',
+      iconClass: 'text-muted-foreground',
+      labelClass: 'text-muted-foreground',
+      bgClass: 'bg-muted/20',
+      borderClass: 'border-border',
     },
   }[priority]
 
@@ -198,14 +198,14 @@ function RecommendationItem({
   return (
     <div className={cn('p-3 rounded-lg border', bgClass, borderClass)}>
       <div className="flex items-start gap-2">
-        <Lightbulb size={16} className="text-amber-500 mt-0.5 shrink-0" />
+        <Lightbulb size={16} className="text-muted-foreground mt-0.5 shrink-0" />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-muted text-muted-foreground uppercase">
               {phaseMeta?.shortName || recommendation.phase}
             </span>
             {recommendation.actionable && (
-              <span className="text-xs text-emerald-600">Actionable</span>
+              <span className="text-xs text-foreground font-medium">Actionable</span>
             )}
           </div>
           <p className="text-sm font-medium text-foreground">
@@ -249,13 +249,13 @@ export function CompactRecommendations({
   return (
     <div className={cn('flex items-center gap-3 text-xs', className)}>
       {highCount > 0 && (
-        <span className="flex items-center gap-1 text-red-600">
+        <span className="flex items-center gap-1 text-foreground">
           <AlertTriangle size={12} />
           {highCount} high priority
         </span>
       )}
       {mediumCount > 0 && (
-        <span className="flex items-center gap-1 text-amber-600">
+        <span className="flex items-center gap-1 text-muted-foreground">
           <AlertCircle size={12} />
           {mediumCount} medium
         </span>

@@ -548,7 +548,7 @@ Do not use markdown headers - write flowing paragraphs.`
 }
 
 function generateFallbackConclusions(request: ReportRequest): string {
-  return `This automated discovery investigation has successfully explored the research question "${request.query}" through a systematic 12-phase analysis pipeline. The overall quality score of ${request.overallScore.toFixed(1)}/10 indicates a ${request.discoveryQuality}-tier discovery with solid foundations for further research.
+  return `This automated discovery investigation has successfully explored the research question "${request.query}" through a systematic 4-step analysis pipeline. The overall quality score of ${request.overallScore.toFixed(1)}/10 indicates a ${request.discoveryQuality}-tier discovery with solid foundations for further research.
 
 The investigation identified promising research directions, generated testable hypotheses, and provided preliminary validation through computational simulation. While the automated process has limitations compared to traditional experimental research, it provides valuable initial insights and prioritization guidance for resource allocation.
 

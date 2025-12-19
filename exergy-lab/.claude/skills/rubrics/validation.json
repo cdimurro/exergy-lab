@@ -1,0 +1,154 @@
+{
+  "id": "validation-v1",
+  "name": "Validation Phase Rubric",
+  "phase": "validation",
+  "domain": "clean-energy",
+  "totalPoints": 10,
+  "successThreshold": 7,
+  "maxIterations": 2,
+  "metadata": {
+    "version": "1.0.0",
+    "author": "FrontierScience Discovery Engine",
+    "lastUpdated": "2024-12-17",
+    "sourceDataset": "Based on OpenAI FrontierScience methodology"
+  },
+  "items": [
+    {
+      "id": "V1",
+      "description": "Physics constraints validated",
+      "points": 2.0,
+      "category": "accuracy",
+      "passCondition": "All claims checked against fundamental physical limits (thermodynamics, quantum limits, material limits)",
+      "partialConditions": [
+        { "condition": "All physics checks pass", "points": 2.0 },
+        { "condition": "Minor discrepancies noted", "points": 1.5 },
+        { "condition": "Some violations flagged", "points": 1.0 },
+        { "condition": "Major violations", "points": 0 }
+      ],
+      "physicsChecks": [
+        "carnot_efficiency",
+        "shockley_queisser",
+        "betz_limit",
+        "battery_theoretical_capacity",
+        "electrolysis_thermodynamic_voltage",
+        "conservation_laws"
+      ]
+    },
+    {
+      "id": "V2",
+      "description": "State-of-art comparison complete",
+      "points": 1.5,
+      "category": "accuracy",
+      "passCondition": "All performance claims compared to certified records or peer-reviewed benchmarks",
+      "partialConditions": [
+        { "condition": "All claims benchmarked", "points": 1.5 },
+        { "condition": "Most claims benchmarked (>80%)", "points": 1.0 },
+        { "condition": "Some benchmarking (50-80%)", "points": 0.75 },
+        { "condition": "Minimal benchmarking (<50%)", "points": 0.25 }
+      ],
+      "benchmarkSources": [
+        "nrel_best_research_cells",
+        "doe_hydrogen_targets",
+        "ipcc_carbon_capture",
+        "materials_project"
+      ]
+    },
+    {
+      "id": "V3",
+      "description": "Units and dimensions consistent",
+      "points": 1.0,
+      "category": "accuracy",
+      "passCondition": "All values have correct units and dimensional analysis is consistent",
+      "partialConditions": [
+        { "condition": "All units correct", "points": 1.0 },
+        { "condition": "Minor unit issues", "points": 0.5 },
+        { "condition": "Multiple unit errors", "points": 0 }
+      ]
+    },
+    {
+      "id": "V4",
+      "description": "Order of magnitude realistic",
+      "points": 1.0,
+      "category": "accuracy",
+      "passCondition": "All numerical values are within realistic orders of magnitude for the domain",
+      "partialConditions": [
+        { "condition": "All values realistic", "points": 1.0 },
+        { "condition": "Some questionable values", "points": 0.5 },
+        { "condition": "Multiple unrealistic values", "points": 0 }
+      ]
+    },
+    {
+      "id": "V5",
+      "description": "Improvement claims justified",
+      "points": 1.5,
+      "category": "novelty",
+      "passCondition": "Claims of improvement over prior art are quantified and mechanistically explained",
+      "partialConditions": [
+        { "condition": "All improvements justified", "points": 1.5 },
+        { "condition": "Most improvements justified", "points": 1.0 },
+        { "condition": "Some justification", "points": 0.5 },
+        { "condition": "No justification", "points": 0 }
+      ]
+    },
+    {
+      "id": "V6",
+      "description": "Internal consistency verified",
+      "points": 1.0,
+      "category": "accuracy",
+      "passCondition": "All values and claims are internally consistent across phases",
+      "partialConditions": [
+        { "condition": "Fully consistent", "points": 1.0 },
+        { "condition": "Minor inconsistencies", "points": 0.5 },
+        { "condition": "Major inconsistencies", "points": 0 }
+      ]
+    },
+    {
+      "id": "V7",
+      "description": "Assumptions documented",
+      "points": 0.5,
+      "category": "methodology",
+      "passCondition": "All key assumptions explicitly stated and justified",
+      "partialConditions": [
+        { "condition": "All assumptions documented", "points": 0.5 },
+        { "condition": "Some assumptions noted", "points": 0.25 },
+        { "condition": "Assumptions not stated", "points": 0 }
+      ]
+    },
+    {
+      "id": "V8",
+      "description": "Error bounds provided",
+      "points": 0.5,
+      "category": "accuracy",
+      "passCondition": "Key results include uncertainty ranges or error estimates",
+      "partialConditions": [
+        { "condition": "Error bounds for all key results", "points": 0.5 },
+        { "condition": "Some error bounds", "points": 0.25 },
+        { "condition": "No error bounds", "points": 0 }
+      ]
+    },
+    {
+      "id": "V9",
+      "description": "Cross-references verified",
+      "points": 0.5,
+      "category": "accuracy",
+      "passCondition": "Literature citations verified as accurate and relevant",
+      "partialConditions": [
+        { "condition": "All citations verified", "points": 0.5 },
+        { "condition": "Spot check passed", "points": 0.25 },
+        { "condition": "Citations not verified", "points": 0 }
+      ]
+    },
+    {
+      "id": "V10",
+      "description": "Reproducibility confidence",
+      "points": 0.5,
+      "category": "reproducibility",
+      "passCondition": "Sufficient detail provided for independent replication",
+      "partialConditions": [
+        { "condition": "Fully reproducible", "points": 0.5 },
+        { "condition": "Mostly reproducible", "points": 0.25 },
+        { "condition": "Cannot reproduce", "points": 0 }
+      ]
+    }
+  ]
+}

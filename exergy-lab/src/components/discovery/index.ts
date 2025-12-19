@@ -59,3 +59,6 @@ export type { PhaseStatus, PhaseResult } from './PhaseDetailPanel'
 
 // Failure recovery (intelligent failure handling with recommendations)
 export { FailureRecoveryPanel, FailureAlert } from './FailureRecoveryPanel'
+
+// Prompt improvement suggestion
+export { PromptSuggestion } from './PromptSuggestion'

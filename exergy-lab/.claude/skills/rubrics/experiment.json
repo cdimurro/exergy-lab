@@ -1,0 +1,131 @@
+{
+  "id": "experiment-v1",
+  "name": "Experiment Design Rubric",
+  "phase": "experiment",
+  "domain": "clean-energy",
+  "totalPoints": 10,
+  "successThreshold": 7,
+  "maxIterations": 2,
+  "metadata": {
+    "version": "1.0.0",
+    "author": "FrontierScience Discovery Engine",
+    "lastUpdated": "2024-12-17",
+    "sourceDataset": "Based on OpenAI FrontierScience methodology"
+  },
+  "items": [
+    {
+      "id": "E1",
+      "description": "Complete protocol with step-by-step procedures",
+      "points": 2.0,
+      "category": "completeness",
+      "passCondition": "Protocol includes detailed step-by-step procedures with specific parameters (temperatures, times, quantities)",
+      "partialConditions": [
+        { "condition": "10+ detailed steps with all parameters", "points": 2.0 },
+        { "condition": "7-9 steps with most parameters", "points": 1.5 },
+        { "condition": "5-6 steps or missing some parameters", "points": 1.0 },
+        { "condition": "<5 steps or vague descriptions", "points": 0.5 }
+      ]
+    },
+    {
+      "id": "E2",
+      "description": "Equipment list with specifications",
+      "points": 1.5,
+      "category": "completeness",
+      "passCondition": "Complete equipment list with model numbers, specifications, or equivalent requirements",
+      "partialConditions": [
+        { "condition": "Full equipment list with specs", "points": 1.5 },
+        { "condition": "Equipment list without full specs", "points": 1.0 },
+        { "condition": "Partial equipment list", "points": 0.5 },
+        { "condition": "No equipment list", "points": 0 }
+      ]
+    },
+    {
+      "id": "E3",
+      "description": "Safety protocols documented",
+      "points": 1.5,
+      "category": "safety",
+      "passCondition": "Safety hazards identified with mitigation strategies and required PPE",
+      "partialConditions": [
+        { "condition": "Comprehensive safety section with all hazards", "points": 1.5 },
+        { "condition": "Good safety coverage", "points": 1.0 },
+        { "condition": "Basic safety mentions", "points": 0.5 },
+        { "condition": "No safety protocols", "points": 0 }
+      ]
+    },
+    {
+      "id": "E4",
+      "description": "Controls defined (positive and negative)",
+      "points": 1.0,
+      "category": "methodology",
+      "passCondition": "Both positive and negative controls are clearly defined",
+      "partialConditions": [
+        { "condition": "Both controls clearly defined", "points": 1.0 },
+        { "condition": "One control defined", "points": 0.5 },
+        { "condition": "Controls mentioned but vague", "points": 0.25 },
+        { "condition": "No controls", "points": 0 }
+      ]
+    },
+    {
+      "id": "E5",
+      "description": "Measurements specified with precision",
+      "points": 1.0,
+      "category": "methodology",
+      "passCondition": "All measurements include instrument/method and expected precision/accuracy",
+      "partialConditions": [
+        { "condition": "All measurements with precision", "points": 1.0 },
+        { "condition": "Measurements specified, some precision", "points": 0.75 },
+        { "condition": "Basic measurement list", "points": 0.5 },
+        { "condition": "Vague measurements", "points": 0.25 }
+      ]
+    },
+    {
+      "id": "E6",
+      "description": "Sample size and replicates specified",
+      "points": 1.0,
+      "category": "reproducibility",
+      "passCondition": "Sample size n≥3 and number of replicates specified with statistical justification",
+      "partialConditions": [
+        { "condition": "n≥3 with statistical justification", "points": 1.0 },
+        { "condition": "n≥3 without justification", "points": 0.75 },
+        { "condition": "n=2 or unclear replicates", "points": 0.5 },
+        { "condition": "n=1 or no replicates", "points": 0.25 }
+      ]
+    },
+    {
+      "id": "E7",
+      "description": "Timeline and milestones defined",
+      "points": 0.5,
+      "category": "feasibility",
+      "passCondition": "Realistic timeline with clear milestones and decision points",
+      "partialConditions": [
+        { "condition": "Detailed timeline with milestones", "points": 0.5 },
+        { "condition": "Basic timeline", "points": 0.25 },
+        { "condition": "No timeline", "points": 0 }
+      ]
+    },
+    {
+      "id": "E8",
+      "description": "Data analysis plan specified",
+      "points": 1.0,
+      "category": "methodology",
+      "passCondition": "Statistical tests and analysis methods specified for each measurement",
+      "partialConditions": [
+        { "condition": "Complete analysis plan with tests", "points": 1.0 },
+        { "condition": "Partial analysis plan", "points": 0.5 },
+        { "condition": "No analysis plan", "points": 0 }
+      ]
+    },
+    {
+      "id": "E9",
+      "description": "Materials sourcing documented",
+      "points": 0.5,
+      "category": "feasibility",
+      "passCondition": "Sources for all materials including suppliers or synthesis routes",
+      "partialConditions": [
+        { "condition": "Full sourcing information", "points": 0.5 },
+        { "condition": "Partial sourcing", "points": 0.25 },
+        { "condition": "No sourcing info", "points": 0 }
+      ]
+    }
+  ]
+}

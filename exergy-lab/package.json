@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "stress-test": "npx tsx scripts/run-stress-test.ts",
+    "stress-test:quick": "npx tsx scripts/run-stress-test.ts --mode=quick --export",
+    "stress-test:full": "npx tsx scripts/run-stress-test.ts --mode=full --export",
+    "stress-test:category": "npx tsx scripts/run-stress-test.ts --mode=category --export"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.36.2",
@@ -31,6 +35,7 @@
     "tailwind-merge": "^3.4.0",
     "xlsx": "^0.18.5",
     "zod": "^4.2.1",
+    "uuid": "^11",
     "zustand": "^5.0.9"
   },
   "devDependencies": {
@@ -38,9 +43,11 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/uuid": "^10",
     "eslint": "^9",
     "eslint-config-next": "16.0.10",
     "tailwindcss": "^4",
+    "tsx": "^4",
     "typescript": "^5"
   }
 }
