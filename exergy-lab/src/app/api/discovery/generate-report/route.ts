@@ -144,7 +144,7 @@ async function generateHypothesisSection(phase: PhaseData): Promise<ReportSectio
   const hypotheses = phase.finalOutput || []
   const hypothesesArray = Array.isArray(hypotheses) ? hypotheses : (hypotheses.hypotheses || [])
 
-  const prompt = `You are a scientific report writer. Generate a detailed hypothesis analysis section.
+  const prompt = `You are a scientific report writer. Generate a well-structured, detailed hypothesis analysis section.
 
 HYPOTHESES GENERATED: ${hypothesesArray.length}
 PHASE SCORE: ${phase.finalScore}/10
@@ -160,15 +160,46 @@ Hypothesis ${i + 1}:
 - Required Materials: ${(h.requiredMaterials || []).join(', ') || 'Not specified'}
 `).join('\n')}
 
-Generate a comprehensive hypothesis analysis with:
-1. Overview (1 paragraph on hypothesis generation approach)
-2. Primary Hypotheses (detailed analysis of top 3 hypotheses - 2-3 paragraphs each)
-3. Scientific Basis (1-2 paragraphs on the scientific foundations)
-4. Feasibility Assessment (1 paragraph on practical implementation)
-5. Potential Impact (1 paragraph on expected outcomes)
+Generate a comprehensive hypothesis analysis with CLEAR MARKDOWN STRUCTURE:
 
-Write in a professional scientific tone. Be specific about each hypothesis.
-Format as markdown with ## headers.`
+## Overview
+Write 2-3 sentences describing the hypothesis generation methodology and selection process.
+
+## Primary Hypotheses
+
+For EACH of the top 3 hypotheses, create a separate subsection:
+
+### Hypothesis 1: [Short Title]
+**Statement:** [The hypothesis statement]
+
+**Rationale:** Write 2-3 sentences explaining the scientific basis.
+
+**Feasibility Assessment:** Write 1-2 sentences on practical implementation.
+
+**Expected Impact:** Write 1-2 sentences on potential outcomes.
+
+(Repeat for Hypothesis 2 and 3)
+
+## Scientific Basis
+Write 2 paragraphs discussing:
+- The theoretical foundations underlying these hypotheses
+- How current literature supports or informs these directions
+
+## Feasibility Assessment
+Write 1-2 paragraphs analyzing:
+- Technical feasibility of the proposed approaches
+- Resource requirements and timeline considerations
+
+## Key Insights
+Provide 2-3 bullet points summarizing the most important takeaways.
+
+IMPORTANT FORMATTING RULES:
+- Use ## for main section headers
+- Use ### for hypothesis subsections
+- Use **bold** for labels like Statement:, Rationale:, etc.
+- Add blank lines between sections for readability
+- Write complete sentences, not fragments
+- Be specific and cite data where available`
 
   try {
     const content = await generateText('discovery', prompt, {
@@ -461,7 +492,13 @@ async function generateExecutiveSummary(
   request: ReportRequest,
   sections: ReportSection[]
 ): Promise<string> {
-  const prompt = `You are a scientific report writer. Generate an executive summary for a clean energy research discovery report.
+  // Extract key findings from phases for richer context
+  const researchPhase = request.phases.find(p => p.phase === 'research')
+  const hypothesisPhase = request.phases.find(p => p.phase === 'hypothesis')
+  const keyFindings = researchPhase?.finalOutput?.keyFindings?.slice(0, 3) || []
+  const hypotheses = hypothesisPhase?.finalOutput?.hypotheses || (Array.isArray(hypothesisPhase?.finalOutput) ? hypothesisPhase?.finalOutput : [])
+
+  const prompt = `You are a scientific report writer. Generate a comprehensive executive summary for a clean energy research discovery report.
 
 DISCOVERY OVERVIEW:
 - Query: "${request.query}"
@@ -474,22 +511,46 @@ DISCOVERY OVERVIEW:
 PHASE SCORES:
 ${request.phases.map(p => `- ${p.phase}: ${p.finalScore.toFixed(1)}/10 (${p.passed ? 'PASSED' : 'FAILED'})`).join('\n')}
 
+KEY FINDINGS FROM RESEARCH:
+${keyFindings.map((f: any, i: number) => `${i + 1}. ${typeof f === 'string' ? f : f.finding || f.title || 'Finding'}`).join('\n') || 'Research findings available in detailed sections.'}
+
+TOP HYPOTHESES GENERATED:
+${hypotheses.slice(0, 3).map((h: any, i: number) => `${i + 1}. ${h.statement || h.title || 'Hypothesis'}`).join('\n') || 'Hypotheses available in detailed sections.'}
+
 RECOMMENDATIONS FROM DISCOVERY:
 ${request.recommendations.slice(0, 5).map((r, i) => `${i + 1}. ${r}`).join('\n')}
 
-Generate a comprehensive executive summary (3-4 paragraphs) that:
-1. Opens with the research question and its significance
-2. Summarizes key findings and achievements
-3. Highlights the most important technical results
-4. Concludes with actionable recommendations
+Generate a comprehensive executive summary with 5-6 well-developed paragraphs:
 
-Write in a professional tone for senior researchers and decision-makers.
-Do not use markdown headers - write flowing paragraphs.`
+**Paragraph 1 - Research Context & Significance:**
+Open with the research question and explain why this investigation matters for the clean energy field. Mention the domain and current challenges being addressed.
+
+**Paragraph 2 - Methodology & Approach:**
+Describe the systematic approach taken: literature synthesis across multiple databases, hypothesis generation, validation through simulation, and techno-economic analysis.
+
+**Paragraph 3 - Key Findings:**
+Summarize the most important discoveries from the research phase. Be specific about what was learned from analyzing the scientific literature.
+
+**Paragraph 4 - Novel Hypotheses:**
+Highlight the most promising hypotheses generated and their potential significance. Mention feasibility and expected impact.
+
+**Paragraph 5 - Technical & Economic Insights:**
+Discuss key technical results including thermodynamic efficiency findings, economic viability indicators, and any simulation results.
+
+**Paragraph 6 - Conclusions & Recommendations:**
+Conclude with the overall assessment and 2-3 specific, actionable recommendations for next steps.
+
+FORMATTING:
+- Write flowing, professional paragraphs
+- Do NOT use markdown headers within the summary
+- Each paragraph should be 3-5 sentences
+- Be specific with data and findings where available
+- Write for senior researchers and decision-makers`
 
   try {
     const summary = await generateText('discovery', prompt, {
       temperature: 0.4,
-      maxTokens: 1000,
+      maxTokens: 1800, // Increased for comprehensive summary
       model: 'fast', // Gemini 3 Flash - fast with good quality for executive summary
     })
 
@@ -503,40 +564,73 @@ Do not use markdown headers - write flowing paragraphs.`
 function generateFallbackExecutiveSummary(request: ReportRequest): string {
   const passedPhases = request.phases.filter(p => p.passed).length
   const totalPhases = request.phases.length
+  const domain = request.domain?.replace(/-/g, ' ') || 'clean energy'
 
-  return `This discovery report presents the findings from an automated scientific investigation into "${request.query}" within the ${request.domain} domain. The investigation achieved an overall quality score of ${request.overallScore.toFixed(1)}/10, classified as "${request.discoveryQuality}" tier, with ${passedPhases} out of ${totalPhases} phases passing quality thresholds.
+  return `This discovery report presents the findings from a comprehensive AI-assisted scientific investigation into "${request.query}" within the ${domain} domain. The investigation achieved an overall quality score of ${request.overallScore.toFixed(1)}/10, classified as "${request.discoveryQuality}" tier, with ${passedPhases} out of ${totalPhases} phases passing quality thresholds. This research addresses critical challenges in the clean energy sector and explores novel approaches that could accelerate technology development.
 
-The discovery process involved comprehensive literature research, hypothesis generation, experiment design, computational simulation, and technical-economic analysis. Key findings include novel research directions, validated experimental protocols, and preliminary economic viability assessments.
+The investigation employed a systematic multi-phase approach combining automated literature synthesis across 14+ scientific databases, AI-powered hypothesis generation, computational validation, and techno-economic analysis. The research phase analyzed relevant publications, patents, and technical reports to establish the current state of the art and identify technological gaps. The hypothesis phase generated testable research directions based on this foundation.
 
-Based on the analysis, the investigation identified several promising avenues for further research and development. The recommendations section provides specific guidance for next steps, including priority areas for experimental validation and opportunities for technology improvement.`
+Key findings from the literature review reveal important trends and opportunities in the field. The analysis identified several promising research directions that build upon recent advances while addressing persistent challenges. These findings provide a solid foundation for the hypotheses generated in subsequent phases.
+
+The hypothesis generation phase produced multiple novel research directions, each evaluated for scientific validity, technical feasibility, and potential impact. The most promising hypotheses address identified gaps in current technology and propose innovative approaches that leverage recent breakthroughs in related fields.
+
+Technical validation through computational simulation and thermodynamic analysis provided preliminary assessment of the proposed approaches. Economic viability was evaluated using standard techno-economic methods, considering capital costs, operating expenses, and expected returns. These analyses help prioritize which directions warrant further experimental investigation.
+
+Based on the comprehensive analysis, this investigation recommends focusing resources on the highest-scoring hypotheses that demonstrate both technical feasibility and economic potential. The detailed recommendations section provides specific guidance for next steps, including priority areas for experimental validation, partnership opportunities, and potential funding mechanisms.`
 }
 
 async function generateConclusions(
   request: ReportRequest,
   sections: ReportSection[]
 ): Promise<string> {
-  const prompt = `You are a scientific report writer. Generate conclusions for a clean energy research discovery report.
+  // Extract key data for richer conclusions
+  const researchPhase = request.phases.find(p => p.phase === 'research')
+  const hypothesisPhase = request.phases.find(p => p.phase === 'hypothesis')
+  const validationPhase = request.phases.find(p => p.phase === 'validation')
+  const passedPhases = request.phases.filter(p => p.passed).length
+  const totalPhases = request.phases.length
+
+  const prompt = `You are a scientific report writer. Generate comprehensive conclusions for a clean energy research discovery report.
 
 DISCOVERY QUERY: "${request.query}"
 OVERALL SCORE: ${request.overallScore.toFixed(1)}/10
-QUALITY: ${request.discoveryQuality}
+QUALITY TIER: ${request.discoveryQuality}
+PHASES PASSED: ${passedPhases}/${totalPhases}
 
 PHASE RESULTS:
-${request.phases.map(p => `- ${p.phase}: ${p.finalScore.toFixed(1)}/10 (${p.passed ? 'PASSED' : 'FAILED'})`).join('\n')}
+${request.phases.map(p => `- ${p.phase}: ${p.finalScore.toFixed(1)}/10 (${p.passed ? 'PASSED' : 'NEEDS WORK'})`).join('\n')}
 
-Generate conclusions (2-3 paragraphs) that:
-1. Summarize the main achievements and discoveries
-2. Discuss the significance and implications
-3. Acknowledge limitations and areas for improvement
-4. Provide a forward-looking perspective
+KEY RECOMMENDATIONS:
+${request.recommendations.slice(0, 3).map((r, i) => `${i + 1}. ${r}`).join('\n')}
 
-Write in a professional scientific tone.
-Do not use markdown headers - write flowing paragraphs.`
+Generate comprehensive conclusions with 4-5 well-developed paragraphs:
+
+**Paragraph 1 - Summary of Achievements:**
+Summarize what this investigation accomplished. Mention the scope of literature analyzed, number of hypotheses generated, and key validation results. Be specific about achievements.
+
+**Paragraph 2 - Key Discoveries & Significance:**
+Discuss the most important discoveries and their potential significance for the field. Explain how these findings could advance clean energy technology development.
+
+**Paragraph 3 - Strengths of This Investigation:**
+Highlight what went well in this discovery process. Discuss the quality of research synthesis, novelty of hypotheses, and strength of validation approaches.
+
+**Paragraph 4 - Limitations & Considerations:**
+Acknowledge limitations honestly. Discuss areas where the automated analysis has constraints, what additional work would strengthen the findings, and caveats for interpretation.
+
+**Paragraph 5 - Future Directions & Impact:**
+Provide a forward-looking perspective on how this research could be advanced. Discuss potential impact if the top hypotheses are validated experimentally. Connect to broader clean energy goals.
+
+FORMATTING:
+- Write flowing, professional paragraphs
+- Do NOT use markdown headers within conclusions
+- Each paragraph should be 3-5 sentences
+- Be specific and reference actual results where available
+- Balance optimism with scientific rigor`
 
   try {
     const conclusions = await generateText('discovery', prompt, {
       temperature: 0.4,
-      maxTokens: 800,
+      maxTokens: 1500, // Increased for comprehensive conclusions
       model: 'fast', // Gemini 3 Flash - fast with good quality for conclusions
     })
 
@@ -548,11 +642,143 @@ Do not use markdown headers - write flowing paragraphs.`
 }
 
 function generateFallbackConclusions(request: ReportRequest): string {
-  return `This automated discovery investigation has successfully explored the research question "${request.query}" through a systematic 4-step analysis pipeline. The overall quality score of ${request.overallScore.toFixed(1)}/10 indicates a ${request.discoveryQuality}-tier discovery with solid foundations for further research.
+  const passedPhases = request.phases.filter(p => p.passed).length
+  const totalPhases = request.phases.length
+  const domain = request.domain?.replace(/-/g, ' ') || 'clean energy'
 
-The investigation identified promising research directions, generated testable hypotheses, and provided preliminary validation through computational simulation. While the automated process has limitations compared to traditional experimental research, it provides valuable initial insights and prioritization guidance for resource allocation.
+  return `This discovery investigation has systematically explored the research question "${request.query}" through a comprehensive 4-phase analysis pipeline encompassing literature synthesis, hypothesis generation, computational validation, and techno-economic analysis. The overall quality score of ${request.overallScore.toFixed(1)}/10 indicates a ${request.discoveryQuality}-tier discovery, with ${passedPhases} out of ${totalPhases} phases meeting quality thresholds. This investigation provides a solid foundation for targeted experimental research and technology development.
 
-Future work should focus on experimental validation of the top-ranked hypotheses and refinement of the technical-economic models based on real-world data. The recommendations provided in this report offer specific actionable steps for advancing this research toward practical implementation.`
+The investigation uncovered several significant findings that advance understanding in the ${domain} domain. The literature synthesis identified key technological gaps and emerging research directions, while the hypothesis generation phase produced novel research directions that address these gaps. These discoveries represent potentially valuable contributions to the field, particularly in areas where current approaches have shown limitations.
+
+This discovery demonstrates the value of systematic, AI-assisted research synthesis for accelerating early-stage investigation. The multi-source literature analysis provided comprehensive coverage that would be challenging to achieve through manual review alone. The structured hypothesis generation and validation approach ensures scientific rigor while enabling rapid exploration of the solution space.
+
+It is important to acknowledge certain limitations of this automated analysis. The hypotheses generated require experimental validation before implementation, and the economic projections are preliminary estimates based on analogous systems and literature values. Additionally, some nuanced aspects of the research domain may benefit from expert review and refinement. These limitations are common to computational research approaches and do not diminish the value of the findings.
+
+Looking forward, this investigation positions the research for productive next steps. Experimental validation of the top-ranked hypotheses should be prioritized, particularly those with high feasibility scores and significant potential impact. The techno-economic analysis provides preliminary guidance for investment decisions, though detailed engineering studies would be warranted for promising candidates. If the leading hypotheses are validated, this research could contribute meaningfully to advancing ${domain} technology and supporting the broader transition to sustainable energy systems.`
+}
+
+// ============================================================================
+// Key Findings & Score Summary
+// ============================================================================
+
+function generateKeyFindingsTable(request: ReportRequest): string {
+  const researchPhase = request.phases.find(p => p.phase === 'research')
+  const findings: { finding: string; confidence: string; impact: string }[] = []
+
+  // Extract key findings from research phase
+  if (researchPhase?.finalOutput?.keyFindings) {
+    const keyFindings = researchPhase.finalOutput.keyFindings.slice(0, 5)
+    for (const f of keyFindings) {
+      const findingText = typeof f === 'string' ? f : f.finding || f.title || JSON.stringify(f)
+      const confidence = f.confidence || f.evidenceStrength || 'Medium'
+      const impact = f.impact || f.relevance || 'Medium'
+      findings.push({
+        finding: findingText.substring(0, 100) + (findingText.length > 100 ? '...' : ''),
+        confidence: typeof confidence === 'number' ? (confidence > 0.7 ? 'High' : confidence > 0.4 ? 'Medium' : 'Low') : String(confidence),
+        impact: typeof impact === 'number' ? (impact > 0.7 ? 'High' : impact > 0.4 ? 'Medium' : 'Low') : String(impact),
+      })
+    }
+  }
+
+  // Add hypothesis findings if available
+  const hypothesisPhase = request.phases.find(p => p.phase === 'hypothesis')
+  if (hypothesisPhase?.finalOutput) {
+    const hypotheses = Array.isArray(hypothesisPhase.finalOutput)
+      ? hypothesisPhase.finalOutput
+      : hypothesisPhase.finalOutput.hypotheses || []
+
+    for (const h of hypotheses.slice(0, 2)) {
+      const title = h.title || h.hypothesis || 'Hypothesis'
+      const novelty = h.noveltyScore || h.novelty || 'Medium'
+      findings.push({
+        finding: `Novel hypothesis: ${title.substring(0, 80)}${title.length > 80 ? '...' : ''}`,
+        confidence: 'Research-based',
+        impact: typeof novelty === 'number' ? (novelty > 7 ? 'High' : novelty > 5 ? 'Medium' : 'Low') : String(novelty),
+      })
+    }
+  }
+
+  if (findings.length === 0) {
+    return ''
+  }
+
+  return `## Key Findings at a Glance
+
+| Finding | Confidence | Impact |
+|---------|------------|--------|
+${findings.map(f => `| ${f.finding.replace(/\|/g, '\\|')} | ${f.confidence} | ${f.impact} |`).join('\n')}
+
+`
+}
+
+function generateVisualScoreSummary(request: ReportRequest): string {
+  const qualityLabel = request.discoveryQuality?.toUpperCase() || 'DISCOVERY'
+  const overallScore = request.overallScore || 0
+
+  // Create ASCII progress bars
+  const createBar = (score: number): string => {
+    const filled = Math.round(score)
+    const empty = 10 - filled
+    return '█'.repeat(filled) + '░'.repeat(empty)
+  }
+
+  let scoreSummary = `## Discovery Quality Summary
+
+**${qualityLabel}** (${overallScore.toFixed(2)}/10)
+
+\`\`\`
+Overall Score: ${createBar(overallScore)} ${overallScore.toFixed(1)}/10
+\`\`\`
+
+### Phase Breakdown
+
+`
+
+  for (const phase of request.phases) {
+    const score = phase.finalScore || 0
+    const status = phase.passed ? '✓' : '○'
+    const phaseName = phase.phase.charAt(0).toUpperCase() + phase.phase.slice(1)
+    scoreSummary += `- ${status} **${phaseName}**: ${createBar(score)} ${score.toFixed(1)}/10\n`
+  }
+
+  return scoreSummary + '\n'
+}
+
+async function generateSectionInsights(sectionTitle: string, sectionContent: string, query: string): Promise<string[]> {
+  const prompt = `You are a scientific insights generator. Based on the following section from a discovery report, generate 2-3 key insights that a researcher would find most valuable.
+
+SECTION: ${sectionTitle}
+RESEARCH QUERY: "${query}"
+
+CONTENT:
+${sectionContent.substring(0, 2000)}
+
+Generate 2-3 bullet-point insights that:
+1. Highlight the most important takeaway
+2. Identify actionable opportunities
+3. Point out critical considerations or risks
+
+Format as a simple list, one insight per line starting with "-". Keep each insight to 1-2 sentences.`
+
+  try {
+    const insights = await generateText('discovery', prompt, {
+      temperature: 0.5,
+      maxTokens: 400,
+      model: 'fast',
+    })
+
+    if (insights) {
+      return insights
+        .split('\n')
+        .filter((line: string) => line.trim().startsWith('-'))
+        .map((line: string) => line.trim().substring(1).trim())
+        .slice(0, 3)
+    }
+  } catch (error) {
+    console.error('Failed to generate section insights:', error)
+  }
+
+  return []
 }
 
 // ============================================================================
@@ -601,7 +827,36 @@ async function generateFullReport(request: ReportRequest): Promise<GeneratedRepo
 
   // Wait for all sections to generate
   const generatedSections = await Promise.all(sectionPromises)
-  sections.push(...generatedSections)
+
+  // Add insights to each section (in parallel for speed)
+  const sectionsWithInsights = await Promise.all(
+    generatedSections.map(async (section) => {
+      const insights = await generateSectionInsights(section.title, section.content, request.query)
+      if (insights.length > 0) {
+        const insightsMarkdown = `\n\n### Key Insights\n${insights.map(i => `- ${i}`).join('\n')}`
+        return {
+          ...section,
+          content: section.content + insightsMarkdown,
+        }
+      }
+      return section
+    })
+  )
+
+  // Generate key findings table and score summary
+  const keyFindingsSection = generateKeyFindingsTable(request)
+  const scoreSummarySection = generateVisualScoreSummary(request)
+
+  // Add overview section at the beginning with key findings and score summary
+  if (keyFindingsSection || scoreSummarySection) {
+    sections.push({
+      title: 'Discovery Overview',
+      content: `${scoreSummarySection}\n${keyFindingsSection}`,
+    })
+  }
+
+  // Add the generated sections
+  sections.push(...sectionsWithInsights)
 
   // Generate executive summary and conclusions
   const [executiveSummary, conclusions] = await Promise.all([

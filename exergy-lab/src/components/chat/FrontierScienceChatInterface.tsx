@@ -9,7 +9,7 @@
  */
 
 import * as React from 'react'
-import { ArrowLeft, Send, Loader2, Settings2, X, Save, CheckCircle, Cpu } from 'lucide-react'
+import { ArrowLeft, Send, Loader2, X, Save, CheckCircle, Cpu, BookOpen, FlaskConical, Target, FileText } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { useFrontierScienceWorkflow } from '@/hooks/use-frontierscience-workflow'
@@ -19,15 +19,8 @@ import {
   QualityBadge,
   ExportPanel,
   PartialResultsCard,
-  DiscoveryModeSelector,
-  ModeBadge,
-  DiscoveryOptionsModal,
-  DiscoveryOptionsButton,
 } from '@/components/discovery'
-import type { DiscoveryAdvancedOptions } from '@/components/discovery'
-import type { DiscoveryMode } from '@/lib/ai/rubrics/mode-configs'
 import type { DiscoveryOptions } from '@/types/frontierscience'
-import type { DiscoveryConfiguration, Domain } from '@/types/intervention'
 
 interface FrontierScienceChatInterfaceProps {
   pageTitle?: string
@@ -39,12 +32,13 @@ interface FrontierScienceChatInterfaceProps {
   autoStart?: boolean
 }
 
-// Default advanced options
-const DEFAULT_ADVANCED_OPTIONS: DiscoveryAdvancedOptions = {
-  domain: 'solar-photovoltaics', // Most common default domain
+// Default discovery options
+const DEFAULT_OPTIONS: Partial<DiscoveryOptions> = {
+  domain: 'solar-photovoltaics',
   enablePatentAnalysis: true,
   enableExergyAnalysis: true,
   enableTEAAnalysis: true,
+  discoveryMode: 'synthesis',
 }
 
 export function FrontierScienceChatInterface({
@@ -58,13 +52,10 @@ export function FrontierScienceChatInterface({
 }: FrontierScienceChatInterfaceProps) {
   const [inputValue, setInputValue] = React.useState(initialQuery || '')
   const [hasAutoStarted, setHasAutoStarted] = React.useState(false)
-  const [showOptionsModal, setShowOptionsModal] = React.useState(false)
   const [showExportPanel, setShowExportPanel] = React.useState(false)
   const [isAutoSaving, setIsAutoSaving] = React.useState(false)
   const [lastSavedTime, setLastSavedTime] = React.useState<Date | null>(null)
   const [checkpoints, setCheckpoints] = React.useState<Array<{phase: string; timestamp: Date; data: any}>>([])
-  const [advancedOptions, setAdvancedOptions] = React.useState<DiscoveryAdvancedOptions>(DEFAULT_ADVANCED_OPTIONS)
-  const [selectedMode, setSelectedMode] = React.useState<DiscoveryMode | 'parallel' | null>(null)
   const inputRef = React.useRef<HTMLTextAreaElement>(null)
 
   const {
@@ -138,38 +129,15 @@ export function FrontierScienceChatInterface({
     e?.preventDefault()
     if (!inputValue.trim() || status === 'running' || status === 'starting') return
 
-    // Build discovery options from advanced options and selected mode
+    // Build discovery options with defaults
     const options: DiscoveryOptions = {
+      ...DEFAULT_OPTIONS,
       ...initialOptions,
-      domain: advancedOptions.domain,
-      enableExergyAnalysis: advancedOptions.enableExergyAnalysis,
-      enableTEAAnalysis: advancedOptions.enableTEAAnalysis,
-      enablePatentAnalysis: advancedOptions.enablePatentAnalysis,
-      maxIterationsPerPhase: advancedOptions.maxIterationsOverride,
-      discoveryMode: selectedMode || 'synthesis',
-    }
+    } as DiscoveryOptions
 
     await startDiscovery(inputValue.trim(), options)
     setInputValue('')
-    setShowOptionsModal(false)
   }
-
-  // Handle starting from the options modal
-  const handleStartFromModal = () => {
-    if (!inputValue.trim() || !selectedMode) return
-    handleSubmit()
-  }
-
-  // Check if options have been customized from defaults
-  const hasCustomOptions = React.useMemo(() => {
-    return (
-      advancedOptions.domain !== DEFAULT_ADVANCED_OPTIONS.domain ||
-      advancedOptions.enablePatentAnalysis !== DEFAULT_ADVANCED_OPTIONS.enablePatentAnalysis ||
-      advancedOptions.enableExergyAnalysis !== DEFAULT_ADVANCED_OPTIONS.enableExergyAnalysis ||
-      advancedOptions.enableTEAAnalysis !== DEFAULT_ADVANCED_OPTIONS.enableTEAAnalysis ||
-      advancedOptions.maxIterationsOverride !== undefined
-    )
-  }, [advancedOptions])
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -182,91 +150,78 @@ export function FrontierScienceChatInterface({
 
   return (
     <div className="flex flex-col h-full bg-background">
-      {/* Header */}
-      <div className="shrink-0 border-b border-border px-6 py-4">
-        <div className="flex items-center gap-3">
-          {onBack && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onBack}
-              className="h-10 w-10 p-0 mr-1"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-          )}
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500/10 to-teal-500/10 text-emerald-600">
-            <Cpu className="w-5 h-5 animate-pulse" />
-          </div>
-          <div className="flex-1">
-            <h1 className="text-2xl font-semibold text-foreground">{pageTitle}</h1>
-            <p className="text-base text-muted-foreground">{pageSubtitle}</p>
-          </div>
-          {qualityTier && status === 'running' && (
-            <QualityBadge quality={qualityTier} size="sm" />
-          )}
-          {selectedMode && (status === 'idle' || status === 'running') && (
-            <ModeBadge mode={selectedMode} size="sm" />
-          )}
-
-          {/* Action Buttons - Right side */}
-          <div className="flex items-center gap-2">
-            {/* Auto-Save Indicator - Only show when running */}
-            {status === 'running' && (
-              <div className={cn(
-                'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-300',
-                isAutoSaving
-                  ? 'bg-emerald-500/10 text-emerald-600 animate-pulse'
-                  : lastSavedTime
-                  ? 'bg-muted text-muted-foreground'
-                  : 'bg-muted/50 text-muted-foreground/50'
-              )}>
-                {isAutoSaving ? (
-                  <>
-                    <Save className="h-3.5 w-3.5 animate-spin" />
-                    <span>Saving...</span>
-                  </>
-                ) : lastSavedTime ? (
-                  <>
-                    <CheckCircle className="h-3.5 w-3.5" />
-                    <span>Auto-Saved</span>
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-3.5 w-3.5" />
-                    <span>Auto-Save</span>
-                  </>
-                )}
-              </div>
-            )}
-
-            {/* Close/Cancel Button - Only show when running */}
-            {status === 'running' && (
+      {/* Header - Hidden when idle to maximize space */}
+      {status !== 'idle' && (
+        <div className="shrink-0 border-b border-border px-6 py-4">
+          <div className="flex items-center gap-3">
+            {onBack && (
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={cancelDiscovery}
-                className="h-9 w-9 p-0"
-                title="Cancel discovery"
+                onClick={onBack}
+                className="h-10 w-10 p-0 mr-1"
               >
-                <X className="h-4 w-4" />
+                <ArrowLeft className="h-5 w-5" />
               </Button>
             )}
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500/10 to-teal-500/10 text-emerald-600">
+              <Cpu className="w-5 h-5 animate-pulse" />
+            </div>
+            <div className="flex-1">
+              <h1 className="text-2xl font-semibold text-foreground">{pageTitle}</h1>
+              <p className="text-base text-muted-foreground">{pageSubtitle}</p>
+            </div>
+            {qualityTier && status === 'running' && (
+              <QualityBadge quality={qualityTier} size="sm" />
+            )}
+
+            {/* Action Buttons - Right side */}
+            <div className="flex items-center gap-2">
+              {/* Auto-Save Indicator - Only show when running */}
+              {status === 'running' && (
+                <div className={cn(
+                  'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-300',
+                  isAutoSaving
+                    ? 'bg-emerald-500/10 text-emerald-600 animate-pulse'
+                    : lastSavedTime
+                    ? 'bg-muted text-muted-foreground'
+                    : 'bg-muted/50 text-muted-foreground/50'
+                )}>
+                  {isAutoSaving ? (
+                    <>
+                      <Save className="h-3.5 w-3.5 animate-spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : lastSavedTime ? (
+                    <>
+                      <CheckCircle className="h-3.5 w-3.5" />
+                      <span>Auto-Saved</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-3.5 w-3.5" />
+                      <span>Auto-Save</span>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* Close/Cancel Button - Only show when running */}
+              {status === 'running' && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={cancelDiscovery}
+                  className="h-9 w-9 p-0"
+                  title="Cancel discovery"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
           </div>
         </div>
-      </div>
-
-      {/* Discovery Options Modal */}
-      <DiscoveryOptionsModal
-        isOpen={showOptionsModal}
-        onClose={() => setShowOptionsModal(false)}
-        selectedMode={selectedMode}
-        query={inputValue}
-        options={advancedOptions}
-        onOptionsChange={setAdvancedOptions}
-        onStart={handleStartFromModal}
-        isStarting={status === 'starting'}
-      />
+      )}
 
       {/* Main Content */}
       <div className="flex-1 overflow-hidden">
@@ -335,7 +290,6 @@ export function FrontierScienceChatInterface({
                   // Reset workflow state and show input
                   resetDiscovery()
                   setInputValue(partialResult?.query || inputValue || initialQuery || '')
-                  setShowOptionsModal(false)
                 }}
                 onRetryWithPrompt={(prompt: string) => {
                   // Start a new discovery with the improved/edited prompt
@@ -369,57 +323,119 @@ export function FrontierScienceChatInterface({
               </div>
             )}
           </>
+        ) : status === 'completed' && result ? (
+          <>
+            {/* Full-width Results Card - same layout as progress card */}
+            <div className="h-full overflow-y-auto px-4 py-6">
+              <FrontierScienceResultsCard
+                result={result}
+                onExport={() => setShowExportPanel(true)}
+                className="h-full"
+              />
+            </div>
+
+            {/* Export Panel Modal */}
+            {showExportPanel && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                <div className="bg-background rounded-xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-auto m-4 relative">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowExportPanel(false)}
+                    className="absolute top-3 right-3 z-10 h-8 w-8 p-0"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                  <ExportPanel
+                    result={result}
+                    query={inputValue || initialQuery || ''}
+                    discoveryId={discoveryId || 'unknown'}
+                    onExport={() => {
+                      // Optionally close after export
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+          </>
+        ) : status === 'idle' ? (
+          /* Idle State - Full height flex layout with input at bottom */
+          <div className="h-full flex flex-col">
+            {/* Header - Fixed at top */}
+            <div className="shrink-0 text-center pt-8 pb-6 px-6">
+              <div className="mb-4 flex justify-center">
+                <Cpu size={72} className="text-emerald-600" />
+              </div>
+              <h1 className="text-5xl sm:text-6xl font-bold tracking-tight mb-3 text-emerald-600">
+                Discovery Engine
+              </h1>
+              <p className="text-lg text-muted-foreground max-w-xl mx-auto">
+                AI-powered scientific hypothesis validation and research synthesis
+              </p>
+            </div>
+
+            {/* Instructions Card - Positioned slightly higher */}
+            <div className="flex-1 overflow-y-auto px-6 flex items-start justify-center pt-2">
+              <div className="max-w-4xl w-full">
+                <IdleStateCard
+                  onExampleClick={(query) => {
+                    setInputValue(query)
+                    // Auto-submit after a brief delay to show the query
+                    setTimeout(() => {
+                      const options: DiscoveryOptions = {
+                        ...DEFAULT_OPTIONS,
+                        ...initialOptions,
+                      } as DiscoveryOptions
+                      startDiscovery(query, options)
+                    }, 100)
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Input Area - Fixed at bottom, full width */}
+            <div className="shrink-0 border-t border-border px-6 py-4 bg-background">
+              <form onSubmit={handleSubmit} className="w-full">
+                <div className="flex gap-3 items-end">
+                  <textarea
+                    ref={inputRef}
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    disabled={isInputDisabled}
+                    placeholder="Describe your scientific discovery query (e.g., 'Novel approaches to high-temperature SOEC efficiency')"
+                    className={cn(
+                      'flex-1 min-h-[120px] max-h-[200px] p-4',
+                      'rounded-xl border border-border bg-background',
+                      'text-foreground placeholder:text-muted-foreground',
+                      'resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500/50',
+                      'disabled:opacity-50 disabled:cursor-not-allowed'
+                    )}
+                  />
+                  <Button
+                    type="submit"
+                    disabled={isInputDisabled || !inputValue.trim()}
+                    className="h-[56px] px-8 shrink-0 bg-emerald-600 hover:bg-emerald-700"
+                  >
+                    {isInputDisabled ? (
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                    ) : (
+                      <>
+                        <Send className="h-5 w-5 mr-2" />
+                        Submit Query
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </div>
         ) : (
           <div className="h-full overflow-y-auto px-4 py-6">
             <div className="max-w-4xl mx-auto">
-              {/* Idle State - Show Input Prompt */}
-              {status === 'idle' && !result && (
-                <IdleState
-                  selectedMode={selectedMode}
-                  onModeSelect={setSelectedMode}
-                  query={inputValue}
-                  onOpenOptions={() => setShowOptionsModal(true)}
-                  hasCustomOptions={hasCustomOptions}
-                />
-              )}
-
               {/* Starting State */}
               {status === 'starting' && (
                 <StartingState query={inputValue} />
-              )}
-
-              {/* Completed State - Show Results */}
-              {status === 'completed' && result && (
-                <>
-                  <FrontierScienceResultsCard
-                    result={result}
-                    onExport={() => setShowExportPanel(true)}
-                  />
-
-                  {/* Export Panel Modal */}
-                  {showExportPanel && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-                      <div className="bg-background rounded-xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-auto m-4 relative">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setShowExportPanel(false)}
-                          className="absolute top-3 right-3 z-10 h-8 w-8 p-0"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                        <ExportPanel
-                          result={result}
-                          query={inputValue || initialQuery || ''}
-                          discoveryId={discoveryId || 'unknown'}
-                          onExport={() => {
-                            // Optionally close after export
-                          }}
-                        />
-                      </div>
-                    </div>
-                  )}
-                </>
               )}
 
               {/* Note: Failed state is now handled inline in FrontierScienceProgressCard */}
@@ -428,104 +444,98 @@ export function FrontierScienceChatInterface({
         )}
       </div>
 
-      {/* Input Area - Show at bottom when idle */}
-      {status === 'idle' && (
-        <div className="shrink-0 border-t border-border px-6 py-4">
-          <form onSubmit={handleSubmit} className="w-full">
-            <div className="flex gap-3 items-end">
-              <textarea
-                ref={inputRef}
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={handleKeyDown}
-                disabled={isInputDisabled}
-                placeholder="Describe your scientific discovery query (e.g., 'Novel approaches to high-temperature SOEC efficiency')"
-                className={cn(
-                  'flex-1 min-h-[100px] max-h-[180px] p-4',
-                  'rounded-xl border border-border bg-background',
-                  'text-foreground placeholder:text-muted-foreground',
-                  'resize-y focus:outline-none focus:ring-2 focus:ring-blue-500/50',
-                  'disabled:opacity-50 disabled:cursor-not-allowed'
-                )}
-              />
-              <Button
-                type="submit"
-                disabled={isInputDisabled || !inputValue.trim() || !selectedMode}
-                className="h-[56px] px-8 shrink-0"
-              >
-                {isInputDisabled ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <>
-                    <Send className="h-5 w-5 mr-2" />
-                    Submit Query
-                  </>
-                )}
-              </Button>
-            </div>
-          </form>
-        </div>
-      )}
-
     </div>
   )
 }
 
 /**
- * Idle state placeholder with clean, centered design
- * Now includes Discovery Mode selector for choosing research approach
+ * Instructions card component (shown in the middle of the page)
  */
-function IdleState({
-  selectedMode,
-  onModeSelect,
-  query,
-  onOpenOptions,
-  hasCustomOptions,
-}: {
-  selectedMode: DiscoveryMode | 'parallel' | null
-  onModeSelect: (mode: DiscoveryMode | 'parallel') => void
-  query?: string
-  onOpenOptions: () => void
-  hasCustomOptions: boolean
-}) {
+function IdleStateCard({ onExampleClick }: { onExampleClick: (query: string) => void }) {
+  const examples = [
+    "Novel approaches to improve perovskite solar cell stability above 1000 hours",
+    "Methods to increase solid oxide electrolyzer efficiency at temperatures below 700°C",
+    "Strategies for reducing lithium-ion battery degradation in grid-scale storage",
+  ]
+
   return (
-    <div className="flex flex-col h-full">
-      {/* Main Content - Centered */}
-      <div className="flex-1 flex flex-col items-center justify-center py-4 px-4 min-h-0">
-        {/* Large Cpu Icon - Simple green */}
-        <div className="mb-3 flex justify-center">
-          <Cpu size={72} className="text-emerald-600" />
+    <div className="w-full rounded-xl border bg-card p-6">
+        <h2 className="text-lg font-semibold text-foreground mb-4">
+          Instructions
+        </h2>
+
+        {/* Steps - Compact inline layout */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
+          <div className="flex items-start gap-3">
+            <div className="w-7 h-7 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0 text-emerald-600 text-sm font-semibold">
+              1
+            </div>
+            <div>
+              <p className="text-sm text-foreground font-medium">Enter a research question</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Be specific about your domain.</p>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-3">
+            <div className="w-7 h-7 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0 text-emerald-600 text-sm font-semibold">
+              2
+            </div>
+            <div>
+              <p className="text-sm text-foreground font-medium">AI Analysis</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Sophisticated 4-phase pipeline.</p>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-3">
+            <div className="w-7 h-7 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0 text-emerald-600 text-sm font-semibold">
+              3
+            </div>
+            <div>
+              <p className="text-sm text-foreground font-medium">Review your results</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Get a comprehensive report.</p>
+            </div>
+          </div>
         </div>
 
-        {/* Title - Green accent color */}
-        <h1 className="text-4xl sm:text-5xl lg:text-5xl font-bold tracking-tight mb-3 text-center px-4 text-emerald-600">
-          Discovery Engine
-        </h1>
-
-        {/* Subtitle */}
-        <p className="text-base text-muted-foreground mb-4 text-center max-w-2xl">
-          AI-powered scientific hypothesis validation and research synthesis
-        </p>
-
-        {/* Mode Selector */}
-        <div className="w-full max-w-3xl mb-3">
-          <DiscoveryModeSelector
-            selectedMode={selectedMode}
-            onModeSelect={onModeSelect}
-            query={query}
-            showParallelOption={true}
-          />
+        {/* Examples - Compact */}
+        <div className="mb-5">
+          <h3 className="text-sm font-medium text-foreground mb-2">Example Queries <span className="text-xs text-muted-foreground font-normal">(click to run)</span></h3>
+          <div className="space-y-2">
+            {examples.map((example, index) => (
+              <button
+                key={index}
+                onClick={() => onExampleClick(example)}
+                className="w-full text-left p-2.5 rounded-lg bg-muted/50 border border-border text-sm text-muted-foreground italic hover:bg-emerald-500/10 hover:border-emerald-500/30 hover:text-foreground transition-all duration-200 cursor-pointer group"
+              >
+                <span className="group-hover:text-emerald-600">"{example}"</span>
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Configuration Options Button - Right under mode selector */}
-        <div className="w-full max-w-3xl flex justify-center mb-2">
-          <DiscoveryOptionsButton
-            onClick={onOpenOptions}
-            hasCustomizations={hasCustomOptions}
-          />
+        {/* Discovery Pipeline - Horizontal */}
+        <div className="pt-4 border-t">
+          <h3 className="text-sm font-medium text-foreground mb-2">Discovery Pipeline</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <BookOpen size={16} className="text-blue-600 shrink-0" />
+              <span className="text-foreground font-medium">Conduct Research</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <FlaskConical size={16} className="text-purple-600 shrink-0" />
+              <span className="text-foreground font-medium">Generate Hypotheses</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Target size={16} className="text-teal-600 shrink-0" />
+              <span className="text-foreground font-medium">Validate Findings</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <FileText size={16} className="text-emerald-600 shrink-0" />
+              <span className="text-foreground font-medium">Export Reports</span>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
   )
 }
 

@@ -133,6 +133,7 @@ export function QualityScoreDisplay({
 
 /**
  * Compact quality indicator for phase results
+ * Clean display with colored scores based on pass/fail status
  */
 interface CompactQualityIndicatorProps {
   score: number
@@ -145,21 +146,21 @@ export function CompactQualityIndicator({
   passed,
   className,
 }: CompactQualityIndicatorProps) {
+  // Determine color based on pass status and score threshold
+  const needsImprovement = !passed && score >= 5
+
   return (
-    <div
+    <span
       className={cn(
-        'flex items-center gap-1.5 px-2 py-0.5 rounded-md text-sm font-medium',
-        'bg-muted text-foreground',
+        'text-sm font-semibold tabular-nums',
+        passed && 'text-emerald-600',
+        needsImprovement && 'text-amber-600',
+        !passed && !needsImprovement && 'text-red-600',
         className
       )}
     >
-      {passed ? (
-        <Check size={14} className="text-foreground" />
-      ) : (
-        <Circle size={14} className="text-muted-foreground" />
-      )}
-      <span>{score.toFixed(1)}/10</span>
-    </div>
+      {score.toFixed(1)}
+    </span>
   )
 }
 

@@ -4,7 +4,7 @@
  * ExportPanel Component
  *
  * Provides export functionality for discovery results:
- * - PDF: Formatted research report
+ * - PDF: Formatted research report (using html2pdf.js for direct download)
  * - JSON: Raw data for programmatic use
  * - LaTeX: Publication-ready document
  * - BibTeX: Citations for references
@@ -27,11 +27,21 @@ import {
   ChevronDown,
   ChevronUp,
   Settings2,
-  Share2,
-  ExternalLink,
+  AlertCircle,
+  RefreshCw,
 } from 'lucide-react'
 import type { DiscoveryResult, PhaseResult } from '@/types/frontierscience'
 import type { DiscoveryPhase } from '@/types/frontierscience'
+
+// ============================================================================
+// Types for Error Handling
+// ============================================================================
+
+interface ExportError {
+  message: string
+  canRetry: boolean
+  fallbackAvailable: boolean
+}
 
 // ============================================================================
 // Types
@@ -690,10 +700,13 @@ function aiReportToMarkdown(report: AIGeneratedReport, includeRawData?: boolean,
 }
 
 /**
- * Generate PDF from markdown content using browser APIs
- * Creates a styled HTML document and triggers print/save as PDF
+ * Generate PDF from markdown content using html2pdf.js
+ * Creates a styled HTML document and downloads as PDF directly
  */
-function generatePDFFromMarkdown(markdown: string, filename: string): void {
+async function generatePDFFromMarkdown(markdown: string, filename: string): Promise<void> {
+  // Dynamic import of html2pdf.js (client-side only)
+  const html2pdf = (await import('html2pdf.js')).default
+
   // Convert markdown to HTML (basic conversion)
   let html = markdown
     // Headers
@@ -724,131 +737,106 @@ function generatePDFFromMarkdown(markdown: string, filename: string): void {
   // Wrap list items in ul
   html = html.replace(/(<li[^>]*>.*?<\/li>\n?)+/g, (match) => `<ul>${match}</ul>`)
 
-  // Create styled HTML document
-  const styledHtml = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>${filename}</title>
-  <style>
-    @media print {
-      body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
-    }
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      line-height: 1.6;
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 40px;
-      color: #333;
-    }
-    h1 {
-      color: #1a1a1a;
-      border-bottom: 3px solid #3b82f6;
-      padding-bottom: 10px;
-      margin-bottom: 20px;
-    }
-    h2 {
-      color: #1f2937;
-      border-bottom: 1px solid #e5e7eb;
-      padding-bottom: 8px;
-      margin-top: 30px;
-    }
-    h3 {
-      color: #374151;
-      margin-top: 20px;
-    }
-    p {
-      margin: 10px 0;
-    }
-    ul {
-      margin: 10px 0;
-      padding-left: 25px;
-    }
-    li {
-      margin: 5px 0;
-    }
-    li.success {
-      color: #059669;
-    }
-    li.warning {
-      color: #d97706;
-    }
-    blockquote {
-      border-left: 4px solid #3b82f6;
-      padding-left: 15px;
-      margin: 15px 0;
-      color: #4b5563;
-      font-style: italic;
-      background: #f3f4f6;
-      padding: 10px 15px;
-      border-radius: 0 8px 8px 0;
-    }
-    pre {
-      background: #1f2937;
-      color: #e5e7eb;
-      padding: 15px;
-      border-radius: 8px;
-      overflow-x: auto;
-      font-size: 12px;
-    }
-    code {
-      background: #f3f4f6;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-size: 0.9em;
-    }
-    pre code {
-      background: none;
-      padding: 0;
-    }
-    hr {
-      border: none;
-      border-top: 1px solid #e5e7eb;
-      margin: 30px 0;
-    }
-    strong {
-      color: #111827;
-    }
-    .metadata {
-      background: #f9fafb;
-      padding: 15px;
-      border-radius: 8px;
-      margin-bottom: 20px;
-    }
-  </style>
-</head>
-<body>
-  <p>${html}</p>
-</body>
-</html>
-`
+  // Create styled HTML element
+  const container = document.createElement('div')
+  container.innerHTML = `
+    <style>
+      .pdf-content {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        line-height: 1.6;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        color: #333;
+      }
+      .pdf-content h1 {
+        color: #1a1a1a;
+        border-bottom: 3px solid #3b82f6;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+        font-size: 24px;
+      }
+      .pdf-content h2 {
+        color: #1f2937;
+        border-bottom: 1px solid #e5e7eb;
+        padding-bottom: 8px;
+        margin-top: 30px;
+        font-size: 20px;
+      }
+      .pdf-content h3 {
+        color: #374151;
+        margin-top: 20px;
+        font-size: 16px;
+      }
+      .pdf-content p {
+        margin: 10px 0;
+      }
+      .pdf-content ul {
+        margin: 10px 0;
+        padding-left: 25px;
+      }
+      .pdf-content li {
+        margin: 5px 0;
+      }
+      .pdf-content li.success {
+        color: #059669;
+      }
+      .pdf-content li.warning {
+        color: #d97706;
+      }
+      .pdf-content blockquote {
+        border-left: 4px solid #3b82f6;
+        padding-left: 15px;
+        margin: 15px 0;
+        color: #4b5563;
+        font-style: italic;
+        background: #f3f4f6;
+        padding: 10px 15px;
+        border-radius: 0 8px 8px 0;
+      }
+      .pdf-content pre {
+        background: #1f2937;
+        color: #e5e7eb;
+        padding: 15px;
+        border-radius: 8px;
+        overflow-x: auto;
+        font-size: 11px;
+      }
+      .pdf-content code {
+        background: #f3f4f6;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 0.9em;
+      }
+      .pdf-content pre code {
+        background: none;
+        padding: 0;
+      }
+      .pdf-content hr {
+        border: none;
+        border-top: 1px solid #e5e7eb;
+        margin: 30px 0;
+      }
+      .pdf-content strong {
+        color: #111827;
+      }
+    </style>
+    <div class="pdf-content">
+      <p>${html}</p>
+    </div>
+  `
 
-  // Open in new window for printing
-  const printWindow = window.open('', '_blank')
-  if (printWindow) {
-    printWindow.document.write(styledHtml)
-    printWindow.document.close()
-
-    // Wait for content to load, then trigger print
-    printWindow.onload = () => {
-      setTimeout(() => {
-        printWindow.print()
-      }, 250)
-    }
-  } else {
-    // Fallback: download as HTML
-    const blob = new Blob([styledHtml], { type: 'text/html' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = filename.replace('.pdf', '.html')
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
+  // Configure PDF options
+  const options = {
+    margin: [10, 10, 10, 10] as [number, number, number, number],
+    filename: filename,
+    image: { type: 'jpeg' as const, quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true },
+    jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const }
   }
+
+  // Generate and download PDF
+  await html2pdf().set(options).from(container).save()
 }
 
 // ============================================================================
@@ -916,6 +904,7 @@ export function ExportPanel({
   const [isExporting, setIsExporting] = React.useState(false)
   const [copied, setCopied] = React.useState(false)
   const [showConfig, setShowConfig] = React.useState(false)
+  const [exportError, setExportError] = React.useState<ExportError | null>(null)
   const [config, setConfig] = React.useState<ExportConfig>({
     // Consolidated 4-phase model
     includePhases: new Set(['research', 'hypothesis', 'validation', 'output'] as DiscoveryPhase[]),
@@ -928,8 +917,12 @@ export function ExportPanel({
     citationStyle: 'apa',
   })
 
+  // Helper to check if format uses AI generation
+  const isAIEnhancedFormat = (format: ExportFormat) => format === 'ai-report' || format === 'pdf'
+
   const handleExport = async () => {
     setIsExporting(true)
+    setExportError(null)
 
     try {
       let data: string | Blob
@@ -943,13 +936,12 @@ export function ExportPanel({
           break
         }
         case 'pdf': {
-          // Generate AI report then convert to PDF
+          // Generate AI report then convert to PDF - now uses html2pdf.js for direct download
           const aiReport = await fetchAIReport(result, query, discoveryId)
           const markdown = aiReportToMarkdown(aiReport, config.includeRawData, result)
-          // Use PDF generation with print dialog
-          generatePDFFromMarkdown(markdown, `discovery-${discoveryId}.pdf`)
+          await generatePDFFromMarkdown(markdown, `discovery-${discoveryId}.pdf`)
           setIsExporting(false)
-          return // Early return - PDF uses print dialog
+          return // Early return - PDF is downloaded directly
         }
         case 'markdown':
           data = generateMarkdown(result, query, discoveryId, config)
@@ -983,14 +975,40 @@ export function ExportPanel({
       }
     } catch (error) {
       console.error('Export failed:', error)
-      // Show error to user (could add toast notification here)
-      alert('Export failed. Please try again.')
+      const isAI = isAIEnhancedFormat(selectedFormat)
+      setExportError({
+        message: isAI
+          ? 'AI report generation failed. You can retry or use basic markdown export.'
+          : 'Export failed. Please try again.',
+        canRetry: true,
+        fallbackAvailable: isAI,
+      })
     } finally {
       setIsExporting(false)
     }
   }
 
+  // Fallback to basic markdown when AI export fails
+  const handleFallbackExport = () => {
+    setExportError(null)
+    setSelectedFormat('markdown')
+    // Trigger export after state update
+    setTimeout(() => {
+      const data = generateMarkdown(result, query, discoveryId, config)
+      const blob = new Blob([data], { type: 'text/markdown' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `discovery-${discoveryId}.md`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    }, 0)
+  }
+
   const handleCopyToClipboard = async () => {
+    setExportError(null)
     try {
       let data: string
 
@@ -1023,7 +1041,11 @@ export function ExportPanel({
       setTimeout(() => setCopied(false), 2000)
     } catch (error) {
       console.error('Copy failed:', error)
-      alert('Copy failed. Please try again.')
+      setExportError({
+        message: 'Failed to copy to clipboard. Please try again.',
+        canRetry: true,
+        fallbackAvailable: false,
+      })
     }
   }
 
@@ -1202,11 +1224,60 @@ export function ExportPanel({
             key={option.format}
             option={option}
             isSelected={selectedFormat === option.format}
-            onSelect={() => setSelectedFormat(option.format)}
+            onSelect={() => {
+              setSelectedFormat(option.format)
+              setExportError(null)
+            }}
             isExporting={isExporting}
           />
         ))}
       </div>
+
+      {/* Error Display */}
+      {exportError && (
+        <div className="p-4 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm text-red-700 dark:text-red-400">
+                {exportError.message}
+              </p>
+              <div className="flex gap-2 mt-3">
+                {exportError.canRetry && (
+                  <Button
+                    onClick={handleExport}
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5 text-red-700 dark:text-red-400 border-red-300 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/30"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    Retry
+                  </Button>
+                )}
+                {exportError.fallbackAvailable && (
+                  <Button
+                    onClick={handleFallbackExport}
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    Download Basic Markdown
+                  </Button>
+                )}
+                <Button
+                  onClick={() => setExportError(null)}
+                  size="sm"
+                  variant="ghost"
+                  className="text-muted-foreground"
+                >
+                  Dismiss
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Actions */}
       <div className="flex items-center justify-between pt-4 border-t border-border">

@@ -74,19 +74,19 @@ export function FailureRecoveryPanel({
                      (partialResults?.skippedPhases?.length || 0)
 
   return (
-    <Card className={cn('border-amber-200 bg-amber-50/50', className)}>
+    <Card className={cn('border-border bg-muted/30', className)}>
       <CardHeader className="pb-3">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-amber-100">
-            <AlertTriangle className="w-5 h-5 text-amber-600" />
+          <div className="p-2 rounded-lg bg-muted">
+            <AlertTriangle className="w-5 h-5 text-muted-foreground" />
           </div>
           <div className="flex-1">
             <CardTitle className="text-lg">{meta.name} Did Not Pass</CardTitle>
             <CardDescription>
-              Score: <span className="font-semibold text-amber-600">{score.toFixed(1)}</span> / {threshold.toFixed(1)} threshold
+              Score: <span className="font-semibold text-foreground">{score.toFixed(1)}</span> / {threshold.toFixed(1)} threshold
             </CardDescription>
           </div>
-          <Badge variant="warning" className="border-amber-300 text-amber-700 bg-amber-100">
+          <Badge variant="secondary" className="border-border text-muted-foreground bg-muted">
             Needs Attention
           </Badge>
         </div>
@@ -95,16 +95,16 @@ export function FailureRecoveryPanel({
       <CardContent className="space-y-4">
         {/* Primary Issues */}
         {highPriority.length > 0 && (
-          <div className="bg-white rounded-lg p-4 border border-amber-200">
-            <h4 className="text-sm font-semibold text-amber-800 mb-3 flex items-center gap-2">
-              <XCircle className="w-4 h-4" />
+          <div className="bg-card rounded-lg p-4 border border-border">
+            <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+              <XCircle className="w-4 h-4 text-muted-foreground" />
               High Priority Issues
             </h4>
             <ul className="space-y-3">
               {highPriority.slice(0, 3).map((rec, i) => (
                 <li key={i} className="flex items-start gap-3">
-                  <div className="w-5 h-5 rounded-full bg-red-100 flex items-center justify-center shrink-0 mt-0.5">
-                    <span className="text-xs font-bold text-red-600">{i + 1}</span>
+                  <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center shrink-0 mt-0.5">
+                    <span className="text-xs font-bold text-foreground">{i + 1}</span>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-foreground">{rec.issue}</p>
@@ -118,15 +118,15 @@ export function FailureRecoveryPanel({
 
         {/* Medium Priority Issues */}
         {mediumPriority.length > 0 && (
-          <div className="bg-white/50 rounded-lg p-4 border border-amber-100">
-            <h4 className="text-sm font-semibold text-amber-700 mb-2 flex items-center gap-2">
-              <Lightbulb className="w-4 h-4" />
+          <div className="bg-muted/30 rounded-lg p-4 border border-border">
+            <h4 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+              <Lightbulb className="w-4 h-4 text-muted-foreground" />
               Suggestions for Improvement
             </h4>
             <ul className="space-y-2">
               {mediumPriority.slice(0, 2).map((rec, i) => (
                 <li key={i} className="flex items-start gap-2 text-sm">
-                  <ChevronRight className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                  <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
                   <span className="text-muted-foreground">{rec.suggestion}</span>
                 </li>
               ))}
@@ -136,19 +136,19 @@ export function FailureRecoveryPanel({
 
         {/* Partial Results Available */}
         {partialResults && completedCount > 0 && (
-          <div className="bg-emerald-50 rounded-lg p-4 border border-emerald-200">
-            <h4 className="text-sm font-semibold text-emerald-800 mb-2 flex items-center gap-2">
-              <CheckCircle className="w-4 h-4" />
+          <div className="bg-muted/50 rounded-lg p-4 border border-border">
+            <h4 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-foreground" />
               Partial Results Available
             </h4>
-            <p className="text-sm text-emerald-700 mb-3">
-              <span className="font-semibold">{completedCount}</span> of {totalCount || 12} phases completed successfully
+            <p className="text-sm text-muted-foreground mb-3">
+              <span className="font-semibold text-foreground">{completedCount}</span> of {totalCount || 12} phases completed successfully
             </p>
             <div className="flex flex-wrap gap-1.5">
               {partialResults.completedPhases?.map((phase) => {
                 const phaseMeta = getPhaseMetadata(phase)
                 return (
-                  <Badge key={phase} variant="secondary" className="bg-emerald-100 text-emerald-700">
+                  <Badge key={phase} variant="secondary" className="bg-muted text-foreground">
                     {phaseMeta.shortName}
                   </Badge>
                 )
@@ -159,7 +159,7 @@ export function FailureRecoveryPanel({
                 <Download className="w-4 h-4" />
                 Export Partial
               </Button>
-              <Button size="sm" onClick={onContinuePartial} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
+              <Button size="sm" onClick={onContinuePartial} className="gap-2">
                 <Play className="w-4 h-4" />
                 Continue
               </Button>
@@ -169,7 +169,7 @@ export function FailureRecoveryPanel({
       </CardContent>
 
       <CardFooter className="flex-col gap-3 pt-0">
-        <Separator className="bg-amber-200/50" />
+        <Separator className="bg-border" />
         <div className="w-full grid grid-cols-2 gap-3">
           <Button variant="outline" onClick={onModifyQuery} className="gap-2">
             <Edit className="w-4 h-4" />
@@ -220,10 +220,10 @@ export function FailureAlert({
 
   return (
     <div className={cn(
-      'flex items-center gap-3 p-3 rounded-lg bg-amber-50 border border-amber-200',
+      'flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-border',
       className
     )}>
-      <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+      <AlertTriangle className="w-4 h-4 text-muted-foreground shrink-0" />
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-foreground">
           {meta.name} scored {score.toFixed(1)}/{threshold.toFixed(1)}

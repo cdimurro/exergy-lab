@@ -38,42 +38,53 @@ import {
 import { CompactQualityIndicator } from './QualityBadge'
 
 // ============================================================================
-// Color System Constants
+// Color System Constants (Status-Based Colors)
 // ============================================================================
 
 const PHASE_COLORS = {
   future: {
-    icon: 'text-slate-400',
+    icon: 'text-muted-foreground/50',
     bg: 'bg-transparent',
-    border: 'border-slate-300',
-    text: 'text-slate-500',
+    border: 'border-muted',
+    text: 'text-muted-foreground/70',
   },
   inProgress: {
-    icon: 'text-blue-600',
-    bg: 'bg-transparent',
+    icon: 'text-blue-500',
+    bg: 'bg-blue-500/10',
     border: 'border-blue-500',
     text: 'text-blue-600',
     ring: 'ring-blue-500/30',
   },
   completed: {
-    icon: 'text-emerald-600',
-    bg: 'bg-transparent',
+    icon: 'text-emerald-500',
+    bg: 'bg-emerald-500/10',
     border: 'border-emerald-500',
     text: 'text-emerald-600',
   },
-  failed: {
-    icon: 'text-amber-600',
-    bg: 'bg-transparent',
+  needsImprovement: {
+    icon: 'text-amber-500',
+    bg: 'bg-amber-500/10',
     border: 'border-amber-500',
     text: 'text-amber-600',
   },
+  failed: {
+    icon: 'text-red-500',
+    bg: 'bg-red-500/10',
+    border: 'border-red-500',
+    text: 'text-red-600',
+  },
 }
 
-function getPhaseColors(status: string, passed?: boolean) {
+function getPhaseColors(status: string, passed?: boolean, score?: number) {
   if (status === 'pending') return PHASE_COLORS.future
   if (status === 'running') return PHASE_COLORS.inProgress
   if (status === 'completed' && passed) return PHASE_COLORS.completed
-  if (status === 'completed' && !passed) return PHASE_COLORS.failed
+  // Completed but not passed - check if close to passing (needs improvement) or failed
+  if (status === 'completed' && !passed) {
+    // Score >= 5 is "needs improvement" (yellow), below 5 is "failed" (red)
+    if (score !== undefined && score >= 5) return PHASE_COLORS.needsImprovement
+    return PHASE_COLORS.failed
+  }
   if (status === 'failed') return PHASE_COLORS.failed
   return PHASE_COLORS.future
 }
@@ -240,10 +251,13 @@ function PhaseNode({
   // Larger icon sizes for better visibility with 4 phases
   const iconSize = compact ? 24 : 32
   const nodeSize = compact ? 'w-14 h-14' : 'w-16 h-16'
-  const colors = getPhaseColors(status, passed)
+  const colors = getPhaseColors(status, passed, score)
 
   // All phases are now clickable
   const isClickable = !!onClick
+
+  // Determine if this is a "needs improvement" state (failed but score >= 5)
+  const needsImprovement = status === 'completed' && !passed && score !== undefined && score >= 5
 
   return (
     <div className="flex flex-col items-center gap-1.5 shrink-0">
@@ -259,27 +273,30 @@ function PhaseNode({
           colors.bg,
           colors.border,
           // Selected state
-          isSelected && 'ring-2 ring-offset-2 ring-blue-500',
-          // Active indicator (running phase)
-          isActive && status === 'running' && 'ring-2 ring-offset-2 ring-blue-400',
+          isSelected && 'ring-2 ring-offset-2 ring-foreground',
+          // Active indicator (running phase) - blue ring
+          isActive && status === 'running' && 'ring-2 ring-offset-2 ring-blue-500/50',
           // Hover effects - all phases now hoverable
           isClickable && 'cursor-pointer hover:scale-105 hover:shadow-md',
           !isClickable && 'cursor-default'
         )}
         title={`${name}: ${status}${score !== undefined ? ` (${score.toFixed(1)}/10)` : ''} - Click to view details`}
       >
-        {/* Status indicator badges */}
+        {/* Status indicator badges - colored styling */}
         {status === 'running' && (
-          <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-blue-500 rounded-full" />
+          <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-blue-500 rounded-full animate-pulse" />
         )}
         {status === 'completed' && passed && (
-          <CheckCircle className="absolute -top-1.5 -right-1.5 w-5 h-5 text-emerald-500 bg-white rounded-full" />
+          <CheckCircle className="absolute -top-1.5 -right-1.5 w-5 h-5 text-emerald-500 bg-background rounded-full" />
         )}
-        {status === 'completed' && !passed && (
-          <AlertCircle className="absolute -top-1.5 -right-1.5 w-5 h-5 text-amber-500 bg-white rounded-full" />
+        {status === 'completed' && !passed && needsImprovement && (
+          <AlertCircle className="absolute -top-1.5 -right-1.5 w-5 h-5 text-amber-500 bg-background rounded-full" />
+        )}
+        {status === 'completed' && !passed && !needsImprovement && (
+          <X className="absolute -top-1.5 -right-1.5 w-5 h-5 text-red-500 bg-background rounded-full" />
         )}
         {status === 'failed' && (
-          <X className="absolute -top-1.5 -right-1.5 w-5 h-5 text-red-500 bg-white rounded-full" />
+          <X className="absolute -top-1.5 -right-1.5 w-5 h-5 text-red-500 bg-background rounded-full" />
         )}
 
         {/* Icon - now larger */}
@@ -302,12 +319,14 @@ function PhaseNode({
         </span>
       )}
 
-      {/* Score (only for completed phases) */}
+      {/* Score (only for completed phases) - colored styling */}
       {showScore && score !== undefined && status === 'completed' && (
         <span
           className={cn(
             'text-xs font-semibold tabular-nums',
-            passed ? 'text-emerald-600' : 'text-amber-600'
+            passed && 'text-emerald-600',
+            !passed && needsImprovement && 'text-amber-600',
+            !passed && !needsImprovement && 'text-red-600'
           )}
         >
           {score.toFixed(1)}
@@ -339,9 +358,9 @@ function PhaseConnector({
   const isToActive = toStatus === 'running'
   const isFromActive = fromStatus === 'running'
 
-  // Determine fill color and width
+  // Determine fill color and width - colored styling
   const getFillClass = () => {
-    // If the previous phase is running and this is the next phase, show blue progress
+    // If the previous phase is running and this is the next phase, show animated progress
     if (isFromActive && toStatus === 'pending') return 'bg-blue-500 w-full animate-pulse'
     // If previous phase completed successfully
     if (isFromCompleted && fromPassed) return 'bg-emerald-500 w-full'
@@ -355,7 +374,7 @@ function PhaseConnector({
   return (
     <div className="flex-1 relative h-1.5 mx-3 mt-8 self-start min-w-[16px]">
       {/* Background track */}
-      <div className="absolute inset-0 bg-slate-200 rounded-full" />
+      <div className="absolute inset-0 bg-muted rounded-full" />
 
       {/* Progress fill */}
       <div
@@ -413,22 +432,26 @@ function PhaseGroup({
           const progress = phaseProgress.get(phase.id)
           const isActive = currentPhase === phase.id
           const Icon = PHASE_ICONS[phase.id]
+          const needsImprovement = progress?.status === 'completed' && !progress?.passed && progress?.score !== undefined && progress.score >= 5
 
           return (
             <div
               key={phase.id}
               className={cn(
                 'flex items-center justify-between p-2 rounded-md',
-                progress?.status === 'running' && 'bg-blue-500/5',
-                progress?.status === 'completed' && progress?.passed && 'bg-emerald-500/5',
-                progress?.status === 'completed' && !progress?.passed && 'bg-amber-500/5',
-                progress?.status === 'failed' && 'bg-red-500/5'
+                // Colored backgrounds for states
+                progress?.status === 'running' && 'bg-blue-500/10',
+                progress?.status === 'completed' && progress?.passed && 'bg-emerald-500/10',
+                progress?.status === 'completed' && !progress?.passed && needsImprovement && 'bg-amber-500/10',
+                progress?.status === 'completed' && !progress?.passed && !needsImprovement && 'bg-red-500/10',
+                progress?.status === 'failed' && 'bg-red-500/10'
               )}
             >
               <div className="flex items-center gap-2">
                 <PhaseStatusIcon
                   status={progress?.status || 'pending'}
                   passed={progress?.passed}
+                  score={progress?.score}
                   Icon={Icon}
                   isActive={isActive}
                 />
@@ -437,7 +460,9 @@ function PhaseGroup({
                     'text-sm',
                     progress?.status === 'pending' && 'text-muted-foreground',
                     progress?.status === 'running' && 'text-blue-600 font-medium',
-                    progress?.status === 'completed' && 'text-foreground',
+                    progress?.status === 'completed' && progress?.passed && 'text-emerald-600',
+                    progress?.status === 'completed' && !progress?.passed && needsImprovement && 'text-amber-600',
+                    progress?.status === 'completed' && !progress?.passed && !needsImprovement && 'text-red-600',
                     progress?.status === 'failed' && 'text-red-600'
                   )}
                 >
@@ -461,18 +486,25 @@ function PhaseGroup({
 
 /**
  * Status icon for a phase
+ * Uses status-based colors: blue (running), green (passed), amber (needs improvement), red (failed)
  */
 function PhaseStatusIcon({
   status,
   passed,
+  score,
   Icon,
   isActive,
 }: {
   status: string
   passed?: boolean
+  score?: number
   Icon: React.ComponentType<{ size?: number; className?: string }>
   isActive: boolean
 }) {
+  // Determine if this is a "needs improvement" state (completed but not passed with score >= 5)
+  const needsImprovement = status === 'completed' && !passed && score !== undefined && score >= 5
+
+  // Running - blue
   if (status === 'running') {
     return (
       <div className={cn('relative', isActive && 'animate-pulse')}>
@@ -481,19 +513,28 @@ function PhaseStatusIcon({
     )
   }
 
+  // Completed and passed - green
   if (status === 'completed' && passed) {
     return <Check size={16} className="text-emerald-500" />
   }
 
-  if (status === 'completed' && !passed) {
-    return <X size={16} className="text-amber-500" />
+  // Completed but needs improvement - amber
+  if (status === 'completed' && !passed && needsImprovement) {
+    return <AlertCircle size={16} className="text-amber-500" />
   }
 
+  // Completed but failed (score < 5) - red
+  if (status === 'completed' && !passed) {
+    return <X size={16} className="text-red-500" />
+  }
+
+  // Failed - red
   if (status === 'failed') {
     return <X size={16} className="text-red-500" />
   }
 
-  return <Circle size={16} className="text-muted-foreground" />
+  // Pending - muted
+  return <Circle size={16} className="text-muted-foreground/50" />
 }
 
 export default PhaseTimeline

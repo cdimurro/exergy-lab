@@ -8,10 +8,12 @@
  * Combines Option A (Activity Feed) with Option D (Streaming Text Summary).
  */
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react'
 import { cn } from '@/lib/utils'
-import { getPhaseMetadata } from '@/types/frontierscience'
+import { getPhaseMetadata, PHASE_METADATA } from '@/types/frontierscience'
 import type { DiscoveryPhase, JudgeResult } from '@/types/frontierscience'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 import {
   Brain,
   CheckCircle2,
@@ -27,6 +29,9 @@ import {
   Clock,
   ChevronDown,
   ChevronUp,
+  Download,
+  Filter,
+  X,
 } from 'lucide-react'
 
 // ============================================================================
@@ -57,28 +62,31 @@ interface LiveActivityFeedProps {
 }
 
 // ============================================================================
-// Activity Icons
+// Activity Icons - Status-based colors
 // ============================================================================
 
-function getActivityIcon(type: ActivityType, phase?: DiscoveryPhase) {
-  // Neutral icons - use muted/foreground colors throughout
+function getActivityIcon(type: ActivityType, phase?: DiscoveryPhase, passed?: boolean) {
+  // Status-based colors: blue (in-progress), green (completed), red (failed)
   switch (type) {
     case 'thinking':
-      if (phase === 'research') return <Search size={14} className="text-muted-foreground" />
-      if (phase === 'hypothesis') return <Lightbulb size={14} className="text-muted-foreground" />
-      if (phase === 'validation') return <FlaskConical size={14} className="text-muted-foreground" />
-      if (phase === 'output') return <CheckCircle2 size={14} className="text-muted-foreground" />
-      return <Brain size={14} className="text-muted-foreground" />
+      // Thinking/in-progress uses blue
+      if (phase === 'research') return <Search size={14} className="text-blue-500" />
+      if (phase === 'hypothesis') return <Lightbulb size={14} className="text-blue-500" />
+      if (phase === 'validation') return <FlaskConical size={14} className="text-blue-500" />
+      if (phase === 'output') return <CheckCircle2 size={14} className="text-blue-500" />
+      return <Brain size={14} className="text-blue-500" />
     case 'iteration':
-      return <Sparkles size={14} className="text-muted-foreground" />
+      return <Sparkles size={14} className="text-blue-500" />
     case 'score':
-      return <TrendingUp size={14} className="text-muted-foreground" />
+      return <TrendingUp size={14} className="text-blue-500" />
     case 'phase_start':
-      return <ArrowRight size={14} className="text-muted-foreground" />
+      return <ArrowRight size={14} className="text-blue-500" />
     case 'phase_complete':
-      return <CheckCircle2 size={14} className="text-foreground" />
+      // Completed uses green
+      return <CheckCircle2 size={14} className="text-emerald-500" />
     case 'phase_failed':
-      return <AlertTriangle size={14} className="text-foreground" />
+      // Failed uses red
+      return <AlertTriangle size={14} className="text-red-500" />
     default:
       return <Brain size={14} className="text-muted-foreground" />
   }
@@ -88,11 +96,18 @@ function getActivityIcon(type: ActivityType, phase?: DiscoveryPhase) {
 // Score Change Indicator
 // ============================================================================
 
-function ScoreChange({ current, previous }: { current: number; previous?: number }) {
+function ScoreChange({ current, previous, passed }: { current: number; previous?: number; passed?: boolean }) {
+  // Determine color based on score: >= 7 green, >= 5 amber, < 5 red
+  const getScoreColor = (score: number) => {
+    if (passed || score >= 7) return 'text-emerald-600'
+    if (score >= 5) return 'text-amber-600'
+    return 'text-red-600'
+  }
+
   if (previous === undefined) {
     return (
-      <span className="text-sm font-medium text-foreground">
-        {current.toFixed(1)}/10
+      <span className={`text-sm font-semibold tabular-nums ${getScoreColor(current)}`}>
+        {current.toFixed(1)}
       </span>
     )
   }
@@ -102,11 +117,11 @@ function ScoreChange({ current, previous }: { current: number; previous?: number
 
   return (
     <span className="flex items-center gap-1.5">
-      <span className="text-sm font-medium text-foreground">
-        {current.toFixed(1)}/10
+      <span className={`text-sm font-semibold tabular-nums ${getScoreColor(current)}`}>
+        {current.toFixed(1)}
       </span>
       {change !== 0 && (
-        <span className="flex items-center text-xs font-medium text-muted-foreground">
+        <span className={`flex items-center text-xs font-medium ${isImprovement ? 'text-emerald-500' : 'text-red-500'}`}>
           {isImprovement ? (
             <TrendingUp size={12} className="mr-0.5" />
           ) : (
@@ -176,7 +191,7 @@ function ActivityItemCard({ activity, showTimestamp }: { activity: ActivityItem;
           {/* Score (if available) */}
           {activity.score !== undefined && (
             <div className="shrink-0">
-              <ScoreChange current={activity.score} previous={activity.previousScore} />
+              <ScoreChange current={activity.score} previous={activity.previousScore} passed={activity.passed} />
             </div>
           )}
         </div>
@@ -203,13 +218,13 @@ function ActivityItemCard({ activity, showTimestamp }: { activity: ActivityItem;
                   </ul>
                 )}
 
-                {/* Judge result details - Neutral styling */}
+                {/* Judge result details - Status-based colors */}
                 {hasJudgeResult && activity.judgeResult && (
                   <div className="space-y-2">
-                    {/* Passed criteria */}
+                    {/* Passed criteria - green */}
                     {activity.judgeResult.itemScores?.filter(s => s.passed).length > 0 && (
                       <div>
-                        <span className="text-xs font-medium text-foreground flex items-center gap-1 mb-1">
+                        <span className="text-xs font-medium text-emerald-600 flex items-center gap-1 mb-1">
                           <CheckCircle2 size={10} />
                           Criteria Passed
                         </span>
@@ -219,18 +234,18 @@ function ActivityItemCard({ activity, showTimestamp }: { activity: ActivityItem;
                             .slice(0, 3)
                             .map((s, i) => (
                               <li key={i} className="flex items-center gap-1">
-                                <span className="text-foreground">✓</span>
-                                {s.itemId}: {s.points}/{s.maxPoints}
+                                <span className="text-emerald-500">✓</span>
+                                {s.itemId}: <span className="text-emerald-600 font-medium">{s.points}/{s.maxPoints}</span>
                               </li>
                             ))}
                         </ul>
                       </div>
                     )}
 
-                    {/* Failed criteria */}
+                    {/* Failed criteria - amber/red based on score */}
                     {activity.judgeResult.itemScores?.filter(s => !s.passed).length > 0 && (
                       <div>
-                        <span className="text-xs font-medium text-foreground flex items-center gap-1 mb-1">
+                        <span className="text-xs font-medium text-amber-600 flex items-center gap-1 mb-1">
                           <AlertCircle size={10} />
                           Needs Improvement
                         </span>
@@ -240,18 +255,18 @@ function ActivityItemCard({ activity, showTimestamp }: { activity: ActivityItem;
                             .slice(0, 3)
                             .map((s, i) => (
                               <li key={i} className="flex items-center gap-1">
-                                <span className="text-foreground">!</span>
-                                {s.itemId}: {s.points}/{s.maxPoints}
+                                <span className="text-amber-500">!</span>
+                                {s.itemId}: <span className="text-amber-600 font-medium">{s.points}/{s.maxPoints}</span>
                               </li>
                             ))}
                         </ul>
                       </div>
                     )}
 
-                    {/* Recommendations */}
+                    {/* Recommendations - blue */}
                     {activity.judgeResult.recommendations && activity.judgeResult.recommendations.length > 0 && (
                       <div>
-                        <span className="text-xs font-medium text-foreground flex items-center gap-1 mb-1">
+                        <span className="text-xs font-medium text-blue-600 flex items-center gap-1 mb-1">
                           <Lightbulb size={10} />
                           Recommendations
                         </span>
@@ -274,6 +289,50 @@ function ActivityItemCard({ activity, showTimestamp }: { activity: ActivityItem;
 }
 
 // ============================================================================
+// Activity Stats Summary
+// ============================================================================
+
+interface ActivityStats {
+  totalEvents: number
+  phaseEventCounts: Record<DiscoveryPhase, number>
+  bestScore: number | null
+  totalIterations: number
+  typeEventCounts: Record<ActivityType, number>
+}
+
+function computeActivityStats(activities: ActivityItem[]): ActivityStats {
+  const stats: ActivityStats = {
+    totalEvents: activities.length,
+    phaseEventCounts: {} as Record<DiscoveryPhase, number>,
+    bestScore: null,
+    totalIterations: 0,
+    typeEventCounts: {} as Record<ActivityType, number>,
+  }
+
+  for (const activity of activities) {
+    // Count by phase
+    stats.phaseEventCounts[activity.phase] = (stats.phaseEventCounts[activity.phase] || 0) + 1
+
+    // Count by type
+    stats.typeEventCounts[activity.type] = (stats.typeEventCounts[activity.type] || 0) + 1
+
+    // Track best score
+    if (activity.score !== undefined) {
+      if (stats.bestScore === null || activity.score > stats.bestScore) {
+        stats.bestScore = activity.score
+      }
+    }
+
+    // Count iterations
+    if (activity.type === 'iteration') {
+      stats.totalIterations++
+    }
+  }
+
+  return stats
+}
+
+// ============================================================================
 // Live Activity Feed Component
 // ============================================================================
 
@@ -286,13 +345,41 @@ export function LiveActivityFeed({
 }: LiveActivityFeedProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [autoScroll, setAutoScroll] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [phaseFilter, setPhaseFilter] = useState<DiscoveryPhase | 'all'>('all')
+  const [typeFilter, setTypeFilter] = useState<ActivityType | 'all'>('all')
+  const [showFilters, setShowFilters] = useState(false)
+
+  // Compute stats
+  const stats = useMemo(() => computeActivityStats(activities), [activities])
+
+  // Filter activities based on search and filters
+  const filteredActivities = useMemo(() => {
+    return activities.filter((activity) => {
+      // Search filter
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase()
+        const matchesMessage = activity.message.toLowerCase().includes(query)
+        const matchesDetails = activity.details?.some(d => d.toLowerCase().includes(query))
+        if (!matchesMessage && !matchesDetails) return false
+      }
+
+      // Phase filter
+      if (phaseFilter !== 'all' && activity.phase !== phaseFilter) return false
+
+      // Type filter
+      if (typeFilter !== 'all' && activity.type !== typeFilter) return false
+
+      return true
+    })
+  }, [activities, searchQuery, phaseFilter, typeFilter])
 
   // Auto-scroll to bottom when new activities arrive
   useEffect(() => {
-    if (autoScroll && scrollRef.current) {
+    if (autoScroll && scrollRef.current && !searchQuery && phaseFilter === 'all' && typeFilter === 'all') {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight
     }
-  }, [activities, autoScroll])
+  }, [activities, autoScroll, searchQuery, phaseFilter, typeFilter])
 
   // Detect manual scrolling to disable auto-scroll
   const handleScroll = () => {
@@ -301,6 +388,44 @@ export function LiveActivityFeed({
     const isAtBottom = scrollHeight - scrollTop - clientHeight < 50
     setAutoScroll(isAtBottom)
   }
+
+  // Export activity log as JSON
+  const handleExportLog = useCallback(() => {
+    const exportData = {
+      exportedAt: new Date().toISOString(),
+      totalEvents: activities.length,
+      stats,
+      activities: activities.map(a => ({
+        id: a.id,
+        timestamp: new Date(a.timestamp).toISOString(),
+        type: a.type,
+        phase: a.phase,
+        message: a.message,
+        score: a.score,
+        passed: a.passed,
+        details: a.details,
+      })),
+    }
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `discovery-activity-log-${Date.now()}.json`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }, [activities, stats])
+
+  // Clear filters
+  const clearFilters = () => {
+    setSearchQuery('')
+    setPhaseFilter('all')
+    setTypeFilter('all')
+  }
+
+  const hasActiveFilters = searchQuery || phaseFilter !== 'all' || typeFilter !== 'all'
 
   if (activities.length === 0) {
     return (
@@ -312,36 +437,143 @@ export function LiveActivityFeed({
   }
 
   return (
-    <div className={cn('relative', className)}>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-3">
+    <div className={cn('relative flex flex-col', className)}>
+      {/* Header with stats */}
+      <div className="flex items-center justify-between mb-2">
         <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+          <span className="w-2 h-2 rounded-full bg-foreground animate-pulse" />
           Live Activity
         </h4>
-        <span className="text-xs text-muted-foreground">
-          {activities.length} events
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">
+            {filteredActivities.length === activities.length
+              ? `${activities.length} events`
+              : `${filteredActivities.length} / ${activities.length} events`}
+          </span>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setShowFilters(!showFilters)}
+            className={cn('h-7 px-2', showFilters && 'bg-muted')}
+          >
+            <Filter size={14} />
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={handleExportLog}
+            className="h-7 px-2"
+            title="Export activity log"
+          >
+            <Download size={14} />
+          </Button>
+        </div>
       </div>
+
+      {/* Stats Summary */}
+      <div className="flex items-center gap-3 text-xs text-muted-foreground mb-2 pb-2 border-b border-border">
+        {Object.entries(stats.phaseEventCounts).map(([phase, count]) => (
+          <span key={phase} className="flex items-center gap-1">
+            <span className="font-medium text-foreground">{getPhaseMetadata(phase as DiscoveryPhase).shortName}:</span>
+            {count}
+          </span>
+        ))}
+        {stats.bestScore !== null && (
+          <span className="flex items-center gap-1 ml-auto">
+            <span className="font-medium text-foreground">Best:</span>
+            {stats.bestScore.toFixed(1)}/10
+          </span>
+        )}
+        {stats.totalIterations > 0 && (
+          <span className="flex items-center gap-1">
+            <span className="font-medium text-foreground">Iterations:</span>
+            {stats.totalIterations}
+          </span>
+        )}
+      </div>
+
+      {/* Filter Controls */}
+      {showFilters && (
+        <div className="flex flex-col gap-2 mb-2 p-2 bg-muted/30 rounded-lg border border-border">
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Search activities..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-7 text-xs pl-7 pr-7"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <select
+              value={phaseFilter}
+              onChange={(e) => setPhaseFilter(e.target.value as DiscoveryPhase | 'all')}
+              className="h-7 text-xs px-2 rounded-md border border-border bg-background"
+            >
+              <option value="all">All Phases</option>
+              {PHASE_METADATA.map((phase) => (
+                <option key={phase.id} value={phase.id}>
+                  {phase.shortName}
+                </option>
+              ))}
+            </select>
+            <select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value as ActivityType | 'all')}
+              className="h-7 text-xs px-2 rounded-md border border-border bg-background"
+            >
+              <option value="all">All Types</option>
+              <option value="thinking">Thinking</option>
+              <option value="iteration">Iterations</option>
+              <option value="score">Scores</option>
+              <option value="phase_start">Phase Start</option>
+              <option value="phase_complete">Phase Complete</option>
+              <option value="phase_failed">Phase Failed</option>
+            </select>
+            {hasActiveFilters && (
+              <Button size="sm" variant="ghost" onClick={clearFilters} className="h-7 px-2 text-xs">
+                Clear
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Scrollable feed */}
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="overflow-y-auto pr-2"
+        className="overflow-y-auto pr-2 flex-1"
         style={{ maxHeight }}
       >
-        {activities.map((activity) => (
-          <ActivityItemCard
-            key={activity.id}
-            activity={activity}
-            showTimestamp={showTimestamps}
-          />
-        ))}
+        {filteredActivities.length === 0 ? (
+          <div className="text-center py-4 text-muted-foreground">
+            <p className="text-sm">No activities match your filters</p>
+          </div>
+        ) : (
+          filteredActivities.map((activity) => (
+            <ActivityItemCard
+              key={activity.id}
+              activity={activity}
+              showTimestamp={showTimestamps}
+            />
+          ))
+        )}
       </div>
 
       {/* Auto-scroll indicator */}
-      {!autoScroll && (
+      {!autoScroll && !hasActiveFilters && (
         <button
           onClick={() => {
             setAutoScroll(true)
@@ -349,7 +581,7 @@ export function LiveActivityFeed({
               scrollRef.current.scrollTop = scrollRef.current.scrollHeight
             }
           }}
-          className="absolute bottom-2 right-2 px-2 py-1 text-xs bg-primary text-primary-foreground rounded-full shadow-lg hover:bg-primary/90 transition-colors"
+          className="absolute bottom-2 right-2 px-2 py-1 text-xs bg-foreground text-background rounded-full shadow-lg hover:bg-foreground/90 transition-colors"
         >
           ↓ New activity
         </button>

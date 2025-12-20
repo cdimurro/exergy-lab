@@ -20,6 +20,7 @@
     "@vercel/kv": "^3.0.0",
     "axios": "^1.13.2",
     "clsx": "^2.1.1",
+    "html2pdf.js": "^0.12.1",
     "jspdf": "^3.0.4",
     "jspdf-autotable": "^5.0.2",
     "lucide-react": "^0.561.0",
@@ -33,9 +34,9 @@
     "react-markdown": "^10.1.0",
     "recharts": "^3.5.1",
     "tailwind-merge": "^3.4.0",
+    "uuid": "^11",
     "xlsx": "^0.18.5",
     "zod": "^4.2.1",
-    "uuid": "^11",
     "zustand": "^5.0.9"
   },
   "devDependencies": {
