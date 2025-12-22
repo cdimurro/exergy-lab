@@ -20,6 +20,12 @@ export * from './sensitivity'
 export * from './financial-engine'
 export * from './cost-estimator'
 
+// Process Engineering (Sprint 3)
+export * from './material-energy-balance'
+export * from './pfd-generator'
+export * from './equipment-specs'
+export * from './models'
+
 // Re-export commonly used types
 export type {
   TEAInput_v2,
