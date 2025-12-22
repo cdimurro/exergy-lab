@@ -10,6 +10,7 @@
 import * as React from 'react'
 import { useDebugCapture, DebugContext } from '@/hooks/use-debug-capture'
 import type { DebugContextValue } from '@/types/debug'
+import { DEFAULT_ALERT_THRESHOLDS, EXPORT_PRESETS } from '@/types/debug'
 
 // ============================================================================
 // Access Control
@@ -47,6 +48,9 @@ export function DebugProvider({ children }: DebugProviderProps) {
     enabled: canAccessDebugViewer(),
   })
 
+  // Alert thresholds state
+  const [alertThresholds, setAlertThresholds] = React.useState(DEFAULT_ALERT_THRESHOLDS)
+
   // Create context value
   const contextValue: DebugContextValue = React.useMemo(
     () => ({
@@ -63,22 +67,88 @@ export function DebugProvider({ children }: DebugProviderProps) {
       },
       isEnabled: debugCapture.isEnabled,
       isOpen: debugCapture.isOpen,
+      stats: debugCapture.stats,
+      activeAlerts: debugCapture.session?.alerts?.filter(a => !a.resolvedAt) || [],
+      alertThresholds,
+
+      // Session actions
       startSession: debugCapture.startSession,
       endSession: () => debugCapture.endSession(),
+      pauseSession: () => debugCapture.endSession('paused' as 'completed'),
+      resumeSession: () => {}, // TODO: Implement resume
+      clearSession: debugCapture.clearSession,
+
+      // Core logging actions
       addEvent: debugCapture.addEvent,
       addApiCall: debugCapture.addApiCall,
       addError: debugCapture.addError,
-      clearSession: debugCapture.clearSession,
+      captureSSEEvent: debugCapture.captureSSEEvent,
+
+      // Enhanced logging actions (v0.0.3) - placeholder implementations
+      addLLMCall: () => {}, // TODO: Implement in use-debug-capture
+      addPerformanceSnapshot: () => {},
+      addDataSourceLog: () => {},
+      addSSEHealthLog: () => {},
+      addUIStateLog: () => {},
+      addQualityValidation: () => {},
+      addAlert: () => {},
+      acknowledgeAlert: () => {},
+      resolveAlert: () => {},
+
+      // Metrics computation - placeholder implementations
+      computeStats: () => debugCapture.stats,
+      computeCostBreakdown: () => debugCapture.session?.costBreakdown || {
+        totalUSD: 0,
+        byPhase: { research: 0, hypothesis: 0, validation: 0, output: 0 },
+        byModel: {},
+        byProvider: { google: 0, openai: 0, anthropic: 0, other: 0 },
+        byPurpose: { research: 0, hypothesis: 0, validation: 0, synthesis: 0, critique: 0, refinement: 0, evaluation: 0, other: 0 },
+        inputTokensCost: 0,
+        outputTokensCost: 0,
+      },
+      computePerformanceMetrics: () => debugCapture.session?.performanceMetrics || {
+        avgResponseTimeMs: 0,
+        p50ResponseTimeMs: 0,
+        p95ResponseTimeMs: 0,
+        p99ResponseTimeMs: 0,
+        maxResponseTimeMs: 0,
+        minResponseTimeMs: 0,
+        totalRequests: 0,
+        successRate: 0,
+        avgTokensPerRequest: 0,
+        peakMemoryMB: 0,
+        avgHeapUsageMB: 0,
+        totalRenderTimeMs: 0,
+        rerenderCount: 0,
+      },
+      computeQualityMetrics: () => debugCapture.session?.qualityMetrics || [],
+
+      // Export actions
       exportSession: debugCapture.exportSession,
+      exportWithPreset: (preset) => debugCapture.exportSession(EXPORT_PRESETS[preset]),
+      copyToClipboard: debugCapture.copyToClipboard,
+      downloadSession: (filename, options) => {
+        const content = debugCapture.exportSession(options)
+        if (!content) return
+        const blob = new Blob([content], { type: 'text/plain' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = filename || `debug-session-${Date.now()}.txt`
+        a.click()
+        URL.revokeObjectURL(url)
+      },
+
+      // View actions
       toggleOpen: debugCapture.toggleOpen,
       setEnabled: debugCapture.setEnabled,
-      // Additional methods for SSE capture
-      captureSSEEvent: debugCapture.captureSSEEvent,
-      copyToClipboard: debugCapture.copyToClipboard,
-      stats: debugCapture.stats,
       setOpen: debugCapture.setOpen,
+      setActiveTab: () => {}, // TODO: Implement tab state
+      setFilters: () => {}, // TODO: Implement filter state
+      setViewOptions: () => {}, // TODO: Implement view options state
+      setAlertThresholds: (thresholds) => setAlertThresholds(prev => ({ ...prev, ...thresholds })),
     }),
-    [debugCapture]
+    [debugCapture, alertThresholds]
   )
 
   // If not mounted yet, just render children without context
