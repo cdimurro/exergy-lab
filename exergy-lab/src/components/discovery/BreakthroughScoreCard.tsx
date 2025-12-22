@@ -39,12 +39,11 @@ import { useState } from 'react'
 // ============================================================================
 
 export type ClassificationTier =
-  | 'breakthrough'
-  | 'partial_breakthrough'
-  | 'major_discovery'
-  | 'significant_discovery'
-  | 'partial_failure'
-  | 'failure'
+  | 'breakthrough'           // 9.0+
+  | 'scientific_discovery'   // 8.0-8.9
+  | 'general_insights'       // 6.5-7.9
+  | 'partial_failure'        // 5.0-6.4
+  | 'failure'                // <5.0
 
 export interface DimensionScore {
   dimension: string
@@ -94,22 +93,15 @@ const TIER_CONFIG: Record<
     borderColor: 'border-emerald-200 dark:border-emerald-800',
     icon: <Trophy className="w-4 h-4" />,
   },
-  partial_breakthrough: {
-    label: 'PARTIAL BREAKTHROUGH',
-    color: '#22C55E',
-    bgColor: 'bg-green-50 dark:bg-green-950',
-    borderColor: 'border-green-200 dark:border-green-800',
-    icon: <Sparkles className="w-4 h-4" />,
-  },
-  major_discovery: {
-    label: 'MAJOR DISCOVERY',
+  scientific_discovery: {
+    label: 'SCIENTIFIC DISCOVERY',
     color: '#3B82F6',
     bgColor: 'bg-blue-50 dark:bg-blue-950',
     borderColor: 'border-blue-200 dark:border-blue-800',
     icon: <Target className="w-4 h-4" />,
   },
-  significant_discovery: {
-    label: 'SIGNIFICANT DISCOVERY',
+  general_insights: {
+    label: 'GENERAL INSIGHTS',
     color: '#8B5CF6',
     bgColor: 'bg-violet-50 dark:bg-violet-950',
     borderColor: 'border-violet-200 dark:border-violet-800',

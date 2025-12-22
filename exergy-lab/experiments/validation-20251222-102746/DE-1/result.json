@@ -1,0 +1,15 @@
+{
+  "testId": "DE-1",
+  "query": "Improve lithium-ion battery energy density for electric vehicles",
+  "domain": "battery-storage",
+  "discoveryId": "fs_1766417314210_hm7nez",
+  "status": "partial_failure",
+  "phases": {
+    "research": {"score": 7.5, "passed": true, "issues": ["RC3: candidate screening at 50%"]},
+    "hypothesis": {"score": 9.51, "passed": true, "issues": []},
+    "validation": {"score": 6.5, "passed": false, "issues": ["VC2: simulation detail insufficient", "VC5: patent landscape not analyzed"]}
+  },
+  "overallScore": 7.84,
+  "durationMs": 118967,
+  "failedCriteria": ["VC2", "VC5"]
+}

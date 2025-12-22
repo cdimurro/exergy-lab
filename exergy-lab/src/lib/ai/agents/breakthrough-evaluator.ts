@@ -73,7 +73,7 @@ export interface BatchEvaluationResult {
 }
 
 export interface LeaderboardEntry {
-  rank: number
+  rank?: number
   hypothesisId: string
   agentSource: HypGenAgentType
   title: string
@@ -81,6 +81,12 @@ export interface LeaderboardEntry {
   classification: ClassificationTier
   scoreChange: number
   iteration: number
+  previousScore?: number
+  isBreakthrough?: boolean
+  /** FrontierScience component score (0-5) from hybrid evaluator */
+  fsScore?: number
+  /** Breakthrough detection component score (0-5) from hybrid evaluator */
+  bdScore?: number
 }
 
 export interface EvaluationStatistics {

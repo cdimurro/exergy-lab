@@ -574,10 +574,10 @@ export class BreakthroughJudge extends RubricJudge {
 
     if (result.classification === 'breakthrough') {
       summary += 'This represents a paradigm-shifting discovery with publication-ready findings. '
-    } else if (result.classification === 'partial_breakthrough') {
-      summary += 'Near-breakthrough potential with minor refinements needed. '
-    } else if (result.classification === 'major_discovery') {
-      summary += 'Significant novel contribution to the field. '
+    } else if (result.classification === 'scientific_discovery') {
+      summary += 'Significant novel contribution to the field with high scientific merit. '
+    } else if (result.classification === 'general_insights') {
+      summary += 'Useful findings that advance understanding in the field. '
     }
 
     const topStrength = result.strongestDimensions[0]
@@ -593,27 +593,24 @@ export class BreakthroughJudge extends RubricJudge {
   private generateReportRecommendations(result: BreakthroughEvaluationResult): string[] {
     const recommendations: string[] = []
 
-    // Based on classification
+    // Based on classification (5-tier system)
     switch (result.classification) {
       case 'breakthrough':
         recommendations.push('Submit for publication in high-impact journal')
         recommendations.push('File provisional patent within 30 days')
         recommendations.push('Seek independent verification from national lab')
         break
-      case 'partial_breakthrough':
+      case 'scientific_discovery':
         recommendations.push('Address remaining gaps for breakthrough classification')
         recommendations.push('Consider pre-print for community feedback')
         recommendations.push('Begin patent landscape analysis')
-        break
-      case 'major_discovery':
-        recommendations.push('Continue refinement to reach breakthrough threshold')
         recommendations.push('Document methodology for reproducibility')
-        recommendations.push('Identify potential collaborators')
         break
-      case 'significant_discovery':
+      case 'general_insights':
         recommendations.push('Focus on improving weakest dimensions')
         recommendations.push('Validate key assumptions with simulation')
         recommendations.push('Review prior art for differentiation')
+        recommendations.push('Identify potential collaborators')
         break
       case 'partial_failure':
         recommendations.push('Re-evaluate fundamental approach')

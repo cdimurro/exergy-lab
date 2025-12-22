@@ -1969,13 +1969,13 @@ function HypothesisDetailView({ hypothesis }: { hypothesis: ExtendedHypothesis }
                 height: `${(score / 10) * 100}%`,
                 backgroundColor: getClassification(score) === 'breakthrough'
                   ? '#10B981'
-                  : getClassification(score) === 'partial_breakthrough'
-                  ? '#22C55E'
-                  : getClassification(score) === 'major_discovery'
+                  : getClassification(score) === 'scientific_discovery'
                   ? '#3B82F6'
-                  : getClassification(score) === 'significant_discovery'
+                  : getClassification(score) === 'general_insights'
                   ? '#8B5CF6'
-                  : '#9CA3AF',
+                  : getClassification(score) === 'partial_failure'
+                  ? '#F59E0B'
+                  : '#EF4444',
               }}
               title={`Iteration ${i + 1}: ${score.toFixed(1)}`}
             />
@@ -3213,9 +3213,8 @@ async function simulateRacing(
 
 function getClassification(score: number): ClassificationTier {
   if (score >= 9.0) return 'breakthrough'
-  if (score >= 8.5) return 'partial_breakthrough'
-  if (score >= 8.0) return 'major_discovery'
-  if (score >= 7.0) return 'significant_discovery'
+  if (score >= 8.0) return 'scientific_discovery'
+  if (score >= 6.5) return 'general_insights'
   if (score >= 5.0) return 'partial_failure'
   return 'failure'
 }

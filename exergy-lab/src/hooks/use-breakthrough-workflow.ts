@@ -114,13 +114,12 @@ export interface UseBreakthroughWorkflowReturn {
 // ============================================================================
 
 /**
- * Get classification tier from score
+ * Get classification tier from score (5-tier system)
  */
 function getClassificationFromScore(score: number): ClassificationTier {
   if (score >= 9.0) return 'breakthrough'
-  if (score >= 8.5) return 'partial_breakthrough'
-  if (score >= 8.0) return 'major_discovery'
-  if (score >= 7.0) return 'significant_discovery'
+  if (score >= 8.0) return 'scientific_discovery'
+  if (score >= 6.5) return 'general_insights'
   if (score >= 5.0) return 'partial_failure'
   return 'failure'
 }

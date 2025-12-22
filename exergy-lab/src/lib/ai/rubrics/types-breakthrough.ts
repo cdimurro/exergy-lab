@@ -10,15 +10,19 @@
 // =============================================================================
 
 /**
- * 6-tier outcome classification system
+ * 5-tier outcome classification system (v0.1.0)
+ * Aligned with Hybrid FrontierScience + Breakthrough scoring
  * Each tier has specific score ranges and visual styling
+ *
+ * NOTE: The old 6-tier system has been consolidated:
+ * - partial_breakthrough + major_discovery → scientific_discovery
+ * - significant_discovery → general_insights
  */
 export type ClassificationTier =
   | 'breakthrough'           // 9.0+ - Paradigm-shifting, publication-ready
-  | 'partial_breakthrough'   // 8.5-8.9 - Near-breakthrough, minor refinements
-  | 'major_discovery'        // 8.0-8.4 - Significant novel contribution
-  | 'significant_discovery'  // 7.0-7.9 - Validated, clear value
-  | 'partial_failure'        // 5.0-6.9 - Some valid findings, major gaps
+  | 'scientific_discovery'   // 8.0-8.9 - Novel scientific contribution
+  | 'general_insights'       // 6.5-7.9 - Useful findings with potential
+  | 'partial_failure'        // 5.0-6.4 - Some valid findings, major gaps
   | 'failure'                // <5.0 - Does not meet criteria
 
 /**
@@ -40,7 +44,8 @@ export interface ClassificationConfig {
 }
 
 /**
- * All classification tiers with their configurations
+ * All 5 classification tiers with their configurations (v0.1.0)
+ * Updated to align with Hybrid FrontierScience + Breakthrough scoring
  */
 export const CLASSIFICATION_CONFIGS: ClassificationConfig[] = [
   {
@@ -48,77 +53,76 @@ export const CLASSIFICATION_CONFIGS: ClassificationConfig[] = [
     minScore: 9.0,
     maxScore: 10.0,
     label: 'Breakthrough',
-    description: 'Paradigm-shifting discovery, publication-ready',
+    description: 'Paradigm-shifting discovery with exceptional scientific foundation',
     color: {
       primary: '#10B981',    // Emerald
       background: '#ECFDF5',
       border: '#A7F3D0'
     },
-    requirements: ['BC1 + BC8 must pass', '6+ dimensions ≥80%'],
+    requirements: [
+      'FS1-FS5 all ≥70%',
+      'BD1 (Performance) ≥80%',
+      'BD6 (Trajectory) ≥80%',
+      '5+ BD dimensions ≥70%'
+    ],
     actions: ['Full validation + highlight', 'Generate breakthrough report', 'Priority recommendation']
   },
   {
-    tier: 'partial_breakthrough',
-    minScore: 8.5,
-    maxScore: 8.9,
-    label: 'Partial Breakthrough',
-    description: 'Near-breakthrough, minor refinements needed',
-    color: {
-      primary: '#22C55E',    // Green
-      background: '#F0FDF4',
-      border: '#BBF7D0'
-    },
-    requirements: ['BC1 + BC8 must pass', '5+ dimensions ≥75%'],
-    actions: ['Full validation', 'Generate partial breakthrough report']
-  },
-  {
-    tier: 'major_discovery',
+    tier: 'scientific_discovery',
     minScore: 8.0,
-    maxScore: 8.4,
-    label: 'Major Discovery',
-    description: 'Significant novel contribution',
+    maxScore: 8.99,
+    label: 'Scientific Discovery',
+    description: 'Novel scientific contribution with strong foundation',
     color: {
       primary: '#3B82F6',    // Blue
       background: '#EFF6FF',
       border: '#BFDBFE'
     },
-    requirements: ['5+ dimensions ≥70%', 'Strong validation'],
-    actions: ['Full validation', 'Generate major discovery report']
+    requirements: [
+      'FS1-FS5 all ≥60%',
+      '4+ BD dimensions ≥70%'
+    ],
+    actions: ['Full validation', 'Generate scientific discovery report']
   },
   {
-    tier: 'significant_discovery',
-    minScore: 7.0,
-    maxScore: 7.9,
-    label: 'Significant Discovery',
-    description: 'Validated findings with clear value',
+    tier: 'general_insights',
+    minScore: 6.5,
+    maxScore: 7.99,
+    label: 'General Insights',
+    description: 'Useful findings with potential for refinement',
     color: {
       primary: '#8B5CF6',    // Violet
       background: '#F5F3FF',
       border: '#DDD6FE'
     },
-    requirements: ['Passes FrontierScience threshold'],
-    actions: ['Standard validation', 'Generate significant discovery report']
+    requirements: [
+      'FS phase ≥3.5/5',
+      '2+ BD dimensions ≥60%'
+    ],
+    actions: ['Standard validation', 'Generate insights report', 'Suggest improvements']
   },
   {
     tier: 'partial_failure',
     minScore: 5.0,
-    maxScore: 6.9,
+    maxScore: 6.49,
     label: 'Partial Failure',
-    description: 'Some valid findings, major gaps',
+    description: 'Some valid findings but significant gaps remain',
     color: {
       primary: '#F59E0B',    // Amber
       background: '#FFFBEB',
       border: '#FDE68A'
     },
-    requirements: ['Some valid findings identified'],
-    actions: ['Generate partial failure report', 'Suggest improvements']
+    requirements: [
+      'FS phase ≥2.5/5'
+    ],
+    actions: ['Generate partial failure report', 'Identify key improvements needed']
   },
   {
     tier: 'failure',
     minScore: 0,
-    maxScore: 4.9,
+    maxScore: 4.99,
     label: 'Failure',
-    description: 'Does not meet criteria, fundamental issues',
+    description: 'Does not meet criteria, fundamental issues present',
     color: {
       primary: '#EF4444',    // Red
       background: '#FEF2F2',
@@ -642,13 +646,12 @@ export interface RaceResult {
 // =============================================================================
 
 /**
- * Get classification tier from score
+ * Get classification tier from score (5-tier system)
  */
 export function getClassificationFromScore(score: number): ClassificationTier {
   if (score >= 9.0) return 'breakthrough'
-  if (score >= 8.5) return 'partial_breakthrough'
-  if (score >= 8.0) return 'major_discovery'
-  if (score >= 7.0) return 'significant_discovery'
+  if (score >= 8.0) return 'scientific_discovery'
+  if (score >= 6.5) return 'general_insights'
   if (score >= 5.0) return 'partial_failure'
   return 'failure'
 }
@@ -697,25 +700,62 @@ export function countDimensionsAboveThreshold(
 }
 
 /**
- * Get color for score value
+ * Get color for score value (aligned with 5-tier system)
  */
 export function getScoreColor(score: number): string {
-  if (score >= 9.0) return '#10B981' // Emerald
-  if (score >= 8.5) return '#22C55E' // Green
-  if (score >= 8.0) return '#3B82F6' // Blue
-  if (score >= 7.0) return '#8B5CF6' // Violet
-  if (score >= 5.0) return '#F59E0B' // Amber
-  return '#EF4444' // Red
+  if (score >= 9.0) return '#10B981' // Emerald - Breakthrough
+  if (score >= 8.0) return '#3B82F6' // Blue - Scientific Discovery
+  if (score >= 6.5) return '#8B5CF6' // Violet - General Insights
+  if (score >= 5.0) return '#F59E0B' // Amber - Partial Failure
+  return '#EF4444' // Red - Failure
 }
 
 /**
- * Determine if hypothesis should be eliminated
+ * Determine if hypothesis should be eliminated (v0.1.0)
+ *
+ * Implements grace period + minimum survivor rules:
+ * - Iteration 1: No elimination (grace period for refinement feedback)
+ * - Always keep at least 3 hypotheses for diversity
+ * - Lowered threshold from 5.0 to 4.0 for iteration 2+
+ * - Progressive thresholds for later iterations
+ *
+ * @param score - Current overall score (0-10)
+ * @param iteration - Current iteration number
+ * @param activeCount - Number of currently active hypotheses (default: 15)
+ * @returns true if hypothesis should be eliminated
  */
-export function shouldEliminate(score: number, iteration: number): boolean {
-  // Eliminate immediately if score < 5.0
-  if (score < 5.0) return true
-  // After iteration 3, eliminate if still below 6.5
-  if (iteration >= 3 && score < 6.5) return true
+export function shouldEliminate(
+  score: number,
+  iteration: number,
+  activeCount: number = 15
+): boolean {
+  // Grace period: No elimination in iteration 1
+  // Allow all hypotheses to receive refinement feedback first
+  if (iteration === 1) {
+    return false
+  }
+
+  // Always keep at least 3 hypotheses to ensure diversity
+  if (activeCount <= 3) {
+    return false
+  }
+
+  // After grace period, apply lenient thresholds
+  // Iteration 2+: Eliminate below 4.0 (was 5.0)
+  if (score < 4.0) {
+    return true
+  }
+
+  // Iteration 3+: Be more selective
+  if (iteration >= 3 && score < 5.0) {
+    return true
+  }
+
+  // Iteration 4+: Eliminate below 5.5
+  if (iteration >= 4 && score < 5.5) {
+    return true
+  }
+
   return false
 }
 

@@ -20,6 +20,16 @@ import {
   type BatchEvaluationResult,
 } from './breakthrough-evaluator'
 import {
+  HybridBreakthroughEvaluator,
+  createHybridBreakthroughEvaluator,
+  type BatchEvaluationResult as HybridBatchResult,
+  type EvaluationResult as HybridEvaluationResult,
+} from './hybrid-breakthrough-evaluator'
+import {
+  shouldEliminateHybrid,
+  type HybridBreakthroughScore,
+} from '../rubrics/types-hybrid-breakthrough'
+import {
   EnhancedRefinementAgent,
   createEnhancedRefinementAgent,
   type RefinementConfig,
@@ -177,6 +187,7 @@ export class HypothesisRacingArena {
   private config: RacingArenaConfig
   private agentPool: AgentPool
   private evaluator: BreakthroughEvaluator
+  private hybridEvaluator: HybridBreakthroughEvaluator
   private refinementAgent: EnhancedRefinementAgent
   private feedbackBus: FeedbackBus
   private gpuPool: GPUValidationPool
@@ -184,6 +195,8 @@ export class HypothesisRacingArena {
   private state: RaceState
   private eventCallbacks: RaceEventCallback[] = []
   private abortController: AbortController | null = null
+  /** Cache of hybrid scores for feedback generation */
+  private hybridScoreCache: Map<string, HybridBreakthroughScore> = new Map()
 
   constructor(config: Partial<RacingArenaConfig> = {}) {
     this.config = { ...DEFAULT_RACING_CONFIG, ...config }
@@ -191,6 +204,7 @@ export class HypothesisRacingArena {
     // Initialize components
     this.agentPool = createAgentPool(config.poolConfig)
     this.evaluator = createBreakthroughEvaluator(config.evaluatorConfig)
+    this.hybridEvaluator = createHybridBreakthroughEvaluator()
     this.refinementAgent = createEnhancedRefinementAgent(config.refinementConfig)
     this.feedbackBus = createFeedbackBus(config.busConfig)
 
@@ -530,7 +544,7 @@ export class HypothesisRacingArena {
   }
 
   /**
-   * Evaluate all active hypotheses
+   * Evaluate all active hypotheses using hybrid FrontierScience + Breakthrough scoring
    */
   private async evaluateAllHypotheses(
     problem: string,
@@ -538,28 +552,108 @@ export class HypothesisRacingArena {
   ): Promise<BatchEvaluationResult> {
     this.state.status = 'evaluating'
 
+    // Phase 1: Run hybrid evaluation on all hypotheses (FS1-FS5 + BD1-BD7)
+    const hybridBatchResult = await this.hybridEvaluator.evaluateBatch(
+      this.state.activeHypotheses,
+      iteration
+    )
+
+    // Update hypothesis scores with hybrid scores
+    for (const evalResult of hybridBatchResult.results) {
+      const hypothesis = this.state.activeHypotheses.find(h => h.id === evalResult.hypothesisId)
+      if (hypothesis) {
+        hypothesis.scores.overall = evalResult.score.overallScore
+        // Cache hybrid score for feedback generation
+        this.hybridScoreCache.set(evalResult.hypothesisId, evalResult.score)
+      }
+    }
+
+    // Phase 2: Run standard batch evaluation (leaderboard, classification)
     const evalResult = await this.evaluator.evaluateBatch(
       this.state.activeHypotheses,
       problem,
       iteration
     )
 
-    // Update leaderboard
-    this.state.leaderboard = evalResult.leaderboard
+    // Phase 3: Override eliminations with hybrid logic (grace period + min survivors)
+    const activeCount = this.state.activeHypotheses.length
+    const hybridEliminations: RacingHypothesis[] = []
+    const hybridActive: RacingHypothesis[] = []
+    const hybridBreakthroughs: RacingHypothesis[] = []
+
+    for (const hypothesis of this.state.activeHypotheses) {
+      const hybridScore = this.hybridScoreCache.get(hypothesis.id)
+      const score = hybridScore?.overallScore ?? hypothesis.scores.overall
+
+      // Check for breakthrough (9.0+)
+      if (score >= this.config.breakthroughThreshold) {
+        hypothesis.status = 'breakthrough'
+        hybridBreakthroughs.push(hypothesis)
+        hybridActive.push(hypothesis)
+      }
+      // Check elimination with grace period and min survivors
+      else if (shouldEliminateHybrid(score, iteration, activeCount)) {
+        hypothesis.status = 'eliminated'
+        hypothesis.eliminatedReason = `Score ${score.toFixed(1)} below threshold (iteration ${iteration})`
+        hybridEliminations.push(hypothesis)
+      }
+      // Active hypothesis
+      else {
+        hypothesis.status = 'active'
+        hybridActive.push(hypothesis)
+      }
+    }
+
+    // Update eval result with hybrid logic
+    evalResult.eliminatedHypotheses = hybridEliminations
+    evalResult.breakthroughCandidates = hybridBreakthroughs
+    evalResult.activeHypotheses = hybridActive
+
+    // Update leaderboard with hybrid scores
+    this.state.leaderboard = this.buildHybridLeaderboard(this.state.activeHypotheses)
 
     // Update statistics
-    const scores = evalResult.evaluations.map(e => e.overallScore)
-    this.state.statistics.averageScore = scores.reduce((a, b) => a + b, 0) / scores.length
-    this.state.statistics.highestScore = Math.max(...scores)
+    const scores = this.state.activeHypotheses.map(h => h.scores.overall)
+    this.state.statistics.averageScore = scores.length > 0
+      ? scores.reduce((a, b) => a + b, 0) / scores.length
+      : 0
+    this.state.statistics.highestScore = scores.length > 0 ? Math.max(...scores) : 0
 
     this.emit({
       type: 'evaluation_complete',
       iteration,
-      message: `Evaluated ${evalResult.evaluations.length} hypotheses. Top score: ${this.state.statistics.highestScore.toFixed(2)}`,
+      message: `Hybrid evaluation: ${hybridActive.length} active, ${hybridEliminations.length} eliminated, ${hybridBreakthroughs.length} breakthroughs. Top: ${this.state.statistics.highestScore.toFixed(2)}`,
       timestamp: Date.now(),
     })
 
     return evalResult
+  }
+
+  /**
+   * Build leaderboard from hybrid scores
+   */
+  private buildHybridLeaderboard(hypotheses: RacingHypothesis[]): LeaderboardEntry[] {
+    return hypotheses
+      .map(h => {
+        const hybridScore = this.hybridScoreCache.get(h.id)
+        const previousScore = h.history.length > 0
+          ? h.history[h.history.length - 1].score
+          : 0
+        return {
+          hypothesisId: h.id,
+          title: h.title,
+          score: hybridScore?.overallScore ?? h.scores.overall,
+          previousScore,
+          scoreChange: (hybridScore?.overallScore ?? h.scores.overall) - previousScore,
+          iteration: h.iteration,
+          agentSource: h.agentSource,
+          classification: hybridScore?.tier ?? 'failure',
+          isBreakthrough: (hybridScore?.overallScore ?? h.scores.overall) >= this.config.breakthroughThreshold,
+          fsScore: hybridScore?.frontierScienceScore,
+          bdScore: hybridScore?.breakthroughScore,
+        }
+      })
+      .sort((a, b) => b.score - a.score)
   }
 
   /**
@@ -619,9 +713,13 @@ export class HypothesisRacingArena {
     }
 
     for (const breakthrough of evalResult.breakthroughCandidates) {
+      // Use hybrid score's tier if available, otherwise derive from status
+      const hybridScore = this.hybridScoreCache.get(breakthrough.id)
+      const tier = hybridScore?.tier ??
+        (breakthrough.status === 'breakthrough' ? 'breakthrough' : 'scientific_discovery')
       this.feedbackBus.publishBreakthroughFound(
         breakthrough,
-        breakthrough.status === 'breakthrough' ? 'breakthrough' : 'major_discovery',
+        tier,
         iteration
       )
     }
