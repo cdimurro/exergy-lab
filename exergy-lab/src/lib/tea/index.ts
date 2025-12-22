@@ -32,6 +32,11 @@ export * from './visualizations'
 export * from './table-generator'
 export * from './report-templates'
 
+// Data & Standards (Sprint 5)
+export * from './standards-db'
+export * from './benchmarks'
+export * from './defaults-database'
+
 // Re-export commonly used types
 export type {
   TEAInput_v2,
