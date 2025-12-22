@@ -44,17 +44,19 @@ function MarkdownContent({ children }: { children: string }) {
   return (
     <div className="prose prose-sm dark:prose-invert max-w-none
       prose-headings:font-semibold prose-headings:text-foreground
-      prose-h2:text-base prose-h2:mt-6 prose-h2:mb-3 prose-h2:pb-2 prose-h2:border-b prose-h2:border-border/50
-      prose-h3:text-sm prose-h3:mt-4 prose-h3:mb-2 prose-h3:text-foreground/90
-      prose-p:text-sm prose-p:leading-relaxed prose-p:text-foreground/80 prose-p:mb-3
+      prose-h2:text-base prose-h2:mt-8 prose-h2:mb-4 prose-h2:pb-2 prose-h2:border-b prose-h2:border-border/50
+      prose-h3:text-sm prose-h3:mt-6 prose-h3:mb-3 prose-h3:text-foreground/90
+      prose-p:text-sm prose-p:leading-relaxed prose-p:text-foreground/80 prose-p:mb-4
       prose-strong:text-foreground prose-strong:font-semibold
-      prose-ul:my-2 prose-ul:text-sm prose-li:text-foreground/80 prose-li:my-1
-      prose-ol:my-2 prose-ol:text-sm
+      prose-ul:my-4 prose-ul:text-sm prose-li:text-foreground/80 prose-li:my-1.5
+      prose-ol:my-4 prose-ol:text-sm
       prose-table:text-sm prose-th:text-left prose-th:font-semibold prose-th:pb-2
       prose-td:py-2 prose-td:align-top
       prose-code:text-xs prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded
       prose-pre:bg-muted prose-pre:text-xs prose-pre:p-4 prose-pre:rounded-lg prose-pre:overflow-x-auto
-      [&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
+      [&>*:first-child]:mt-0 [&>*:last-child]:mb-0
+      [&>h2+p]:mt-3 [&>h3+p]:mt-2
+      space-y-1"
     >
       <ReactMarkdown>{children}</ReactMarkdown>
     </div>
@@ -192,72 +194,96 @@ export function FrontierScienceResultsCard({
 
   return (
     <div className={cn('border rounded-xl overflow-hidden bg-card flex flex-col h-full', className)}>
-      {/* Header */}
-      <div className="p-6 border-b bg-gradient-to-r from-emerald-500/5 to-teal-500/5">
-        <div className="flex items-start justify-between mb-6">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 flex items-center justify-center">
-              <Sparkles size={24} className="text-emerald-600" />
+      {/* Header - Discovery Overview */}
+      <div className="p-6 border-b bg-gradient-to-br from-emerald-500/5 via-teal-500/5 to-transparent">
+        {/* Top Row - Title and Export */}
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500/20 to-teal-500/20 flex items-center justify-center">
+              <Sparkles size={20} className="text-emerald-600" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-foreground mb-1">
-                Discovery Complete
+              <h2 className="text-lg font-semibold text-foreground">
+                Discovery Report
               </h2>
-              <p className="text-sm text-muted-foreground max-w-xl">
-                {result.query}
+              <p className="text-xs text-muted-foreground">
+                {formatDuration(result.totalDurationMs)} • {passedPhases}/{totalPhases} phases passed
               </p>
             </div>
           </div>
           {onExport && (
             <button
               onClick={onExport}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition-colors text-sm font-medium"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition-colors text-sm font-medium"
             >
-              <Download size={16} />
-              Export Report
+              <Download size={14} />
+              Export
             </button>
           )}
         </div>
 
-        {/* Quality and Stats Row */}
-        <div className="flex flex-wrap items-center gap-6">
-          {/* Quality Badge with colored background */}
-          <div className="flex items-center gap-3">
+        {/* Query Display */}
+        <div className="mb-4 p-3 rounded-lg bg-muted/30 border border-border/50">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Research Query</p>
+          <p className="text-sm text-foreground leading-relaxed">
+            {result.query}
+          </p>
+        </div>
+
+        {/* Discovery Metrics Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {/* Quality Badge */}
+          <div className="p-3 rounded-lg bg-card border border-border/50">
+            <p className="text-xs font-medium text-muted-foreground mb-1.5">Quality</p>
             <QualityBadge
               quality={result.discoveryQuality}
               showDescription={false}
-              size="lg"
+              size="sm"
             />
-            <div className="h-8 w-px bg-border" />
-            <div className="text-center">
-              <div className="text-2xl font-bold text-foreground">
+          </div>
+
+          {/* Overall Score */}
+          <div className="p-3 rounded-lg bg-card border border-border/50">
+            <p className="text-xs font-medium text-muted-foreground mb-1.5">Score</p>
+            <div className="flex items-baseline gap-1">
+              <span className={cn(
+                "text-xl font-bold",
+                result.overallScore >= 7 ? "text-emerald-600" :
+                result.overallScore >= 5 ? "text-amber-600" : "text-red-600"
+              )}>
                 {result.overallScore.toFixed(1)}
-                <span className="text-lg text-muted-foreground font-normal">/10</span>
-              </div>
-              <div className="text-xs text-muted-foreground">Overall Score</div>
+              </span>
+              <span className="text-sm text-muted-foreground">/10</span>
             </div>
           </div>
 
-          <div className="h-8 w-px bg-border hidden sm:block" />
+          {/* Domain */}
+          <div className="p-3 rounded-lg bg-card border border-border/50">
+            <p className="text-xs font-medium text-muted-foreground mb-1.5">Domain</p>
+            <p className="text-sm font-medium text-foreground capitalize">
+              {result.domain.replace(/-/g, ' ')}
+            </p>
+          </div>
 
-          {/* Stats */}
-          <div className="flex items-center gap-6">
-            <StatItem
-              icon={Clock}
-              label="Duration"
-              value={formatDuration(result.totalDurationMs)}
-            />
-            <StatItem
-              icon={Check}
-              label="Phases Passed"
-              value={`${passedPhases}/${totalPhases}`}
-              highlight={passedPhases === totalPhases}
-            />
-            <StatItem
-              icon={Cpu}
-              label="Domain"
-              value={result.domain.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-            />
+          {/* Phase Summary */}
+          <div className="p-3 rounded-lg bg-card border border-border/50">
+            <p className="text-xs font-medium text-muted-foreground mb-1.5">Phases</p>
+            <div className="flex items-center gap-1.5">
+              {result.phases.map((phase, i) => (
+                <div
+                  key={phase.phase}
+                  className={cn(
+                    "w-5 h-5 rounded flex items-center justify-center text-xs",
+                    phase.passed
+                      ? "bg-emerald-500/20 text-emerald-600"
+                      : "bg-amber-500/20 text-amber-600"
+                  )}
+                  title={`${getPhaseMetadata(phase.phase).name}: ${phase.passed ? 'Passed' : 'Needs Work'}`}
+                >
+                  {phase.passed ? '✓' : '!'}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>

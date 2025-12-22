@@ -9,7 +9,7 @@
  */
 
 import * as React from 'react'
-import { ArrowLeft, Send, Loader2, X, Save, CheckCircle, Cpu, BookOpen, FlaskConical, Target, FileText } from 'lucide-react'
+import { ArrowLeft, Send, Loader2, X, Save, CheckCircle, Cpu, BookOpen, FlaskConical, Target, FileText, Zap, Search, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { useFrontierScienceWorkflow } from '@/hooks/use-frontierscience-workflow'
@@ -31,6 +31,9 @@ interface FrontierScienceChatInterfaceProps {
   initialOptions?: DiscoveryOptions
   autoStart?: boolean
 }
+
+// Discovery mode type
+type DiscoveryMode = 'synthesis' | 'breakthrough' | 'validation'
 
 // Default discovery options
 const DEFAULT_OPTIONS: Partial<DiscoveryOptions> = {
@@ -56,6 +59,8 @@ export function FrontierScienceChatInterface({
   const [isAutoSaving, setIsAutoSaving] = React.useState(false)
   const [lastSavedTime, setLastSavedTime] = React.useState<Date | null>(null)
   const [checkpoints, setCheckpoints] = React.useState<Array<{phase: string; timestamp: Date; data: any}>>([])
+  // Fixed discovery mode (mode selection UI removed)
+  const selectedMode: DiscoveryMode = 'synthesis'
   const inputRef = React.useRef<HTMLTextAreaElement>(null)
 
   const {
@@ -129,10 +134,11 @@ export function FrontierScienceChatInterface({
     e?.preventDefault()
     if (!inputValue.trim() || status === 'running' || status === 'starting') return
 
-    // Build discovery options with defaults
+    // Build discovery options with defaults and selected mode
     const options: DiscoveryOptions = {
       ...DEFAULT_OPTIONS,
       ...initialOptions,
+      discoveryMode: selectedMode,
     } as DiscoveryOptions
 
     await startDiscovery(inputValue.trim(), options)
@@ -385,6 +391,7 @@ export function FrontierScienceChatInterface({
                       const options: DiscoveryOptions = {
                         ...DEFAULT_OPTIONS,
                         ...initialOptions,
+                        discoveryMode: selectedMode,
                       } as DiscoveryOptions
                       startDiscovery(query, options)
                     }, 100)
@@ -451,7 +458,11 @@ export function FrontierScienceChatInterface({
 /**
  * Instructions card component (shown in the middle of the page)
  */
-function IdleStateCard({ onExampleClick }: { onExampleClick: (query: string) => void }) {
+function IdleStateCard({
+  onExampleClick,
+}: {
+  onExampleClick: (query: string) => void
+}) {
   const examples = [
     "Novel approaches to improve perovskite solar cell stability above 1000 hours",
     "Methods to increase solid oxide electrolyzer efficiency at temperatures below 700°C",
@@ -460,52 +471,52 @@ function IdleStateCard({ onExampleClick }: { onExampleClick: (query: string) => 
 
   return (
     <div className="w-full rounded-xl border bg-card p-6">
-        <h2 className="text-lg font-semibold text-foreground mb-4">
+        <h2 className="text-xl font-semibold text-foreground mb-5">
           Instructions
         </h2>
 
         {/* Steps - Compact inline layout */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-6">
           <div className="flex items-start gap-3">
-            <div className="w-7 h-7 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0 text-emerald-600 text-sm font-semibold">
+            <div className="w-9 h-9 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0 text-emerald-600 text-base font-semibold">
               1
             </div>
             <div>
-              <p className="text-sm text-foreground font-medium">Enter a research question</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Be specific about your domain.</p>
+              <p className="text-base text-foreground font-medium">Enter a research question</p>
+              <p className="text-sm text-muted-foreground mt-0.5">Be specific about your domain.</p>
             </div>
           </div>
 
           <div className="flex items-start gap-3">
-            <div className="w-7 h-7 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0 text-emerald-600 text-sm font-semibold">
+            <div className="w-9 h-9 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0 text-emerald-600 text-base font-semibold">
               2
             </div>
             <div>
-              <p className="text-sm text-foreground font-medium">AI Analysis</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Sophisticated 4-phase pipeline.</p>
+              <p className="text-base text-foreground font-medium">AI Analysis</p>
+              <p className="text-sm text-muted-foreground mt-0.5">Sophisticated 4-phase pipeline.</p>
             </div>
           </div>
 
           <div className="flex items-start gap-3">
-            <div className="w-7 h-7 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0 text-emerald-600 text-sm font-semibold">
+            <div className="w-9 h-9 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0 text-emerald-600 text-base font-semibold">
               3
             </div>
             <div>
-              <p className="text-sm text-foreground font-medium">Review your results</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Get a comprehensive report.</p>
+              <p className="text-base text-foreground font-medium">Review your results</p>
+              <p className="text-sm text-muted-foreground mt-0.5">Get a comprehensive report.</p>
             </div>
           </div>
         </div>
 
         {/* Examples - Compact */}
-        <div className="mb-5">
-          <h3 className="text-sm font-medium text-foreground mb-2">Example Queries <span className="text-xs text-muted-foreground font-normal">(click to run)</span></h3>
-          <div className="space-y-2">
+        <div className="mb-6">
+          <h3 className="text-base font-medium text-foreground mb-3">Example Queries <span className="text-sm text-muted-foreground font-normal">(click to run)</span></h3>
+          <div className="space-y-2.5">
             {examples.map((example, index) => (
               <button
                 key={index}
                 onClick={() => onExampleClick(example)}
-                className="w-full text-left p-2.5 rounded-lg bg-muted/50 border border-border text-sm text-muted-foreground italic hover:bg-emerald-500/10 hover:border-emerald-500/30 hover:text-foreground transition-all duration-200 cursor-pointer group"
+                className="w-full text-left p-3 rounded-lg bg-muted/50 border border-border text-base text-muted-foreground italic hover:bg-emerald-500/10 hover:border-emerald-500/30 hover:text-foreground transition-all duration-200 cursor-pointer group"
               >
                 <span className="group-hover:text-emerald-600">"{example}"</span>
               </button>
@@ -514,23 +525,23 @@ function IdleStateCard({ onExampleClick }: { onExampleClick: (query: string) => 
         </div>
 
         {/* Discovery Pipeline - Horizontal */}
-        <div className="pt-4 border-t">
-          <h3 className="text-sm font-medium text-foreground mb-2">Discovery Pipeline</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="pt-5 border-t">
+          <h3 className="text-base font-medium text-foreground mb-3">Discovery Pipeline</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <BookOpen size={16} className="text-blue-600 shrink-0" />
+              <BookOpen size={18} className="text-blue-600 shrink-0" />
               <span className="text-foreground font-medium">Conduct Research</span>
             </div>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <FlaskConical size={16} className="text-purple-600 shrink-0" />
+              <FlaskConical size={18} className="text-purple-600 shrink-0" />
               <span className="text-foreground font-medium">Generate Hypotheses</span>
             </div>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Target size={16} className="text-teal-600 shrink-0" />
+              <Target size={18} className="text-teal-600 shrink-0" />
               <span className="text-foreground font-medium">Validate Findings</span>
             </div>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <FileText size={16} className="text-emerald-600 shrink-0" />
+              <FileText size={18} className="text-emerald-600 shrink-0" />
               <span className="text-foreground font-medium">Export Reports</span>
             </div>
           </div>

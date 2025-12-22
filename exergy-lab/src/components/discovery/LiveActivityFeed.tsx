@@ -10,6 +10,7 @@
 
 import { useEffect, useRef, useState, useMemo, useCallback } from 'react'
 import { cn } from '@/lib/utils'
+import { getCriterionName } from '@/lib/ai/rubrics/criterion-names'
 import { getPhaseMetadata, PHASE_METADATA } from '@/types/frontierscience'
 import type { DiscoveryPhase, JudgeResult } from '@/types/frontierscience'
 import { Input } from '@/components/ui/input'
@@ -235,7 +236,7 @@ function ActivityItemCard({ activity, showTimestamp }: { activity: ActivityItem;
                             .map((s, i) => (
                               <li key={i} className="flex items-center gap-1">
                                 <span className="text-emerald-500">✓</span>
-                                {s.itemId}: <span className="text-emerald-600 font-medium">{s.points}/{s.maxPoints}</span>
+                                {getCriterionName(s.itemId)}: <span className="text-emerald-600 font-medium">{s.points}/{s.maxPoints}</span>
                               </li>
                             ))}
                         </ul>
@@ -256,7 +257,7 @@ function ActivityItemCard({ activity, showTimestamp }: { activity: ActivityItem;
                             .map((s, i) => (
                               <li key={i} className="flex items-center gap-1">
                                 <span className="text-amber-500">!</span>
-                                {s.itemId}: <span className="text-amber-600 font-medium">{s.points}/{s.maxPoints}</span>
+                                {getCriterionName(s.itemId)}: <span className="text-amber-600 font-medium">{s.points}/{s.maxPoints}</span>
                               </li>
                             ))}
                         </ul>
@@ -470,24 +471,33 @@ export function LiveActivityFeed({
         </div>
       </div>
 
-      {/* Stats Summary */}
-      <div className="flex items-center gap-3 text-xs text-muted-foreground mb-2 pb-2 border-b border-border">
-        {Object.entries(stats.phaseEventCounts).map(([phase, count]) => (
-          <span key={phase} className="flex items-center gap-1">
-            <span className="font-medium text-foreground">{getPhaseMetadata(phase as DiscoveryPhase).shortName}:</span>
-            {count}
-          </span>
-        ))}
+      {/* Stats Summary - Simplified */}
+      <div className="flex items-center justify-between text-xs text-muted-foreground mb-2 pb-2 border-b border-border">
+        <div className="flex items-center gap-2">
+          {/* Phase progress indicators */}
+          {['research', 'hypothesis', 'validation', 'output'].map((phase) => {
+            const count = stats.phaseEventCounts[phase as DiscoveryPhase] || 0
+            const isActive = count > 0
+            return (
+              <span
+                key={phase}
+                className={cn(
+                  "px-1.5 py-0.5 rounded text-xs",
+                  isActive ? "bg-emerald-500/10 text-emerald-600" : "bg-muted text-muted-foreground"
+                )}
+              >
+                {getPhaseMetadata(phase as DiscoveryPhase).shortName}
+              </span>
+            )
+          })}
+        </div>
         {stats.bestScore !== null && (
-          <span className="flex items-center gap-1 ml-auto">
-            <span className="font-medium text-foreground">Best:</span>
-            {stats.bestScore.toFixed(1)}/10
-          </span>
-        )}
-        {stats.totalIterations > 0 && (
-          <span className="flex items-center gap-1">
-            <span className="font-medium text-foreground">Iterations:</span>
-            {stats.totalIterations}
+          <span className={cn(
+            "font-medium",
+            stats.bestScore >= 7 ? "text-emerald-600" :
+            stats.bestScore >= 5 ? "text-amber-600" : "text-muted-foreground"
+          )}>
+            Best: {stats.bestScore.toFixed(1)}/10
           </span>
         )}
       </div>
@@ -618,15 +628,21 @@ export function createActivityFromIteration(
 ): ActivityItem {
   const passed = judgeResult.passed
   const score = judgeResult.totalScore
+  const phaseMeta = getPhaseMetadata(phase)
 
-  // Generate a human-readable summary
+  // Generate clearer, more concise messages
   let message: string
   if (passed) {
-    message = `Iteration ${iteration}/${maxIterations} passed with score ${score.toFixed(1)}/10`
+    message = `${phaseMeta.shortName} passed quality check (${score.toFixed(1)}/10)`
+  } else if (iteration === maxIterations) {
+    message = `Final attempt: ${score.toFixed(1)}/10 - continuing with best result`
   } else if (previousScore !== undefined && score > previousScore) {
-    message = `Iteration ${iteration}/${maxIterations} improved to ${score.toFixed(1)}/10 (need 7.0 to pass)`
+    const improvement = (score - previousScore).toFixed(1)
+    message = `Improved +${improvement} to ${score.toFixed(1)}/10 - refining further`
+  } else if (iteration === 1) {
+    message = `Initial evaluation: ${score.toFixed(1)}/10 - analyzing for improvements`
   } else {
-    message = `Iteration ${iteration}/${maxIterations} scored ${score.toFixed(1)}/10, refining...`
+    message = `Attempt ${iteration}: ${score.toFixed(1)}/10 - optimizing approach`
   }
 
   return {
@@ -644,12 +660,21 @@ export function createActivityFromIteration(
 
 export function createActivityFromPhaseStart(phase: DiscoveryPhase): ActivityItem {
   const phaseMeta = getPhaseMetadata(phase)
+
+  // More descriptive phase start messages
+  const phaseDescriptions: Record<DiscoveryPhase, string> = {
+    research: 'Searching academic databases and synthesizing literature...',
+    hypothesis: 'Generating novel hypotheses based on research findings...',
+    validation: 'Running simulations and validating feasibility...',
+    output: 'Compiling final analysis and recommendations...',
+  }
+
   return {
     id: `phase-start-${phase}-${Date.now()}`,
     timestamp: Date.now(),
     type: 'phase_start',
     phase,
-    message: `Starting ${phaseMeta.name}...`,
+    message: phaseDescriptions[phase] || `Starting ${phaseMeta.name}...`,
   }
 }
 
@@ -659,14 +684,23 @@ export function createActivityFromPhaseComplete(
   passed: boolean
 ): ActivityItem {
   const phaseMeta = getPhaseMetadata(phase)
+
+  // More informative completion messages
+  const successMessages: Record<DiscoveryPhase, string> = {
+    research: `Research complete - synthesized key findings`,
+    hypothesis: `Hypothesis generated and validated`,
+    validation: `Validation passed - results verified`,
+    output: `Analysis finalized`,
+  }
+
   return {
     id: `phase-complete-${phase}-${Date.now()}`,
     timestamp: Date.now(),
     type: 'phase_complete',
     phase,
     message: passed
-      ? `${phaseMeta.name} completed successfully`
-      : `${phaseMeta.name} completed with score ${score.toFixed(1)}/10`,
+      ? `${successMessages[phase]} (${score.toFixed(1)}/10)`
+      : `${phaseMeta.shortName} completed with partial results (${score.toFixed(1)}/10)`,
     score,
     passed,
   }
@@ -679,17 +713,44 @@ export function createActivityFromPhaseFailed(
   continuingWithDegradation: boolean
 ): ActivityItem {
   const phaseMeta = getPhaseMetadata(phase)
+
+  // Clearer failure messages with actionable context
+  const message = continuingWithDegradation
+    ? `${phaseMeta.shortName} needs improvement (${score.toFixed(1)}/10) - proceeding with available data`
+    : `${phaseMeta.shortName} could not complete (${score.toFixed(1)}/10)`
+
+  // Simplify the details to be more readable
+  const simplifiedDetails = failedCriteria.slice(0, 3).map(c =>
+    `${c.issue}${c.suggestion ? ` → ${c.suggestion}` : ''}`
+  )
+
   return {
     id: `phase-failed-${phase}-${Date.now()}`,
     timestamp: Date.now(),
     type: 'phase_failed',
     phase,
-    message: continuingWithDegradation
-      ? `${phaseMeta.name} scored ${score.toFixed(1)}/10 (below 7.0 threshold). Continuing with partial results.`
-      : `${phaseMeta.name} failed with score ${score.toFixed(1)}/10`,
+    message,
     score,
     passed: false,
-    details: failedCriteria.map(c => `${c.id}: ${c.issue} - ${c.suggestion}`),
+    details: simplifiedDetails,
+  }
+}
+
+/**
+ * Create a milestone activity for significant events
+ */
+export function createActivityFromMilestone(
+  phase: DiscoveryPhase,
+  milestone: string,
+  details?: string[]
+): ActivityItem {
+  return {
+    id: `milestone-${phase}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    timestamp: Date.now(),
+    type: 'thinking',
+    phase,
+    message: milestone,
+    details,
   }
 }
 

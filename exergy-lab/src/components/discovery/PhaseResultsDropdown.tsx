@@ -11,6 +11,7 @@ import * as React from 'react'
 import { useState } from 'react'
 import { ChevronDown, CheckCircle2, AlertCircle, Info, Lightbulb } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { getCriterionName } from '@/lib/ai/rubrics/criterion-names'
 import { Badge } from '@/components/ui/badge'
 
 // ============================================================================
@@ -242,10 +243,10 @@ export function generatePhaseKeyFindings(
       score: score,
       highlights: {
         whatWorked: passedCriteria.slice(0, 4).map((c: any) =>
-          c.reasoning ? `${c.description || c.itemId}: ${c.reasoning}` : (c.description || c.itemId)
+          c.reasoning ? `${getCriterionName(c.itemId)}: ${c.reasoning}` : getCriterionName(c.itemId)
         ),
         challenges: failedCriteria.slice(0, 4).map((c: any) =>
-          c.reasoning ? `${c.description || c.itemId}: ${c.reasoning}` : (c.description || c.itemId)
+          c.reasoning ? `${getCriterionName(c.itemId)}: ${c.reasoning}` : getCriterionName(c.itemId)
         ),
         refinements: judgeResult.recommendations?.slice(0, 3) || [],
       },
@@ -275,8 +276,8 @@ export function generatePhaseKeyFindings(
         score: judgeResult?.totalScore,
         iterations: result.iterations,
         highlights: {
-          whatWorked: passedCriteria.slice(0, 3).map((c: any) => c.description || c.itemId),
-          challenges: failedCriteria.slice(0, 3).map((c: any) => `${c.description || c.itemId}: ${c.reasoning || ''}`),
+          whatWorked: passedCriteria.slice(0, 3).map((c: any) => getCriterionName(c.itemId)),
+          challenges: failedCriteria.slice(0, 3).map((c: any) => `${getCriterionName(c.itemId)}: ${c.reasoning || ''}`),
           refinements: result.refinementHints?.specificGuidance ? [result.refinementHints.specificGuidance] : [],
         },
       }
@@ -290,8 +291,8 @@ export function generatePhaseKeyFindings(
         score: judgeResult?.totalScore,
         iterations: result.iterations,
         highlights: {
-          whatWorked: passedCriteria.slice(0, 3).map((c: any) => c.description || c.itemId),
-          challenges: failedCriteria.slice(0, 3).map((c: any) => c.description || c.itemId),
+          whatWorked: passedCriteria.slice(0, 3).map((c: any) => getCriterionName(c.itemId)),
+          challenges: failedCriteria.slice(0, 3).map((c: any) => getCriterionName(c.itemId)),
           refinements: [],
         },
       }
@@ -353,8 +354,8 @@ export function generatePhaseKeyFindings(
         keyFindings: [],
         score: judgeResult?.totalScore,
         highlights: {
-          whatWorked: passedCriteria.slice(0, 3).map((c: any) => c.description || c.itemId),
-          challenges: failedCriteria.slice(0, 3).map((c: any) => c.description || c.itemId),
+          whatWorked: passedCriteria.slice(0, 3).map((c: any) => getCriterionName(c.itemId)),
+          challenges: failedCriteria.slice(0, 3).map((c: any) => getCriterionName(c.itemId)),
           refinements: [],
         },
       }

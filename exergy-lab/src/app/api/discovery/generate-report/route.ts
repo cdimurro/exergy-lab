@@ -39,6 +39,8 @@ interface ReportSection {
   title: string
   content: string
   subsections?: { title: string; content: string }[]
+  _generatedFrom?: 'llm' | 'template' // Indicates source of content
+  _notice?: string // Notice to display in UI when using fallback
 }
 
 interface GeneratedReport {
@@ -102,15 +104,20 @@ Format as markdown with ## headers for each section.`
       model: 'fast', // Gemini 3 Flash - fast with good quality for report generation
     })
 
+    const usedFallback = !content
     return {
       title: 'Research Analysis',
       content: content || generateFallbackResearchContent(phase, query),
+      _generatedFrom: usedFallback ? 'template' : 'llm',
+      _notice: usedFallback ? 'Content generated from structured data (AI summary unavailable)' : undefined,
     }
   } catch (error) {
     console.error('Failed to generate research section:', error)
     return {
       title: 'Research Analysis',
       content: generateFallbackResearchContent(phase, query),
+      _generatedFrom: 'template' as const,
+      _notice: 'Content generated from structured data due to AI generation error',
     }
   }
 }
@@ -140,11 +147,16 @@ ${(output.technologicalGaps || []).slice(0, 3).map((g: any) => {
 `
 }
 
-async function generateHypothesisSection(phase: PhaseData): Promise<ReportSection> {
+async function generateHypothesisSection(phase: PhaseData, query: string): Promise<ReportSection> {
   const hypotheses = phase.finalOutput || []
   const hypothesesArray = Array.isArray(hypotheses) ? hypotheses : (hypotheses.hypotheses || [])
 
   const prompt = `You are a scientific report writer. Generate a well-structured, detailed hypothesis analysis section.
+
+IMPORTANT: All hypotheses MUST be directly related to this research query:
+"${query}"
+
+Do NOT include any hypotheses about unrelated topics. Every hypothesis must address the specific domain and focus of the query above.
 
 HYPOTHESES GENERATED: ${hypothesesArray.length}
 PHASE SCORE: ${phase.finalScore}/10
@@ -208,15 +220,20 @@ IMPORTANT FORMATTING RULES:
       model: 'fast', // Gemini 3 Flash - fast with good quality for report generation
     })
 
+    const usedFallback = !content
     return {
       title: 'Hypothesis Analysis',
       content: content || generateFallbackHypothesisContent(phase),
+      _generatedFrom: usedFallback ? 'template' : 'llm',
+      _notice: usedFallback ? 'Content generated from structured data (AI summary unavailable)' : undefined,
     }
   } catch (error) {
     console.error('Failed to generate hypothesis section:', error)
     return {
       title: 'Hypothesis Analysis',
       content: generateFallbackHypothesisContent(phase),
+      _generatedFrom: 'template' as const,
+      _notice: 'Content generated from structured data due to AI generation error',
     }
   }
 }
@@ -283,15 +300,20 @@ Format as markdown with ## headers.`
       model: 'fast', // Gemini 3 Flash - fast with good quality for report generation
     })
 
+    const usedFallback = !content
     return {
       title: 'Experiment Design',
       content: content || generateFallbackExperimentContent(phase),
+      _generatedFrom: usedFallback ? 'template' : 'llm',
+      _notice: usedFallback ? 'Content generated from structured data (AI summary unavailable)' : undefined,
     }
   } catch (error) {
     console.error('Failed to generate experiment section:', error)
     return {
       title: 'Experiment Design',
       content: generateFallbackExperimentContent(phase),
+      _generatedFrom: 'template' as const,
+      _notice: 'Content generated from structured data due to AI generation error',
     }
   }
 }
@@ -358,15 +380,20 @@ Format as markdown with ## headers.`
       model: 'fast', // Gemini 3 Flash - fast with good quality for report generation
     })
 
+    const usedFallback = !content
     return {
       title: 'Simulation Results',
       content: content || generateFallbackSimulationContent(phase),
+      _generatedFrom: usedFallback ? 'template' : 'llm',
+      _notice: usedFallback ? 'Content generated from structured data (AI summary unavailable)' : undefined,
     }
   } catch (error) {
     console.error('Failed to generate simulation section:', error)
     return {
       title: 'Simulation Results',
       content: generateFallbackSimulationContent(phase),
+      _generatedFrom: 'template' as const,
+      _notice: 'Content generated from structured data due to AI generation error',
     }
   }
 }
@@ -436,15 +463,20 @@ Format as markdown with ## headers.`
       model: 'fast', // Gemini 3 Flash - fast with good quality for report generation
     })
 
+    const usedFallback = !content
     return {
       title: 'Technical & Economic Analysis',
       content: content || generateFallbackTechnicalContent(exergyPhase, teaPhase),
+      _generatedFrom: usedFallback ? 'template' : 'llm',
+      _notice: usedFallback ? 'Content generated from structured data (AI summary unavailable)' : undefined,
     }
   } catch (error) {
     console.error('Failed to generate technical section:', error)
     return {
       title: 'Technical & Economic Analysis',
       content: generateFallbackTechnicalContent(exergyPhase, teaPhase),
+      _generatedFrom: 'template' as const,
+      _notice: 'Content generated from structured data due to AI generation error',
     }
   }
 }
@@ -810,7 +842,7 @@ async function generateFullReport(request: ReportRequest): Promise<GeneratedRepo
   }
 
   if (hypothesisPhase) {
-    sectionPromises.push(generateHypothesisSection(hypothesisPhase))
+    sectionPromises.push(generateHypothesisSection(hypothesisPhase, request.query))
   }
 
   if (experimentPhase) {

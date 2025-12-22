@@ -17,6 +17,7 @@ import {
   ChevronLeft,
   Activity,
   ClipboardCheck,
+  Microscope,
 } from 'lucide-react'
 
 interface NavItem {
@@ -28,6 +29,7 @@ interface NavItem {
 const mainNavItems: NavItem[] = [
   { name: 'Dashboard', href: '/', icon: Home },
   { name: 'Discovery Engine', href: '/discovery', icon: Cpu },
+  { name: 'Breakthrough Engine', href: '/breakthrough', icon: Microscope },
   { name: 'Criteria', href: '/criteria', icon: ClipboardCheck },
   { name: 'Search', href: '/search', icon: Search },
   { name: 'Experiments', href: '/experiments', icon: FlaskConical },
@@ -179,13 +181,13 @@ export function Sidebar() {
               Powered by AI
             </p>
             <span className="text-xs text-muted-foreground/60 font-mono">
-              v0.0.1
+              v0.0.2
             </span>
           </div>
         ) : (
           <div className="flex justify-center">
             <span className="text-xs text-muted-foreground/60 font-mono">
-              v0.0.1
+              v0.0.2
             </span>
           </div>
         )}

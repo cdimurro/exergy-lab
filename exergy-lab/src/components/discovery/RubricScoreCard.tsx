@@ -7,6 +7,7 @@
  */
 
 import { cn } from '@/lib/utils'
+import { getCriterionName } from '@/lib/ai/rubrics/criterion-names'
 import type { JudgeResult, ItemScore } from '@/types/frontierscience'
 import { Check, X, Circle, ChevronDown, ChevronUp, Lightbulb } from 'lucide-react'
 import { useState } from 'react'
@@ -181,7 +182,7 @@ function RubricItemRow({ item }: { item: ItemScore }) {
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2">
           <span className="text-sm font-medium text-foreground truncate">
-            {item.itemId}
+            {getCriterionName(item.itemId)}
           </span>
           <span className="text-xs tabular-nums shrink-0 text-muted-foreground">
             {item.points.toFixed(1)}/{item.maxPoints.toFixed(1)}
