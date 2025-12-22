@@ -5,11 +5,19 @@
  * Analyzes evaluation results and provides specific improvement suggestions
  * for each dimension.
  *
+ * GPU-Aware Features:
+ * - Quick GPU validation of refinements on T4
+ * - Reverts refinements that degrade physics validity
+ * - Includes GPU validation context in refinement prompts
+ *
  * @see breakthrough-evaluator.ts - Provides evaluation results
  * @see hypgen/base.ts - RefinementFeedback type
+ * @see gpu-pool.ts - GPU validation integration
  */
 
 import { generateText } from '../model-router'
+import type { GPUValidationPool, GPUResult } from '@/lib/simulation/gpu-pool'
+import type { GPUFeedbackBridge } from './gpu-bridge'
 import type {
   BreakthroughDimension,
   DimensionScore,
@@ -30,6 +38,11 @@ export interface RefinementConfig {
   maxImprovementsPerDimension: number
   includeCompetitiveInsights: boolean
   includeResearchPointers: boolean
+  // GPU-aware refinement options
+  enableGPUValidation: boolean
+  revertOnPhysicsFailure: boolean
+  includeGPUContext: boolean
+  gpuValidationThreshold: number // Minimum score to trigger GPU validation
 }
 
 export const DEFAULT_REFINEMENT_CONFIG: RefinementConfig = {
@@ -38,6 +51,11 @@ export const DEFAULT_REFINEMENT_CONFIG: RefinementConfig = {
   maxImprovementsPerDimension: 3,
   includeCompetitiveInsights: true,
   includeResearchPointers: true,
+  // GPU defaults
+  enableGPUValidation: true,
+  revertOnPhysicsFailure: true,
+  includeGPUContext: true,
+  gpuValidationThreshold: 6.0,
 }
 
 export interface RefinementContext {
@@ -47,6 +65,14 @@ export interface RefinementContext {
   iteration: number
   maxIterations: number
   targetScore: number
+  // GPU validation context (optional)
+  gpuValidation?: {
+    result: GPUResult
+    physicsValid: boolean
+    economicallyViable: boolean
+    confidenceScore: number
+    previousResult?: GPUResult
+  }
 }
 
 export interface DimensionFeedback {
@@ -66,9 +92,21 @@ export interface DimensionFeedback {
 
 export class EnhancedRefinementAgent {
   private config: RefinementConfig
+  private gpuBridge?: GPUFeedbackBridge
 
-  constructor(config: Partial<RefinementConfig> = {}) {
+  constructor(
+    config: Partial<RefinementConfig> = {},
+    gpuBridge?: GPUFeedbackBridge
+  ) {
     this.config = { ...DEFAULT_REFINEMENT_CONFIG, ...config }
+    this.gpuBridge = gpuBridge
+  }
+
+  /**
+   * Set GPU bridge for validation
+   */
+  setGPUBridge(bridge: GPUFeedbackBridge): void {
+    this.gpuBridge = bridge
   }
 
   /**
@@ -144,6 +182,175 @@ export class EnhancedRefinementAgent {
     }
 
     return feedbackMap
+  }
+
+  /**
+   * Validate a refinement using GPU (quick T4 check)
+   * Returns whether the refinement should be kept or reverted
+   */
+  async validateRefinement(
+    original: RacingHypothesis,
+    refined: RacingHypothesis
+  ): Promise<{
+    keep: boolean
+    originalResult: GPUResult | null
+    refinedResult: GPUResult | null
+    reason: string
+  }> {
+    if (!this.config.enableGPUValidation || !this.gpuBridge) {
+      return {
+        keep: true,
+        originalResult: null,
+        refinedResult: null,
+        reason: 'GPU validation disabled or not available',
+      }
+    }
+
+    // Only validate if score meets threshold
+    if (refined.scores.overall < this.config.gpuValidationThreshold) {
+      return {
+        keep: true,
+        originalResult: null,
+        refinedResult: null,
+        reason: `Score ${refined.scores.overall.toFixed(1)} below GPU threshold ${this.config.gpuValidationThreshold}`,
+      }
+    }
+
+    console.log(
+      `[EnhancedRefinementAgent] GPU validating refinement for ${refined.id.slice(-8)}`
+    )
+
+    try {
+      // Validate both original and refined on T4
+      const [originalResult, refinedResult] = await Promise.all([
+        this.gpuBridge.queueValidation(original, { tier: 'T4' }),
+        this.gpuBridge.queueValidation(refined, { tier: 'T4' }),
+      ])
+
+      // Check if refinement degrades physics validity
+      if (this.config.revertOnPhysicsFailure) {
+        // If original passed physics but refined fails, revert
+        if (originalResult.physicsValid && !refinedResult.physicsValid) {
+          console.log(
+            `[EnhancedRefinementAgent] Refinement degrades physics validity, recommending revert`
+          )
+          return {
+            keep: false,
+            originalResult,
+            refinedResult,
+            reason: 'Refinement degrades physics validity - reverting',
+          }
+        }
+
+        // If confidence dropped significantly, consider reverting
+        if (
+          refinedResult.confidenceScore < originalResult.confidenceScore - 0.2
+        ) {
+          console.log(
+            `[EnhancedRefinementAgent] Refinement significantly reduces confidence`
+          )
+          return {
+            keep: false,
+            originalResult,
+            refinedResult,
+            reason: `Confidence dropped from ${(originalResult.confidenceScore * 100).toFixed(0)}% to ${(refinedResult.confidenceScore * 100).toFixed(0)}%`,
+          }
+        }
+      }
+
+      // Calculate net improvement
+      const originalScore = this.calculateGPUScore(originalResult)
+      const refinedScore = this.calculateGPUScore(refinedResult)
+
+      if (refinedScore > originalScore) {
+        return {
+          keep: true,
+          originalResult,
+          refinedResult,
+          reason: `Refinement improves GPU score: ${originalScore.toFixed(2)} → ${refinedScore.toFixed(2)}`,
+        }
+      } else if (refinedScore === originalScore) {
+        return {
+          keep: true,
+          originalResult,
+          refinedResult,
+          reason: 'Refinement maintains GPU validation quality',
+        }
+      } else {
+        return {
+          keep: !this.config.revertOnPhysicsFailure,
+          originalResult,
+          refinedResult,
+          reason: `Refinement reduces GPU score: ${originalScore.toFixed(2)} → ${refinedScore.toFixed(2)}`,
+        }
+      }
+    } catch (error) {
+      console.warn('[EnhancedRefinementAgent] GPU validation failed:', error)
+      return {
+        keep: true,
+        originalResult: null,
+        refinedResult: null,
+        reason: `GPU validation error: ${error instanceof Error ? error.message : 'Unknown'}`,
+      }
+    }
+  }
+
+  /**
+   * Calculate a simple score from GPU result
+   */
+  private calculateGPUScore(result: GPUResult): number {
+    let score = 0
+    if (result.physicsValid) score += 5
+    if (result.economicallyViable) score += 3
+    score += result.confidenceScore * 2
+    return score
+  }
+
+  /**
+   * Generate GPU context for refinement prompts
+   */
+  private generateGPUContext(context: RefinementContext): string {
+    if (!this.config.includeGPUContext || !context.gpuValidation) {
+      return ''
+    }
+
+    const gpu = context.gpuValidation
+    const lines: string[] = [
+      '\n## GPU VALIDATION CONTEXT',
+      `Physics Validation: ${gpu.physicsValid ? 'PASSED' : 'FAILED'}`,
+      `Economic Viability: ${gpu.economicallyViable ? 'PASSED' : 'FAILED'}`,
+      `Confidence Score: ${(gpu.confidenceScore * 100).toFixed(0)}%`,
+    ]
+
+    if (gpu.previousResult) {
+      const prevConfidence = gpu.previousResult.confidenceScore
+      const change = gpu.confidenceScore - prevConfidence
+      lines.push(
+        `Confidence Change: ${change >= 0 ? '+' : ''}${(change * 100).toFixed(0)}%`
+      )
+    }
+
+    // Add specific metrics if available
+    if (gpu.result.metrics.efficiency) {
+      lines.push(
+        `Efficiency: ${(gpu.result.metrics.efficiency.mean * 100).toFixed(1)}% ` +
+        `(95% CI: ${(gpu.result.metrics.efficiency.ci95[0] * 100).toFixed(1)}-${(gpu.result.metrics.efficiency.ci95[1] * 100).toFixed(1)}%)`
+      )
+    }
+
+    if (gpu.result.metrics.lcoe) {
+      lines.push(
+        `LCOE: $${gpu.result.metrics.lcoe.mean.toFixed(4)}/kWh ` +
+        `(95% CI: $${gpu.result.metrics.lcoe.ci95[0].toFixed(4)}-$${gpu.result.metrics.lcoe.ci95[1].toFixed(4)})`
+      )
+    }
+
+    if (!gpu.physicsValid) {
+      lines.push('\n**IMPORTANT**: The hypothesis failed physics validation.')
+      lines.push('Focus refinement on addressing physical feasibility concerns.')
+    }
+
+    return lines.join('\n')
   }
 
   /**
@@ -647,7 +854,8 @@ Be specific and actionable. Reference the hypothesis content when suggesting imp
 // ============================================================================
 
 export function createEnhancedRefinementAgent(
-  config?: Partial<RefinementConfig>
+  config?: Partial<RefinementConfig>,
+  gpuBridge?: GPUFeedbackBridge
 ): EnhancedRefinementAgent {
-  return new EnhancedRefinementAgent(config)
+  return new EnhancedRefinementAgent(config, gpuBridge)
 }

@@ -296,6 +296,31 @@ export interface DiscoveryResult {
   startTime: Date
   endTime: Date
   totalDurationMs: number
+  /** GPU validation metrics from simulation tier */
+  gpuMetrics?: {
+    tier: 'tier1' | 'tier2' | 'tier3'
+    provider: 'Analytical' | 'Modal'
+    totalCost?: number
+    simulationsRun?: number
+    validationsPerformed?: number
+  }
+  /** Literature cross-reference validation results */
+  literatureValidation?: {
+    status: 'validated' | 'partial' | 'requires_review'
+    confidence: number
+    totalClaims: number
+    supportedClaims: number
+    contradictedClaims: number
+    topSupportingPapers?: {
+      title: string
+      authors: string[]
+      year: number
+      source: string
+      doi?: string
+    }[]
+    warnings?: string[]
+    recommendations?: string[]
+  }
 }
 
 // ============================================================================

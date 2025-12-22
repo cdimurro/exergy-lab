@@ -27,6 +27,14 @@ export type FeedbackMessageType =
   | 'iteration_complete'
   | 'race_update'
   | 'error'
+  // GPU Validation Events
+  | 'gpu_validation_queued'
+  | 'gpu_validation_started'
+  | 'gpu_validation_progress'
+  | 'gpu_validation_complete'
+  | 'gpu_pool_status'
+  | 'tier_escalation'
+  | 'score_adjustment'
 
 export type MessagePriority = 'critical' | 'high' | 'normal' | 'low'
 
@@ -48,6 +56,9 @@ export type AgentId =
   | 'racing-arena'
   | `hypgen-${HypGenAgentType}`
   | 'orchestrator'
+  | 'gpu-pool'
+  | 'gpu-bridge'
+  | 'validation-engine'
 
 export type MessagePayload =
   | EvaluationCompletePayload
@@ -127,6 +138,43 @@ export interface ErrorPayload {
   source: AgentId
   error: string
   recoverable: boolean
+}
+
+// GPU Validation Payloads
+export interface GPUValidationQueuedPayload {
+  type: 'gpu_validation_queued'
+  hypothesisId: string
+  tier: string
+  priority: string
+  queuePosition: number
+  estimatedWait: number
+}
+
+export interface GPUValidationStartedPayload {
+  type: 'gpu_validation_started'
+  hypothesisId: string
+  tier: string
+  estimatedDuration: number
+}
+
+export interface GPUValidationCompletePayload {
+  type: 'gpu_validation_complete'
+  hypothesisId: string
+  tier: string
+  physicsValid: boolean
+  economicallyViable: boolean
+  confidenceScore: number
+  scoreAdjustment: number
+  durationMs: number
+}
+
+export interface ScoreAdjustmentPayload {
+  type: 'score_adjustment'
+  hypothesisId: string
+  previousScore: number
+  adjustment: number
+  newScore: number
+  reason: string
 }
 
 export type MessageHandler = (message: FeedbackMessage) => void | Promise<void>
@@ -235,6 +283,33 @@ export class FeedbackBus {
     }
 
     return removed
+  }
+
+  /**
+   * Subscribe to all GPU-related events
+   * Returns an unsubscribe function
+   */
+  subscribeToGPUEvents(
+    agent: AgentId,
+    handler: MessageHandler
+  ): () => void {
+    const gpuMessageTypes: FeedbackMessageType[] = [
+      'gpu_validation_queued',
+      'gpu_validation_started',
+      'gpu_validation_progress',
+      'gpu_validation_complete',
+      'gpu_pool_status',
+      'tier_escalation',
+      'score_adjustment',
+    ]
+
+    const subscriptionId = this.subscribe(agent, gpuMessageTypes, handler)
+
+    if (this.config.enableLogging) {
+      console.log(`[FeedbackBus] ${agent} subscribed to GPU events`)
+    }
+
+    return () => this.unsubscribe(subscriptionId)
   }
 
   /**

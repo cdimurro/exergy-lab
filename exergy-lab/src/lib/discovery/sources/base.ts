@@ -19,7 +19,8 @@ import {
   CacheEntry,
 } from '@/types/sources'
 import { Domain } from '@/types/discovery'
-import { executeResilient } from '@/lib/ai/error-recovery'
+import { executeResilient, CircuitBreaker } from '@/lib/ai/error-recovery'
+import { CircuitBreakerConfig } from '@/types/agent'
 
 /**
  * Data source adapter interface
@@ -168,12 +169,22 @@ class SimpleRateLimiter {
 /**
  * Base adapter class with common functionality
  */
+/**
+ * Default circuit breaker config for data sources
+ */
+const DEFAULT_SOURCE_CIRCUIT_BREAKER: Partial<CircuitBreakerConfig> = {
+  failureThreshold: 3,  // Open after 3 consecutive failures
+  resetTimeout: 60000,  // Try again after 1 minute
+  halfOpenAttempts: 1,  // Single test request in half-open state
+}
+
 export abstract class BaseAdapter implements DataSourceAdapter {
   abstract readonly name: DataSourceName
   abstract readonly domains: Domain[]
 
   protected cache: SimpleCache
   protected rateLimiter: SimpleRateLimiter
+  protected circuitBreaker: CircuitBreaker
   protected baseUrl: string
   protected apiKey?: string
 
@@ -184,6 +195,7 @@ export abstract class BaseAdapter implements DataSourceAdapter {
       requestsPerMinute?: number
       requestsPerDay?: number
       cacheTTL?: number
+      circuitBreakerConfig?: Partial<CircuitBreakerConfig>
     }
   ) {
     this.baseUrl = config.baseUrl
@@ -193,6 +205,27 @@ export abstract class BaseAdapter implements DataSourceAdapter {
       config.requestsPerMinute || 60,
       config.requestsPerDay || 1000
     )
+    this.circuitBreaker = new CircuitBreaker({
+      ...DEFAULT_SOURCE_CIRCUIT_BREAKER,
+      ...config.circuitBreakerConfig,
+    })
+  }
+
+  /**
+   * Check if the circuit breaker is open (source is failing)
+   */
+  isCircuitOpen(): boolean {
+    return !this.circuitBreaker.isOperational()
+  }
+
+  /**
+   * Get circuit breaker state for monitoring
+   */
+  getCircuitState(): { state: string; stats: { failures: number; successes: number } } {
+    return {
+      state: this.circuitBreaker.getState(),
+      stats: this.circuitBreaker.getStats(),
+    }
   }
 
   /**
@@ -332,11 +365,45 @@ export abstract class BaseAdapter implements DataSourceAdapter {
   }
 
   /**
-   * Helper: Make HTTP request
+   * Default timeout for requests (10 seconds)
+   */
+  protected defaultTimeout = 10000
+
+  /**
+   * Fetch with timeout protection
+   * Prevents requests from hanging indefinitely
+   */
+  protected async fetchWithTimeout(
+    url: string,
+    options: RequestInit = {},
+    timeoutMs: number = this.defaultTimeout
+  ): Promise<Response> {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+      })
+      return response
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error(`Request timed out after ${timeoutMs}ms`)
+      }
+      throw error
+    } finally {
+      clearTimeout(timeoutId)
+    }
+  }
+
+  /**
+   * Helper: Make HTTP request with timeout and circuit breaker protection
    */
   protected async makeRequest<T = any>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    timeoutMs?: number
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`
 
@@ -346,16 +413,23 @@ export abstract class BaseAdapter implements DataSourceAdapter {
       ...(options.headers as Record<string, string>),
     }
 
-    const response = await fetch(url, {
-      ...options,
-      headers,
-    })
+    // Wrap request in circuit breaker for automatic failure isolation
+    return this.circuitBreaker.execute(
+      async () => {
+        const response = await this.fetchWithTimeout(
+          url,
+          { ...options, headers },
+          timeoutMs
+        )
 
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-    }
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        }
 
-    return response.json() as Promise<T>
+        return response.json() as Promise<T>
+      },
+      `source:${this.name}:${endpoint}`
+    )
   }
 
   /**

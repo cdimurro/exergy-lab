@@ -14,6 +14,7 @@
  * - Agreement level indicator
  */
 
+import crypto from 'crypto'
 import type {
   BenchmarkType,
   BenchmarkResult,
@@ -40,6 +41,32 @@ import { ConvergenceBenchmarkValidator } from './convergence-benchmark'
 import { diagnosticLogger } from '../../diagnostics/diagnostic-logger'
 
 // ============================================================================
+// Validation Cache
+// ============================================================================
+
+interface CachedValidation {
+  result: AggregatedValidation
+  timestamp: number
+  ttl: number
+  hits: number
+}
+
+interface ValidationCacheConfig {
+  /** Maximum number of cached validations (default: 200) */
+  maxEntries: number
+  /** Time-to-live in milliseconds (default: 1 hour) */
+  ttlMs: number
+  /** Enable/disable caching (default: true) */
+  enabled: boolean
+}
+
+const DEFAULT_CACHE_CONFIG: ValidationCacheConfig = {
+  maxEntries: 200,
+  ttlMs: 60 * 60 * 1000, // 1 hour
+  enabled: true,
+}
+
+// ============================================================================
 // Multi-Benchmark Validator
 // ============================================================================
 
@@ -49,21 +76,213 @@ export interface ValidationContext {
   hypothesisOutput?: any
   researchOutput?: any
   existingRubricResult?: BenchmarkResult
+  /** Skip cache lookup (force fresh validation) */
+  skipCache?: boolean
 }
 
 export class MultiBenchmarkValidator {
   private config: MultiBenchmarkConfig
+  private cacheConfig: ValidationCacheConfig
   private domainValidator: DomainBenchmarkValidator
   private practicalityValidator: PracticalityBenchmarkValidator
   private literatureValidator: LiteratureBenchmarkValidator
   private convergenceValidator: ConvergenceBenchmarkValidator
 
-  constructor(config: Partial<MultiBenchmarkConfig> = {}) {
+  // Validation result cache
+  private validationCache: Map<string, CachedValidation> = new Map()
+  private cacheStats = { hits: 0, misses: 0, evictions: 0 }
+
+  constructor(
+    config: Partial<MultiBenchmarkConfig> = {},
+    cacheConfig: Partial<ValidationCacheConfig> = {}
+  ) {
     this.config = { ...DEFAULT_MULTI_BENCHMARK_CONFIG, ...config }
+    this.cacheConfig = { ...DEFAULT_CACHE_CONFIG, ...cacheConfig }
     this.domainValidator = new DomainBenchmarkValidator()
     this.practicalityValidator = new PracticalityBenchmarkValidator()
     this.literatureValidator = new LiteratureBenchmarkValidator()
     this.convergenceValidator = new ConvergenceBenchmarkValidator()
+  }
+
+  // ============================================================================
+  // Cache Methods
+  // ============================================================================
+
+  /**
+   * Generate cache key from discovery output and context
+   * Uses content-based hashing to identify identical validations
+   */
+  private getCacheKey(discoveryOutput: any, context: ValidationContext): string {
+    // Extract validation-relevant parameters
+    const params = {
+      // Key hypothesis fields
+      hypothesis: this.extractHypothesisParams(discoveryOutput),
+      // Enabled benchmarks affect validation
+      benchmarks: [...this.config.enabledBenchmarks].sort(),
+      // Source DOIs/IDs for literature validation
+      sourceIds: (context.sources || [])
+        .map(s => s.doi || s.id || s.title)
+        .sort(),
+      // Simulation convergence params
+      hasSimulation: !!context.simulationOutput,
+      simulationHash: context.simulationOutput
+        ? this.hashSimulationParams(context.simulationOutput)
+        : null,
+    }
+
+    const serialized = JSON.stringify(params)
+    return crypto.createHash('md5').update(serialized).digest('hex')
+  }
+
+  /**
+   * Extract key parameters from hypothesis for cache key
+   */
+  private extractHypothesisParams(discoveryOutput: any): Record<string, any> {
+    if (!discoveryOutput) return {}
+
+    return {
+      // Core hypothesis content
+      title: discoveryOutput.title || discoveryOutput.hypothesis?.title,
+      description: discoveryOutput.description || discoveryOutput.hypothesis?.description,
+      domain: discoveryOutput.domain,
+      // Key quantitative claims
+      claims: discoveryOutput.claims || discoveryOutput.hypothesis?.claims,
+      // Technical parameters
+      params: discoveryOutput.params || discoveryOutput.hypothesis?.params,
+      // Material/technology specifics
+      materials: discoveryOutput.materials,
+      technology: discoveryOutput.technology,
+    }
+  }
+
+  /**
+   * Hash simulation parameters for cache key
+   */
+  private hashSimulationParams(simulationOutput: any): string {
+    const params = {
+      tier: simulationOutput.tier,
+      iterations: simulationOutput.iterations,
+      convergence: simulationOutput.convergence,
+      // Key results summary (not full data)
+      resultSummary: simulationOutput.summary || simulationOutput.result?.summary,
+    }
+    return crypto.createHash('md5').update(JSON.stringify(params)).digest('hex').slice(0, 8)
+  }
+
+  /**
+   * Get cached validation result
+   */
+  private getCached(key: string): AggregatedValidation | null {
+    if (!this.cacheConfig.enabled) return null
+
+    const cached = this.validationCache.get(key)
+    if (!cached) {
+      this.cacheStats.misses++
+      return null
+    }
+
+    // Check if expired
+    if (Date.now() - cached.timestamp > cached.ttl) {
+      this.validationCache.delete(key)
+      this.cacheStats.misses++
+      return null
+    }
+
+    // Update hit count
+    cached.hits++
+    this.cacheStats.hits++
+    console.log(`[MultiBenchmarkValidator] Cache hit (key: ${key.slice(0, 8)}...)`)
+
+    return cached.result
+  }
+
+  /**
+   * Store validation result in cache
+   */
+  private setCached(key: string, result: AggregatedValidation): void {
+    if (!this.cacheConfig.enabled) return
+
+    // Enforce max entries
+    if (this.validationCache.size >= this.cacheConfig.maxEntries) {
+      this.evictOldest()
+    }
+
+    this.validationCache.set(key, {
+      result,
+      timestamp: Date.now(),
+      ttl: this.cacheConfig.ttlMs,
+      hits: 0,
+    })
+
+    console.log(`[MultiBenchmarkValidator] Cached validation (key: ${key.slice(0, 8)}..., size: ${this.validationCache.size})`)
+  }
+
+  /**
+   * Evict oldest or least-used cache entries
+   */
+  private evictOldest(): void {
+    // Find entry with oldest timestamp + fewest hits
+    let oldestKey: string | null = null
+    let oldestScore = Infinity
+
+    for (const [key, entry] of this.validationCache.entries()) {
+      // Score = timestamp - (hits * 60000) - lower is more evictable
+      const score = entry.timestamp - entry.hits * 60000
+      if (score < oldestScore) {
+        oldestScore = score
+        oldestKey = key
+      }
+    }
+
+    if (oldestKey) {
+      this.validationCache.delete(oldestKey)
+      this.cacheStats.evictions++
+    }
+  }
+
+  /**
+   * Get cache statistics
+   */
+  getCacheStats(): {
+    size: number
+    hits: number
+    misses: number
+    evictions: number
+    hitRate: number
+  } {
+    const total = this.cacheStats.hits + this.cacheStats.misses
+    return {
+      size: this.validationCache.size,
+      hits: this.cacheStats.hits,
+      misses: this.cacheStats.misses,
+      evictions: this.cacheStats.evictions,
+      hitRate: total > 0 ? this.cacheStats.hits / total : 0,
+    }
+  }
+
+  /**
+   * Clear all cached validations
+   */
+  clearCache(): void {
+    this.validationCache.clear()
+    this.cacheStats = { hits: 0, misses: 0, evictions: 0 }
+  }
+
+  /**
+   * Clean up expired cache entries
+   */
+  cleanupExpired(): number {
+    const now = Date.now()
+    let removed = 0
+
+    for (const [key, entry] of this.validationCache.entries()) {
+      if (now - entry.timestamp > entry.ttl) {
+        this.validationCache.delete(key)
+        removed++
+      }
+    }
+
+    return removed
   }
 
   /**
@@ -74,6 +293,18 @@ export class MultiBenchmarkValidator {
     context: ValidationContext
   ): Promise<AggregatedValidation> {
     const startTime = Date.now()
+
+    // Generate cache key and check cache
+    const cacheKey = this.getCacheKey(discoveryOutput, context)
+
+    if (!context.skipCache) {
+      const cached = this.getCached(cacheKey)
+      if (cached) {
+        // Return cached result
+        console.log(`[MultiBenchmarkValidator] Returning cached result (key: ${cacheKey.slice(0, 8)}...)`)
+        return cached
+      }
+    }
 
     // Build list of benchmark promises
     const benchmarkPromises: Array<Promise<BenchmarkResult>> = []
@@ -136,6 +367,9 @@ export class MultiBenchmarkValidator {
       ),
       evaluationDurationMs: Date.now() - startTime,
     })
+
+    // Cache the result for future use
+    this.setCached(cacheKey, aggregated)
 
     return aggregated
   }

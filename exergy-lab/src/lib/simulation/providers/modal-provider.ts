@@ -266,9 +266,9 @@ export class ModalSimulationProvider implements SimulationProvider {
     // Determine number of iterations based on tier
     const nIterations = this.tier === 'tier3' ? 100000 : 10000
 
-    // Call Modal API
+    // Call Modal API (using web endpoint)
     const mcResult = await this.callModalFunction<MonteCarloResult[]>(
-      'monte_carlo_vectorized',
+      'monte_carlo_vectorized_endpoint',
       {
         configs: [mcConfig],
         n_iterations: nIterations,
@@ -401,7 +401,7 @@ export class ModalSimulationProvider implements SimulationProvider {
 
     const nSamplesPerDim = this.tier === 'tier3' ? 50 : 25
 
-    // Call Modal parametric sweep
+    // Call Modal parametric sweep (using web endpoint)
     const sweepResult = await this.callModalFunction<{
       n_points: number
       optimal_config: Record<string, number>
@@ -412,7 +412,7 @@ export class ModalSimulationProvider implements SimulationProvider {
       pareto_front: Array<Record<string, number>>
       sensitivity_surface: Record<string, { values: number[]; response: number[] }>
       execution_time_ms: number
-    }>('parametric_sweep', {
+    }>('parametric_sweep_endpoint', {
       base_config: baseConfig,
       sweep_params: sweepParams,
       n_samples_per_dim: nSamplesPerDim,
@@ -735,7 +735,7 @@ export class ModalSimulationProvider implements SimulationProvider {
     })
 
     const results = await this.callModalFunction<HypothesisValidationResult[]>(
-      'batch_hypothesis_validation',
+      'batch_hypothesis_validation_endpoint',
       {
         hypotheses: hypotheses.map(h => ({
           id: h.id,
@@ -767,6 +767,12 @@ export class ModalSimulationProvider implements SimulationProvider {
 
   /**
    * Call a Modal function via HTTP API
+   *
+   * Modal web endpoint URL format:
+   * - Base endpoint: https://username--appname.modal.run
+   * - With function: https://username--appname--functionname.modal.run
+   *
+   * The endpoint env var should be base: https://cdimurro--breakthrough-engine-gpu.modal.run
    */
   private async callModalFunction<T>(
     functionName: string,
@@ -779,7 +785,12 @@ export class ModalSimulationProvider implements SimulationProvider {
       throw new Error('Modal API key not configured. Set MODAL_API_KEY environment variable.')
     }
 
-    const url = `${endpoint}/v1/apps/breakthrough-engine-gpu/functions/${functionName}`
+    // Modal web endpoint URL format: insert function name before .modal.run
+    // e.g., https://cdimurro--breakthrough-engine-gpu.modal.run
+    // becomes: https://cdimurro--breakthrough-engine-gpu--monte_carlo_vectorized.modal.run
+    const functionNameFormatted = functionName.replace(/_/g, '-')
+    const url = endpoint?.replace('.modal.run', `--${functionNameFormatted}.modal.run`) ||
+                `https://modal.run/${functionName}`
 
     let lastError: Error | null = null
 
@@ -849,6 +860,69 @@ export class ModalSimulationProvider implements SimulationProvider {
 
     } catch {
       return false
+    }
+  }
+
+  /**
+   * Warm up GPU instances by sending a lightweight request
+   * This helps reduce cold start latency for subsequent validations
+   */
+  async warmUp(count: number = 1): Promise<{ success: boolean; message: string }> {
+    if (!this.config.apiKey) {
+      return { success: false, message: 'Modal API key not configured' }
+    }
+
+    this.emitProgress({
+      type: 'started',
+      tier: this.gpuTier,
+      message: `Warming up ${count} ${this.gpuTier} instance(s)...`,
+    })
+
+    try {
+      // Send a lightweight validation request to warm up the GPU
+      const warmupConfig: MonteCarloConfig = {
+        hypothesis_id: 'warmup-ping',
+        parameters: {
+          efficiency_mean: 0.35,
+          efficiency_std: 0.03,
+          cost_mean: 100,
+          cost_std: 10,
+          capacity_kw: 1000,
+          capacity_factor: 0.25,
+          lifetime_years: 25,
+        },
+        seed: 42,
+      }
+
+      // Run minimal Monte Carlo with few iterations just to warm up
+      await this.callModalFunction<MonteCarloResult[]>(
+        'monte_carlo_vectorized_endpoint',
+        {
+          configs: [warmupConfig],
+          n_iterations: 100, // Minimal iterations
+          confidence_level: 0.95,
+        }
+      )
+
+      this.emitProgress({
+        type: 'complete',
+        tier: this.gpuTier,
+        completion: 100,
+        message: `${this.gpuTier} GPU warmed up successfully`,
+      })
+
+      return { success: true, message: `${this.gpuTier} instance(s) ready` }
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+
+      this.emitProgress({
+        type: 'error',
+        tier: this.gpuTier,
+        message: `Warm-up failed: ${errorMessage}`,
+      })
+
+      return { success: false, message: errorMessage }
     }
   }
 

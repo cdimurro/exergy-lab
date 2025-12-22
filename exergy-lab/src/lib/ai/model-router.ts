@@ -135,6 +135,10 @@ export function getTokenBudget(taskOrPhase: string): number {
 /**
  * Task routing configuration
  * Defines primary and fallback models for each task
+ *
+ * v2.0 UPDATE: Complete fallback chains for all tasks
+ * Previously, some critical tasks had no fallbacks which caused
+ * discovery failures when the primary model was unavailable.
  */
 const TASK_ROUTING: Record<
   AITask,
@@ -161,19 +165,19 @@ const TASK_ROUTING: Record<
   },
   'experiment-design': {
     primary: 'gemini',
-    fallbacks: [],
+    fallbacks: ['openai'], // Added fallback for robustness
   },
   'experiment-failure': {
     primary: 'gemini',
-    fallbacks: [],
+    fallbacks: ['openai'], // Added fallback for robustness
   },
   discovery: {
     primary: 'gemini',
-    fallbacks: [],
+    fallbacks: ['openai'], // Added fallback - critical for discovery completion
   },
   'simulation-predict': {
     primary: 'gemini',
-    fallbacks: ['huggingface'],
+    fallbacks: ['openai', 'huggingface'], // Added OpenAI fallback
   },
   summarize: {
     primary: 'huggingface',

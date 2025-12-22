@@ -65,6 +65,16 @@ export interface RacingHypothesis extends Hypothesis {
   }[]
   status: 'active' | 'eliminated' | 'breakthrough' | 'pending'
   eliminatedReason?: string
+  /** GPU validation results populated during mid-race validation */
+  gpuValidation?: {
+    physicsValid: boolean
+    economicallyViable: boolean
+    confidence: number
+    tier: 'T4' | 'A10G' | 'A100'
+    iteration: number
+    durationMs?: number
+    simulationType?: 'thermodynamic' | 'electrochemical' | 'materials' | 'optimization'
+  }
 }
 
 export interface GenerationContext {

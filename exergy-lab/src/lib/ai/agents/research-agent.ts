@@ -142,9 +142,107 @@ interface CacheEntry {
   timestamp: number
 }
 
-// Session-level cache (cleared when server restarts)
+// Session-level cache with size limits (cleared when server restarts)
 const researchCache = new Map<string, CacheEntry>()
 const CACHE_TTL_MS = 30 * 60 * 1000 // 30 minutes
+const MAX_CACHE_ENTRIES = 100 // Prevent unbounded memory growth
+const MAX_CACHE_SIZE_BYTES = 50 * 1024 * 1024 // 50MB max
+
+// ============================================================================
+// In-Flight Promise Cache (Early Query Deduplication)
+// ============================================================================
+
+// Cache for in-flight promises to prevent redundant concurrent API calls
+const inFlightPromises = new Map<string, Promise<any>>()
+
+/**
+ * Normalize a query for deduplication
+ * Converts to lowercase, removes extra whitespace, strips common stop words
+ */
+function normalizeQuery(query: string): string {
+  const stopWords = ['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by']
+  return query
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, ' ')
+    .split(' ')
+    .filter(word => word.length > 2 && !stopWords.includes(word))
+    .sort()
+    .join(' ')
+}
+
+/**
+ * Generate a deduplication key for API requests
+ */
+function getDedupeKey(operation: string, query: string, params?: Record<string, any>): string {
+  const normalizedQuery = normalizeQuery(query)
+  const paramsHash = params ? JSON.stringify(params) : ''
+  return `${operation}:${normalizedQuery}:${paramsHash}`
+}
+
+/**
+ * Execute with in-flight deduplication
+ * If an identical request is already in progress, wait for it instead of making a new one
+ */
+async function executeWithDedupe<T>(
+  key: string,
+  executor: () => Promise<T>
+): Promise<T> {
+  // Check if this exact request is already in flight
+  const existing = inFlightPromises.get(key)
+  if (existing) {
+    console.log(`[ResearchAgent] Deduped request (key: ${key.slice(0, 50)}...)`)
+    return existing as Promise<T>
+  }
+
+  // Create new promise and store it
+  const promise = executor().finally(() => {
+    // Clean up when done
+    inFlightPromises.delete(key)
+  })
+
+  inFlightPromises.set(key, promise)
+  return promise
+}
+
+/**
+ * Get dedupe stats for monitoring
+ */
+function getDedupeStats(): { inFlight: number; keys: string[] } {
+  return {
+    inFlight: inFlightPromises.size,
+    keys: Array.from(inFlightPromises.keys()).map(k => k.slice(0, 50)),
+  }
+}
+
+/**
+ * Get approximate cache size in bytes
+ */
+function getCacheSizeBytes(): number {
+  let totalSize = 0
+  for (const entry of researchCache.values()) {
+    totalSize += JSON.stringify(entry).length * 2 // Approximate UTF-16 encoding
+  }
+  return totalSize
+}
+
+/**
+ * Evict oldest entries if cache exceeds limits
+ */
+function evictOldestEntries(): void {
+  // Sort by timestamp (oldest first)
+  const entries = Array.from(researchCache.entries())
+    .sort(([, a], [, b]) => a.timestamp - b.timestamp)
+
+  // Evict until under limits
+  while (
+    (researchCache.size > MAX_CACHE_ENTRIES || getCacheSizeBytes() > MAX_CACHE_SIZE_BYTES) &&
+    entries.length > 0
+  ) {
+    const [key] = entries.shift()!
+    researchCache.delete(key)
+  }
+}
 
 /**
  * Generate a cache key from query and domain
@@ -194,6 +292,13 @@ export class ResearchAgent {
       size: researchCache.size,
       entries: Array.from(researchCache.keys()),
     }
+  }
+
+  /**
+   * Get deduplication statistics for monitoring
+   */
+  static getDedupeStats(): { inFlight: number; keys: string[] } {
+    return getDedupeStats()
   }
 
   /**
@@ -318,15 +423,37 @@ export class ResearchAgent {
         })
       : Promise.resolve([])
 
-    const [
-      academicResults,
-      patentResults,
-      materialsResults,
-    ] = await Promise.all([
+    // Use Promise.allSettled to gracefully handle individual source failures
+    const sourceResults = await Promise.allSettled([
       academicPromise,
       patentPromise,
       materialsPromise,
     ])
+
+    // Extract successful results, log failures
+    const academicResults = sourceResults[0].status === 'fulfilled' ? sourceResults[0].value : []
+    const patentResults = sourceResults[1].status === 'fulfilled' ? sourceResults[1].value : []
+    const materialsResults = sourceResults[2].status === 'fulfilled' ? sourceResults[2].value : []
+
+    // Log any failures for debugging
+    const failures = sourceResults.filter(r => r.status === 'rejected') as PromiseRejectedResult[]
+    if (failures.length > 0) {
+      console.warn(`[ResearchAgent] ${failures.length} source(s) failed:`, failures.map(f => f.reason?.message || f.reason))
+    }
+
+    // Ensure minimum sources for quality research
+    const MIN_SOURCES_REQUIRED = 3
+    const totalSources = academicResults.length + patentResults.length
+    if (totalSources < MIN_SOURCES_REQUIRED) {
+      console.warn(`[ResearchAgent] Only ${totalSources} sources found, below minimum ${MIN_SOURCES_REQUIRED}`)
+      onProgress?.({
+        type: 'source_complete',
+        source: 'Warning',
+        message: `Low source count (${totalSources}). Research quality may be affected.`,
+        count: totalSources,
+        timestamp: Date.now(),
+      })
+    }
 
     // Combine and deduplicate sources
     const allSources = this.deduplicateSources([
@@ -421,12 +548,13 @@ export class ResearchAgent {
       timestamp: Date.now(),
     })
 
-    // Cache the result for future use
+    // Cache the result for future use (with size limit enforcement)
+    evictOldestEntries()
     researchCache.set(cacheKey, {
       result,
       timestamp: Date.now(),
     })
-    console.log(`[ResearchAgent] Cached result for: "${query}" (cache size: ${researchCache.size})`)
+    console.log(`[ResearchAgent] Cached result for: "${query}" (cache size: ${researchCache.size}, ~${Math.round(getCacheSizeBytes() / 1024)}KB)`)
 
     return result
   }
@@ -470,6 +598,7 @@ Example: ["query 1", "query 2", "query 3", "query 4", "query 5"]`
    *
    * Uses arXiv and OpenAlex APIs (both free, no key needed).
    * Falls back to AI-generated data if APIs fail.
+   * Now uses in-flight deduplication to prevent redundant concurrent requests.
    */
   private async searchAcademicDatabases(
     queries: string[],
@@ -485,22 +614,38 @@ Example: ["query 1", "query 2", "query 3", "query 4", "query 5"]`
 
     // Use the primary query for searches
     const primaryQuery = queries[0]
+    const currentYear = new Date().getFullYear()
 
-    // Search arXiv and OpenAlex in parallel (both are free, no API key needed)
+    // Search arXiv and OpenAlex in parallel with deduplication
+    // If another request is already in-flight for the same query, wait for it
     try {
-      const [arxivResults, openAlexResults] = await Promise.allSettled([
+      const searchParams = { limit, domain, yearFrom: 2020, yearTo: currentYear }
+
+      // Deduplicated arXiv search
+      const arxivDedupeKey = getDedupeKey('arxiv', primaryQuery, searchParams)
+      const arxivPromise = executeWithDedupe(arxivDedupeKey, () =>
         arxivAdapter.search(primaryQuery, {
           limit,
           domains: [domain as Domain],
           yearFrom: 2020,
-          yearTo: new Date().getFullYear(),
-        }),
+          yearTo: currentYear,
+        })
+      )
+
+      // Deduplicated OpenAlex search
+      const openAlexDedupeKey = getDedupeKey('openalex', primaryQuery, searchParams)
+      const openAlexPromise = executeWithDedupe(openAlexDedupeKey, () =>
         openAlexAdapter.search(primaryQuery, {
           limit,
           domains: [domain as Domain],
           yearFrom: 2020,
-          yearTo: new Date().getFullYear(),
-        }),
+          yearTo: currentYear,
+        })
+      )
+
+      const [arxivResults, openAlexResults] = await Promise.allSettled([
+        arxivPromise,
+        openAlexPromise,
       ])
 
       // Process arXiv results
@@ -623,23 +768,30 @@ The array must start with [ and end with ] and contain valid JSON objects.`
    *
    * Uses USPTO PatentsView API (requires PATENTSVIEW_API_KEY).
    * Falls back to AI-generated patents if API is unavailable.
+   * Now uses in-flight deduplication to prevent redundant concurrent requests.
    */
   private async searchPatentDatabases(queries: string[], hints?: RefinementHints): Promise<Source[]> {
     const needsMoreSources = hints?.failedCriteria.some(c => c.id === 'R1')
     const limit = needsMoreSources ? 15 : 10
+    const currentYear = new Date().getFullYear()
 
     console.log(`[ResearchAgent] Searching patent databases...`)
 
-    // Try real USPTO API first
+    // Try real USPTO API first with deduplication
     try {
       const usptoAvailable = await usptoAdapter.isAvailable()
 
       if (usptoAvailable) {
-        const usptoResults = await usptoAdapter.search(queries[0], {
-          limit,
-          yearFrom: 2018,
-          yearTo: new Date().getFullYear(),
-        })
+        const searchParams = { limit, yearFrom: 2018, yearTo: currentYear }
+        const dedupeKey = getDedupeKey('uspto', queries[0], searchParams)
+
+        const usptoResults = await executeWithDedupe(dedupeKey, () =>
+          usptoAdapter.search(queries[0], {
+            limit,
+            yearFrom: 2018,
+            yearTo: currentYear,
+          })
+        )
 
         if (usptoResults.sources.length > 0) {
           console.log(`[ResearchAgent] USPTO returned ${usptoResults.sources.length} real patents`)
@@ -710,6 +862,7 @@ CRITICAL: Return a COMPLETE, valid JSON array with ALL ${patentCount} patents. D
    *
    * Uses Materials Project API (requires MATERIALS_PROJECT_API_KEY).
    * Falls back to AI-generated materials if API is unavailable.
+   * Now uses in-flight deduplication to prevent redundant concurrent requests.
    */
   private async searchMaterialsProject(queries: string[], hints?: RefinementHints): Promise<MaterialData[]> {
     const needsMoreMaterials = hints?.failedCriteria.some(c => c.id === 'R7')
@@ -717,12 +870,15 @@ CRITICAL: Return a COMPLETE, valid JSON array with ALL ${patentCount} patents. D
 
     console.log(`[ResearchAgent] Searching Materials Project...`)
 
-    // Try real Materials Project API first
+    // Try real Materials Project API first with deduplication
     try {
       const mpAvailable = await materialsProjectAdapter.isAvailable()
 
       if (mpAvailable) {
-        const mpResults = await materialsProjectAdapter.search(queries[0], { limit })
+        const dedupeKey = getDedupeKey('materials-project', queries[0], { limit })
+        const mpResults = await executeWithDedupe(dedupeKey, () =>
+          materialsProjectAdapter.search(queries[0], { limit })
+        )
 
         if (mpResults.sources.length > 0) {
           console.log(`[ResearchAgent] Materials Project returned ${mpResults.sources.length} real materials`)

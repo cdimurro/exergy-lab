@@ -36,6 +36,7 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import React, { useState, useCallback } from 'react'
 import type { RecoveryAgentResponse } from '@/app/api/discovery/recovery-agent/route'
+import { GPUPoolStatus, GPUPoolStatusCompact, type GPUPoolUtilization, type GPUPoolMetrics } from './GPUPoolStatus'
 
 export type DiscoveryStatus = 'idle' | 'starting' | 'running' | 'completed' | 'completed_partial' | 'failed'
 
@@ -54,6 +55,10 @@ interface FrontierScienceProgressCardProps {
   failedPhases?: DiscoveryPhase[]
   recoveryRecommendations?: RecoveryRecommendation[]
   failedCriteria?: { id: string; issue: string; suggestion: string }[]
+  // GPU status props
+  gpuEnabled?: boolean
+  gpuUtilization?: GPUPoolUtilization
+  gpuMetrics?: GPUPoolMetrics
   // Action handlers
   onCancel?: () => void
   onRetryWithQuery?: (query: string, fromCheckpoint?: boolean) => void
@@ -76,6 +81,9 @@ export function FrontierScienceProgressCard({
   failedPhases = [],
   recoveryRecommendations = [],
   failedCriteria = [],
+  gpuEnabled = false,
+  gpuUtilization,
+  gpuMetrics,
   onCancel,
   onRetryWithQuery,
   onExportResults,
@@ -204,6 +212,17 @@ export function FrontierScienceProgressCard({
           onPhaseClick={handlePhaseClick}
         />
       </div>
+
+      {/* GPU Pool Status - Shows during active discovery with GPU enabled */}
+      {gpuEnabled && gpuUtilization && status === 'running' && (
+        <div className="p-5 border-b">
+          <GPUPoolStatus
+            utilization={gpuUtilization}
+            metrics={gpuMetrics}
+            isActive={gpuUtilization.totalActive > 0 || gpuUtilization.totalQueued > 0}
+          />
+        </div>
+      )}
 
       {/* Live Activity Feed - Fills remaining space */}
       {activities.length > 0 && (

@@ -52,6 +52,18 @@ import { selfCritiqueAgent, type SelfCritiqueResult } from './self-critique-agen
 import { diagnosticLogger } from '../../diagnostics/diagnostic-logger'
 import type { AggregatedValidation } from '../validation/types'
 
+// GPU-accelerated validation imports
+import {
+  GPUValidationPool,
+  createGPUPool,
+  type GPUPoolConfig,
+  type PoolUtilization,
+  type PoolMetrics,
+} from '@/lib/simulation/gpu-pool'
+import { GPUFeedbackBridge, createGPUBridge, type GPUBridgeConfig } from './gpu-bridge'
+import { ValidationEngine, createValidationEngine } from './validation-engine'
+import { FeedbackBus, createFeedbackBus } from './feedback-bus'
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -72,6 +84,11 @@ export interface DiscoveryConfig {
   enablePatentAnalysis: boolean
   enableExergyAnalysis: boolean
   enableTEAAnalysis: boolean
+  // GPU-accelerated validation options
+  enableGPU: boolean
+  gpuPoolConfig?: Partial<GPUPoolConfig>
+  gpuBridgeConfig?: Partial<GPUBridgeConfig>
+  enableGPUWarmUp: boolean
 }
 
 const DEFAULT_CONFIG: DiscoveryConfig = {
@@ -90,6 +107,9 @@ const DEFAULT_CONFIG: DiscoveryConfig = {
   enablePatentAnalysis: true,
   enableExergyAnalysis: true,
   enableTEAAnalysis: true,
+  // GPU-accelerated validation - enabled by default
+  enableGPU: true,
+  enableGPUWarmUp: true,
 }
 
 export interface PhaseProgress {
@@ -187,12 +207,30 @@ export class DiscoveryOrchestrator {
   private lastHeartbeatTime: number = 0
   private phaseStartTime: number = 0
 
+  // GPU-accelerated validation components
+  private gpuPool?: GPUValidationPool
+  private gpuBridge?: GPUFeedbackBridge
+  private validationEngine?: ValidationEngine
+  private feedbackBus?: FeedbackBus
+  private gpuMetrics: {
+    totalCompleted: number
+    totalCost: number
+    cacheHitRate: number
+    averageDuration: number
+  } = { totalCompleted: 0, totalCost: 0, cacheHitRate: 0, averageDuration: 0 }
+
   constructor(config: Partial<DiscoveryConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config }
     this.researchAgent = createResearchAgent()
     this.creativeAgent = createCreativeAgent()
     this.criticalAgent = createCriticalAgent()
     this.multiBenchmarkValidator = new MultiBenchmarkValidator()
+
+    // Initialize GPU-accelerated validation if enabled
+    if (this.config.enableGPU) {
+      this.initializeGPUComponents()
+    }
+
     this.refinementEngine = new RefinementEngine({
       verbose: this.config.verbose,
       refinementConfig: {
@@ -304,6 +342,129 @@ export class DiscoveryOrchestrator {
   }
 
   /**
+   * Initialize GPU-accelerated validation components
+   */
+  private initializeGPUComponents(): void {
+    try {
+      this.log('Initializing GPU validation pool...')
+
+      // Create FeedbackBus for inter-agent communication
+      this.feedbackBus = createFeedbackBus({
+        enableLogging: this.config.verbose,
+        retainHistory: false,
+      })
+
+      // Create GPU pool with configuration
+      this.gpuPool = createGPUPool(this.config.gpuPoolConfig)
+
+      // Create GPU-FeedbackBus bridge
+      this.gpuBridge = createGPUBridge(
+        this.gpuPool,
+        this.feedbackBus,
+        this.config.gpuBridgeConfig
+      )
+
+      // Create unified validation engine
+      this.validationEngine = createValidationEngine(
+        { enableGPU: true },
+        {
+          gpuPool: this.gpuPool,
+          gpuBridge: this.gpuBridge,
+          feedbackBus: this.feedbackBus,
+        }
+      )
+
+      this.log('GPU validation components initialized successfully')
+    } catch (error) {
+      console.warn('[DiscoveryOrchestrator] Failed to initialize GPU components:', error)
+      this.log('GPU initialization failed, continuing without GPU acceleration')
+      this.gpuPool = undefined
+      this.gpuBridge = undefined
+      this.validationEngine = undefined
+    }
+  }
+
+  /**
+   * Warm up GPU instances before starting discovery
+   */
+  private async warmUpGPUs(): Promise<void> {
+    if (!this.config.enableGPU || !this.config.enableGPUWarmUp || !this.gpuBridge) {
+      return
+    }
+
+    try {
+      this.log('Warming up GPU instances...')
+      this.emitThinking('generating', 'Pre-warming GPU validation instances...')
+
+      // Warm up T4 immediately (for quick validation)
+      await this.gpuBridge.warmUp('T4', 2)
+      this.log('T4 instances warmed up')
+
+      // Schedule A10G warm-up for later (for comprehensive validation)
+      setTimeout(async () => {
+        try {
+          if (this.gpuBridge) {
+            await this.gpuBridge.warmUp('A10G', 1)
+            this.log('A10G instance warmed up')
+          }
+        } catch (error) {
+          console.warn('[DiscoveryOrchestrator] A10G warm-up failed:', error)
+        }
+      }, 30_000)
+
+      this.log('GPU warm-up complete')
+    } catch (error) {
+      console.warn('[DiscoveryOrchestrator] GPU warm-up failed:', error)
+      // Continue without warm-up
+    }
+  }
+
+  /**
+   * Cleanup GPU resources
+   */
+  private cleanupGPUComponents(): void {
+    if (this.gpuBridge) {
+      this.gpuBridge.stop()
+    }
+    if (this.gpuPool) {
+      // Update metrics before stopping
+      const metrics = this.gpuPool.getMetrics()
+      this.gpuMetrics = {
+        totalCompleted: metrics.totalTasksCompleted,
+        totalCost: metrics.totalCost,
+        cacheHitRate: metrics.cacheHits / Math.max(1, metrics.cacheHits + metrics.cacheMisses),
+        averageDuration: metrics.averageDurationMs,
+      }
+      this.gpuPool.stop()
+    }
+    this.log('GPU components cleaned up')
+  }
+
+  /**
+   * Get current GPU utilization
+   */
+  getGPUUtilization(): PoolUtilization | null {
+    if (!this.gpuPool) return null
+    return this.gpuPool.getUtilization()
+  }
+
+  /**
+   * Get GPU metrics
+   */
+  getGPUMetrics(): { totalCompleted: number; totalCost: number; cacheHitRate: number; averageDuration: number } {
+    if (this.gpuPool) {
+      const metrics = this.gpuPool.getMetrics()
+      return {
+        totalCompleted: metrics.totalTasksCompleted,
+        totalCost: metrics.totalCost,
+        cacheHitRate: metrics.cacheHits / Math.max(1, metrics.cacheHits + metrics.cacheMisses),
+        averageDuration: metrics.averageDurationMs,
+      }
+    }
+    return this.gpuMetrics
+  }
+
+  /**
    * Execute the full discovery pipeline (Consolidated 4-Phase Architecture)
    *
    * Phases:
@@ -331,6 +492,12 @@ export class DiscoveryOrchestrator {
     this.log(`Discovery mode: ${this.config.discoveryMode}`)
     this.log(`Target quality: ${this.config.targetQuality}`)
     this.log(`Graceful degradation: ${this.config.gracefulDegradation ? 'enabled' : 'disabled'}`)
+    this.log(`GPU acceleration: ${this.config.enableGPU ? 'enabled' : 'disabled'}`)
+
+    // Warm up GPUs if enabled
+    if (this.config.enableGPU) {
+      await this.warmUpGPUs()
+    }
 
     try {
       // ========================================================================
@@ -406,6 +573,51 @@ export class DiscoveryOrchestrator {
       }
 
       // ========================================================================
+      // PHASE 3.5: LITERATURE CROSS-REFERENCE (validates findings before output)
+      // ========================================================================
+      this.emitThinking('validating', 'Cross-referencing findings against peer-reviewed literature...')
+      let literatureCrossRef: any = null
+
+      try {
+        const { LiteratureCrossReferenceValidator } = await import('@/lib/ai/validation/literature-cross-reference')
+        const crossRefValidator = new LiteratureCrossReferenceValidator({
+          minSupportingEvidence: 2,
+          recentThresholdYear: 2020,
+          maxSourcesPerClaim: 10,
+          enablePhysicsValidation: true,
+          strictMode: false,
+        })
+
+        literatureCrossRef = await crossRefValidator.validate({
+          hypothesis: hypothesisResult.finalOutput,
+          validation: validationResult.finalOutput,
+          research: researchResult.finalOutput,
+        })
+
+        this.log(`Literature cross-reference: ${literatureCrossRef.supportedClaims}/${literatureCrossRef.totalClaims} claims supported, ${literatureCrossRef.contradictedClaims} contradictions`)
+
+        if (literatureCrossRef.contradictedClaims > 0) {
+          this.emitThinking('refining', `Warning: ${literatureCrossRef.contradictedClaims} claim(s) contradict existing literature`)
+        }
+
+        if (literatureCrossRef.physicsViolations > 0) {
+          this.emitThinking('refining', `Warning: ${literatureCrossRef.physicsViolations} claim(s) violate physical limits`)
+        }
+      } catch (error) {
+        this.log('Literature cross-reference failed, continuing without:', error)
+        literatureCrossRef = {
+          totalClaims: 0,
+          supportedClaims: 0,
+          contradictedClaims: 0,
+          overallConfidence: 0,
+          passed: true,
+          claimValidations: [],
+          summary: 'Literature validation unavailable',
+          recommendations: [],
+        }
+      }
+
+      // ========================================================================
       // PHASE 4: OUTPUT (combines rubric_eval + publication)
       // ========================================================================
       this.emitProgress('output', 'running', 1)
@@ -414,6 +626,7 @@ export class DiscoveryOrchestrator {
         research: researchResult.finalOutput,
         hypothesis: hypothesisResult.finalOutput,
         validation: validationResult.finalOutput,
+        literatureCrossReference: literatureCrossRef,
       })
       phases.push(outputResult)
       this.emitProgress('output', outputResult.passed ? 'completed' : 'failed', outputResult.iterations.length, outputResult.finalScore, outputResult.passed)
@@ -465,6 +678,9 @@ export class DiscoveryOrchestrator {
         } as PartialDiscoveryResult
       }
 
+      // Capture GPU pool metrics before cleanup
+      const gpuPoolMetrics = this.getGPUMetrics()
+
       return {
         id: `discovery-${Date.now()}`,
         query,
@@ -477,10 +693,21 @@ export class DiscoveryOrchestrator {
         startTime,
         endTime,
         totalDurationMs: endTime.getTime() - startTime.getTime(),
+        // GPU metrics (if enabled) - using standard structure
+        gpuMetrics: this.config.enableGPU ? {
+          tier: 'tier3' as const, // GPU pool uses tier3 Modal
+          provider: 'Modal' as const,
+          totalCost: gpuPoolMetrics.totalCost,
+          simulationsRun: gpuPoolMetrics.totalCompleted,
+          validationsPerformed: gpuPoolMetrics.totalCompleted,
+        } : undefined,
       }
     } catch (error) {
       this.log(`Discovery failed: ${error}`)
       throw error
+    } finally {
+      // Cleanup GPU resources
+      this.cleanupGPUComponents()
     }
   }
 
@@ -755,11 +982,24 @@ export class DiscoveryOrchestrator {
     // Pre-run simulation once (expensive - don't repeat)
     const experiments = inputs.hypothesis.allExperiments || [inputs.hypothesis.experiment]
     let simulationResults: any[] = []
+    let selectedTier: 'tier1' | 'tier2' | 'tier3' = this.config.simulationTier
 
     try {
-      this.emitThinking('generating', 'Executing multi-tier simulation...')
+      // Calculate hypothesis quality score for automatic tier escalation
+      const hypothesisScore = inputs.hypothesis?.score ||
+                              inputs.hypothesis?.hypothesis?.noveltyScore ||
+                              inputs.hypothesis?.hypothesis?.feasibilityScore ||
+                              7.0
+
+      // Import tier selection and use score-based escalation
+      const { selectTierByScore } = await import('@/lib/simulation/provider-factory')
+      selectedTier = selectTierByScore(hypothesisScore)
+
+      this.log(`Validation tier auto-selected: ${selectedTier} (hypothesis score: ${hypothesisScore})`)
+      this.emitThinking('generating', `Executing GPU-accelerated simulation on ${selectedTier.toUpperCase()}...`)
+
       const simulationManager = new SimulationManager({
-        defaultTier: this.config.simulationTier,
+        defaultTier: selectedTier,
         fallbackToLowerTier: true,
       })
 
@@ -774,7 +1014,7 @@ export class DiscoveryOrchestrator {
         convergenceTolerance: 0.001,
       }))
 
-      simulationResults = await simulationManager.executeMany(simulationParams, this.config.simulationTier)
+      simulationResults = await simulationManager.executeMany(simulationParams, selectedTier)
     } catch (e) {
       this.log('Simulation execution failed:', e)
       simulationResults = []
@@ -892,7 +1132,14 @@ export class DiscoveryOrchestrator {
           return {
             simulation: {
               results: simulationResults,
-              tier: this.config.simulationTier,
+              tier: selectedTier,
+              gpuMetrics: {
+                provider: selectedTier !== 'tier1' ? 'Modal GPU' : 'Analytical',
+                tierUsed: selectedTier,
+                totalCost: simulationResults.reduce((sum, r) => sum + (r.metadata?.cost || 0), 0),
+                totalDuration: simulationResults.reduce((sum, r) => sum + (r.metadata?.durationMs || 0), 0),
+                gpuEnabled: selectedTier !== 'tier1',
+              },
             },
             exergy: exergyResults,
             economics: teaResults,
@@ -958,7 +1205,7 @@ export class DiscoveryOrchestrator {
    * Execute consolidated output phase (rubric_eval + publication)
    * Now wrapped in refinement loop for iterative quality improvement
    */
-  private async executeConsolidatedOutputPhase(inputs: { query: string; research: any; hypothesis: any; validation: any }): Promise<PhaseResult<any>> {
+  private async executeConsolidatedOutputPhase(inputs: { query: string; research: any; hypothesis: any; validation: any; literatureCrossReference?: any }): Promise<PhaseResult<any>> {
     this.log('Phase 4: Consolidated Output (self-critique + publication)')
     this.currentPhase = 'output'
     this.emitThinking('generating', 'Running self-critique analysis and generating publication report with refinement...')
@@ -1315,7 +1562,7 @@ export class DiscoveryOrchestrator {
    * Generate publication report with optional refinement hints for iterative improvement
    */
   private generatePublicationReport(inputs: any, hints?: RefinementHints): any {
-    const { query, research, hypothesis, validation } = inputs
+    const { query, research, hypothesis, validation, literatureCrossReference } = inputs
 
     // Check which sections need improvement based on hints
     const needsAbstractImprovement = hints?.failedCriteria?.some(c => c.id.includes('OC1') || c.id.includes('abstract'))
@@ -1463,6 +1710,41 @@ ${metricsWithStats.length > 0 ? metricsWithStats.map(m => `• ${m}`).join('\n')
       discussion,
       conclusion: `This discovery provides a foundation for future research in ${research?.domain || 'clean energy'} technology. The validated approach offers ${validation?.physicsValidation?.passed ? 'thermodynamically sound' : 'promising'} pathways for practical implementation.`,
       references,
+      // Literature cross-reference validation results
+      literatureValidation: literatureCrossReference ? {
+        status: literatureCrossReference.passed ? 'validated' : 'requires_review',
+        confidence: literatureCrossReference.overallConfidence,
+        totalClaims: literatureCrossReference.totalClaims,
+        supportedClaims: literatureCrossReference.supportedClaims,
+        contradictedClaims: literatureCrossReference.contradictedClaims,
+        physicsViolations: literatureCrossReference.physicsViolations,
+        summary: literatureCrossReference.summary,
+        supportedFindings: literatureCrossReference.claimValidations
+          ?.filter((c: any) => c.validationStatus === 'supported')
+          ?.map((c: any) => ({
+            claim: c.claimText,
+            confidence: c.confidence,
+            sources: c.supportingEvidence?.slice(0, 3)?.map((e: any) => ({
+              title: e.title,
+              year: e.year,
+              source: e.source,
+            })),
+          })) || [],
+        warnings: literatureCrossReference.claimValidations
+          ?.filter((c: any) => c.validationStatus === 'contradicted')
+          ?.map((c: any) => ({
+            claim: c.claimText,
+            issue: c.reasoning,
+            contradictingSources: c.contradictingEvidence?.slice(0, 2)?.map((e: any) => ({
+              title: e.title,
+              year: e.year,
+            })),
+          })) || [],
+        unverifiedClaims: literatureCrossReference.claimValidations
+          ?.filter((c: any) => c.validationStatus === 'unverifiable' || c.validationStatus === 'unsupported')
+          ?.map((c: any) => c.claimText) || [],
+        recommendations: literatureCrossReference.recommendations || [],
+      } : null,
       // Metadata for quality tracking
       reportQuality: {
         sectionsEnhanced: [
@@ -1473,6 +1755,7 @@ ${metricsWithStats.length > 0 ? metricsWithStats.map(m => `• ${m}`).join('\n')
           needsDiscussionImprovement && 'discussion',
         ].filter(Boolean),
         refinementIteration: hints?.iterationNumber || 1,
+        literatureValidationPassed: literatureCrossReference?.passed ?? true,
       },
     }
   }

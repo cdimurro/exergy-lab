@@ -9,12 +9,19 @@ GPU Tiers:
 - A10G ($1.10/hr): Parametric sweeps, 10K pts/min
 - A100 ($3.00/hr): ML-MD, DFT calculations, 100K steps/run
 
+HTTP Endpoints (for TypeScript access):
+- POST /monte-carlo-vectorized - Monte Carlo simulation
+- POST /parametric-sweep - Parametric sweep optimization
+- POST /batch-hypothesis-validation - Batch validation
+- POST /ml-potential-md - ML-potential molecular dynamics
+
 @see simulation_runner.py - Base simulation implementation
 @see breakthrough-evaluator.ts - Uses these for validation
 """
 
 import modal
 from typing import Dict, List, Any, Optional, Tuple
+from pydantic import BaseModel
 
 # Create Modal app with concurrency settings
 app = modal.App("breakthrough-engine-gpu")
@@ -26,6 +33,8 @@ base_image = modal.Image.debian_slim().pip_install(
     "pandas>=2.0.0",
     "scikit-learn>=1.3.0",
     "numba>=0.58.0",  # For JIT compilation
+    "fastapi>=0.100.0",
+    "pydantic>=2.0.0",
 )
 
 # ============================================================================
@@ -761,6 +770,63 @@ def batch_hypothesis_validation(
     print(f"[GPU-T4] Validated {len(hypotheses)} hypotheses in {execution_time_ms}ms")
 
     return results
+
+
+# ============================================================================
+# Web Endpoints for HTTP Access (TypeScript frontend)
+# ============================================================================
+
+class MonteCarloRequest(BaseModel):
+    """Request model for Monte Carlo simulation."""
+    args: Dict[str, Any]
+
+class ParametricSweepRequest(BaseModel):
+    """Request model for parametric sweep."""
+    args: Dict[str, Any]
+
+class BatchValidationRequest(BaseModel):
+    """Request model for batch hypothesis validation."""
+    args: Dict[str, Any]
+
+
+@app.function(image=base_image, gpu="T4", timeout=300, concurrency_limit=10)
+@modal.web_endpoint(method="POST", docs=True)
+def monte_carlo_vectorized_endpoint(request: MonteCarloRequest) -> List[Dict[str, Any]]:
+    """
+    HTTP endpoint for Monte Carlo simulation.
+
+    Wraps the GPU function for HTTP access from TypeScript frontend.
+    """
+    configs = request.args.get("configs", [])
+    n_iterations = request.args.get("n_iterations", 100000)
+    confidence_level = request.args.get("confidence_level", 0.95)
+
+    return monte_carlo_vectorized.local(configs, n_iterations, confidence_level)
+
+
+@app.function(image=base_image, gpu="A10G", timeout=600)
+@modal.web_endpoint(method="POST", docs=True)
+def parametric_sweep_endpoint(request: ParametricSweepRequest) -> Dict[str, Any]:
+    """
+    HTTP endpoint for parametric sweep optimization.
+    """
+    base_config = request.args.get("base_config", {})
+    sweep_params = request.args.get("sweep_params", {})
+    n_samples_per_dim = request.args.get("n_samples_per_dim", 50)
+
+    return parametric_sweep.local(base_config, sweep_params, n_samples_per_dim)
+
+
+@app.function(image=base_image, gpu="T4", timeout=600, concurrency_limit=10)
+@modal.web_endpoint(method="POST", docs=True)
+def batch_hypothesis_validation_endpoint(request: BatchValidationRequest) -> List[Dict[str, Any]]:
+    """
+    HTTP endpoint for batch hypothesis validation.
+    """
+    hypotheses = request.args.get("hypotheses", [])
+    validation_type = request.args.get("validation_type", "full")
+
+    return batch_hypothesis_validation.local(hypotheses, validation_type)
 
 
 # ============================================================================

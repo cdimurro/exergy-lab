@@ -34,6 +34,9 @@ import {
   ChevronDown,
   ChevronUp,
   Zap,
+  Server,
+  Check,
+  X,
 } from 'lucide-react'
 import { useState, useMemo } from 'react'
 import { ClassificationBadge, TIER_CONFIG, type ClassificationTier } from './BreakthroughScoreCard'
@@ -56,6 +59,14 @@ export interface RacingHypothesis {
   classification: ClassificationTier
   iteration: number
   eliminatedReason?: string
+  /** GPU validation results */
+  gpuValidation?: {
+    physicsValid: boolean
+    economicallyViable: boolean
+    confidence: number
+    tier: 'T4' | 'A10G' | 'A100'
+    iteration: number
+  }
 }
 
 export interface LeaderboardEntry {
@@ -373,6 +384,25 @@ function LeaderboardRow({ entry, onClick }: { entry: LeaderboardEntry; onClick?:
             {agentConfig.label}
           </span>
           <span className="text-xs text-muted-foreground">Iter {hypothesis.iteration}</span>
+          {/* GPU Validation Badge */}
+          {hypothesis.gpuValidation && (
+            <span className={cn(
+              "flex items-center gap-1 text-xs px-1.5 py-0.5 rounded",
+              hypothesis.gpuValidation.physicsValid && hypothesis.gpuValidation.economicallyViable
+                ? "bg-emerald-500/20 text-emerald-600"
+                : hypothesis.gpuValidation.physicsValid
+                ? "bg-blue-500/20 text-blue-600"
+                : "bg-red-500/20 text-red-600"
+            )}>
+              <Server size={10} />
+              {hypothesis.gpuValidation.tier}
+              {hypothesis.gpuValidation.physicsValid ? (
+                <Check size={10} />
+              ) : (
+                <X size={10} />
+              )}
+            </span>
+          )}
         </div>
       </div>
 

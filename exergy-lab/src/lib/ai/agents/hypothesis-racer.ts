@@ -30,6 +30,17 @@ import {
   createFeedbackBus,
   type BusConfig,
 } from './feedback-bus'
+import {
+  GPUFeedbackBridge,
+  createGPUBridge,
+  type GPUBridgeConfig,
+} from './gpu-bridge'
+import {
+  GPUValidationPool,
+  createGPUPool,
+  type GPUPoolConfig,
+  type GPUResult,
+} from '@/lib/simulation/gpu-pool'
 import type {
   RacingHypothesis,
   HypGenAgentType,
@@ -55,6 +66,18 @@ export interface RacingArenaConfig {
   evaluatorConfig?: Partial<EvaluationConfig>
   refinementConfig?: Partial<RefinementConfig>
   busConfig?: Partial<BusConfig>
+  gpuPoolConfig?: Partial<GPUPoolConfig>
+  gpuBridgeConfig?: Partial<GPUBridgeConfig>
+  /** Enable GPU validation during mid-race iterations */
+  enableMidRaceGPU: boolean
+  /** Iteration to start GPU validation (default: 2) */
+  gpuValidationStartIteration: number
+  /** Minimum score for GPU validation (default: 6.0) */
+  gpuScoreThreshold: number
+  /** Maximum hypotheses to validate per iteration */
+  maxGPUValidationsPerIteration: number
+  /** Enable GPU pool warm-up at race start */
+  enableGPUWarmUp: boolean
 }
 
 export const DEFAULT_RACING_CONFIG: RacingArenaConfig = {
@@ -63,6 +86,11 @@ export const DEFAULT_RACING_CONFIG: RacingArenaConfig = {
   breakthroughThreshold: 9.0,
   winnersCount: 3,
   targetScore: 9.0,
+  enableMidRaceGPU: true,
+  gpuValidationStartIteration: 2,
+  gpuScoreThreshold: 6.0, // Lower threshold for earlier GPU validation
+  maxGPUValidationsPerIteration: 10, // Increased for batch validation
+  enableGPUWarmUp: true,
 }
 
 export interface RaceState {
@@ -113,6 +141,9 @@ export type RaceEventType =
   | 'iteration_started'
   | 'generation_complete'
   | 'evaluation_complete'
+  | 'gpu_validation_started'
+  | 'gpu_validation_progress'
+  | 'gpu_validation_complete'
   | 'refinement_complete'
   | 'hypothesis_eliminated'
   | 'breakthrough_detected'
@@ -129,6 +160,11 @@ export interface RaceEvent {
   state?: Partial<RaceState>
   message?: string
   timestamp: number
+  /** GPU validation specific fields */
+  gpuTier?: 'T4' | 'A10G' | 'A100'
+  gpuProgress?: number
+  validatedCount?: number
+  gpuCost?: number
 }
 
 export type RaceEventCallback = (event: RaceEvent) => void
@@ -143,6 +179,8 @@ export class HypothesisRacingArena {
   private evaluator: BreakthroughEvaluator
   private refinementAgent: EnhancedRefinementAgent
   private feedbackBus: FeedbackBus
+  private gpuPool: GPUValidationPool
+  private gpuBridge: GPUFeedbackBridge
   private state: RaceState
   private eventCallbacks: RaceEventCallback[] = []
   private abortController: AbortController | null = null
@@ -155,6 +193,10 @@ export class HypothesisRacingArena {
     this.evaluator = createBreakthroughEvaluator(config.evaluatorConfig)
     this.refinementAgent = createEnhancedRefinementAgent(config.refinementConfig)
     this.feedbackBus = createFeedbackBus(config.busConfig)
+
+    // Initialize GPU Pool and Bridge
+    this.gpuPool = createGPUPool(config.gpuPoolConfig)
+    this.gpuBridge = createGPUBridge(this.gpuPool, this.feedbackBus, config.gpuBridgeConfig)
 
     // Initialize state
     this.state = this.createInitialState()
@@ -215,6 +257,19 @@ export class HypothesisRacingArena {
       // Start the feedback bus
       this.feedbackBus.start()
 
+      // Warm up GPU pool if enabled
+      if (this.config.enableMidRaceGPU && this.config.enableGPUWarmUp) {
+        console.log('[HypothesisRacingArena] Warming up GPU pool...')
+        this.emit({
+          type: 'gpu_validation_started',
+          message: 'Warming up GPU instances...',
+          timestamp: Date.now(),
+        })
+        await this.gpuBridge.warmUp('T4', 2)
+        // Schedule A10G warm-up for later iterations
+        setTimeout(() => this.gpuBridge.warmUp('A10G', 1), 30_000)
+      }
+
       // Main racing loop
       for (let iteration = 1; iteration <= this.config.maxIterations; iteration++) {
         // Check for abort
@@ -240,6 +295,18 @@ export class HypothesisRacingArena {
 
         // Phase 3: Process eliminations and breakthroughs
         this.processEvaluationResults(evalResult, iteration)
+
+        // Phase 3.5: GPU validation for promising hypotheses (mid-race)
+        if (this.config.enableMidRaceGPU && iteration >= this.config.gpuValidationStartIteration) {
+          const promisingHypotheses = this.state.activeHypotheses
+            .filter(h => (h.scores?.overall || 0) >= this.config.gpuScoreThreshold)
+            .slice(0, this.config.maxGPUValidationsPerIteration)
+
+          if (promisingHypotheses.length > 0) {
+            console.log(`[HypothesisRacingArena] Running GPU validation on ${promisingHypotheses.length} promising hypotheses`)
+            await this.runMidRaceGPUValidation(promisingHypotheses, iteration)
+          }
+        }
 
         // Phase 4: Generate refinement feedback
         await this.generateRefinementFeedback(problem, iteration)
@@ -298,6 +365,8 @@ export class HypothesisRacingArena {
 
     } finally {
       this.feedbackBus.stop()
+      this.gpuBridge.stop()
+      this.gpuPool.stop()
       this.abortController = null
     }
   }
@@ -556,6 +625,214 @@ export class HypothesisRacingArena {
         iteration
       )
     }
+  }
+
+  /**
+   * Run GPU validation on promising hypotheses during mid-race iterations
+   * Uses the GPU Pool and Bridge for efficient batch validation with caching
+   */
+  private async runMidRaceGPUValidation(
+    hypotheses: RacingHypothesis[],
+    iteration: number
+  ): Promise<void> {
+    // Determine GPU tier based on top hypothesis score
+    const topScore = Math.max(...hypotheses.map(h => h.scores?.overall || 0))
+    const gpuTier = this.gpuPool.selectTierByScore(topScore)
+
+    // Check if GPU pool has capacity
+    if (!this.gpuPool.hasCapacity(gpuTier)) {
+      console.log(`[HypothesisRacingArena] GPU tier ${gpuTier} at capacity, skipping mid-race validation`)
+      return
+    }
+
+    this.emit({
+      type: 'gpu_validation_started',
+      iteration,
+      gpuTier,
+      message: `GPU validating ${hypotheses.length} promising hypotheses on ${gpuTier}`,
+      timestamp: Date.now(),
+    })
+
+    const startTime = Date.now()
+
+    try {
+      // Use GPU Bridge for batch validation
+      const results: GPUResult[] = await this.gpuBridge.queueBatchValidation(hypotheses, { iteration })
+
+      // Apply results to hypotheses
+      for (const result of results) {
+        const hypothesis = hypotheses.find(h => h.id === result.hypothesisId)
+        if (!hypothesis) continue
+
+        // Update hypothesis with GPU validation results
+        hypothesis.gpuValidation = {
+          physicsValid: result.physicsValid,
+          economicallyViable: result.economicallyViable,
+          confidence: result.confidenceScore,
+          tier: result.tier,
+          iteration,
+          durationMs: result.durationMs,
+        }
+
+        // Calculate and apply score adjustment
+        const scoreAdjustment = this.gpuBridge.calculateScoreAdjustment(result)
+        hypothesis.scores.overall = Math.max(0, Math.min(10, hypothesis.scores.overall + scoreAdjustment))
+
+        // Emit individual progress
+        this.emit({
+          type: 'gpu_validation_progress',
+          iteration,
+          gpuTier: result.tier,
+          hypothesisId: result.hypothesisId,
+          message: `${result.physicsValid ? '✓' : '✗'} physics, ${result.economicallyViable ? '✓' : '✗'} economics (${result.fromCache ? 'cached' : 'computed'})`,
+          timestamp: Date.now(),
+        })
+      }
+
+      const totalDuration = Date.now() - startTime
+      const passedCount = results.filter(r => r.physicsValid && r.economicallyViable).length
+      const cachedCount = results.filter(r => r.fromCache).length
+      const totalCost = results.reduce((sum, r) => sum + r.cost, 0)
+
+      this.emit({
+        type: 'gpu_validation_complete',
+        iteration,
+        gpuTier,
+        validatedCount: results.length,
+        gpuCost: totalCost,
+        message: `GPU validation complete: ${passedCount}/${results.length} passed (${cachedCount} cached, ${totalDuration}ms, $${totalCost.toFixed(3)})`,
+        timestamp: Date.now(),
+      })
+
+      console.log(`[HypothesisRacingArena] GPU validation: ${passedCount}/${results.length} passed on ${gpuTier} in ${totalDuration}ms ($${totalCost.toFixed(3)})`)
+
+    } catch (error) {
+      console.error(`[HypothesisRacingArena] GPU batch validation failed:`, error)
+
+      // Mark all hypotheses as unvalidated
+      for (const hypothesis of hypotheses) {
+        hypothesis.gpuValidation = {
+          physicsValid: false,
+          economicallyViable: false,
+          confidence: 0,
+          tier: gpuTier,
+          iteration,
+          durationMs: Date.now() - startTime,
+        }
+      }
+
+      this.emit({
+        type: 'gpu_validation_complete',
+        iteration,
+        gpuTier,
+        validatedCount: 0,
+        gpuCost: 0,
+        message: `GPU validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        timestamp: Date.now(),
+      })
+    }
+  }
+
+  /**
+   * Extract simulation parameters from hypothesis predictions
+   */
+  private extractSimulationParams(hypothesis: RacingHypothesis): Record<string, number> {
+    const params: Record<string, number> = {}
+
+    // Extract from predictions if available
+    if (hypothesis.predictions) {
+      for (const prediction of hypothesis.predictions) {
+        if (prediction.expectedValue !== undefined) {
+          // Use first 20 chars of statement as key, sanitized
+          const key = prediction.statement?.slice(0, 20).replace(/[^a-zA-Z0-9]/g, '_') || 'value'
+          params[key] = typeof prediction.expectedValue === 'number'
+            ? prediction.expectedValue
+            : parseFloat(String(prediction.expectedValue)) || 0
+        }
+      }
+    }
+
+    // Add default parameters for common simulation types
+    if (Object.keys(params).length === 0) {
+      params.efficiency = hypothesis.feasibilityScore || 50
+      params.cost_factor = 1.0
+      params.iterations = 1000
+    }
+
+    return params
+  }
+
+  /**
+   * Determine appropriate simulation type based on hypothesis domain
+   */
+  private determineSimulationType(hypothesis: RacingHypothesis): 'thermodynamic' | 'electrochemical' | 'materials' | 'optimization' {
+    const title = hypothesis.title?.toLowerCase() || ''
+    const statement = hypothesis.statement?.toLowerCase() || ''
+    const combined = `${title} ${statement}`
+
+    // Materials/molecular simulations
+    if (combined.includes('material') || combined.includes('molecular') ||
+        combined.includes('catalyst') || combined.includes('electrode')) {
+      return 'materials'
+    }
+
+    // Electrochemical simulations
+    if (combined.includes('battery') || combined.includes('electrolysis') ||
+        combined.includes('fuel cell') || combined.includes('electrochemical')) {
+      return 'electrochemical'
+    }
+
+    // Optimization/parameter studies
+    if (combined.includes('optimi') || combined.includes('parameter') ||
+        combined.includes('sweep') || combined.includes('sensitivity')) {
+      return 'optimization'
+    }
+
+    // Default to thermodynamic for energy systems
+    return 'thermodynamic'
+  }
+
+  /**
+   * Assess economic viability from simulation results
+   */
+  private assessEconomicViability(
+    result: any,
+    hypothesis: RacingHypothesis
+  ): boolean {
+    // Check if simulation outputs indicate economic viability
+    if (result.outputs?.lcoe !== undefined) {
+      // LCOE should be competitive (< $100/MWh for most clean energy)
+      return result.outputs.lcoe < 100
+    }
+
+    if (result.outputs?.npv !== undefined) {
+      return result.outputs.npv > 0
+    }
+
+    if (result.outputs?.cost_reduction !== undefined) {
+      return result.outputs.cost_reduction > 0.1 // 10% cost reduction
+    }
+
+    // Fall back to hypothesis economic score if available
+    const economicDimension = hypothesis.scores?.dimensions?.get('bc2_cost')
+    if (economicDimension) {
+      return economicDimension.points >= 0.6
+    }
+
+    // Default to true if no economic data available
+    return true
+  }
+
+  /**
+   * Estimate GPU cost based on tier and count
+   */
+  private estimateGPUCost(tier: 'T4' | 'A10G' | 'A100', count: number): number {
+    const costPerRun: Record<string, number> = {
+      'T4': 0.01,
+      'A10G': 0.02,
+      'A100': 0.05,
+    }
+    return costPerRun[tier] * count
   }
 
   /**

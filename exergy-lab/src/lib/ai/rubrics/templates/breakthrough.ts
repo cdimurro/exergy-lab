@@ -654,19 +654,82 @@ function validateTechnicalFeasibility(response: any): ItemScore {
 /**
  * BC10: Existing Literature (0.5 pts)
  * Measures alignment with established research and peer-reviewed support
+ *
+ * Enhanced to use:
+ * 1. Pre-computed literature validation results (if available from LiteratureCrossReferenceValidator)
+ * 2. Supporting evidence from hypothesis
+ * 3. Fallback to keyword matching for quick assessment
  */
 function validateExistingLiterature(response: any): ItemScore {
   const hypothesis = response?.hypothesis || response
   const research = response?.research || hypothesis?.researchContext || {}
 
-  // Check for literature support
+  // Check for pre-computed literature cross-reference validation results
+  // This is populated by LiteratureCrossReferenceValidator during discovery workflow
+  const precomputedValidation = response?.literatureCrossReference ||
+    hypothesis?.literatureValidation ||
+    research?.literatureCrossReference
+
+  if (precomputedValidation && typeof precomputedValidation.overallConfidence === 'number') {
+    // Use pre-computed validation results from LiteratureCrossReferenceValidator
+    const confidence = precomputedValidation.overallConfidence
+    const supportedClaims = precomputedValidation.supportedClaims || 0
+    const contradictedClaims = precomputedValidation.contradictedClaims || 0
+    const totalClaims = precomputedValidation.totalClaims || 1
+
+    let points = 0
+    let reasoning = ''
+
+    if (confidence >= 0.9 && supportedClaims >= 5 && contradictedClaims === 0) {
+      points = 0.5
+      reasoning = `Strong peer-reviewed foundation: ${supportedClaims}/${totalClaims} claims verified (${(confidence * 100).toFixed(0)}% confidence)`
+    } else if (confidence >= 0.7 && supportedClaims >= 3 && contradictedClaims === 0) {
+      points = 0.4
+      reasoning = `Good literature support: ${supportedClaims}/${totalClaims} claims verified`
+    } else if (confidence >= 0.5 && supportedClaims >= 1) {
+      points = 0.3
+      reasoning = `Moderate support: ${supportedClaims}/${totalClaims} claims verified, gaps identified`
+    } else if (supportedClaims > 0) {
+      points = 0.2
+      reasoning = `Limited supporting literature: ${supportedClaims} claim(s) verified`
+    } else {
+      points = 0.1
+      reasoning = 'No claims verified by literature - high risk novel approach'
+    }
+
+    // Penalize contradictions
+    if (contradictedClaims > 0) {
+      points = Math.max(0.1, points - 0.1)
+      reasoning += ` (Warning: ${contradictedClaims} claim(s) contradict existing literature)`
+    }
+
+    return {
+      itemId: 'BC10',
+      points,
+      maxPoints: 0.5,
+      passed: points >= 0.3,
+      reasoning,
+    }
+  }
+
+  // Check for supporting evidence in hypothesis
+  const supportingEvidence = hypothesis?.supportingEvidence || []
+  const evidenceCount = Array.isArray(supportingEvidence) ? supportingEvidence.length : 0
+  const peerReviewedEvidence = supportingEvidence.filter((e: any) =>
+    e.source?.includes('journal') ||
+    e.source?.includes('paper') ||
+    e.isPeerReviewed
+  ).length
+
+  // Check for literature support from research phase
   const citations = research?.citations ||
     hypothesis?.references ||
     hypothesis?.citations || []
   const citationCount = Array.isArray(citations) ? citations.length : 0
 
   const peerReviewedCitations = research?.peerReviewedCitations ||
-    hypothesis?.peerReviewedReferences || 0
+    hypothesis?.peerReviewedReferences ||
+    peerReviewedEvidence || 0
 
   // Check for literature alignment
   const hasSOTAAnalysis = research?.stateOfTheArt ||
@@ -676,7 +739,7 @@ function validateExistingLiterature(response: any): ItemScore {
   const hasContradictions = research?.contradictions ||
     hypothesis?.contradictsPriorArt || false
 
-  // Check for literature keywords
+  // Check for literature keywords in description
   const description = JSON.stringify(hypothesis).toLowerCase()
   const literatureKeywords = {
     peerReviewed: /(peer.?review|journal|published|paper)/i.test(description),
@@ -686,30 +749,32 @@ function validateExistingLiterature(response: any): ItemScore {
   }
   const keywordMatches = Object.values(literatureKeywords).filter(Boolean).length
 
+  // Combine evidence count with citation count
+  const totalSupport = evidenceCount + citationCount
+
   let points = 0
   let reasoning = ''
-  let score = 0
 
-  if ((peerReviewedCitations >= 10 || citationCount >= 20) && hasSOTAAnalysis && !hasContradictions) {
+  if ((peerReviewedCitations >= 10 || totalSupport >= 20) && hasSOTAAnalysis && !hasContradictions) {
     points = 0.5
-    score = 95
-    reasoning = `Strong peer-reviewed foundation: ${citationCount} citations, extends SOTA`
-  } else if ((peerReviewedCitations >= 5 || citationCount >= 10) && hasSOTAAnalysis) {
+    reasoning = `Strong peer-reviewed foundation: ${totalSupport} supporting sources, extends SOTA`
+  } else if ((peerReviewedCitations >= 5 || totalSupport >= 10) && hasSOTAAnalysis) {
     points = 0.4
-    score = 75
-    reasoning = `Good literature support: ${citationCount} citations, some novel elements`
-  } else if (citationCount >= 5 || keywordMatches >= 3) {
+    reasoning = `Good literature support: ${totalSupport} supporting sources, some novel elements`
+  } else if (totalSupport >= 5 || keywordMatches >= 3) {
     points = 0.3
-    score = 55
-    reasoning = `Moderate support: ${citationCount} citations, significant gaps`
-  } else if (citationCount >= 2 || keywordMatches >= 2) {
+    reasoning = `Moderate support: ${totalSupport} supporting sources, significant gaps`
+  } else if (totalSupport >= 2 || keywordMatches >= 2) {
     points = 0.2
-    score = 35
-    reasoning = `Limited supporting literature: ${citationCount} citations`
+    reasoning = `Limited supporting literature: ${totalSupport} supporting sources`
   } else {
     points = 0.1
-    score = 15
     reasoning = 'No prior literature - high risk novel approach'
+  }
+
+  if (hasContradictions) {
+    points = Math.max(0.1, points - 0.1)
+    reasoning += ' (contradicts existing literature)'
   }
 
   return {

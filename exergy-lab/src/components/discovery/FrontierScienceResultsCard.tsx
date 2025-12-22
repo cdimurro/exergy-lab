@@ -32,6 +32,12 @@ import {
   AlertCircle,
   ArrowRight,
   Cpu,
+  Server,
+  Library,
+  CheckCircle,
+  XCircle,
+  AlertTriangle,
+  ExternalLink,
 } from 'lucide-react'
 import { useState, useEffect, useCallback } from 'react'
 import ReactMarkdown from 'react-markdown'
@@ -286,6 +292,65 @@ export function FrontierScienceResultsCard({
             </div>
           </div>
         </div>
+
+        {/* GPU and Literature Validation Badges */}
+        {(result.gpuMetrics || result.literatureValidation) && (
+          <div className="flex flex-wrap gap-3 mt-4">
+            {/* GPU Metrics Badge */}
+            {result.gpuMetrics && (
+              <div className={cn(
+                "flex items-center gap-2 px-3 py-2 rounded-lg border",
+                result.gpuMetrics.tier === 'tier3' ? "bg-purple-500/10 border-purple-500/30" :
+                result.gpuMetrics.tier === 'tier2' ? "bg-blue-500/10 border-blue-500/30" :
+                "bg-gray-500/10 border-gray-500/30"
+              )}>
+                <Server size={16} className={cn(
+                  result.gpuMetrics.tier === 'tier3' ? "text-purple-600" :
+                  result.gpuMetrics.tier === 'tier2' ? "text-blue-600" :
+                  "text-gray-600"
+                )} />
+                <div>
+                  <p className="text-xs font-medium text-foreground">
+                    {result.gpuMetrics.tier === 'tier3' ? 'A100 GPU' :
+                     result.gpuMetrics.tier === 'tier2' ? 'T4 GPU' : 'Analytical'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {result.gpuMetrics.provider}
+                    {result.gpuMetrics.totalCost !== undefined && result.gpuMetrics.totalCost > 0 &&
+                      ` • $${result.gpuMetrics.totalCost.toFixed(2)}`}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Literature Validation Badge */}
+            {result.literatureValidation && (
+              <div className={cn(
+                "flex items-center gap-2 px-3 py-2 rounded-lg border",
+                result.literatureValidation.status === 'validated' ? "bg-emerald-500/10 border-emerald-500/30" :
+                result.literatureValidation.status === 'partial' ? "bg-amber-500/10 border-amber-500/30" :
+                "bg-red-500/10 border-red-500/30"
+              )}>
+                <Library size={16} className={cn(
+                  result.literatureValidation.status === 'validated' ? "text-emerald-600" :
+                  result.literatureValidation.status === 'partial' ? "text-amber-600" :
+                  "text-red-600"
+                )} />
+                <div>
+                  <p className="text-xs font-medium text-foreground">
+                    {result.literatureValidation.status === 'validated' ? 'Literature Validated' :
+                     result.literatureValidation.status === 'partial' ? 'Partial Validation' : 'Needs Review'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {result.literatureValidation.supportedClaims}/{result.literatureValidation.totalClaims} claims supported
+                    {result.literatureValidation.contradictedClaims > 0 &&
+                      ` • ${result.literatureValidation.contradictedClaims} contradicted`}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Main Content Area - Scrollable */}
@@ -405,6 +470,112 @@ export function FrontierScienceResultsCard({
                       <p className="text-sm text-foreground leading-relaxed">{step}</p>
                     </div>
                   ))}
+                </div>
+              </ReportSection>
+            )}
+
+            {/* Literature Validation Details */}
+            {result.literatureValidation && (
+              <ReportSection
+                id="literature-validation"
+                title="Literature Cross-Reference"
+                icon={Library}
+                accentColor={result.literatureValidation.status === 'validated' ? 'emerald' : 'amber'}
+                isExpanded={expandedSections.has('literature-validation')}
+                onToggle={() => toggleSection('literature-validation')}
+              >
+                <div className="space-y-4">
+                  {/* Summary Stats */}
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="p-3 rounded-lg bg-muted/30">
+                      <p className="text-xs text-muted-foreground">Claims Validated</p>
+                      <p className="text-lg font-semibold text-foreground">
+                        {result.literatureValidation.supportedClaims}/{result.literatureValidation.totalClaims}
+                      </p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-muted/30">
+                      <p className="text-xs text-muted-foreground">Confidence</p>
+                      <p className={cn(
+                        "text-lg font-semibold",
+                        result.literatureValidation.confidence >= 0.7 ? "text-emerald-600" :
+                        result.literatureValidation.confidence >= 0.5 ? "text-amber-600" : "text-red-600"
+                      )}>
+                        {(result.literatureValidation.confidence * 100).toFixed(0)}%
+                      </p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-muted/30">
+                      <p className="text-xs text-muted-foreground">Contradictions</p>
+                      <p className={cn(
+                        "text-lg font-semibold",
+                        result.literatureValidation.contradictedClaims === 0 ? "text-emerald-600" : "text-red-600"
+                      )}>
+                        {result.literatureValidation.contradictedClaims}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Supporting Papers */}
+                  {result.literatureValidation.topSupportingPapers && result.literatureValidation.topSupportingPapers.length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-medium text-foreground mb-2 flex items-center gap-2">
+                        <CheckCircle size={14} className="text-emerald-600" />
+                        Supporting Literature
+                      </h4>
+                      <div className="space-y-2">
+                        {result.literatureValidation.topSupportingPapers.slice(0, 5).map((paper, i) => (
+                          <div key={i} className="p-2 rounded-md bg-emerald-500/5 border border-emerald-500/10 text-sm">
+                            <p className="font-medium text-foreground line-clamp-2">{paper.title}</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {paper.authors.slice(0, 3).join(', ')}{paper.authors.length > 3 ? ' et al.' : ''} ({paper.year})
+                            </p>
+                            {paper.doi && (
+                              <a
+                                href={`https://doi.org/${paper.doi}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-blue-600 hover:underline flex items-center gap-1 mt-1"
+                              >
+                                DOI: {paper.doi}
+                                <ExternalLink size={10} />
+                              </a>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Warnings */}
+                  {result.literatureValidation.warnings && result.literatureValidation.warnings.length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-medium text-foreground mb-2 flex items-center gap-2">
+                        <AlertTriangle size={14} className="text-amber-600" />
+                        Validation Warnings
+                      </h4>
+                      <div className="space-y-2">
+                        {result.literatureValidation.warnings.map((warning, i) => (
+                          <div key={i} className="p-2 rounded-md bg-amber-500/10 border border-amber-500/20 text-sm text-foreground">
+                            {warning}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Recommendations */}
+                  {result.literatureValidation.recommendations && result.literatureValidation.recommendations.length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-medium text-foreground mb-2 flex items-center gap-2">
+                        <Lightbulb size={14} className="text-blue-600" />
+                        Recommendations
+                      </h4>
+                      <ul className="space-y-1 text-sm text-muted-foreground list-disc list-inside">
+                        {result.literatureValidation.recommendations.map((rec, i) => (
+                          <li key={i}>{rec}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
               </ReportSection>
             )}
