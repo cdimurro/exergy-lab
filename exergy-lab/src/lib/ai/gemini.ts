@@ -19,7 +19,7 @@ export type GeminiModel = 'flash' | 'flash-lite' | 'pro'
 const MODELS: Record<GeminiModel, string> = {
   'flash-lite': 'gemini-3-flash-preview', // Gemini 3 Flash - fast with Pro-grade reasoning
   flash: 'gemini-3-flash-preview', // Gemini 3 Flash - 3x faster than 2.5 Pro
-  pro: 'gemini-3-pro-preview', // Gemini 3 Pro - Google's most advanced reasoning model
+  pro: 'gemini-3-flash-preview', // Use Flash for all models - most reliable
 }
 
 // Gemini 3 thinking levels for adaptive reasoning depth

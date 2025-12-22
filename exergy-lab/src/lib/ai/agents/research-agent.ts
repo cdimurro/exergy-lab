@@ -111,6 +111,20 @@ export interface ResearchConfig {
   yearRange?: { start: number; end: number }
 }
 
+/**
+ * Progress callback for research phase
+ */
+export type ResearchProgressCallback = (event: ResearchProgressEvent) => void
+
+export interface ResearchProgressEvent {
+  type: 'research_started' | 'query_expanded' | 'source_searching' | 'source_complete' | 'synthesis_started' | 'synthesis_progress' | 'research_complete'
+  message: string
+  source?: string
+  count?: number
+  stage?: 'findings' | 'gaps' | 'cross_domain' | 'state_of_art'
+  timestamp: number
+}
+
 const DEFAULT_CONFIG: ResearchConfig = {
   maxSourcesPerDatabase: 50,
   includePatents: true,
@@ -185,11 +199,17 @@ export class ResearchAgent {
   /**
    * Execute comprehensive research across all sources
    * Uses session-level caching to avoid redundant API calls
+   *
+   * @param query - The research query
+   * @param domain - The domain (e.g., 'clean-energy')
+   * @param hints - Optional refinement hints from previous iterations
+   * @param onProgress - Optional callback for progress events
    */
   async execute(
     query: string,
     domain: string,
-    hints?: RefinementHints
+    hints?: RefinementHints,
+    onProgress?: ResearchProgressCallback
   ): Promise<ResearchResult> {
     // Clear expired entries periodically
     clearExpiredCache()
@@ -213,18 +233,99 @@ export class ResearchAgent {
 
     console.log(`[ResearchAgent] Cache MISS - Starting research for: "${query}" in domain: ${domain}`)
 
+    // Emit research started event
+    onProgress?.({
+      type: 'research_started',
+      message: `Starting comprehensive research for: "${query}"`,
+      timestamp: Date.now(),
+    })
+
     // Generate expanded queries for better coverage
+    onProgress?.({
+      type: 'source_searching',
+      source: 'Query Expansion',
+      message: 'Expanding research query into multiple search variations...',
+      timestamp: Date.now(),
+    })
+
     const expandedQueries = await this.expandQuery(query, domain)
 
+    onProgress?.({
+      type: 'query_expanded',
+      message: `Generated ${expandedQueries.length} query variations for comprehensive coverage`,
+      count: expandedQueries.length,
+      timestamp: Date.now(),
+    })
+
     // Search all sources in parallel - pass hints for targeted improvement
+    // Emit events for each source category
+    onProgress?.({
+      type: 'source_searching',
+      source: 'Academic Databases',
+      message: 'Searching arXiv, OpenAlex, Semantic Scholar, and PubMed...',
+      timestamp: Date.now(),
+    })
+
+    const academicPromise = this.searchAcademicDatabases(expandedQueries, domain, hints)
+      .then(results => {
+        onProgress?.({
+          type: 'source_complete',
+          source: 'Academic Databases',
+          message: `Found ${results.length} relevant academic papers`,
+          count: results.length,
+          timestamp: Date.now(),
+        })
+        return results
+      })
+
+    onProgress?.({
+      type: 'source_searching',
+      source: 'Patent Databases',
+      message: 'Searching USPTO and Google Patents...',
+      timestamp: Date.now(),
+    })
+
+    const patentPromise = this.config.includePatents
+      ? this.searchPatentDatabases(expandedQueries, hints).then(results => {
+          onProgress?.({
+            type: 'source_complete',
+            source: 'Patent Databases',
+            message: `Found ${results.length} relevant patents`,
+            count: results.length,
+            timestamp: Date.now(),
+          })
+          return results
+        })
+      : Promise.resolve([])
+
+    onProgress?.({
+      type: 'source_searching',
+      source: 'Materials Project',
+      message: 'Searching Materials Project database...',
+      timestamp: Date.now(),
+    })
+
+    const materialsPromise = this.config.includeMaterials
+      ? this.searchMaterialsProject(expandedQueries, hints).then(results => {
+          onProgress?.({
+            type: 'source_complete',
+            source: 'Materials Project',
+            message: `Found ${results.length} relevant materials`,
+            count: results.length,
+            timestamp: Date.now(),
+          })
+          return results
+        })
+      : Promise.resolve([])
+
     const [
       academicResults,
       patentResults,
       materialsResults,
     ] = await Promise.all([
-      this.searchAcademicDatabases(expandedQueries, domain, hints),
-      this.config.includePatents ? this.searchPatentDatabases(expandedQueries, hints) : [],
-      this.config.includeMaterials ? this.searchMaterialsProject(expandedQueries, hints) : [],
+      academicPromise,
+      patentPromise,
+      materialsPromise,
     ])
 
     // Combine and deduplicate sources
@@ -236,14 +337,54 @@ export class ResearchAgent {
     // Rank by relevance
     const rankedSources = await this.rankByRelevance(allSources, query)
 
+    // Begin synthesis phase
+    onProgress?.({
+      type: 'synthesis_started',
+      message: `Synthesizing ${rankedSources.length} sources into research insights...`,
+      count: rankedSources.length,
+      timestamp: Date.now(),
+    })
+
     // Extract findings, gaps, and cross-domain insights in parallel for speed
+    onProgress?.({
+      type: 'synthesis_progress',
+      stage: 'findings',
+      message: 'Extracting key quantitative findings from research...',
+      timestamp: Date.now(),
+    })
+
+    const findingsPromise = this.extractKeyFindings(rankedSources, domain, hints)
+
+    onProgress?.({
+      type: 'synthesis_progress',
+      stage: 'cross_domain',
+      message: 'Detecting cross-domain innovation patterns...',
+      timestamp: Date.now(),
+    })
+
+    const crossDomainPromise = this.detectCrossDomainPatterns(rankedSources, domain, hints)
+
     const [keyFindings, crossDomainInsights] = await Promise.all([
-      this.extractKeyFindings(rankedSources, domain, hints),
-      this.detectCrossDomainPatterns(rankedSources, domain, hints),
+      findingsPromise,
+      crossDomainPromise,
     ])
+
+    onProgress?.({
+      type: 'synthesis_progress',
+      stage: 'gaps',
+      message: `Analyzing ${keyFindings.length} findings to identify technological gaps...`,
+      timestamp: Date.now(),
+    })
 
     // Gaps depends on findings, so run separately
     const gaps = await this.identifyGaps(rankedSources, keyFindings, domain, hints)
+
+    onProgress?.({
+      type: 'synthesis_progress',
+      stage: 'state_of_art',
+      message: 'Identifying state-of-the-art performance metrics...',
+      timestamp: Date.now(),
+    })
 
     // Identify state-of-the-art metrics (depends on findings)
     const stateOfTheArt = await this.identifyStateOfTheArt(keyFindings, domain)
@@ -271,6 +412,14 @@ export class ResearchAgent {
         timestamp: new Date(),
       },
     }
+
+    // Emit research complete event
+    onProgress?.({
+      type: 'research_complete',
+      message: `Research complete: ${rankedSources.length} sources, ${keyFindings.length} findings, ${gaps.length} gaps identified`,
+      count: rankedSources.length,
+      timestamp: Date.now(),
+    })
 
     // Cache the result for future use
     researchCache.set(cacheKey, {

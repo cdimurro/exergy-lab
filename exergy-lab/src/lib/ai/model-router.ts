@@ -47,32 +47,35 @@ export type DiscoveryPhase =
  * - 'medium': Analysis and pattern matching tasks
  * - 'low': Formula-based or filtering tasks
  * - 'minimal': Simple transformations
+ *
+ * v0.0.2 OPTIMIZATION: Reduced thinking levels where possible
+ * 'medium' is often sufficient - 'high' reserved for critical decisions
  */
 const PHASE_THINKING_LEVELS: Record<string, ThinkingLevel> = {
-  // Discovery phases
-  'research': 'medium',      // Data gathering doesn't need deep reasoning
+  // Discovery phases (v0.0.2 optimized)
+  'research': 'low',         // Reduced from 'medium' - mostly data gathering
   'synthesis': 'medium',     // Pattern matching and summarization
-  'hypothesis': 'high',      // Creative, needs deep thinking
+  'hypothesis': 'medium',    // Reduced from 'high' - creative but structured
   'screening': 'low',        // Mostly filtering
-  'experiment': 'high',      // Safety-critical, needs care
-  'simulation': 'medium',    // Computational, not reasoning-heavy
+  'experiment': 'medium',    // Reduced from 'high' - structured design
+  'simulation': 'low',       // Reduced from 'medium' - computational
   'exergy': 'low',           // Formula-based calculation
   'tea': 'low',              // Financial formulas
-  'patent': 'medium',        // Search + analysis
-  'validation': 'high',      // Critical thinking
-  'judge': 'high',           // Grading requires rigor
-  'rubric_eval': 'high',     // Evaluation requires rigor
+  'patent': 'low',           // Reduced from 'medium' - search + analysis
+  'validation': 'medium',    // Reduced from 'high' - still needs rigor
+  'judge': 'medium',         // Reduced from 'high' - structured scoring
+  'rubric_eval': 'medium',   // Reduced from 'high' - structured scoring
   'publication': 'medium',   // Writing/formatting
 
-  // General AI tasks
+  // General AI tasks (v0.0.2 optimized)
   'search-expand': 'low',
   'search-rank': 'low',
-  'tea-insights': 'medium',
+  'tea-insights': 'low',     // Reduced from 'medium'
   'tea-extract': 'low',
-  'experiment-design': 'high',
-  'experiment-failure': 'high',
-  'discovery': 'high',
-  'simulation-predict': 'medium',
+  'experiment-design': 'medium', // Reduced from 'high'
+  'experiment-failure': 'medium', // Reduced from 'high'
+  'discovery': 'medium',     // Reduced from 'high' - general discovery
+  'simulation-predict': 'low', // Reduced from 'medium'
   'summarize': 'low',
 }
 
@@ -90,33 +93,36 @@ export function getThinkingLevel(taskOrPhase: string): ThinkingLevel {
 /**
  * Maximum output tokens per phase/task
  * Lower budgets for formula-based tasks, higher for creative tasks
+ *
+ * v0.0.2 OPTIMIZATION: Reduced budgets by ~35% to minimize costs
+ * Target: $0.50-$1.00 per discovery run
  */
 const PHASE_TOKEN_BUDGETS: Record<string, number> = {
-  // Discovery phases
-  'research': 4000,
-  'synthesis': 3000,
-  'hypothesis': 6000,
-  'screening': 2000,
-  'experiment': 5000,
-  'simulation': 4000,
-  'exergy': 2000,
-  'tea': 2000,
-  'patent': 3000,
-  'validation': 4000,
-  'judge': 3000,
-  'rubric_eval': 3000,
-  'publication': 5000,
+  // Discovery phases (v0.0.2 optimized)
+  'research': 2500,      // Reduced from 4000 - synthesis is separate
+  'synthesis': 2000,     // Reduced from 3000 - more focused output
+  'hypothesis': 4000,    // Reduced from 6000 - quality over quantity
+  'screening': 1500,     // Reduced from 2000 - simple filtering
+  'experiment': 4000,    // Reduced from 5000 - focused design
+  'simulation': 3000,    // Reduced from 4000 - structured output
+  'exergy': 1500,        // Reduced from 2000 - formula results
+  'tea': 1500,           // Reduced from 2000 - financial metrics
+  'patent': 2500,        // Reduced from 3000 - summary focus
+  'validation': 3000,    // Reduced from 4000 - structured feedback
+  'judge': 2500,         // Reduced from 3000 - scoring + brief reasoning
+  'rubric_eval': 2500,   // Reduced from 3000 - scoring + brief reasoning
+  'publication': 4000,   // Reduced from 5000 - executive summary focus
 
-  // General AI tasks
-  'search-expand': 500,
-  'search-rank': 1000,
-  'tea-insights': 2000,
-  'tea-extract': 1500,
-  'experiment-design': 5000,
-  'experiment-failure': 3000,
-  'discovery': 6000,
-  'simulation-predict': 2000,
-  'summarize': 1000,
+  // General AI tasks (v0.0.2 optimized)
+  'search-expand': 400,           // Reduced from 500
+  'search-rank': 800,             // Reduced from 1000
+  'tea-insights': 1500,           // Reduced from 2000
+  'tea-extract': 1200,            // Reduced from 1500
+  'experiment-design': 4000,      // Reduced from 5000
+  'experiment-failure': 2500,     // Reduced from 3000
+  'discovery': 4000,              // Reduced from 6000 - biggest cost saver
+  'simulation-predict': 1500,     // Reduced from 2000
+  'summarize': 800,               // Reduced from 1000
 }
 
 /**

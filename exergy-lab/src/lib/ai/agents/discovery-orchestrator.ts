@@ -1240,57 +1240,35 @@ export class DiscoveryOrchestrator {
 
   /**
    * Analyze patent landscape with optional refinement hints
+   *
+   * Note: Currently returns placeholder data. Real USPTO PatentsView API
+   * integration pending. The _dataSource field indicates data origin.
    */
   private async analyzePatentLandscape(research: any, hypothesis: any, hints?: RefinementHints): Promise<any> {
-    // Check if hints suggest we need more patent data
-    const needsMorePatents = hints?.failedCriteria?.some(c => c.id.includes('VC5'))
+    // TODO: Integrate with USPTO PatentsView API for real patent data
+    // For now, return placeholder analysis with clear data source indicator
 
-    // For now, return mock patent analysis
-    // TODO: Integrate with USPTO/Google Patents adapters
-    const basePatents = [
-      {
-        id: 'US12345678',
-        title: 'Related technology patent',
-        holder: 'Clean Energy Corp',
-        year: 2023,
-        relevance: 'moderate',
-      },
-    ]
-
-    // Add more patents if needed for higher scores
-    if (needsMorePatents) {
-      return {
-        existingPatents: [
-          ...basePatents,
-          { id: 'US23456789', title: 'Energy storage system', holder: 'TechCo', year: 2022, relevance: 'high' },
-          { id: 'US34567890', title: 'Efficiency optimization', holder: 'GreenTech', year: 2021, relevance: 'moderate' },
-          { id: 'EP1234567', title: 'European related patent', holder: 'EuroEnergy', year: 2023, relevance: 'low' },
-          { id: 'WO2023001234', title: 'International filing', holder: 'GlobalPower', year: 2023, relevance: 'moderate' },
-        ],
-        freedomToOperate: {
-          assessment: 'detailed',
-          clear: true,
-          risks: ['Minor overlap with US12345678'],
-          recommendations: ['Consider licensing agreement', 'Design around patent claims'],
-        },
-        patentability: {
-          score: 7,
-          assessment: 'Potentially patentable',
-          novelElements: ['Novel combination of techniques', 'Improved efficiency method'],
-          priorArtGaps: ['No prior art for specific configuration'],
-        },
-        keyPlayers: [
-          { name: 'Clean Energy Corp', patents: 15, focus: 'Storage' },
-          { name: 'TechCo', patents: 23, focus: 'Optimization' },
-          { name: 'GreenTech', patents: 8, focus: 'Efficiency' },
-        ],
-      }
-    }
+    const hypothesisTitle = hypothesis?.statement?.slice(0, 50) || 'hypothesis'
 
     return {
-      existingPatents: basePatents,
-      freedomToOperate: { assessment: 'preliminary', clear: true },
-      patentability: { score: 7, assessment: 'Potentially patentable' },
+      _dataSource: 'placeholder',
+      _notice: 'Patent analysis unavailable - USPTO API integration pending',
+      existingPatents: [],
+      freedomToOperate: {
+        assessment: 'unavailable',
+        clear: null,
+        risks: [],
+        recommendations: [
+          'Conduct manual patent search before proceeding',
+          'Consult patent attorney for freedom-to-operate analysis',
+        ],
+      },
+      patentability: {
+        score: null,
+        assessment: `Patent landscape analysis for "${hypothesisTitle}..." requires USPTO API integration`,
+        novelElements: [],
+        priorArtGaps: [],
+      },
       keyPlayers: [],
     }
   }
