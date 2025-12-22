@@ -26,6 +26,12 @@ export * from './pfd-generator'
 export * from './equipment-specs'
 export * from './models'
 
+// Report Generation (Sprint 4)
+export * from './pdf-report-generator'
+export * from './visualizations'
+export * from './table-generator'
+export * from './report-templates'
+
 // Re-export commonly used types
 export type {
   TEAInput_v2,
