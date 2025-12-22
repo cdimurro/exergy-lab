@@ -392,7 +392,12 @@ export class AgentPool {
       }
 
       try {
-        const refinedHypothesis = await agent.refine(hypothesis, hypothesisFeedback, context)
+        // Bug 2.2 fix: Include previousFeedback in context for each hypothesis
+        const hypothesisContext: GenerationContext = {
+          ...context,
+          previousFeedback: hypothesisFeedback,
+        }
+        const refinedHypothesis = await agent.refine(hypothesis, hypothesisFeedback, hypothesisContext)
         refined.push(refinedHypothesis)
       } catch (error) {
         console.error(`[AgentPool] Failed to refine ${hypothesis.id}:`, error)

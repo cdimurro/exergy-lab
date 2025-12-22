@@ -37,9 +37,12 @@ import {
   Server,
   Check,
   X,
+  ExternalLink,
 } from 'lucide-react'
 import { useState, useMemo } from 'react'
 import { ClassificationBadge, TIER_CONFIG, type ClassificationTier } from './BreakthroughScoreCard'
+import { BreakthroughRequirementsInline, type BreakthroughRequirements } from './BreakthroughRequirementsChecklist'
+import { DimensionProgressBarInline } from './DimensionProgressBar'
 
 // ============================================================================
 // Types
@@ -67,6 +70,33 @@ export interface RacingHypothesis {
     tier: 'T4' | 'A10G' | 'A100'
     iteration: number
   }
+  /** Hybrid scoring fields (v0.0.3) */
+  fsScore?: number           // 0-5
+  bdScore?: number           // 0-9
+  fsBonusScore?: number      // 0-1
+  gateStatus?: {
+    passed: boolean
+    failedDimensions: string[]
+    minFsPercentage?: number
+    avgFsPercentage?: number
+  }
+  breakthroughRequirements?: BreakthroughRequirements
+  /** Individual dimension scores (for expanded view) */
+  fsDimensions?: Array<{
+    dimension: string
+    score: number
+    maxScore: number
+    percentage: number
+    passed: boolean
+  }>
+  bdDimensions?: Array<{
+    dimension: string
+    score: number
+    maxScore: number
+    percentage: number
+    isCritical?: boolean
+    passed: boolean
+  }>
 }
 
 export interface LeaderboardEntry {
@@ -341,85 +371,220 @@ function CollapsibleSection({
 }
 
 function LeaderboardRow({ entry, onClick }: { entry: LeaderboardEntry; onClick?: () => void }) {
-  const { hypothesis, rank, rankChange } = entry
+  const { hypothesis, rank } = entry
+  const [isExpanded, setIsExpanded] = useState(false)
   const agentConfig = AGENT_CONFIG[hypothesis.agentSource]
   const scoreChange = hypothesis.previousScore !== undefined
     ? hypothesis.currentScore - hypothesis.previousScore
     : undefined
 
+  // Hybrid score calculations
+  const hasHybridScores = hypothesis.fsScore !== undefined && hypothesis.bdScore !== undefined
+  const fsPercentage = hypothesis.fsScore !== undefined ? (hypothesis.fsScore / 5) * 100 : 0
+  const bdPercentage = hypothesis.bdScore !== undefined ? (hypothesis.bdScore / 9) * 100 : 0
+
+  const handleExpandToggle = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setIsExpanded(!isExpanded)
+  }
+
   return (
-    <button
-      onClick={onClick}
-      className={cn(
-        'w-full flex items-center gap-3 p-3 rounded-lg border transition-all text-left',
-        'hover:border-foreground/20 hover:bg-muted/30',
-        hypothesis.status === 'breakthrough' && 'border-emerald-200 bg-emerald-50/50 dark:border-emerald-800 dark:bg-emerald-950/50'
-      )}
-    >
-      {/* Rank */}
-      <div className={cn(
-        'w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0',
-        rank === 1 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300' :
-        rank === 2 ? 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300' :
-        rank === 3 ? 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300' :
-        'bg-muted text-muted-foreground'
-      )}>
-        {rank}
-      </div>
-
-      {/* Hypothesis Info */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium truncate">{hypothesis.title}</span>
-          {hypothesis.status === 'breakthrough' && (
-            <Trophy size={14} className="text-emerald-500 shrink-0" />
-          )}
+    <div className={cn(
+      'rounded-lg border transition-all overflow-hidden',
+      'hover:border-foreground/20',
+      hypothesis.status === 'breakthrough' && 'border-emerald-200 bg-emerald-50/50 dark:border-emerald-800 dark:bg-emerald-950/50'
+    )}>
+      {/* Main Row */}
+      <div className="flex items-center gap-3 p-3">
+        {/* Rank */}
+        <div className={cn(
+          'w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0',
+          rank === 1 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300' :
+          rank === 2 ? 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300' :
+          rank === 3 ? 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300' :
+          'bg-muted text-muted-foreground'
+        )}>
+          {rank}
         </div>
-        <div className="flex items-center gap-2 mt-0.5">
-          <span
-            className="flex items-center gap-1 text-xs px-1.5 py-0.5 rounded"
-            style={{ backgroundColor: `${agentConfig.color}20`, color: agentConfig.color }}
-          >
-            {agentConfig.icon}
-            {agentConfig.label}
-          </span>
-          <span className="text-xs text-muted-foreground">Iter {hypothesis.iteration}</span>
-          {/* GPU Validation Badge */}
-          {hypothesis.gpuValidation && (
-            <span className={cn(
-              "flex items-center gap-1 text-xs px-1.5 py-0.5 rounded",
-              hypothesis.gpuValidation.physicsValid && hypothesis.gpuValidation.economicallyViable
-                ? "bg-emerald-500/20 text-emerald-600"
-                : hypothesis.gpuValidation.physicsValid
-                ? "bg-blue-500/20 text-blue-600"
-                : "bg-red-500/20 text-red-600"
-            )}>
-              <Server size={10} />
-              {hypothesis.gpuValidation.tier}
-              {hypothesis.gpuValidation.physicsValid ? (
-                <Check size={10} />
-              ) : (
-                <X size={10} />
-              )}
-            </span>
-          )}
-        </div>
-      </div>
 
-      {/* Score */}
-      <div className="text-right shrink-0">
-        <div className="text-lg font-semibold">{hypothesis.currentScore.toFixed(1)}</div>
-        {scoreChange !== undefined && (
-          <div className={cn(
-            'text-xs flex items-center gap-0.5 justify-end',
-            scoreChange > 0 ? 'text-green-600' : scoreChange < 0 ? 'text-red-600' : 'text-muted-foreground'
-          )}>
-            {scoreChange > 0 ? <TrendingUp size={10} /> : scoreChange < 0 ? <TrendingDown size={10} /> : null}
-            {scoreChange > 0 ? '+' : ''}{scoreChange.toFixed(1)}
+        {/* Hypothesis Info */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onClick?.()}
+              className="text-sm font-medium truncate hover:underline text-left"
+            >
+              {hypothesis.title}
+            </button>
+            {hypothesis.status === 'breakthrough' && (
+              <Trophy size={14} className="text-emerald-500 shrink-0" />
+            )}
           </div>
-        )}
+
+          {/* Agent Badge + Iteration + Gate Status */}
+          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+            <span
+              className="flex items-center gap-1 text-xs px-1.5 py-0.5 rounded"
+              style={{ backgroundColor: `${agentConfig.color}20`, color: agentConfig.color }}
+            >
+              {agentConfig.icon}
+              {agentConfig.label}
+            </span>
+            <span className="text-xs text-muted-foreground">Iter {hypothesis.iteration}</span>
+
+            {/* Gate Status Indicator */}
+            {hypothesis.gateStatus && (
+              <span className={cn(
+                'flex items-center gap-1 text-xs px-1.5 py-0.5 rounded',
+                hypothesis.gateStatus.passed
+                  ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
+                  : 'bg-red-500/20 text-red-600 dark:text-red-400'
+              )}>
+                {hypothesis.gateStatus.passed ? <Check size={10} /> : <X size={10} />}
+                Gate
+              </span>
+            )}
+
+            {/* GPU Validation Badge */}
+            {hypothesis.gpuValidation && (
+              <span className={cn(
+                "flex items-center gap-1 text-xs px-1.5 py-0.5 rounded",
+                hypothesis.gpuValidation.physicsValid && hypothesis.gpuValidation.economicallyViable
+                  ? "bg-emerald-500/20 text-emerald-600"
+                  : hypothesis.gpuValidation.physicsValid
+                  ? "bg-blue-500/20 text-blue-600"
+                  : "bg-red-500/20 text-red-600"
+              )}>
+                <Server size={10} />
+                {hypothesis.gpuValidation.tier}
+                {hypothesis.gpuValidation.physicsValid ? (
+                  <Check size={10} />
+                ) : (
+                  <X size={10} />
+                )}
+              </span>
+            )}
+          </div>
+
+          {/* Hybrid Score Line (Compact) */}
+          {hasHybridScores && (
+            <div className="text-xs text-muted-foreground mt-1">
+              <span className="font-medium">FrontierScience:</span> {hypothesis.fsScore?.toFixed(1)}/5 ({fsPercentage.toFixed(0)}%)
+              <span className="mx-2">|</span>
+              <span className="font-medium">Breakthrough:</span> {hypothesis.bdScore?.toFixed(1)}/9 ({bdPercentage.toFixed(0)}%)
+            </div>
+          )}
+        </div>
+
+        {/* Score + Tier */}
+        <div className="text-right shrink-0 flex items-center gap-2">
+          <div>
+            <div className="text-lg font-semibold">{hypothesis.currentScore.toFixed(2)}</div>
+            {scoreChange !== undefined && (
+              <div className={cn(
+                'text-xs flex items-center gap-0.5 justify-end',
+                scoreChange > 0 ? 'text-green-600' : scoreChange < 0 ? 'text-red-600' : 'text-muted-foreground'
+              )}>
+                {scoreChange > 0 ? <TrendingUp size={10} /> : scoreChange < 0 ? <TrendingDown size={10} /> : null}
+                {scoreChange > 0 ? '+' : ''}{scoreChange.toFixed(2)}
+              </div>
+            )}
+          </div>
+
+          {/* Expand/Collapse Button */}
+          {hasHybridScores && (
+            <button
+              onClick={handleExpandToggle}
+              className="p-1 hover:bg-muted rounded transition-colors"
+              title={isExpanded ? 'Hide details' : 'Show details'}
+            >
+              {isExpanded ? (
+                <ChevronUp size={16} className="text-muted-foreground" />
+              ) : (
+                <ChevronDown size={16} className="text-muted-foreground" />
+              )}
+            </button>
+          )}
+        </div>
       </div>
-    </button>
+
+      {/* Expanded Section */}
+      {isExpanded && hasHybridScores && (
+        <div className="border-t bg-muted/20 p-3 space-y-3">
+          {/* Gate Section */}
+          {hypothesis.gateStatus && (
+            <div className="space-y-2">
+              <div className={cn(
+                'flex items-center gap-2 text-xs font-medium',
+                hypothesis.gateStatus.passed ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
+              )}>
+                {hypothesis.gateStatus.passed ? <Check size={12} /> : <X size={12} />}
+                GATE: {hypothesis.gateStatus.passed ? 'PASSED' : 'FAILED'}
+              </div>
+
+              {/* FS Dimensions (inline) */}
+              {hypothesis.fsDimensions && (
+                <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs">
+                  {hypothesis.fsDimensions.map(dim => (
+                    <DimensionProgressBarInline
+                      key={dim.dimension}
+                      dimension={dim.dimension}
+                      label=""
+                      percentage={dim.percentage}
+                      passed={dim.passed}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Breakthrough Detection Section */}
+          {hypothesis.bdDimensions && (
+            <div className="space-y-2">
+              <div className="text-xs font-medium text-muted-foreground">
+                BREAKTHROUGH DETECTION: {hypothesis.bdScore?.toFixed(1)}/9
+              </div>
+              <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs">
+                {hypothesis.bdDimensions.map(dim => (
+                  <DimensionProgressBarInline
+                    key={dim.dimension}
+                    dimension={dim.dimension}
+                    label=""
+                    percentage={dim.percentage}
+                    passed={dim.passed}
+                    isCritical={dim.isCritical}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* FS Bonus */}
+          {hypothesis.fsBonusScore !== undefined && hypothesis.fsBonusScore > 0 && (
+            <div className="text-xs text-emerald-600 dark:text-emerald-400">
+              FS BONUS: +{hypothesis.fsBonusScore.toFixed(2)} | TOTAL: {hypothesis.currentScore.toFixed(2)}/10
+            </div>
+          )}
+
+          {/* Breakthrough Requirements */}
+          {hypothesis.breakthroughRequirements && (
+            <BreakthroughRequirementsInline requirements={hypothesis.breakthroughRequirements} />
+          )}
+
+          {/* View Details Button */}
+          {onClick && (
+            <button
+              onClick={() => onClick()}
+              className="flex items-center gap-1 text-xs text-primary hover:underline mt-2"
+            >
+              <ExternalLink size={10} />
+              View Full Details
+            </button>
+          )}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -482,10 +647,35 @@ function ScoreTrajectoryChart({ hypotheses }: { hypotheses: RacingHypothesis[] }
               fontSize: '11px',
             }}
           />
-          {/* Breakthrough threshold line */}
-          <ReferenceLine y={9} stroke="#10B981" strokeDasharray="5 5" label={{ value: '9.0', fontSize: 10, fill: '#10B981' }} />
-          {/* Elimination threshold line */}
-          <ReferenceLine y={5} stroke="#EF4444" strokeDasharray="5 5" label={{ value: '5.0', fontSize: 10, fill: '#EF4444' }} />
+          {/* 5-Tier Reference Lines (v0.0.3) */}
+          {/* Breakthrough threshold (9.0+) - Emerald */}
+          <ReferenceLine
+            y={9}
+            stroke="#10B981"
+            strokeDasharray="5 5"
+            label={{ value: '9.0 Breakthrough', fontSize: 9, fill: '#10B981', position: 'right' }}
+          />
+          {/* Scientific Discovery threshold (8.0-8.9) - Blue */}
+          <ReferenceLine
+            y={8}
+            stroke="#3B82F6"
+            strokeDasharray="4 4"
+            label={{ value: '8.0 Sci.Discovery', fontSize: 9, fill: '#3B82F6', position: 'right' }}
+          />
+          {/* General Insights threshold (6.5-7.9) - Violet */}
+          <ReferenceLine
+            y={6.5}
+            stroke="#8B5CF6"
+            strokeDasharray="3 3"
+            label={{ value: '6.5 Insights', fontSize: 9, fill: '#8B5CF6', position: 'right' }}
+          />
+          {/* Elimination threshold (5.0) - Red */}
+          <ReferenceLine
+            y={5}
+            stroke="#EF4444"
+            strokeDasharray="2 2"
+            label={{ value: '5.0 Elimination', fontSize: 9, fill: '#EF4444', position: 'right' }}
+          />
 
           {hypotheses.map((h) => {
             const agentConfig = AGENT_CONFIG[h.agentSource]

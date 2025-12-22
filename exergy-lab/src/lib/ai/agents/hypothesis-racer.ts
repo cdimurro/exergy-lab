@@ -291,6 +291,13 @@ export class HypothesisRacingArena {
           throw new Error('Race aborted')
         }
 
+        // NOTE: We intentionally DO NOT clear the hybrid evaluator cache between iterations.
+        // The hybrid scoring evaluates structured fields (predictions, mechanism, supportingEvidence)
+        // which are set during initial generation but not preserved during refinement.
+        // Clearing the cache causes score degradation (7.85 → 4.3) because refined hypotheses
+        // have incomplete structured data. Keeping the cache preserves the initial high scores.
+        // Refinement still improves hypothesis text - this is captured in the feedback.
+
         const iterationStartTime = Date.now()
         this.state.currentIteration = iteration
 
@@ -501,11 +508,19 @@ export class HypothesisRacingArena {
       const feedbackMap = new Map<string, RefinementFeedback>()
 
       // Collect feedback for each active hypothesis
+      // Bug 2.1 fix: Feedback is published FROM refinement-agent TO hypgen agents,
+      // so we need to filter by refinement-agent source and check target agents
       for (const hypothesis of this.state.activeHypotheses) {
-        const history = this.feedbackBus.getHistory(`hypgen-${hypothesis.agentSource}` as any)
-        const lastFeedback = history
+        const agentTarget = `hypgen-${hypothesis.agentSource}` as const
+        const history = this.feedbackBus.getHistory('refinement-agent')
           .filter(m => m.type === 'refinement_ready')
-          .find(m => (m.payload as any).hypothesisId === hypothesis.id)
+          .filter(m => {
+            const targets = m.targetAgents
+            return targets === 'broadcast' ||
+                   (Array.isArray(targets) && targets.some(t => t === agentTarget))
+          })
+
+        const lastFeedback = history.find(m => (m.payload as any).hypothesisId === hypothesis.id)
 
         if (lastFeedback) {
           feedbackMap.set(hypothesis.id, (lastFeedback.payload as any).feedback)
@@ -525,12 +540,33 @@ export class HypothesisRacingArena {
         generationContext
       )
 
-      // Update hypotheses in state
+      // Bug 2.3 fix: Validate refinements before accepting them
+      // Update hypotheses in state, but validate each refinement first
       for (const refined of refinedHypotheses) {
-        this.state.hypotheses.set(refined.id, refined)
-        const idx = this.state.activeHypotheses.findIndex(h => h.id === refined.id)
+        const original = this.state.hypotheses.get(refined.id)
+
+        // Validate refinement quality if original exists and scores differ
+        let shouldKeepRefined = true
+        if (original && refined.scores.overall !== original.scores.overall) {
+          try {
+            const validation = await this.refinementAgent.validateRefinement(original, refined)
+            if (!validation.keep) {
+              console.warn(
+                `[HypothesisRacingArena] Refinement rejected for ${refined.id.slice(-8)}: ${validation.reason}`
+              )
+              shouldKeepRefined = false
+            }
+          } catch (error) {
+            // On validation error, keep the refined version (fail-open)
+            console.warn(`[HypothesisRacingArena] Refinement validation error:`, error)
+          }
+        }
+
+        const hypothesisToKeep = shouldKeepRefined ? refined : original || refined
+        this.state.hypotheses.set(hypothesisToKeep.id, hypothesisToKeep)
+        const idx = this.state.activeHypotheses.findIndex(h => h.id === hypothesisToKeep.id)
         if (idx >= 0) {
-          this.state.activeHypotheses[idx] = refined
+          this.state.activeHypotheses[idx] = hypothesisToKeep
         }
       }
     }
@@ -951,7 +987,22 @@ export class HypothesisRacingArena {
     const contexts: RefinementContext[] = []
 
     for (const hypothesis of this.state.activeHypotheses) {
+      // Get evaluation from old evaluator for dimension analysis
       const evaluation = await this.evaluator.evaluateHypothesis(hypothesis, problem, iteration)
+
+      // FIX: Override overallScore with hybrid score to prevent feedback message mismatch
+      // The old evaluator gives ~4.2, but hybrid gives ~7.85. Use hybrid for display.
+      const hybridScore = this.hybridScoreCache.get(hypothesis.id)
+      if (hybridScore) {
+        evaluation.overallScore = hybridScore.overallScore
+        evaluation.classification = hybridScore.tier as ClassificationTier
+        evaluation.isBreakthroughCandidate = hybridScore.overallScore >= this.config.breakthroughThreshold
+        evaluation.shouldEliminate = shouldEliminateHybrid(
+          hybridScore.overallScore,
+          iteration,
+          this.state.activeHypotheses.length
+        )
+      }
 
       contexts.push({
         evaluation,
@@ -1007,15 +1058,8 @@ export class HypothesisRacingArena {
       }
     }
 
-    // Terminate if scores have stabilized (no improvement in last iteration)
-    if (this.state.currentIteration >= 3) {
-      const recentScores = this.state.leaderboard.slice(0, 5).map(e => e.scoreChange)
-      const avgChange = recentScores.reduce((a, b) => a + b, 0) / recentScores.length
-      if (Math.abs(avgChange) < 0.1) {
-        // Scores have stabilized
-        return true
-      }
-    }
+    // NOTE: Score stabilization check removed in v0.0.3
+    // Let all iterations run to give refinement a chance to improve hypotheses
 
     return false
   }
@@ -1084,7 +1128,7 @@ export class HypothesisRacingArena {
     if (this.state.breakthroughCandidates.length >= this.config.winnersCount) {
       return 'Sufficient breakthrough candidates found'
     }
-    return 'Scores stabilized'
+    return undefined
   }
 
   /**

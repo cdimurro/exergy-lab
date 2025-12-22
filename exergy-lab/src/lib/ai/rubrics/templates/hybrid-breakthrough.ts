@@ -23,6 +23,10 @@ import {
   type HybridClassificationTier,
   FS_DIMENSION_CONFIGS,
   BD_DIMENSION_CONFIGS,
+  FS_GATE_THRESHOLD,
+  FS_BONUS_MAX,
+  BD_MAX_SCORE,
+  BD_DIMENSION_WEIGHTS,
   getClassificationTier,
   getTierConfig,
 } from '../types-hybrid-breakthrough'
@@ -701,7 +705,14 @@ export function validateBD7(hypothesis: RacingHypothesis): HybridDimensionScore 
 // =============================================================================
 
 /**
- * Validate a hypothesis using the hybrid two-phase scoring system
+ * Validate a hypothesis using the CALIBRATED Gate + Score Model (v0.0.3)
+ *
+ * Scoring Architecture:
+ * 1. GATE: All FS dimensions must score ≥60% to pass
+ * 2. SCORE: BD dimensions weighted by breakthrough correlation (9.0 pts max)
+ * 3. BONUS: FS excellence adds bonus (0-1.0 pts)
+ *
+ * Total = BD_Score + FS_Bonus = Max 10.0
  *
  * @param hypothesis - RacingHypothesis to evaluate
  * @returns Complete HybridBreakthroughScore with all dimensions
@@ -709,7 +720,9 @@ export function validateBD7(hypothesis: RacingHypothesis): HybridDimensionScore 
 export function validateHybridBreakthrough(hypothesis: RacingHypothesis): HybridBreakthroughScore {
   const startTime = Date.now()
 
-  // Phase 1: FrontierScience Foundation (5.0 pts)
+  // =========================================================================
+  // Phase 1: FrontierScience GATE (all dimensions must pass ≥60%)
+  // =========================================================================
   const fs1 = validateFS1(hypothesis)
   const fs2 = validateFS2(hypothesis)
   const fs3 = validateFS3(hypothesis)
@@ -727,7 +740,19 @@ export function validateHybridBreakthrough(hypothesis: RacingHypothesis): Hybrid
   const fsScore = fs1.score + fs2.score + fs3.score + fs4.score + fs5.score
   const fsPercentage = (fsScore / 5.0) * 100
 
-  // Phase 2: Breakthrough Detection (5.0 pts)
+  // Check FS gate: all dimensions must pass threshold (60%)
+  const fsDimArray = [fs1, fs2, fs3, fs4, fs5]
+  const fsPercentages = fsDimArray.map(d => d.percentage)
+  const minFsPercentage = Math.min(...fsPercentages)
+  const avgFsPercentage = fsPercentages.reduce((a, b) => a + b, 0) / fsPercentages.length
+  const failedDimensions = fsDimArray
+    .filter(d => d.percentage < FS_GATE_THRESHOLD * 100)
+    .map(d => d.dimension as FrontierScienceDimension)
+  const gatePass = failedDimensions.length === 0
+
+  // =========================================================================
+  // Phase 2: Breakthrough Detection SCORE (9.0 pts max, calibrated weights)
+  // =========================================================================
   const bd1 = validateBD1(hypothesis)
   const bd2 = validateBD2(hypothesis)
   const bd3 = validateBD3(hypothesis)
@@ -746,36 +771,59 @@ export function validateHybridBreakthrough(hypothesis: RacingHypothesis): Hybrid
     bd7_societal: bd7
   } as Record<BreakthroughDetectionDimension, HybridDimensionScore>
 
-  const bdScore = bd1.score + bd2.score + bd3.score + bd4.score + bd5.score + bd6.score + bd7.score
-  const bdPercentage = (bdScore / 5.0) * 100
+  // Calculate BD score using calibrated weights (total 9.0 pts)
+  const bdRawScore = bd1.score + bd2.score + bd3.score + bd4.score + bd5.score + bd6.score + bd7.score
+  const bdPercentage = (bdRawScore / BD_MAX_SCORE) * 100
 
-  // Overall score
-  const overallScore = fsScore + bdScore
+  // =========================================================================
+  // Phase 3: FS Bonus (0-1.0 pts for excellent scientific foundation)
+  // Calculated as: (avg_fs_percentage/100 - 0.6) / 0.4 * FS_BONUS_MAX
+  // Only applied if gate is passed
+  // =========================================================================
+  let fsBonusScore = 0
+  if (gatePass) {
+    const normalizedAvg = avgFsPercentage / 100
+    // Bonus = (avg% - 60%) / 40% * max_bonus
+    // If avg is 60%, bonus = 0
+    // If avg is 100%, bonus = 1.0
+    fsBonusScore = Math.max(0, Math.min(FS_BONUS_MAX, ((normalizedAvg - FS_GATE_THRESHOLD) / (1 - FS_GATE_THRESHOLD)) * FS_BONUS_MAX))
+  }
+
+  // =========================================================================
+  // Final Score Calculation (v0.0.3 Gate + Score Model)
+  // =========================================================================
+  const overallScore = bdRawScore + fsBonusScore
 
   // Classification
   const tier = getClassificationTier(overallScore)
   const tierConfig = getTierConfig(tier)
 
-  // Check breakthrough requirements
-  const fsAllPassing = [fs1, fs2, fs3, fs4, fs5].every(d => d.percentage >= 70)
+  // Check breakthrough requirements (calibrated v0.0.3)
   const bd1Performance = bd1.percentage >= 80
   const bd6Trajectory = bd6.percentage >= 80
   const bdHighCount = [bd1, bd2, bd3, bd4, bd5, bd6, bd7].filter(d => d.percentage >= 70).length
 
   const meetsBreakthrough = (
-    fsAllPassing &&
+    gatePass &&
     bd1Performance &&
     bd6Trajectory &&
-    bdHighCount >= 5 &&
+    bdHighCount >= 4 &&  // Relaxed from 5 to 4 since we have higher weights on BD1/BD6
     overallScore >= 9.0
   )
 
   return {
     frontierScienceScore: fsScore,
-    breakthroughScore: bdScore,
+    breakthroughScore: bdRawScore,
+    fsBonusScore,
     overallScore,
     fsPercentage,
     bdPercentage,
+    gateStatus: {
+      passed: gatePass,
+      failedDimensions,
+      minFsPercentage,
+      avgFsPercentage,
+    },
     fsDimensions,
     bdDimensions,
     tier,
@@ -783,48 +831,73 @@ export function validateHybridBreakthrough(hypothesis: RacingHypothesis): Hybrid
     breakthroughRequirements: {
       bd1Performance,
       bd6Trajectory,
-      fsAllPassing,
+      fsGatePassed: gatePass,
       bdHighCount,
       meetsBreakthrough
     },
+    scoringBreakdown: {
+      bdRawScore,
+      bdMaxPossible: BD_MAX_SCORE,
+      fsBonusApplied: fsBonusScore,
+      fsBonusMax: FS_BONUS_MAX,
+    },
     evaluationDurationMs: Date.now() - startTime,
-    evaluatorVersion: '0.1.0'
+    evaluatorVersion: '0.0.3'
   }
 }
 
 /**
- * Generate refinement feedback from hybrid score
+ * Generate refinement feedback from hybrid score (v0.0.3 Gate + Score Model)
  */
 export function generateHybridFeedback(score: HybridBreakthroughScore): string {
   const lines: string[] = []
 
-  lines.push(`## Hybrid Breakthrough Evaluation (${score.overallScore.toFixed(1)}/10)`)
+  lines.push(`## Breakthrough Evaluation v0.0.3 (${score.overallScore.toFixed(1)}/10)`)
   lines.push(`**Classification**: ${score.tierConfig.label} - ${score.tierConfig.description}`)
   lines.push('')
 
-  // Phase 1 Summary
-  lines.push(`### Phase 1: FrontierScience Foundation (${score.frontierScienceScore.toFixed(1)}/5.0)`)
-  for (const [dim, result] of Object.entries(score.fsDimensions)) {
-    const icon = result.passed ? '✓' : '✗'
-    lines.push(`- ${icon} **${result.dimension}**: ${result.score.toFixed(2)}/${result.maxScore} - ${result.reasoning}`)
+  // Gate Status
+  lines.push(`### Phase 1: FrontierScience GATE`)
+  lines.push(`**Status**: ${score.gateStatus.passed ? 'PASSED ✓' : 'FAILED ✗'}`)
+  if (!score.gateStatus.passed) {
+    lines.push(`**Failed dimensions** (below 60%): ${score.gateStatus.failedDimensions.join(', ')}`)
+  }
+  lines.push(`Min FS: ${score.gateStatus.minFsPercentage.toFixed(0)}% | Avg FS: ${score.gateStatus.avgFsPercentage.toFixed(0)}%`)
+  lines.push('')
+
+  for (const [, result] of Object.entries(score.fsDimensions)) {
+    const icon = result.percentage >= 60 ? '✓' : '✗'
+    lines.push(`- ${icon} **${result.dimension}**: ${result.percentage.toFixed(0)}% - ${result.reasoning}`)
   }
   lines.push('')
 
-  // Phase 2 Summary
-  lines.push(`### Phase 2: Breakthrough Detection (${score.breakthroughScore.toFixed(1)}/5.0)`)
-  for (const [dim, result] of Object.entries(score.bdDimensions)) {
-    const icon = result.passed ? '✓' : '✗'
-    lines.push(`- ${icon} **${result.dimension}**: ${result.score.toFixed(2)}/${result.maxScore} - ${result.reasoning}`)
+  // Scoring Summary
+  lines.push(`### Phase 2: Breakthrough SCORE (${score.scoringBreakdown.bdRawScore.toFixed(1)}/${score.scoringBreakdown.bdMaxPossible} pts)`)
+  for (const [, result] of Object.entries(score.bdDimensions)) {
+    const icon = result.percentage >= 70 ? '✓' : result.percentage >= 50 ? '○' : '✗'
+    lines.push(`- ${icon} **${result.dimension}**: ${result.score.toFixed(2)}/${result.maxScore} (${result.percentage.toFixed(0)}%) - ${result.reasoning}`)
   }
+  lines.push('')
+
+  // Bonus
+  lines.push(`### Phase 3: FS Bonus`)
+  lines.push(`Applied: ${score.scoringBreakdown.fsBonusApplied.toFixed(2)}/${score.scoringBreakdown.fsBonusMax} pts`)
+  lines.push('')
+
+  // Final Calculation
+  lines.push(`### Final Score Breakdown`)
+  lines.push(`BD Score: ${score.scoringBreakdown.bdRawScore.toFixed(2)} pts`)
+  lines.push(`FS Bonus: +${score.scoringBreakdown.fsBonusApplied.toFixed(2)} pts`)
+  lines.push(`**Total: ${score.overallScore.toFixed(2)}/10 pts**`)
   lines.push('')
 
   // Breakthrough Requirements
-  lines.push(`### Breakthrough Requirements`)
+  lines.push(`### Breakthrough Requirements (9.0+ threshold)`)
   const req = score.breakthroughRequirements
+  lines.push(`- FS Gate passed: ${req.fsGatePassed ? '✓' : '✗'}`)
   lines.push(`- BD1 Performance ≥80%: ${req.bd1Performance ? '✓' : '✗'}`)
   lines.push(`- BD6 Trajectory ≥80%: ${req.bd6Trajectory ? '✓' : '✗'}`)
-  lines.push(`- FS dimensions all ≥70%: ${req.fsAllPassing ? '✓' : '✗'}`)
-  lines.push(`- BD dimensions ≥70%: ${req.bdHighCount}/7 (need 5+)`)
+  lines.push(`- BD dimensions ≥70%: ${req.bdHighCount}/7 (need 4+)`)
   lines.push(`- **Meets Breakthrough**: ${req.meetsBreakthrough ? 'YES ✓' : 'NO'}`)
 
   return lines.join('\n')

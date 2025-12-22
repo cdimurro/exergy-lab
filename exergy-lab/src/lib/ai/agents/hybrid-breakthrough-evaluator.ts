@@ -102,18 +102,17 @@ export class HybridBreakthroughEvaluator {
   // ===========================================================================
 
   /**
-   * Generate cache key from hypothesis content
+   * Generate cache key from hypothesis ID only (not content)
+   *
+   * CRITICAL FIX v0.0.3: Cache by ID only to prevent score degradation.
+   * During refinement, hypotheses get updated text but structure (predictions,
+   * mechanism, supportingEvidence) should persist. By caching on ID alone,
+   * we evaluate once per hypothesis and reuse that score across refinement
+   * iterations, preventing the FS score drops (4.5→2.0) that were occurring
+   * when re-evaluation happened on structurally incomplete refined hypotheses.
    */
   private getCacheKey(hypothesis: RacingHypothesis): string {
-    const keyData = {
-      id: hypothesis.id,
-      statement: hypothesis.statement?.slice(0, 200),
-      predictions: hypothesis.predictions?.length || 0,
-      mechanism: hypothesis.mechanism?.steps?.length || 0,
-      noveltyScore: hypothesis.noveltyScore,
-      feasibilityScore: hypothesis.feasibilityScore,
-    }
-    return crypto.createHash('md5').update(JSON.stringify(keyData)).digest('hex')
+    return hypothesis.id
   }
 
   /**

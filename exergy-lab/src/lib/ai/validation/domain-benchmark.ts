@@ -17,11 +17,263 @@ import type {
 } from './types'
 
 // ============================================================================
-// Domain Benchmarks Database
+// TRUE PHYSICAL LIMITS (Thermodynamic/Physics-based)
+// These are fundamental limits based on physics, NOT industry achievements
+// Violating these limits indicates a physically impossible claim
 // ============================================================================
 
+export const PHYSICAL_LIMITS = {
+  // Solar - Thermodynamic limits from detailed balance calculations
+  solar: {
+    shockleyQueisser: {
+      name: 'Shockley-Queisser Limit',
+      value: 0.337,  // 33.7% - TRUE thermodynamic limit for single-junction
+      unit: 'η',
+      type: 'thermodynamic' as const,
+      citation: 'Shockley & Queisser (1961), J. Appl. Phys. 32, 510',
+      context: 'Single-junction solar cell maximum efficiency at 1 sun',
+    },
+    siliconAuger: {
+      name: 'Silicon Auger Limit',
+      value: 0.298,  // 29.8% - Si-specific with Auger recombination
+      unit: 'η',
+      type: 'physics' as const,
+      citation: 'Richter et al. (2013), IEEE J. Photovoltaics',
+      context: 'Silicon-specific limit accounting for Auger recombination',
+    },
+    tandem2Junction: {
+      name: '2-Junction Tandem Limit',
+      value: 0.45,  // 45%
+      unit: 'η',
+      type: 'thermodynamic' as const,
+      citation: 'De Vos (1980), J. Phys. D',
+      context: 'Two-junction tandem cell theoretical maximum',
+    },
+    tandem3Junction: {
+      name: '3-Junction Tandem Limit',
+      value: 0.515,  // 51.5%
+      unit: 'η',
+      type: 'thermodynamic' as const,
+      context: 'Three-junction tandem cell theoretical maximum',
+    },
+    infiniteJunction: {
+      name: 'Infinite-Junction Limit (1 sun)',
+      value: 0.687,  // 68.7% at 1 sun
+      unit: 'η',
+      type: 'thermodynamic' as const,
+      context: 'Infinite-junction limit at 1 sun concentration',
+    },
+    infiniteJunctionConcentrated: {
+      name: 'Infinite-Junction Limit (max concentration)',
+      value: 0.868,  // 86.8% at maximum concentration
+      unit: 'η',
+      type: 'thermodynamic' as const,
+      context: 'Ultimate thermodynamic limit for solar conversion',
+    },
+  },
+
+  // Wind - Physics limit from momentum theory
+  wind: {
+    betz: {
+      name: 'Betz Limit',
+      value: 0.593,  // 59.3% - TRUE physics limit
+      unit: 'η',
+      type: 'physics' as const,
+      citation: 'Betz (1920), Die Naturwissenschaften',
+      context: 'Maximum extractable power from wind by any turbine',
+    },
+  },
+
+  // Battery - TRUE theoretical limits from electrochemistry
+  // NOT industry achievements - these are thermodynamic maxima
+  battery: {
+    liIonTheoretical: {
+      name: 'Li-ion Theoretical (cell level)',
+      value: 555,  // Wh/kg - thermodynamic limit at cell level
+      unit: 'Wh/kg',
+      type: 'thermodynamic' as const,
+      citation: 'Tarascon & Armand (2001), Nature 414, 359-367',
+      context: 'Maximum theoretical specific energy for Li-ion chemistry',
+    },
+    liSTheoretical: {
+      name: 'Li-S Theoretical',
+      value: 2600,  // Wh/kg - thermodynamic limit
+      unit: 'Wh/kg',
+      type: 'thermodynamic' as const,
+      citation: 'Ji & Nazar (2010), J. Mater. Chem.',
+      context: 'Maximum theoretical specific energy for Li-S chemistry',
+    },
+    liAirTheoretical: {
+      name: 'Li-Air Theoretical',
+      value: 3500,  // Wh/kg - thermodynamic limit
+      unit: 'Wh/kg',
+      type: 'thermodynamic' as const,
+      context: 'Maximum theoretical specific energy for Li-Air chemistry',
+    },
+    liFTheoretical: {
+      name: 'Li-F Ultimate',
+      value: 6294,  // Wh/kg - highest possible electrochemical
+      unit: 'Wh/kg',
+      type: 'thermodynamic' as const,
+      citation: 'Lu et al. (2016), J. Electrochem. Soc.',
+      context: 'Ultimate thermodynamic limit for electrochemical storage',
+    },
+  },
+
+  // Hydrogen - Fixed physics values
+  hydrogen: {
+    lhv: {
+      name: 'Lower Heating Value',
+      value: 33.33,  // kWh/kg - fixed physics
+      unit: 'kWh/kg',
+      type: 'physics' as const,
+      context: 'Energy content of hydrogen (LHV)',
+    },
+    hhv: {
+      name: 'Higher Heating Value',
+      value: 39.4,  // kWh/kg - fixed physics
+      unit: 'kWh/kg',
+      type: 'physics' as const,
+      context: 'Energy content of hydrogen (HHV)',
+    },
+    reversibleVoltage: {
+      name: 'Reversible Electrolysis Voltage',
+      value: 1.23,  // V at 25°C - thermodynamic minimum
+      unit: 'V',
+      type: 'thermodynamic' as const,
+      context: 'Minimum voltage for water splitting at 25°C',
+    },
+    thermoneutralVoltage: {
+      name: 'Thermoneutral Voltage',
+      value: 1.48,  // V - includes heat
+      unit: 'V',
+      type: 'thermodynamic' as const,
+      context: 'Voltage for adiabatic water splitting',
+    },
+  },
+
+  // Thermal - Carnot limit
+  thermal: {
+    carnot: {
+      name: 'Carnot Efficiency',
+      value: 1.0,  // η = 1 - Tc/Th, max is 1
+      unit: 'η',
+      type: 'thermodynamic' as const,
+      formula: '1 - T_cold/T_hot',
+      context: 'Maximum heat engine efficiency',
+    },
+  },
+
+  // Materials - Theoretical maxima
+  materials: {
+    maxTensileStrength: {
+      name: 'Max Tensile Strength',
+      value: 100e9,  // Pa - Carbon nanotubes theoretical
+      unit: 'Pa',
+      type: 'physics' as const,
+      context: 'Carbon nanotubes theoretical maximum',
+    },
+    maxThermalConductivity: {
+      name: 'Max Thermal Conductivity',
+      value: 5000,  // W/m·K - Diamond/graphene
+      unit: 'W/m·K',
+      type: 'physics' as const,
+      context: 'Diamond/graphene at room temperature',
+    },
+  },
+
+  // Reaction kinetics
+  kinetics: {
+    diffusionLimit: {
+      name: 'Diffusion Limit',
+      value: 1e10,
+      unit: 'M⁻¹s⁻¹',
+      type: 'physics' as const,
+      context: 'Maximum rate for diffusion-limited reactions',
+    },
+  },
+}
+
+// ============================================================================
+// INDUSTRY BENCHMARKS (Current Achievements - NOT Physical Limits)
+// These are what has been achieved, NOT what is physically possible
+// Exceeding these is NOTABLE, not a violation
+// ============================================================================
+
+export const INDUSTRY_BENCHMARKS = {
+  solar: {
+    commercialSilicon: {
+      name: 'Commercial Silicon Best',
+      value: 0.23,  // 23% - current commercial
+      unit: 'η',
+      context: 'Current best commercial silicon module',
+    },
+    labSiliconRecord: {
+      name: 'Lab Silicon Record',
+      value: 0.267,  // 26.7% - UNSW 2023
+      unit: 'η',
+      context: 'Laboratory silicon cell record',
+    },
+    tandemRecord: {
+      name: 'Tandem Cell Record',
+      value: 0.339,  // 33.9% - LONGi 2023
+      unit: 'η',
+      context: 'Perovskite-silicon tandem record',
+    },
+  },
+  battery: {
+    commercialLiIon: {
+      name: 'Commercial Li-ion',
+      value: 300,  // Wh/kg - current best commercial
+      unit: 'Wh/kg',
+      context: 'Current commercial Li-ion energy density',
+    },
+    solidStateRecord: {
+      name: 'Solid-State Record',
+      value: 800,  // Wh/kg - WeLion 2024 claim
+      unit: 'Wh/kg',
+      context: 'Claimed solid-state battery achievement',
+    },
+    labLiSRecord: {
+      name: 'Lab Li-S Record',
+      value: 500,  // Wh/kg - lab demonstration
+      unit: 'Wh/kg',
+      context: 'Laboratory Li-S demonstration',
+    },
+  },
+  hydrogen: {
+    pemEfficiency: {
+      name: 'PEM Electrolyzer Efficiency',
+      value: 0.80,  // 80% - current best
+      unit: 'η',
+      context: 'Current best PEM electrolyzer efficiency',
+    },
+    alkalineEfficiency: {
+      name: 'Alkaline Electrolyzer Efficiency',
+      value: 0.70,  // 70% - current best
+      unit: 'η',
+      context: 'Current best alkaline electrolyzer efficiency',
+    },
+    soecEfficiency: {
+      name: 'SOEC Efficiency',
+      value: 0.90,  // 90% - with heat recovery
+      unit: 'η',
+      context: 'SOEC with heat recovery',
+    },
+  },
+  wind: {
+    largeScaleEfficiency: {
+      name: 'Large-Scale Wind Efficiency',
+      value: 0.50,  // 50% - current best large turbines
+      unit: 'η',
+      context: 'Current best large-scale wind turbines',
+    },
+  },
+}
+
+// Legacy export for backward compatibility
 export const DOMAIN_BENCHMARKS: DomainBenchmarks = {
-  // Energy conversion limits
+  // Energy conversion limits (TRUE PHYSICAL LIMITS)
   energy: {
     carnot: {
       name: 'Carnot Efficiency',
@@ -44,7 +296,7 @@ export const DOMAIN_BENCHMARKS: DomainBenchmarks = {
     },
     landauer: {
       name: 'Landauer Limit',
-      value: 2.87e-21, // kT*ln(2) at 300K in Joules
+      value: 2.87e-21,
       unit: 'J',
       formula: 'kT*ln(2)',
       context: 'Minimum energy per bit erasure',
@@ -99,65 +351,65 @@ export const DOMAIN_BENCHMARKS: DomainBenchmarks = {
     },
   },
 
-  // Battery-specific limits (per Grok feedback)
+  // Battery-specific limits (Updated to TRUE PHYSICAL LIMITS)
   battery: {
     liIonGravimetric: {
-      name: 'Li-ion Practical Limit',
-      value: 300,
+      name: 'Li-ion Theoretical Limit',
+      value: 555,  // Updated from 300 (industry) to 555 (thermodynamic)
       unit: 'Wh/kg',
-      context: 'Practical lithium-ion battery',
+      context: 'Lithium-ion thermodynamic maximum',
     },
     liSGravimetric: {
       name: 'Li-S Theoretical Limit',
-      value: 500,
+      value: 2600,  // Updated from 500 to 2600 (true thermodynamic limit)
       unit: 'Wh/kg',
-      context: 'Lithium-sulfur theoretical maximum',
+      context: 'Lithium-sulfur thermodynamic maximum',
     },
     solidStateMax: {
-      name: 'Solid-State Limit',
-      value: 400,
+      name: 'Li-F Ultimate Limit',
+      value: 6294,  // Updated to ultimate electrochemical limit
       unit: 'Wh/kg',
-      context: 'Solid-state battery theoretical',
+      context: 'Ultimate electrochemical energy density limit',
     },
     cycleLifeMax: {
       name: 'Max Cycle Life',
-      value: 10000,
+      value: 100000,  // Updated - no hard physical limit, but practical
       unit: 'cycles',
-      context: 'LFP best case scenario',
+      context: 'High-stability chemistry theoretical',
     },
   },
 
-  // Electrolyzer limits (per Grok feedback)
+  // Electrolyzer limits (TRUE PHYSICAL LIMITS)
   electrolyzer: {
     minThermodynamicVoltage: {
       name: 'Thermodynamic Voltage',
-      value: 1.23,
+      value: 1.23,  // TRUE thermodynamic minimum
       unit: 'V',
       context: 'Reversible potential at 25°C',
     },
     practicalOverpotential: {
       name: 'Min Practical Overpotential',
-      value: 0.3,
+      value: 0.1,  // Reduced - near-reversible catalysts approaching this
       unit: 'V',
-      context: 'Minimum practical overpotential',
+      context: 'Near-theoretical overpotential',
     },
     alkalineEfficiency: {
-      name: 'Alkaline Efficiency',
-      value: 0.70,
+      name: 'Alkaline Max Efficiency',
+      value: 0.85,  // Thermodynamic max with advanced catalysts
       unit: '',
-      context: 'Alkaline electrolyzer best case',
+      context: 'Theoretical maximum for alkaline electrolysis',
     },
     pemEfficiency: {
-      name: 'PEM Efficiency',
-      value: 0.80,
+      name: 'PEM Max Efficiency',
+      value: 0.90,  // Theoretical max
       unit: '',
-      context: 'PEM electrolyzer best case',
+      context: 'Theoretical maximum for PEM electrolysis',
     },
     soecEfficiency: {
-      name: 'SOEC Efficiency',
-      value: 0.90,
+      name: 'SOEC Max Efficiency',
+      value: 1.0,  // Can exceed 100% with heat input
       unit: '',
-      context: 'SOEC with heat recovery',
+      context: 'SOEC can exceed 100% electrical efficiency with heat',
     },
   },
 }
@@ -229,28 +481,60 @@ export class DomainBenchmarkValidator {
     const efficiency = this.extractEfficiency(output)
     const domain = this.config.domain.toLowerCase()
 
-    // Check solar efficiency
+    // Check solar efficiency against TRUE PHYSICAL LIMITS
     if ((domain.includes('solar') || domain.includes('photovoltaic')) && efficiency !== null) {
-      if (efficiency > DOMAIN_BENCHMARKS.energy.shockleyQueisser.value) {
-        if (efficiency > 0.86) { // Concentrated solar max
+      const solarLimits = PHYSICAL_LIMITS.solar
+
+      // Ultimate physical limit: 86.8% for infinite junction with max concentration
+      if (efficiency > solarLimits.infiniteJunctionConcentrated.value) {
+        violations.push({
+          type: 'solar_efficiency',
+          claimed: efficiency,
+          limit: solarLimits.infiniteJunctionConcentrated.value,
+          unit: 'η',
+          severity: 'critical',
+          description: `Solar efficiency ${(efficiency * 100).toFixed(1)}% exceeds ultimate thermodynamic limit (86.8%)`,
+        })
+      }
+      // Check against appropriate limit based on architecture keywords
+      else if (efficiency > solarLimits.shockleyQueisser.value) {
+        const hasTandem = domain.includes('tandem') || domain.includes('multi-junction') || domain.includes('multijunction')
+        const hasConcentrator = domain.includes('concentrator') || domain.includes('cpv')
+
+        if (hasConcentrator && efficiency > solarLimits.infiniteJunction.value) {
+          // Above 68.7% (1-sun infinite junction) but claims concentration
           violations.push({
             type: 'solar_efficiency',
             claimed: efficiency,
-            limit: 0.86,
-            unit: 'η',
-            severity: 'major',
-            description: 'Solar efficiency exceeds concentrated solar maximum (86%)',
-          })
-        } else {
-          violations.push({
-            type: 'solar_efficiency',
-            claimed: efficiency,
-            limit: DOMAIN_BENCHMARKS.energy.shockleyQueisser.value,
+            limit: solarLimits.infiniteJunctionConcentrated.value,
             unit: 'η',
             severity: 'minor',
-            description: 'Solar efficiency exceeds Shockley-Queisser limit (33.7%) - valid for multi-junction only',
+            description: `High concentration claim (${(efficiency * 100).toFixed(1)}%) - verify concentration ratio supports this`,
           })
-          suggestions.push('Specify multi-junction or tandem cell architecture to justify higher efficiency')
+        } else if (hasTandem) {
+          // Tandem cell - check against appropriate junction limit
+          if (efficiency > solarLimits.tandem3Junction.value) {
+            violations.push({
+              type: 'solar_efficiency',
+              claimed: efficiency,
+              limit: solarLimits.tandem3Junction.value,
+              unit: 'η',
+              severity: 'minor',
+              description: `Efficiency ${(efficiency * 100).toFixed(1)}% exceeds 3-junction limit (51.5%) - verify >3 junctions`,
+            })
+          }
+          // Else within tandem limits - valid
+        } else {
+          // Single-junction claim above S-Q limit
+          violations.push({
+            type: 'solar_efficiency',
+            claimed: efficiency,
+            limit: solarLimits.shockleyQueisser.value,
+            unit: 'η',
+            severity: 'minor',
+            description: `Single-junction efficiency ${(efficiency * 100).toFixed(1)}% exceeds Shockley-Queisser limit (33.7%)`,
+          })
+          suggestions.push('Specify multi-junction/tandem architecture or concentration to justify efficiency >33.7%')
         }
       }
     }
@@ -410,6 +694,7 @@ export class DomainBenchmarkValidator {
   private checkBatteryLimits(output: any): BenchmarkItemResult {
     const issues: string[] = []
     const suggestions: string[] = []
+    const notable: string[] = []  // Exceeds industry benchmarks but not physical limits
 
     const batterySpecs = this.extractBatterySpecs(output)
     if (!batterySpecs) {
@@ -423,33 +708,67 @@ export class DomainBenchmarkValidator {
       }
     }
 
-    // Check gravimetric energy density
+    // Check gravimetric energy density against TRUE PHYSICAL LIMITS
     if (batterySpecs.gravimetricEnergy) {
-      const limits = DOMAIN_BENCHMARKS.battery
+      const physicalLimits = PHYSICAL_LIMITS.battery
+      const industryBenchmarks = INDUSTRY_BENCHMARKS.battery
 
-      if (batterySpecs.gravimetricEnergy > limits.liSGravimetric.value) {
-        issues.push(`Gravimetric energy ${batterySpecs.gravimetricEnergy} Wh/kg exceeds Li-S theoretical limit (500)`)
-      } else if (batterySpecs.gravimetricEnergy > limits.liIonGravimetric.value) {
-        // Above practical Li-ion, check if they specify advanced chemistry
-        if (!batterySpecs.chemistry?.includes('solid') && !batterySpecs.chemistry?.includes('sulfur')) {
-          suggestions.push('Specify advanced battery chemistry (solid-state, Li-S) to justify high energy density')
+      // PHYSICAL LIMIT VIOLATION: Above Li-F ultimate limit (6294 Wh/kg)
+      if (batterySpecs.gravimetricEnergy > physicalLimits.liFTheoretical.value) {
+        issues.push(
+          `Gravimetric energy ${batterySpecs.gravimetricEnergy} Wh/kg exceeds ultimate electrochemical limit ` +
+          `(${physicalLimits.liFTheoretical.value} Wh/kg for Li-F chemistry)`
+        )
+      }
+      // Check chemistry-specific limits
+      else if (batterySpecs.chemistry?.toLowerCase().includes('li-ion') ||
+               batterySpecs.chemistry?.toLowerCase().includes('lithium-ion')) {
+        if (batterySpecs.gravimetricEnergy > physicalLimits.liIonTheoretical.value) {
+          issues.push(
+            `Gravimetric energy ${batterySpecs.gravimetricEnergy} Wh/kg exceeds Li-ion theoretical limit ` +
+            `(${physicalLimits.liIonTheoretical.value} Wh/kg)`
+          )
+        }
+      }
+      else if (batterySpecs.chemistry?.toLowerCase().includes('sulfur') ||
+               batterySpecs.chemistry?.toLowerCase().includes('li-s')) {
+        if (batterySpecs.gravimetricEnergy > physicalLimits.liSTheoretical.value) {
+          issues.push(
+            `Gravimetric energy ${batterySpecs.gravimetricEnergy} Wh/kg exceeds Li-S theoretical limit ` +
+            `(${physicalLimits.liSTheoretical.value} Wh/kg)`
+          )
+        }
+      }
+      // For unspecified chemistry, use most permissive limit (Li-F) for physics check
+      // but note if it exceeds industry benchmarks
+      else {
+        if (batterySpecs.gravimetricEnergy > industryBenchmarks.solidStateRecord.value) {
+          notable.push(
+            `Claimed ${batterySpecs.gravimetricEnergy} Wh/kg exceeds current solid-state record ` +
+            `(${industryBenchmarks.solidStateRecord.value} Wh/kg) - verify chemistry supports this`
+          )
+          suggestions.push('Specify battery chemistry to validate against appropriate theoretical limit')
         }
       }
     }
 
-    // Check cycle life
-    if (batterySpecs.cycleLife && batterySpecs.cycleLife > DOMAIN_BENCHMARKS.battery.cycleLifeMax.value) {
-      issues.push(`Cycle life ${batterySpecs.cycleLife} exceeds best-case LFP (10,000 cycles)`)
+    // Check cycle life - no hard physical limit, but note if exceptional
+    if (batterySpecs.cycleLife && batterySpecs.cycleLife > 50000) {
+      notable.push(`Exceptional cycle life (${batterySpecs.cycleLife}) - ensure stability mechanism is explained`)
     }
 
     const passed = issues.length === 0
+    const hasNotable = notable.length > 0
+
     return {
       id: 'D5',
       name: 'Battery Limits',
-      score: passed ? 1.0 : 0.5,
+      score: passed ? (hasNotable ? 0.8 : 1.0) : 0.3,
       maxScore: 1.0,
       passed,
-      reasoning: passed ? 'Battery specifications within known limits' : issues.join('; '),
+      reasoning: passed
+        ? (hasNotable ? `Within physical limits but notable: ${notable.join('; ')}` : 'Battery specifications within physical limits')
+        : `Physical limit violations: ${issues.join('; ')}`,
       suggestions: suggestions.length > 0 ? suggestions : undefined,
     }
   }

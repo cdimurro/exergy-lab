@@ -1,9 +1,23 @@
 /**
- * Hybrid Breakthrough Scoring System - Type Definitions
+ * Hybrid Breakthrough Scoring System - Type Definitions (v0.0.3)
  *
- * Two-phase scoring system combining:
- * - Phase 1: FrontierScience Foundation (5 pts) - FS1-FS5 for scientific quality
- * - Phase 2: Breakthrough Detection (5 pts) - BD1-BD7 for breakthrough indicators
+ * CALIBRATED GATE + SCORE MODEL (based on historical breakthrough analysis)
+ *
+ * Scoring Architecture:
+ * - Phase 1 (GATE): FrontierScience must pass all dimensions ≥60%
+ * - Phase 2 (SCORE): BD dimensions weighted by breakthrough correlation (9.0 pts)
+ * - Phase 3 (BONUS): FS excellence adds bonus (0-1.0 pts)
+ *
+ * Calibrated BD Weights (from Nobel Prize / historical breakthrough analysis):
+ * - BD1 Performance: 2.0 pts (CRITICAL - 100% performance gain = paradigm shift)
+ * - BD6 Trajectory:  2.0 pts (CRITICAL - new research field = breakthrough)
+ * - BD4 Market:      1.5 pts (Important - new market categories)
+ * - BD2 Cost:        1.0 pt  (Supporting factor)
+ * - BD5 Scalability: 1.0 pt  (Supporting factor)
+ * - BD7 Societal:    1.0 pt  (Supporting factor)
+ * - BD3 Cross-Domain:0.5 pt  (Methodology indicator)
+ *
+ * Total: BD (9.0) + FS Bonus (1.0) = 10.0 pts
  *
  * 5-Tier Classification System:
  * - Breakthrough (9.0+)
@@ -138,7 +152,53 @@ export const HYBRID_CLASSIFICATION_CONFIGS: HybridClassificationConfig[] = [
 ]
 
 // =============================================================================
-// FrontierScience Dimensions (Phase 1) - 5.0 points total
+// CALIBRATED SCORING CONSTANTS (v0.0.3)
+// Based on historical breakthrough analysis (Goodenough Li-ion, Blue LED, etc.)
+// =============================================================================
+
+/**
+ * FS Gate Threshold - Minimum percentage for each FS dimension to pass
+ * Hypotheses that fail the gate cannot achieve breakthrough status
+ */
+export const FS_GATE_THRESHOLD = 0.6  // 60% minimum for all FS dimensions
+
+/**
+ * Maximum FS Bonus points for excellent scientific foundation
+ * Calculated as: (avg_fs_percentage - 0.6) / 0.4 * FS_BONUS_MAX
+ */
+export const FS_BONUS_MAX = 1.0
+
+/**
+ * Maximum BD score (sum of all BD dimension max points)
+ * This is the primary scoring component after gate is passed
+ */
+export const BD_MAX_SCORE = 9.0
+
+/**
+ * Calibrated BD dimension weights based on historical breakthrough analysis
+ *
+ * Calibration sources:
+ * - 2019 Nobel Prize (Li-ion batteries): BD1=100%, BD6=100%, BD4=100%
+ * - 2014 Nobel Prize (Blue LED): BD1=100%, BD6=100%, BD7=100%
+ * - Bell Labs silicon solar (1954): BD4=100%, BD6=100%
+ * - LONGi 33.9% tandem (2023): BD1=100%, BD6=80%
+ *
+ * Key insight: BD1 (Performance) and BD6 (Trajectory) are present in 100%
+ * of historical breakthroughs, making them CRITICAL dimensions.
+ */
+export const BD_DIMENSION_WEIGHTS: Record<string, number> = {
+  bd1_performance: 2.0,    // CRITICAL - was ~0.71 (now 2.0)
+  bd6_trajectory: 2.0,     // CRITICAL - was ~0.71 (now 2.0)
+  bd4_market: 1.5,         // Important - was ~0.71 (now 1.5)
+  bd2_cost: 1.0,           // Supporting - was ~0.71 (now 1.0)
+  bd5_scalability: 1.0,    // Supporting - was ~0.71 (now 1.0)
+  bd7_societal: 1.0,       // Supporting - was ~0.71 (now 1.0)
+  bd3_cross_domain: 0.5,   // Methodology - unchanged
+}
+
+// =============================================================================
+// FrontierScience Dimensions (Phase 1 - GATE)
+// All dimensions must score ≥60% to pass the gate
 // =============================================================================
 
 /**
@@ -240,21 +300,22 @@ export const FS_DIMENSION_CONFIGS: FSDimensionConfig[] = [
 ]
 
 // =============================================================================
-// Breakthrough Detection Dimensions (Phase 2) - 5.0 points total
+// Breakthrough Detection Dimensions (Phase 2 - SCORE) - 9.0 points total
+// Calibrated weights based on historical breakthrough analysis
 // =============================================================================
 
 /**
  * Breakthrough detection dimensions (BD1-BD7)
- * Total: 5.0 points
+ * Total: 9.0 points (calibrated from historical breakthroughs)
  */
 export type BreakthroughDetectionDimension =
-  | 'bd1_performance'      // 1.0 pts - Performance step-change
-  | 'bd2_cost'             // 0.75 pts - Cost reduction potential
+  | 'bd1_performance'      // 2.0 pts - CRITICAL: Performance step-change
+  | 'bd2_cost'             // 1.0 pts - Cost reduction potential
   | 'bd3_cross_domain'     // 0.5 pts - Cross-domain innovation
-  | 'bd4_market'           // 0.75 pts - Market disruption potential
-  | 'bd5_scalability'      // 0.75 pts - Scalability path
-  | 'bd6_trajectory'       // 0.75 pts - Knowledge trajectory shift
-  | 'bd7_societal'         // 0.5 pts - Societal impact
+  | 'bd4_market'           // 1.5 pts - Important: Market disruption potential
+  | 'bd5_scalability'      // 1.0 pts - Scalability path
+  | 'bd6_trajectory'       // 2.0 pts - CRITICAL: Knowledge trajectory shift
+  | 'bd7_societal'         // 1.0 pts - Societal impact
 
 /**
  * Configuration for Breakthrough Detection dimensions
@@ -275,42 +336,49 @@ export interface BDDimensionConfig {
 
 /**
  * All 7 Breakthrough Detection dimension configurations
+ * CALIBRATED WEIGHTS based on historical breakthrough analysis (v0.0.3)
+ *
+ * Total: 9.0 points (BD_MAX_SCORE)
+ * Critical dimensions (BD1, BD6): 2.0 pts each
+ * Important dimensions (BD4): 1.5 pts
+ * Supporting dimensions (BD2, BD5, BD7): 1.0 pt each
+ * Methodology dimension (BD3): 0.5 pt
  */
 export const BD_DIMENSION_CONFIGS: BDDimensionConfig[] = [
   {
     id: 'bd1_performance',
     name: 'Performance Step-Change',
     shortName: 'Performance',
-    maxPoints: 1.0,
+    maxPoints: 2.0,  // CRITICAL - doubled from 1.0
     required: true,  // Must score ≥80% for breakthrough
     description: '>25% improvement over state-of-the-art',
     scoringCriteria: [
-      { threshold: 50, points: 1.0, label: 'Revolutionary: 50%+ improvement' },
-      { threshold: 25, points: 0.8, label: 'Major: 25-50% improvement' },
-      { threshold: 10, points: 0.6, label: 'Significant: 10-25% improvement' },
-      { threshold: 5, points: 0.4, label: 'Moderate: 5-10% improvement' },
-      { threshold: 0, points: 0.2, label: 'Incremental: <5% improvement' }
+      { threshold: 50, points: 2.0, label: 'Revolutionary: 50%+ improvement (Nobel-level)' },
+      { threshold: 25, points: 1.6, label: 'Major: 25-50% improvement' },
+      { threshold: 10, points: 1.2, label: 'Significant: 10-25% improvement' },
+      { threshold: 5, points: 0.8, label: 'Moderate: 5-10% improvement' },
+      { threshold: 0, points: 0.4, label: 'Incremental: <5% improvement' }
     ]
   },
   {
     id: 'bd2_cost',
     name: 'Cost Reduction Potential',
     shortName: 'Cost',
-    maxPoints: 0.75,
+    maxPoints: 1.0,  // Increased from 0.75
     required: false,
     description: 'Economic viability, LCOE impact',
     scoringCriteria: [
-      { threshold: 50, points: 0.75, label: 'Transformative: 50%+ cost reduction' },
-      { threshold: 30, points: 0.6, label: 'Major: 30-50% reduction' },
-      { threshold: 15, points: 0.45, label: 'Significant: 15-30% reduction' },
-      { threshold: 0, points: 0.2, label: 'Minor/unclear cost impact' }
+      { threshold: 50, points: 1.0, label: 'Transformative: 50%+ cost reduction' },
+      { threshold: 30, points: 0.8, label: 'Major: 30-50% reduction' },
+      { threshold: 15, points: 0.6, label: 'Significant: 15-30% reduction' },
+      { threshold: 0, points: 0.3, label: 'Minor/unclear cost impact' }
     ]
   },
   {
     id: 'bd3_cross_domain',
     name: 'Cross-Domain Innovation',
     shortName: 'Cross-Domain',
-    maxPoints: 0.5,
+    maxPoints: 0.5,  // Unchanged
     required: false,
     description: 'Knowledge transfer from other fields',
     scoringCriteria: [
@@ -323,56 +391,56 @@ export const BD_DIMENSION_CONFIGS: BDDimensionConfig[] = [
     id: 'bd4_market',
     name: 'Market Disruption Potential',
     shortName: 'Market',
-    maxPoints: 0.75,
+    maxPoints: 1.5,  // Doubled from 0.75 - Important
     required: false,
-    description: 'Potential to transform market',
+    description: 'Potential to transform market (new categories)',
     scoringCriteria: [
-      { threshold: 90, points: 0.75, label: 'Category-creating disruption' },
-      { threshold: 70, points: 0.6, label: 'Major market shift' },
-      { threshold: 50, points: 0.45, label: 'Significant market impact' },
-      { threshold: 0, points: 0.2, label: 'Incremental market change' }
+      { threshold: 90, points: 1.5, label: 'Category-creating disruption (new industry)' },
+      { threshold: 70, points: 1.2, label: 'Major market shift' },
+      { threshold: 50, points: 0.9, label: 'Significant market impact' },
+      { threshold: 0, points: 0.4, label: 'Incremental market change' }
     ]
   },
   {
     id: 'bd5_scalability',
     name: 'Scalability Path',
     shortName: 'Scalability',
-    maxPoints: 0.75,
+    maxPoints: 1.0,  // Increased from 0.75
     required: false,
     description: 'Clear route to GW/TWh scale',
     scoringCriteria: [
-      { threshold: 90, points: 0.75, label: 'Clear path to TW scale' },
-      { threshold: 70, points: 0.6, label: 'Path to GW scale' },
-      { threshold: 50, points: 0.45, label: 'MW scale feasible' },
-      { threshold: 0, points: 0.2, label: 'Lab/pilot scale only' }
+      { threshold: 90, points: 1.0, label: 'Clear path to TW scale' },
+      { threshold: 70, points: 0.8, label: 'Path to GW scale' },
+      { threshold: 50, points: 0.6, label: 'MW scale feasible' },
+      { threshold: 0, points: 0.3, label: 'Lab/pilot scale only' }
     ]
   },
   {
     id: 'bd6_trajectory',
     name: 'Knowledge Trajectory',
     shortName: 'Trajectory',
-    maxPoints: 0.75,
+    maxPoints: 2.0,  // CRITICAL - doubled from 0.75
     required: true,  // Must score ≥80% for breakthrough
     description: 'Paradigm shift vs incremental improvement',
     scoringCriteria: [
-      { threshold: 90, points: 0.75, label: 'Opens new research field' },
-      { threshold: 70, points: 0.6, label: 'Challenges fundamental assumptions' },
-      { threshold: 50, points: 0.45, label: 'New methodology/approach' },
-      { threshold: 30, points: 0.3, label: 'Novel combination of existing' },
-      { threshold: 0, points: 0.15, label: 'Incremental within paradigm' }
+      { threshold: 90, points: 2.0, label: 'Opens new research field (Nobel-level)' },
+      { threshold: 70, points: 1.6, label: 'Challenges fundamental assumptions' },
+      { threshold: 50, points: 1.2, label: 'New methodology/approach' },
+      { threshold: 30, points: 0.8, label: 'Novel combination of existing' },
+      { threshold: 0, points: 0.4, label: 'Incremental within paradigm' }
     ]
   },
   {
     id: 'bd7_societal',
     name: 'Societal Impact',
     shortName: 'Societal',
-    maxPoints: 0.5,
+    maxPoints: 1.0,  // Doubled from 0.5
     required: false,
-    description: 'Decarbonization potential, accessibility',
+    description: 'Decarbonization potential, accessibility, electrification',
     scoringCriteria: [
-      { threshold: 90, points: 0.5, label: 'Transformative societal impact' },
-      { threshold: 60, points: 0.35, label: 'Significant positive impact' },
-      { threshold: 0, points: 0.15, label: 'Limited direct impact' }
+      { threshold: 90, points: 1.0, label: 'Transformative societal impact (electrification)' },
+      { threshold: 60, points: 0.7, label: 'Significant positive impact' },
+      { threshold: 0, points: 0.3, label: 'Limited direct impact' }
     ]
   }
 ]
@@ -395,17 +463,26 @@ export interface HybridDimensionScore {
 }
 
 /**
- * Complete hybrid breakthrough score result
+ * Complete hybrid breakthrough score result (v0.0.3 Gate + Score Model)
  */
 export interface HybridBreakthroughScore {
-  // Phase scores
-  frontierScienceScore: number  // 0-5
-  breakthroughScore: number     // 0-5
-  overallScore: number          // 0-10
+  // Phase scores (Gate + Score + Bonus Model)
+  frontierScienceScore: number  // 0-5 (used for gate check and bonus calculation)
+  breakthroughScore: number     // 0-9 (BD_MAX_SCORE - primary scoring component)
+  fsBonusScore: number          // 0-1 (FS_BONUS_MAX - bonus for excellent FS)
+  overallScore: number          // 0-10 (bdScore + fsBonus)
 
   // Phase percentages
-  fsPercentage: number          // 0-100%
+  fsPercentage: number          // 0-100% (used for gate check)
   bdPercentage: number          // 0-100%
+
+  // Gate status (Phase 1)
+  gateStatus: {
+    passed: boolean             // All FS dimensions ≥60%
+    failedDimensions: FrontierScienceDimension[]
+    minFsPercentage: number     // Lowest FS dimension percentage
+    avgFsPercentage: number     // Average FS percentage (for bonus calc)
+  }
 
   // Individual dimensions
   fsDimensions: Record<FrontierScienceDimension, HybridDimensionScore>
@@ -415,13 +492,21 @@ export interface HybridBreakthroughScore {
   tier: HybridClassificationTier
   tierConfig: HybridClassificationConfig
 
-  // Breakthrough requirements check
+  // Breakthrough requirements check (calibrated v0.0.3)
   breakthroughRequirements: {
     bd1Performance: boolean  // BD1 ≥80%
     bd6Trajectory: boolean   // BD6 ≥80%
-    fsAllPassing: boolean    // All FS dims ≥70%
+    fsGatePassed: boolean    // All FS dims ≥60% (gate)
     bdHighCount: number      // Count of BD dims ≥70%
     meetsBreakthrough: boolean
+  }
+
+  // Scoring breakdown for debugging
+  scoringBreakdown: {
+    bdRawScore: number       // Sum of BD dimension scores
+    bdMaxPossible: number    // BD_MAX_SCORE (9.0)
+    fsBonusApplied: number   // Actual bonus added
+    fsBonusMax: number       // FS_BONUS_MAX (1.0)
   }
 
   // Metadata

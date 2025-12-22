@@ -137,16 +137,62 @@ export interface ExtendedUIHypothesis extends UIRacingHypothesis {
   impactScore?: number
   supportingEvidence?: Array<{ finding: string; citation: string; relevance: number }>
   refinementHistory?: Array<{ iteration: number; score: number; feedback?: string; improvements?: string[] }>
+  /** Hybrid scoring fields (v0.0.3) */
+  fsScore?: number           // 0-5
+  bdScore?: number           // 0-9
+  fsBonusScore?: number      // 0-1
+  gateStatus?: {
+    passed: boolean
+    failedDimensions: string[]
+    minFsPercentage?: number
+    avgFsPercentage?: number
+  }
+  breakthroughRequirements?: {
+    fsGatePassed: boolean
+    bd1Performance: boolean
+    bd1Percentage?: number
+    bd6Trajectory: boolean
+    bd6Percentage?: number
+    bdHighCount: number
+    overallScore: number
+    meetsBreakthrough: boolean
+  }
+  fsDimensions?: Array<{
+    dimension: string
+    score: number
+    maxScore: number
+    percentage: number
+    passed: boolean
+  }>
+  bdDimensions?: Array<{
+    dimension: string
+    score: number
+    maxScore: number
+    percentage: number
+    isCritical?: boolean
+    passed: boolean
+  }>
 }
 
 /**
  * Convert backend RacingHypothesis to UI-compatible format
  * Now includes full hypothesis data (statement, predictions, mechanism) for detailed views
+ * Also extracts hybrid scoring fields (v0.0.3) for Gate+Score+Bonus display
  */
 function convertToUIHypothesis(backend: BackendRacingHypothesis): ExtendedUIHypothesis {
   const currentScore = backend.scores?.overall ?? 0
   const scoreHistory = backend.history?.map(h => h.score) ?? [currentScore]
   const previousScore = scoreHistory.length > 1 ? scoreHistory[scoreHistory.length - 2] : undefined
+
+  // Extract hybrid scoring fields from backend scores (v0.0.3)
+  const backendScores = backend.scores as Record<string, unknown> | undefined
+  const fsScore = backendScores?.fsScore as number | undefined
+  const bdScore = backendScores?.bdScore as number | undefined
+  const fsBonusScore = backendScores?.fsBonusScore as number | undefined
+  const gateStatus = backendScores?.gateStatus as ExtendedUIHypothesis['gateStatus']
+  const breakthroughRequirements = backendScores?.breakthroughRequirements as ExtendedUIHypothesis['breakthroughRequirements']
+  const fsDimensions = backendScores?.fsDimensions as ExtendedUIHypothesis['fsDimensions']
+  const bdDimensions = backendScores?.bdDimensions as ExtendedUIHypothesis['bdDimensions']
 
   return {
     id: backend.id,
@@ -168,6 +214,14 @@ function convertToUIHypothesis(backend: BackendRacingHypothesis): ExtendedUIHypo
     impactScore: backend.impactScore,
     supportingEvidence: backend.supportingEvidence,
     refinementHistory: backend.history,
+    // Hybrid scoring fields (v0.0.3)
+    fsScore,
+    bdScore,
+    fsBonusScore,
+    gateStatus,
+    breakthroughRequirements,
+    fsDimensions,
+    bdDimensions,
   }
 }
 

@@ -443,14 +443,27 @@ export class EnhancedRefinementAgent {
     context: RefinementContext,
     weakDimensions: [BreakthroughDimension, DimensionFeedback][]
   ): string {
-    return `You are providing refinement feedback for a clean energy hypothesis.
+    // Bug 2.4 fix: Make feedback more specific with examples and benchmarks
+    const topCompetitors = context.leaderboard
+      .slice(0, 3)
+      .filter(e => e.hypothesisId !== context.hypothesis.id)
+      .map(e => `- "${e.title}" (Score: ${e.score.toFixed(1)})`)
+      .join('\n')
 
-## HYPOTHESIS
+    const dimensionGuidance = this.getDimensionSpecificGuidance(weakDimensions)
+
+    return `You are providing refinement feedback for a clean energy hypothesis competing against other hypotheses.
+
+## CURRENT HYPOTHESIS
 Title: ${context.hypothesis.title}
 Statement: ${context.hypothesis.statement}
 Current Score: ${context.evaluation.overallScore.toFixed(1)}/10
 Target Score: ${context.targetScore}/10
 Iteration: ${context.iteration}/${context.maxIterations}
+Points needed for breakthrough: ${Math.max(0, 9.0 - context.evaluation.overallScore).toFixed(1)}
+
+## TOP COMPETITORS (Benchmark)
+${topCompetitors || 'No other hypotheses in leaderboard yet'}
 
 ## WEAK DIMENSIONS (Need Improvement)
 ${weakDimensions.map(([dim, df]) => `
@@ -458,26 +471,95 @@ ${weakDimensions.map(([dim, df]) => `
 Current: ${df.currentScore.toFixed(0)}%
 Target: ${df.targetScore.toFixed(0)}%
 Priority: ${df.priority}
+Gap to close: ${(df.targetScore - df.currentScore).toFixed(0)} percentage points
 `).join('\n')}
+
+## DIMENSION-SPECIFIC GUIDANCE
+${dimensionGuidance}
 
 ## YOUR TASK
 For EACH weak dimension, provide:
-1. 2-3 specific, actionable improvements the hypothesis could make
-2. 1-2 research areas or papers to consult for evidence
+1. 2-3 SPECIFIC improvements with concrete numbers/targets
+2. 1-2 example sentences showing BEFORE → AFTER improvement
+3. 1-2 research areas or papers to consult for evidence
 
 Format your response as:
 
 DIMENSION: [dimension_name]
 IMPROVEMENTS:
-- [Specific improvement 1]
-- [Specific improvement 2]
-- [Specific improvement 3]
+- [Specific improvement with concrete numbers, e.g., "Increase claimed efficiency from 25% to 30%"]
+- [Another specific improvement]
+EXAMPLES:
+BEFORE: "[Current weak statement from hypothesis]"
+AFTER: "[How it should read after improvement]"
 RESEARCH POINTERS:
-- [Research area or type of paper to find]
+- [Specific research area or type of paper to find]
 
 Repeat for each dimension listed above.
 
-Be specific and actionable. Reference the hypothesis content when suggesting improvements.`
+CRITICAL RULES:
+- Be SPECIFIC - use numbers, percentages, and concrete metrics
+- Reference SOTA benchmarks in your suggestions
+- Provide BEFORE/AFTER examples that are directly usable
+- Focus on scientific rigor and quantifiable improvements`
+  }
+
+  /**
+   * Get dimension-specific guidance based on breakthrough requirements
+   */
+  private getDimensionSpecificGuidance(
+    weakDimensions: [BreakthroughDimension, DimensionFeedback][]
+  ): string {
+    const guidance: string[] = []
+
+    for (const [dim] of weakDimensions) {
+      switch (dim) {
+        case 'bc1_performance':
+          guidance.push(
+            `BC1 (Performance): Breakthroughs require >25% improvement over SOTA. ` +
+            `Current SOTA benchmarks: Solar ~33.7%, Wind ~59.3% Betz, Battery ~300 Wh/kg commercial. ` +
+            `Include specific percentage improvements with clear baselines.`
+          )
+          break
+        case 'bc2_cost':
+          guidance.push(
+            `BC2 (Cost): Include specific $/kWh, $/kg, or LCOE projections. ` +
+            `Reference current costs: Solar $0.03-0.05/kWh, Battery $150-200/kWh, H2 $3-5/kg. ` +
+            `Provide manufacturing cost breakdown.`
+          )
+          break
+        case 'bc8_trajectory':
+          guidance.push(
+            `BC8 (Trajectory): Describe the paradigm shift clearly. ` +
+            `Is this incremental improvement or fundamentally new approach? ` +
+            `Reference how previous breakthroughs changed their fields.`
+          )
+          break
+        case 'bc4_applications':
+          guidance.push(
+            `BC4 (Applications): Identify specific market segments and TAM. ` +
+            `Which incumbents would this disrupt? What's the adoption timeline?`
+          )
+          break
+        case 'bc5_societal':
+          guidance.push(
+            `BC5 (Societal): Describe decarbonization impact and accessibility. ` +
+            `What manufacturing processes are needed? Material supply chain concerns?`
+          )
+          break
+        case 'bc6_scale':
+          guidance.push(
+            `BC6 (Scale): Describe path from TRL 4-5 to TRL 8-9. ` +
+            `Market size, deployment potential, and scalability path.`
+          )
+          break
+        default:
+          // Generic guidance for other dimensions
+          break
+      }
+    }
+
+    return guidance.join('\n\n') || 'Focus on scientific rigor and quantifiable improvements.'
   }
 
   /**
