@@ -3,7 +3,7 @@
  * Central export for all techno-economic analysis functionality
  */
 
-// Quality Assurance
+// Quality Assurance (Sprint 1)
 export * from './quality-orchestrator'
 export * from './quality-rubric'
 export * from './calculation-validator'
@@ -11,8 +11,14 @@ export * from './assumption-validator'
 export * from './result-reconciliation'
 export * from './agent-adapters'
 
-// Core Calculations
+// Core Calculations (Sprint 1)
 export * from './calculations'
+
+// Advanced Calculations (Sprint 2)
+export * from './monte-carlo'
+export * from './sensitivity'
+export * from './financial-engine'
+export * from './cost-estimator'
 
 // Re-export commonly used types
 export type {
@@ -28,4 +34,7 @@ export type {
   MaterialBalance,
   EnergyBalance,
   TEAValidationResult,
+  FeedstockSpecification,
+  EconomicAllocation,
+  UncertaintyParameter,
 } from '@/types/tea-process'
