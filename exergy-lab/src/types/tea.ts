@@ -133,3 +133,408 @@ export interface TechnologyConfig {
   color: string
   defaults: Partial<TEAInput>
 }
+
+// ============================================================================
+// ENHANCED TEA TYPES v2 (Backward Compatible Extensions)
+// ============================================================================
+
+import type {
+  ProcessStream,
+  EquipmentItem,
+  MaterialBalance,
+  EnergyBalance,
+  AuxiliaryLoad,
+  EmissionsData,
+  ProcessFlowDiagram,
+  TechnologyPerformance,
+  FeedstockSpecification,
+  EconomicAllocation,
+  UncertaintyParameter,
+  TEAValidationResult,
+} from './tea-process'
+
+/**
+ * Enhanced TEA Input (v2)
+ * Extends TEAInput with comprehensive industry-standard parameters
+ */
+export interface TEAInput_v2 extends TEAInput {
+  // Process Engineering Data
+  processStreams?: ProcessStream[]
+  equipment?: EquipmentItem[]
+  materialBalances?: MaterialBalance[]
+  energyBalance?: EnergyBalance
+  auxiliaryLoads?: AuxiliaryLoad[]
+  emissions?: EmissionsData[]
+  processFlowDiagram?: ProcessFlowDiagram
+
+  // Enhanced Capital Costs (Multi-level NETL standard)
+  capexDetailed?: {
+    // Bare Erected Cost (BEC)
+    bareErectedCost: {
+      processEquipment: Record<string, number> // equipment type: cost
+      onSiteFacilities: number
+      infrastructure: number
+      directLabor: number
+      indirectLabor: number
+      total: number
+    }
+
+    // Engineering, Procurement, Construction Cost (EPCC)
+    epcc: {
+      bec: number
+      epcServices: number
+      detailedDesign: number
+      projectManagement: number
+      total: number
+    }
+
+    // Total Plant Cost (TPC)
+    tpc: {
+      epcc: number
+      processContingency: number // Based on TRL
+      projectContingency: number
+      total: number
+    }
+
+    // Total Overnight Cost (TOC)
+    toc: {
+      tpc: number
+      preProductionCosts: number
+      inventoryCapital: number
+      financingCosts: number
+      otherOwnerCosts: number
+      total: number
+    }
+
+    // Total As-Spent Cost (TASC)
+    tasc: {
+      toc: number
+      escalationDuringConstruction: number
+      interestDuringConstruction: number
+      total: number
+    }
+  }
+
+  // Enhanced Operating Costs
+  opexDetailed?: {
+    // Fixed O&M
+    fixedOM: {
+      operatingLabor: {
+        operators: number
+        supervisors: number
+        maintenance: number
+        admin: number
+        total: number
+      }
+      maintenanceMaterials: number
+      propertyTax: number
+      insurance: number
+      overhead: number
+      total: number
+    }
+
+    // Variable O&M
+    variableOM: {
+      feedstock: Record<string, { quantity: number; cost: number }> // feedstock: details
+      consumables: Record<string, { quantity: number; cost: number }> // consumable: details
+      utilities: {
+        electricity: { quantity: number; cost: number }
+        naturalGas: { quantity: number; cost: number }
+        water: { quantity: number; cost: number }
+        steam: { quantity: number; cost: number }
+        cooling: { quantity: number; cost: number }
+        hydrogen: { quantity: number; cost: number }
+        other: Record<string, { quantity: number; cost: number }>
+      }
+      wasteDisposal: number
+      byproductCredits: number // Negative value (revenue)
+      total: number
+    }
+  }
+
+  // Enhanced Financial Parameters
+  financialDetailed?: {
+    // Financing structure
+    financing: {
+      equityFraction: number // 0-1
+      debtFraction: number // 0-1
+      costOfEquity: number // percentage
+      costOfDebt: number // percentage
+      wacc: number // Weighted Average Cost of Capital
+    }
+
+    // Construction schedule
+    construction: {
+      duration: number // years
+      investmentSchedule: number[] // percentage per year, must sum to 100
+      availabilitySchedule: number[] // plant availability per year during construction
+    }
+
+    // Depreciation
+    depreciation: {
+      method: 'straight-line' | 'declining-balance' | 'macrs'
+      equipmentLife: number // years
+      buildingLife: number // years
+      schedule?: number[] // Custom depreciation schedule
+    }
+
+    // Taxation
+    taxation: {
+      federalRate: number // percentage
+      stateRate: number // percentage
+      effectiveRate: number // percentage
+      taxCredits: Record<string, number> // credit type: value
+      taxHoliday?: number // years
+    }
+
+    // Working capital
+    workingCapital: {
+      inventoryMonths: number // months of inventory
+      receivablesMonths: number // months of receivables
+      payablesMonths: number // months of payables
+      total: number // USD
+    }
+  }
+
+  // Technology Performance
+  performanceData?: TechnologyPerformance
+
+  // Feedstock Data
+  feedstocks?: FeedstockSpecification[]
+
+  // Co-products and allocation
+  coproducts?: EconomicAllocation[]
+
+  // Uncertainty parameters (for Monte Carlo)
+  uncertaintyParams?: UncertaintyParameter[]
+
+  // Market data
+  marketData?: {
+    productDemand?: { value: number; unit: string; geography: string }
+    marketSize?: { value: number; unit: string; geography: string }
+    marketShare?: number // percentage
+    competitorPricing?: Record<string, number> // competitor: price
+    marketGrowthRate?: number // percentage per year
+    incentives?: Array<{
+      type: string
+      value: number
+      duration: number
+      eligibility: string
+    }>
+  }
+
+  // Standards and compliance
+  standards?: {
+    applicableStandards: string[] // e.g., "NETL QGESS", "ICAO CORSIA"
+    complianceChecks: Record<string, boolean>
+    certifications: string[]
+  }
+}
+
+/**
+ * Enhanced TEA Result (v2)
+ * Extends TEAResult with comprehensive industry-standard metrics
+ */
+export interface TEAResult_v2 extends TEAResult {
+  // Additional financial metrics
+  extendedMetrics?: {
+    // NETL standard metrics
+    msp: number // Minimum Selling Price ($/unit)
+    lcop: number // Levelized Cost of Product ($/unit)
+    roi: number // Return on Investment (%)
+    profitabilityIndex: number
+    benefitCostRatio: number
+
+    // Energy metrics (for energy projects)
+    eroi?: number // Energy Return on Investment
+    epbt?: number // Energy Payback Time (years)
+
+    // Carbon metrics
+    mitigationCost?: number // USD/tCO2e avoided
+    carbonIntensity?: number // gCO2e/MJ or kgCO2e/unit
+    avoidedEmissions?: number // tCO2e/year
+  }
+
+  // Detailed cost breakdowns (NETL 5-level structure)
+  costBreakdownDetailed?: {
+    bec: number
+    epcc: number
+    tpc: number
+    toc: number
+    tasc: number
+    unitCosts: {
+      becPerKW: number
+      tpcPerKW: number
+      tocPerKW: number
+    }
+  }
+
+  // Multi-year projections
+  yearlyProjections?: Array<{
+    year: number
+    revenue: number
+    opex: number
+    depreciation: number
+    interest: number
+    taxableIncome: number
+    taxes: number
+    netIncome: number
+    cashFlow: number
+    cumulativeCashFlow: number
+    discountedCashFlow: number
+  }>
+
+  // Sensitivity analysis results
+  sensitivityResults?: {
+    tornadoPlotData: Array<{
+      parameter: string
+      lowCase: { value: number; impact: number }
+      baseCase: { value: number; impact: number }
+      highCase: { value: number; impact: number }
+    }>
+    criticalParameters: string[]
+    elasticities: Record<string, number> // parameter: elasticity
+  }
+
+  // Monte Carlo results (if stochastic analysis performed)
+  monteCarloResults?: {
+    iterations: number
+    metrics: {
+      lcoe: { mean: number; std: number; p5: number; p50: number; p95: number }
+      npv: { mean: number; std: number; p5: number; p50: number; p95: number }
+      irr: { mean: number; std: number; p5: number; p50: number; p95: number }
+    }
+    distributions: Record<string, number[]> // metric: distribution array
+    riskMetrics: {
+      probabilityOfSuccess: number // NPV > 0
+      valueAtRisk: number // VaR at 95% confidence
+      expectedShortfall: number
+    }
+  }
+
+  // Process performance results
+  processResults?: {
+    materialBalances: MaterialBalance[]
+    energyBalance: EnergyBalance
+    conversionEfficiencies: Record<string, number>
+    yields: Record<string, number>
+  }
+
+  // Product-specific results
+  productResults?: {
+    product: string
+    annualProduction: { value: number; unit: string }
+    productionCost: { value: number; unit: string }
+    marketPrice: { value: number; unit: string }
+    margin: number // percentage
+  }[]
+
+  // Validation results
+  validation?: TEAValidationResult
+
+  // Metadata
+  metadata?: {
+    calculationDate: Date
+    calculationVersion: string
+    modelVersion: string
+    validatedBy: string[]
+    references: string[]
+    dataQuality: {
+      completeness: number // 0-100
+      confidence: number // 0-100
+      primaryDataPercentage: number // 0-100
+    }
+  }
+}
+
+/**
+ * Calculation Provenance
+ * Track how each metric was calculated for transparency and validation
+ */
+export interface CalculationProvenance {
+  metric: string
+  formula: string
+  inputs: Record<string, { value: number; unit: string; source: string }>
+  assumptions: string[]
+  references: string[]
+  calculatedValue: number
+  unit: string
+  confidence: number // 0-100
+  validated: boolean
+  validationDetails?: {
+    method: string
+    benchmarks: string[]
+    deviation: number // percentage from benchmark
+    acceptable: boolean
+  }
+}
+
+/**
+ * TEA Report Configuration
+ * Controls which sections are included in generated reports
+ */
+export interface TEAReportConfig {
+  // Report metadata
+  reportType: 'academic' | 'executive' | 'regulatory' | 'technical' | 'government'
+  title: string
+  authors?: string[]
+  organization?: string
+  date: Date
+  version: string
+  confidential: boolean
+
+  // Sections to include
+  sections: {
+    coverPage: boolean
+    tableOfContents: boolean
+    listOfExhibits: boolean
+    acronymsAndAbbreviations: boolean
+    glossary: boolean
+    executiveSummary: boolean
+    introduction: boolean
+    methodology: boolean
+    processDescription: boolean
+    performanceAnalysis: boolean
+    economicAnalysis: boolean
+    marketAnalysis: boolean
+    resultsAndDiscussion: boolean
+    aiInsights: boolean
+    conclusions: boolean
+    limitations: boolean
+    references: boolean
+    appendices: boolean
+  }
+
+  // Customization options
+  customization: {
+    includeFormulas: boolean
+    includePFDs: boolean
+    includeStreamTables: boolean
+    includeMaterialBalances: boolean
+    includeEquipmentLists: boolean
+    includeSensitivityAnalysis: boolean
+    includeMonteCarloResults: boolean
+    includeValidationDetails: boolean
+    detailLevel: 'minimal' | 'standard' | 'comprehensive' | 'exhaustive'
+  }
+
+  // Visualization preferences
+  visualizations: {
+    chartStyle: 'professional' | 'academic' | 'simple'
+    colorScheme: 'default' | 'grayscale' | 'colorblind-safe'
+    includeCharts: string[] // chart types to include
+    chartResolution: 'screen' | 'print' | 'publication'
+  }
+
+  // Branding
+  branding?: {
+    logo?: string // base64 or URL
+    colors: {
+      primary: string
+      secondary: string
+      accent: string
+    }
+    footer?: string
+    header?: string
+  }
+}
