@@ -33,7 +33,7 @@ export interface FileValidationResult {
 }
 
 // Configuration
-const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
+const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
 const ALLOWED_TYPES: Record<SupportedFileType, string[]> = {
   pdf: ['application/pdf'],
   xlsx: [
@@ -109,44 +109,28 @@ export function validateFile(file: File): FileValidationResult {
 }
 
 /**
- * Convert File to base64 string
+ * Convert File to base64 string (Server-side compatible)
  */
-export function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => {
-      const result = reader.result as string
-      // Remove data URL prefix
-      const base64 = result.split(',')[1]
-      resolve(base64)
-    }
-    reader.onerror = () => reject(new Error('Failed to read file'))
-    reader.readAsDataURL(file)
-  })
+export async function fileToBase64(file: File): Promise<string> {
+  const arrayBuffer = await file.arrayBuffer()
+  const buffer = Buffer.from(arrayBuffer)
+  return buffer.toString('base64')
 }
 
 /**
- * Convert File to ArrayBuffer
+ * Convert File to ArrayBuffer (Server-side compatible)
  */
-export function fileToArrayBuffer(file: File): Promise<ArrayBuffer> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(reader.result as ArrayBuffer)
-    reader.onerror = () => reject(new Error('Failed to read file'))
-    reader.readAsArrayBuffer(file)
-  })
+export async function fileToArrayBuffer(file: File): Promise<ArrayBuffer> {
+  return await file.arrayBuffer()
 }
 
 /**
- * Convert File to text
+ * Convert File to text (Server-side compatible)
  */
-export function fileToText(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(reader.result as string)
-    reader.onerror = () => reject(new Error('Failed to read file'))
-    reader.readAsText(file)
-  })
+export async function fileToText(file: File): Promise<string> {
+  const arrayBuffer = await file.arrayBuffer()
+  const buffer = Buffer.from(arrayBuffer)
+  return buffer.toString('utf-8')
 }
 
 /**
@@ -188,8 +172,9 @@ export async function parseCSV(file: File): Promise<ExtractedData> {
 }
 
 /**
- * Parse spreadsheet (XLSX) file
- * Note: This is a placeholder. In production, use the 'xlsx' library
+ * Parse spreadsheet (XLSX) file (FAST MODE - Skip actual parsing)
+ * Returns immediately to prevent blocking calculations
+ * TODO: Implement full XLSX parsing with xlsx library when needed
  */
 export async function parseSpreadsheet(file: File): Promise<ExtractedData> {
   const validation = validateFile(file)
@@ -197,19 +182,23 @@ export async function parseSpreadsheet(file: File): Promise<ExtractedData> {
     throw new Error(validation.error)
   }
 
-  // This would use the 'xlsx' library in production
-  // For now, return a placeholder
+  // PERFORMANCE OPTIMIZATION: Return immediately
+  // XLSX parsing can be slow (1-3 seconds for large files)
   return {
-    text: 'Spreadsheet parsing requires xlsx library',
+    text: `Spreadsheet "${file.name}" uploaded but not parsed (manual data entry mode)`,
     tables: [],
     metadata: validation.metadata!,
-    structured: {},
+    structured: {
+      fileSize: file.size,
+      skipReason: 'fast-mode-enabled'
+    },
   }
 }
 
 /**
- * Parse PDF file
- * Note: This is a placeholder. In production, use 'pdf-parse' library
+ * Parse PDF file (FAST MODE - Skip actual parsing)
+ * Returns immediately to prevent blocking calculations
+ * TODO: Implement full PDF parsing with pdf-parse library when needed
  */
 export async function parsePDF(file: File): Promise<ExtractedData> {
   const validation = validateFile(file)
@@ -217,14 +206,17 @@ export async function parsePDF(file: File): Promise<ExtractedData> {
     throw new Error(validation.error)
   }
 
-  // This would use pdf-parse library in production
-  // For now, return file as base64 for AI processing
-  const base64 = await fileToBase64(file)
+  // PERFORMANCE OPTIMIZATION: Return immediately without base64 conversion
+  // Base64 conversion of large PDFs can take 1-5 seconds
+  // For TEA calculations, we don't need the PDF content - user manually enters data
 
   return {
-    text: 'PDF parsing requires pdf-parse library or AI multimodal analysis',
+    text: `PDF file "${file.name}" uploaded but not parsed (manual data entry mode)`,
     metadata: validation.metadata!,
-    structured: { base64 },
+    structured: {
+      fileSize: file.size,
+      skipReason: 'fast-mode-enabled'
+    },
   }
 }
 
@@ -249,7 +241,8 @@ export async function parseWord(file: File): Promise<ExtractedData> {
 }
 
 /**
- * Process image file
+ * Process image file (FAST MODE - Skip base64 conversion)
+ * Returns immediately to prevent blocking calculations
  */
 export async function processImage(file: File): Promise<ExtractedData> {
   const validation = validateFile(file)
@@ -257,13 +250,17 @@ export async function processImage(file: File): Promise<ExtractedData> {
     throw new Error(validation.error)
   }
 
-  const base64 = await fileToBase64(file)
+  // PERFORMANCE OPTIMIZATION: Skip base64 conversion (can take 500ms-2s for images)
+  // Images can be processed later if AI analysis is requested
 
   return {
-    text: 'Image analysis requires AI multimodal capabilities (Gemini Vision)',
-    images: [base64],
+    text: `Image "${file.name}" uploaded (${formatFileSize(file.size)})`,
+    images: [], // Skip base64 to save time
     metadata: validation.metadata!,
-    structured: { base64 },
+    structured: {
+      fileSize: file.size,
+      skipReason: 'fast-mode-enabled'
+    },
   }
 }
 

@@ -53,7 +53,7 @@ export class TEAResearchAdapter {
     Cross-reference against NETL QGESS, DOE, IEA, and NREL standards.`
 
     try {
-      const research Result = await this.researchAgent.research({
+      const researchResult = await this.researchAgent.research({
         query,
         domain: 'clean-energy' as any,
         maxSources: 10,
