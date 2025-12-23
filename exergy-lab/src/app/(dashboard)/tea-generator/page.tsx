@@ -72,12 +72,13 @@ function useDebugMode() {
 
 export default function TEAGeneratorPage() {
   const { debugMode, logs, log, toggleDebug, clearLogs, exportLogs } = useDebugMode()
-  const [isPremium, setIsPremium] = React.useState(false) // TODO: Get from user subscription
+  const [isPremium, setIsPremium] = React.useState(true) // TODO: Get from user subscription - SET TO TRUE FOR TESTING
   const [step, setStep] = React.useState<'input' | 'calculating' | 'results'>('input')
   const [teaInput, setTeaInput] = React.useState<Partial<TEAInput_v2>>({})
   const [teaResults, setTeaResults] = React.useState<TEAResult_v2 | null>(null)
   const [validationResult, setValidationResult] = React.useState<any>(null)
   const [qualityScore, setQualityScore] = React.useState<any>(null)
+  const [showDebugPanel, setShowDebugPanel] = React.useState(false)
 
   React.useEffect(() => {
     log('info', 'TEA Generator page loaded', { version: '0.0.3.1' })
@@ -169,7 +170,92 @@ export default function TEAGeneratorPage() {
   }
 
   return (
-    <div className="h-full flex flex-col bg-background">
+    <div className="h-full flex flex-col bg-background relative">
+      {/* Floating Debug Bug Icon (Bottom Right) */}
+      {debugMode && (
+        <button
+          onClick={() => setShowDebugPanel(!showDebugPanel)}
+          className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-warning text-slate-900 shadow-lg hover:shadow-xl transition-all hover:scale-110 flex items-center justify-center group"
+          title="Toggle Debug Panel"
+        >
+          <Settings className="w-6 h-6" />
+          {logs.length > 0 && (
+            <div className="absolute -top-1 -right-1 w-5 h-5 bg-error text-white text-xs rounded-full flex items-center justify-center font-bold">
+              {logs.length > 99 ? '99+' : logs.length}
+            </div>
+          )}
+        </button>
+      )}
+
+      {/* Floating Debug Panel */}
+      {debugMode && showDebugPanel && (
+        <div className="fixed bottom-24 right-6 z-40 w-96 max-h-[600px] bg-slate-900 border-2 border-warning rounded-lg shadow-2xl overflow-hidden">
+          <div className="bg-warning/20 border-b border-warning px-4 py-3 flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-warning flex items-center gap-2">
+              <Settings className="w-4 h-4" />
+              Debug Console
+            </h3>
+            <div className="flex gap-2">
+              <Button size="sm" variant="ghost" onClick={clearLogs} className="text-xs h-7">
+                Clear
+              </Button>
+              <Button size="sm" variant="ghost" onClick={exportLogs} className="text-xs h-7">
+                Export
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setShowDebugPanel(false)}
+                className="text-xs h-7"
+              >
+                ✕
+              </Button>
+            </div>
+          </div>
+
+          <div className="p-4 bg-black/50 max-h-[500px] overflow-y-auto font-mono text-xs">
+            {logs.map((log, i) => (
+              <div key={i} className="mb-2 pb-2 border-b border-slate-800">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-slate-600">{log.timestamp.toLocaleTimeString()}</span>
+                  <span className={`px-2 py-0.5 rounded text-xs font-bold ${
+                    log.level === 'error' ? 'bg-red-500/20 text-red-400' :
+                    log.level === 'warn' ? 'bg-yellow-500/20 text-yellow-400' :
+                    log.level === 'success' ? 'bg-green-500/20 text-green-400' :
+                    log.level === 'debug' ? 'bg-blue-500/20 text-blue-400' :
+                    'bg-slate-700 text-slate-300'
+                  }`}>
+                    {log.level.toUpperCase()}
+                  </span>
+                </div>
+                <div className="text-slate-300">{log.message}</div>
+                {log.data && (
+                  <details className="mt-1">
+                    <summary className="text-slate-500 cursor-pointer hover:text-slate-400">
+                      Data ▼
+                    </summary>
+                    <pre className="text-slate-400 ml-2 mt-1 text-xs overflow-x-auto">
+                      {JSON.stringify(log.data, null, 2)}
+                    </pre>
+                  </details>
+                )}
+              </div>
+            ))}
+            {logs.length === 0 && (
+              <div className="text-center text-slate-500 py-8">
+                No logs yet. Logs will appear here when you use the TEA system.
+              </div>
+            )}
+          </div>
+
+          <div className="bg-slate-800/50 px-4 py-2 border-t border-slate-700">
+            <div className="text-xs text-slate-400">
+              Total logs: {logs.length} | Debug mode: ON
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="border-b border-border bg-elevated px-6 py-4">
         <div className="flex items-center justify-between">
