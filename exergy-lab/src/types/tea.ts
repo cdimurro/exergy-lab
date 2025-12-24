@@ -158,6 +158,38 @@ import type {
  * Extends TEAInput with comprehensive industry-standard parameters
  */
 export interface TEAInput_v2 extends TEAInput {
+  // Additional metadata
+  project_description?: string
+  evaluation_year?: number
+
+  // Storage-specific parameters
+  degradation_rate?: number
+  depth_of_discharge?: number
+  cycle_life?: number
+
+  // Simplified capital cost breakdown (form-friendly)
+  process_equipment_cost?: number
+  electrical_equipment_cost?: number
+  instrumentation_cost?: number
+  civil_structural_cost?: number
+  piping_cost?: number
+  contingency_cost?: number
+
+  // Financial parameters
+  depreciation_method?: 'straight-line' | 'declining-balance' | 'macrs'
+
+  // Simplified operating costs (form-friendly)
+  operating_labor_annual?: number
+  maintenance_labor_annual?: number
+  admin_labor_annual?: number
+  property_tax_annual?: number
+  maintenance_materials_annual?: number
+  electricity_cost_per_kwh?: number
+  water_cost_per_m3?: number
+  natural_gas_cost?: number
+  consumables_annual?: number
+  waste_disposal_annual?: number
+
   // Process Engineering Data
   processStreams?: ProcessStream[]
   equipment?: EquipmentItem[]

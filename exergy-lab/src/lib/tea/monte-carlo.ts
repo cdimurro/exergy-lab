@@ -11,7 +11,8 @@
  * Reference: Perovskite PV report, risk analysis standards
  */
 
-import type { TEAInput_v2, TEAResult_v2, UncertaintyParameter } from '@/types/tea'
+import type { TEAInput_v2, TEAResult_v2 } from '@/types/tea'
+import type { UncertaintyParameter } from '@/types/tea-process'
 import { TEACalculator } from './calculations'
 
 export interface MonteCarloConfig {

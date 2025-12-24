@@ -11,8 +11,19 @@
  * - Validate economic viability against thresholds
  */
 
-import type { Hypothesis, DiscoveryResult } from '@/types/discovery'
+import type { Domain, DiscoveryReport } from '@/types/discovery'
 import type { TEAInput_v2, TEAResult_v2 } from '@/types/tea'
+
+// Local types for discovery integration (compatible with FrontierScience Discovery Engine)
+interface Hypothesis {
+  id: string
+  title: string
+  description: string
+  domain: string
+  noveltyScore?: number
+  feasibilityScore?: number
+  impactScore?: number
+}
 import { TEACalculator, calculateTEA } from './calculations'
 import { validateTEAQuality } from './quality-orchestrator'
 import { evaluateTEAQuality } from './quality-rubric'
@@ -30,18 +41,49 @@ export async function hypothesisToTEAInput(hypothesis: Hypothesis): Promise<TEAI
 
   // Parse hypothesis for TEA-relevant parameters
   const capacity = extractCapacityFromHypothesis(hypothesis)
-  const efficiency = extractEfficiencyFromHypothesis(hypothesis)
   const costs = extractCostsFromHypothesis(hypothesis)
 
-  return {
+  // Build complete TEA input with all required properties
+  const teaInput: TEAInput_v2 = {
+    // Required project metadata
     project_name: hypothesis.title,
     technology_type: technology,
+
+    // Required capacity parameters
     capacity_mw: capacity || defaults.capacity_mw || 1,
     capacity_factor: defaults.capacity_factor || 50,
-    ...defaults,
+
+    // Required capital costs
+    capex_per_kw: defaults.capex_per_kw || 1000,
+    installation_factor: defaults.installation_factor || 1.2,
+    land_cost: defaults.land_cost || 0,
+    grid_connection_cost: defaults.grid_connection_cost || 0,
+
+    // Required operating costs
+    opex_per_kw_year: defaults.opex_per_kw_year || 20,
+    fixed_opex_annual: defaults.fixed_opex_annual || 0,
+    variable_opex_per_mwh: defaults.variable_opex_per_mwh || 0,
+    insurance_rate: defaults.insurance_rate || 0.5,
+
+    // Required financial parameters
+    project_lifetime_years: defaults.project_lifetime_years || 25,
+    discount_rate: defaults.discount_rate || 8,
+    debt_ratio: defaults.debt_ratio || 0.6,
+    interest_rate: defaults.interest_rate || 5,
+    tax_rate: defaults.tax_rate || 25,
+    depreciation_years: defaults.depreciation_years || 10,
+
+    // Required revenue assumptions
+    electricity_price_per_mwh: defaults.electricity_price_per_mwh || 50,
+    price_escalation_rate: defaults.price_escalation_rate || 2,
+    carbon_credit_per_ton: defaults.carbon_credit_per_ton || 0,
+    carbon_intensity_avoided: defaults.carbon_intensity_avoided || 0,
+
+    // Apply any additional defaults and hypothesis-derived costs
     ...costs,
-    // Override with hypothesis-specific data if available
   }
+
+  return teaInput
 }
 
 /**

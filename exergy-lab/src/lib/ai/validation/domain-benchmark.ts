@@ -271,6 +271,337 @@ export const INDUSTRY_BENCHMARKS = {
   },
 }
 
+// ============================================================================
+// BREAKTHROUGH BASELINES (v0.0.4.0)
+// Domain-specific thresholds for TRUE breakthrough detection
+// Used by BD1/BD6 to calibrate scoring and prevent false positives
+// ============================================================================
+
+export interface BreakthroughBaseline {
+  domain: string
+  subDomain?: string
+  currentSOTA: number            // Current state-of-the-art value
+  sotaUnit: string               // Unit for the SOTA value
+  nearTermTarget: number         // Industry 5-year target
+  breakthroughThreshold: number  // Threshold for TRUE breakthrough (9.0+)
+  paradigmShiftThreshold: number // Threshold for paradigm shift (9.5+)
+  context: string                // Brief description
+  lastUpdated: string            // When this baseline was set (YYYY-MM)
+}
+
+/**
+ * Domain-specific breakthrough baselines for accurate breakthrough detection.
+ *
+ * Key principle: TRUE breakthroughs are rare by definition. These baselines
+ * define what constitutes a genuine paradigm shift vs. incremental improvement.
+ *
+ * Scoring guidance:
+ * - Below SOTA: Not competitive (score 5-6)
+ * - SOTA to nearTermTarget: Incremental improvement (score 6.5-7.5)
+ * - nearTermTarget to breakthroughThreshold: Significant advancement (score 7.5-8.5)
+ * - Above breakthroughThreshold: TRUE breakthrough (score 9.0+)
+ * - Above paradigmShiftThreshold: Paradigm shift (score 9.5+)
+ */
+export const BREAKTHROUGH_BASELINES: BreakthroughBaseline[] = [
+  // Solar PV
+  {
+    domain: 'solar',
+    subDomain: 'silicon',
+    currentSOTA: 26.7,           // Lab record (UNSW 2023)
+    sotaUnit: '%',
+    nearTermTarget: 28.0,        // Approaching Auger limit
+    breakthroughThreshold: 29.0, // Exceeding practical Si limit
+    paradigmShiftThreshold: 30.0, // Beyond theoretical Si limit (requires tandem)
+    context: 'Single-junction silicon solar cell efficiency',
+    lastUpdated: '2024-12',
+  },
+  {
+    domain: 'solar',
+    subDomain: 'perovskite-tandem',
+    currentSOTA: 33.9,           // LONGi 2023
+    sotaUnit: '%',
+    nearTermTarget: 37.0,        // Near-term tandem target
+    breakthroughThreshold: 40.0, // TRUE breakthrough threshold
+    paradigmShiftThreshold: 45.0, // Approaching 2-junction limit (45%)
+    context: 'Perovskite-silicon tandem cell efficiency',
+    lastUpdated: '2024-12',
+  },
+  {
+    domain: 'solar',
+    subDomain: 'perovskite-stability',
+    currentSOTA: 1000,           // Hours at T80
+    sotaUnit: 'hours',
+    nearTermTarget: 10000,       // 1+ year under accelerated testing
+    breakthroughThreshold: 25000, // 3 years under accelerated testing
+    paradigmShiftThreshold: 50000, // Commercial-grade stability
+    context: 'Perovskite solar cell operational stability (T80 lifetime)',
+    lastUpdated: '2024-12',
+  },
+
+  // Battery Energy Density
+  {
+    domain: 'battery',
+    subDomain: 'li-ion-gravimetric',
+    currentSOTA: 300,            // Commercial EV cells
+    sotaUnit: 'Wh/kg',
+    nearTermTarget: 400,         // Near-term solid-state target
+    breakthroughThreshold: 500,  // TRUE breakthrough (Li-S territory)
+    paradigmShiftThreshold: 600, // Paradigm shift
+    context: 'Lithium-ion battery gravimetric energy density',
+    lastUpdated: '2024-12',
+  },
+  {
+    domain: 'battery',
+    subDomain: 'cycle-life',
+    currentSOTA: 1500,           // Commercial EV cycle life
+    sotaUnit: 'cycles',
+    nearTermTarget: 3000,        // Next-gen target
+    breakthroughThreshold: 10000, // TRUE breakthrough
+    paradigmShiftThreshold: 50000, // Grid-storage grade
+    context: 'Battery cycle life (80% capacity retention)',
+    lastUpdated: '2024-12',
+  },
+  {
+    domain: 'battery',
+    subDomain: 'fast-charge',
+    currentSOTA: 15,             // Current best (15 min to 80%)
+    sotaUnit: 'minutes',
+    nearTermTarget: 10,          // Near-term target
+    breakthroughThreshold: 5,    // TRUE breakthrough (gas-station parity)
+    paradigmShiftThreshold: 2,   // Paradigm shift
+    context: 'Time to charge 0-80% capacity',
+    lastUpdated: '2024-12',
+  },
+
+  // Hydrogen Production
+  {
+    domain: 'hydrogen',
+    subDomain: 'electrolyzer-efficiency',
+    currentSOTA: 80,             // Best PEM efficiency
+    sotaUnit: '%',
+    nearTermTarget: 85,          // Near-term target
+    breakthroughThreshold: 90,   // TRUE breakthrough (near reversible)
+    paradigmShiftThreshold: 95,  // Paradigm shift
+    context: 'Water electrolyzer electrical efficiency (HHV)',
+    lastUpdated: '2024-12',
+  },
+  {
+    domain: 'hydrogen',
+    subDomain: 'electrolyzer-cost',
+    currentSOTA: 500,            // $/kW installed
+    sotaUnit: '$/kW',
+    nearTermTarget: 200,         // DOE target
+    breakthroughThreshold: 100,  // TRUE breakthrough
+    paradigmShiftThreshold: 50,  // Paradigm shift (commodity hardware)
+    context: 'Electrolyzer capital cost per kW',
+    lastUpdated: '2024-12',
+  },
+  {
+    domain: 'hydrogen',
+    subDomain: 'green-h2-cost',
+    currentSOTA: 5.0,            // $/kg H2 (renewable electricity)
+    sotaUnit: '$/kg',
+    nearTermTarget: 2.0,         // DOE Earthshot target
+    breakthroughThreshold: 1.0,  // TRUE breakthrough (fossil parity)
+    paradigmShiftThreshold: 0.5, // Paradigm shift
+    context: 'Green hydrogen production cost',
+    lastUpdated: '2024-12',
+  },
+
+  // Wind Energy
+  {
+    domain: 'wind',
+    subDomain: 'capacity-factor',
+    currentSOTA: 45,             // Best offshore sites
+    sotaUnit: '%',
+    nearTermTarget: 55,          // Next-gen offshore target
+    breakthroughThreshold: 65,   // TRUE breakthrough
+    paradigmShiftThreshold: 75,  // Paradigm shift
+    context: 'Wind turbine capacity factor',
+    lastUpdated: '2024-12',
+  },
+  {
+    domain: 'wind',
+    subDomain: 'turbine-efficiency',
+    currentSOTA: 50,             // Best large turbines
+    sotaUnit: '%',
+    nearTermTarget: 52,          // Near Betz with improvements
+    breakthroughThreshold: 55,   // TRUE breakthrough (exceptional)
+    paradigmShiftThreshold: 57,  // Very close to Betz limit
+    context: 'Wind turbine aerodynamic efficiency',
+    lastUpdated: '2024-12',
+  },
+
+  // Energy Storage Cost
+  {
+    domain: 'storage',
+    subDomain: 'battery-cost',
+    currentSOTA: 139,            // $/kWh (BloombergNEF 2024)
+    sotaUnit: '$/kWh',
+    nearTermTarget: 80,          // Near-term target
+    breakthroughThreshold: 50,   // TRUE breakthrough
+    paradigmShiftThreshold: 25,  // Paradigm shift (ubiquitous storage)
+    context: 'Battery pack cost per kWh',
+    lastUpdated: '2024-12',
+  },
+
+  // LCOE
+  {
+    domain: 'solar',
+    subDomain: 'lcoe',
+    currentSOTA: 30,             // Best utility solar $/MWh
+    sotaUnit: '$/MWh',
+    nearTermTarget: 20,          // Near-term target
+    breakthroughThreshold: 10,   // TRUE breakthrough
+    paradigmShiftThreshold: 5,   // Paradigm shift (too cheap to meter)
+    context: 'Solar PV levelized cost of electricity',
+    lastUpdated: '2024-12',
+  },
+  {
+    domain: 'wind',
+    subDomain: 'lcoe',
+    currentSOTA: 35,             // Best onshore wind $/MWh
+    sotaUnit: '$/MWh',
+    nearTermTarget: 25,          // Near-term target
+    breakthroughThreshold: 15,   // TRUE breakthrough
+    paradigmShiftThreshold: 10,  // Paradigm shift
+    context: 'Onshore wind levelized cost of electricity',
+    lastUpdated: '2024-12',
+  },
+
+  // Carbon Capture
+  {
+    domain: 'carbon-capture',
+    subDomain: 'dac-cost',
+    currentSOTA: 600,            // $/tCO2 for DAC
+    sotaUnit: '$/tCO2',
+    nearTermTarget: 200,         // Near-term target
+    breakthroughThreshold: 100,  // TRUE breakthrough
+    paradigmShiftThreshold: 50,  // Paradigm shift (climate-scale viable)
+    context: 'Direct air capture cost per ton CO2',
+    lastUpdated: '2024-12',
+  },
+
+  // Catalysis
+  {
+    domain: 'catalysis',
+    subDomain: 'fuel-cell-platinum-loading',
+    currentSOTA: 0.25,           // mg Pt/cm² current
+    sotaUnit: 'mg/cm²',
+    nearTermTarget: 0.1,         // Near-term target
+    breakthroughThreshold: 0.025, // TRUE breakthrough
+    paradigmShiftThreshold: 0,   // Paradigm shift (Pt-free)
+    context: 'Fuel cell platinum catalyst loading',
+    lastUpdated: '2024-12',
+  },
+]
+
+/**
+ * Get the breakthrough baseline for a specific domain/subdomain
+ */
+export function getBreakthroughBaseline(
+  domain: string,
+  subDomain?: string
+): BreakthroughBaseline | undefined {
+  const domainLower = domain.toLowerCase()
+  const subDomainLower = subDomain?.toLowerCase()
+
+  return BREAKTHROUGH_BASELINES.find(b => {
+    const domainMatch = b.domain === domainLower ||
+                        domainLower.includes(b.domain) ||
+                        b.domain.includes(domainLower)
+
+    if (!domainMatch) return false
+
+    if (subDomainLower && b.subDomain) {
+      return subDomainLower.includes(b.subDomain) ||
+             b.subDomain.includes(subDomainLower)
+    }
+
+    return true
+  })
+}
+
+/**
+ * Calculate breakthrough score adjustment based on domain baselines
+ *
+ * @param domain - Domain (e.g., 'solar', 'battery')
+ * @param subDomain - Sub-domain (e.g., 'perovskite-tandem', 'li-ion-gravimetric')
+ * @param claimedValue - The claimed performance value
+ * @param isLowerBetter - Whether lower values are better (e.g., cost, time)
+ * @returns Score adjustment multiplier (0.5 to 1.5)
+ */
+export function calculateBreakthroughScoreAdjustment(
+  domain: string,
+  subDomain: string | undefined,
+  claimedValue: number,
+  isLowerBetter: boolean = false
+): { multiplier: number; tier: string; reasoning: string } {
+  const baseline = getBreakthroughBaseline(domain, subDomain)
+
+  if (!baseline) {
+    return {
+      multiplier: 1.0,
+      tier: 'unknown',
+      reasoning: `No baseline found for ${domain}/${subDomain || 'default'}`,
+    }
+  }
+
+  // Normalize comparison based on whether lower is better
+  const sota = baseline.currentSOTA
+  const nearTerm = baseline.nearTermTarget
+  const breakthrough = baseline.breakthroughThreshold
+  const paradigm = baseline.paradigmShiftThreshold
+
+  // Calculate position relative to thresholds
+  let tier: string
+  let multiplier: number
+
+  if (isLowerBetter) {
+    // Lower is better (cost, time, etc.)
+    if (claimedValue <= paradigm) {
+      tier = 'paradigm-shift'
+      multiplier = 1.5
+    } else if (claimedValue <= breakthrough) {
+      tier = 'breakthrough'
+      multiplier = 1.3
+    } else if (claimedValue <= nearTerm) {
+      tier = 'significant'
+      multiplier = 1.1
+    } else if (claimedValue <= sota) {
+      tier = 'incremental'
+      multiplier = 1.0
+    } else {
+      tier = 'below-sota'
+      multiplier = 0.7
+    }
+  } else {
+    // Higher is better (efficiency, energy density, etc.)
+    if (claimedValue >= paradigm) {
+      tier = 'paradigm-shift'
+      multiplier = 1.5
+    } else if (claimedValue >= breakthrough) {
+      tier = 'breakthrough'
+      multiplier = 1.3
+    } else if (claimedValue >= nearTerm) {
+      tier = 'significant'
+      multiplier = 1.1
+    } else if (claimedValue >= sota) {
+      tier = 'incremental'
+      multiplier = 1.0
+    } else {
+      tier = 'below-sota'
+      multiplier = 0.7
+    }
+  }
+
+  const reasoning = `${domain}/${subDomain || 'default'}: claimed ${claimedValue}${baseline.sotaUnit} ` +
+    `vs SOTA ${sota}, near-term ${nearTerm}, breakthrough ${breakthrough}, paradigm ${paradigm} ` +
+    `=> ${tier} (${multiplier}x)`
+
+  return { multiplier, tier, reasoning }
+}
+
 // Legacy export for backward compatibility
 export const DOMAIN_BENCHMARKS: DomainBenchmarks = {
   // Energy conversion limits (TRUE PHYSICAL LIMITS)

@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
  */
 export async function GET() {
   return NextResponse.json({
-    maxFileSize: 10 * 1024 * 1024, // 10MB
+    maxFileSize: 50 * 1024 * 1024, // 50MB
     allowedTypes: ['pdf', 'xlsx', 'csv', 'docx', 'png', 'jpg', 'jpeg'],
     maxFiles: 5,
   })

@@ -423,9 +423,9 @@ export class ResultReconciliator {
   }
 
   /**
-   * Validate economic metric consistency
+   * Validate LCOE and ROI calculation consistency
    */
-  private validateEconomicConsistency() {
+  private validateLCOEAndROIConsistency() {
     // LCOE calculation consistency
     // LCOE * Production should approximately equal Total Costs (levelized)
     const lcoe = this.results.lcoe
@@ -484,17 +484,11 @@ export class ResultReconciliator {
   }
 
   /**
-   * Validate MSP consistency
+   * Validate MSP definition exists
    */
-  private validateMSPConsistency() {
-    // When selling at MSP, NPV should be approximately zero
-    // This is already validated in economic consistency, but worth double-checking
+  private validateMSPDefinition() {
+    // Check if MSP is defined and reasonable
     const msp = this.results.extendedMetrics?.msp || 0
-    const npv = this.results.npv
-
-    // If MSP was used to calculate NPV, NPV should be close to 0
-    // However, if current NPV is from market prices, this check doesn't apply
-    // We'll check if there's an MSP and if NPV is reasonable
 
     this.checks.push({
       category: 'economic',

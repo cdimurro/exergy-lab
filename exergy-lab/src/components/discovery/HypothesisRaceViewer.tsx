@@ -48,7 +48,7 @@ import { DimensionProgressBarInline } from './DimensionProgressBar'
 // Types
 // ============================================================================
 
-export type HypGenAgentType = 'novel' | 'feasible' | 'economic' | 'cross-domain' | 'paradigm'
+export type HypGenAgentType = 'novel' | 'feasible' | 'economic' | 'cross-domain' | 'paradigm' | 'fusion'
 export type HypothesisStatus = 'active' | 'eliminated' | 'breakthrough'
 
 export interface RacingHypothesis {
@@ -138,6 +138,7 @@ const AGENT_CONFIG: Record<HypGenAgentType, { label: string; color: string; icon
   economic: { label: 'Economic', color: '#F59E0B', icon: <TrendingUp size={12} /> },
   'cross-domain': { label: 'Cross-Domain', color: '#3B82F6', icon: <Activity size={12} /> },
   paradigm: { label: 'Paradigm', color: '#EC4899', icon: <Flame size={12} /> },
+  fusion: { label: 'Fusion', color: '#14B8A6', icon: <Users size={12} /> },
 }
 
 // ============================================================================

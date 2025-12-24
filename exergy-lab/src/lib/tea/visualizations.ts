@@ -18,6 +18,7 @@
 import type { TornadoPlotData } from './sensitivity'
 import type { MonteCarloResult } from './monte-carlo'
 import type { ProFormaStatement } from './financial-engine'
+import type { TEAResult_v2 } from '@/types/tea'
 
 /**
  * Chart configuration

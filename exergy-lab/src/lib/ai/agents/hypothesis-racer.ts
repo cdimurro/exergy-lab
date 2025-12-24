@@ -62,6 +62,18 @@ import type {
   RefinementFeedback,
 } from '../rubrics/types-breakthrough'
 
+// Expert Review Types (imported from component for type consistency)
+export type ExpertDecision = 'approve' | 'reject' | 'refine'
+
+export interface ExpertReview {
+  hypothesisId: string
+  expertId: string
+  decision: ExpertDecision
+  feedback?: string
+  refinements?: string[]
+  timestamp: number
+}
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -88,6 +100,15 @@ export interface RacingArenaConfig {
   maxGPUValidationsPerIteration: number
   /** Enable GPU pool warm-up at race start */
   enableGPUWarmUp: boolean
+  /** Enable expert review checkpoint after final iteration */
+  enableExpertReview: boolean
+  /** Number of top hypotheses to present for expert review */
+  expertReviewTopN: number
+  /** Callback for expert review - if provided, race pauses for review */
+  onExpertReviewRequested?: (
+    hypotheses: RacingHypothesis[],
+    iteration: number
+  ) => Promise<ExpertReview[]>
 }
 
 export const DEFAULT_RACING_CONFIG: RacingArenaConfig = {
@@ -101,10 +122,12 @@ export const DEFAULT_RACING_CONFIG: RacingArenaConfig = {
   gpuScoreThreshold: 6.0, // Lower threshold for earlier GPU validation
   maxGPUValidationsPerIteration: 10, // Increased for batch validation
   enableGPUWarmUp: true,
+  enableExpertReview: false, // Disabled by default
+  expertReviewTopN: 5, // Review top 5 hypotheses
 }
 
 export interface RaceState {
-  status: 'idle' | 'generating' | 'evaluating' | 'refining' | 'complete' | 'error'
+  status: 'idle' | 'generating' | 'evaluating' | 'refining' | 'awaiting_expert_review' | 'complete' | 'error'
   currentIteration: number
   maxIterations: number
   hypotheses: Map<string, RacingHypothesis>
@@ -115,6 +138,10 @@ export interface RaceState {
   statistics: RaceStatistics
   startTime: number
   endTime?: number
+  /** Expert reviews received during this race */
+  expertReviews: ExpertReview[]
+  /** Hypotheses approved by experts */
+  expertApprovedHypotheses: RacingHypothesis[]
 }
 
 export interface RaceStatistics {
@@ -158,6 +185,8 @@ export type RaceEventType =
   | 'hypothesis_eliminated'
   | 'breakthrough_detected'
   | 'iteration_complete'
+  | 'expert_review_requested'
+  | 'expert_review_complete'
   | 'race_complete'
   | 'race_error'
 
@@ -175,6 +204,9 @@ export interface RaceEvent {
   gpuProgress?: number
   validatedCount?: number
   gpuCost?: number
+  /** Expert review specific fields */
+  expertReviews?: ExpertReview[]
+  hypothesesForReview?: RacingHypothesis[]
 }
 
 export type RaceEventCallback = (event: RaceEvent) => void
@@ -355,6 +387,11 @@ export class HypothesisRacingArena {
         }
       }
 
+      // Expert review checkpoint (if enabled)
+      if (this.config.enableExpertReview && this.config.onExpertReviewRequested) {
+        await this.runExpertReviewCheckpoint()
+      }
+
       // Final cleanup and result generation
       this.state.status = 'complete'
       this.state.endTime = Date.now()
@@ -429,6 +466,8 @@ export class HypothesisRacingArena {
         byAgent: new Map(),
       },
       startTime: 0,
+      expertReviews: [],
+      expertApprovedHypotheses: [],
     }
   }
 
@@ -1062,6 +1101,119 @@ export class HypothesisRacingArena {
     // Let all iterations run to give refinement a chance to improve hypotheses
 
     return false
+  }
+
+  /**
+   * Run expert review checkpoint
+   * Pauses the race and requests expert review of top hypotheses
+   */
+  private async runExpertReviewCheckpoint(): Promise<void> {
+    if (!this.config.onExpertReviewRequested) {
+      return
+    }
+
+    // Get top N hypotheses for review
+    const topHypotheses = [...this.state.activeHypotheses]
+      .sort((a, b) => b.scores.overall - a.scores.overall)
+      .slice(0, this.config.expertReviewTopN)
+
+    if (topHypotheses.length === 0) {
+      console.log('[HypothesisRacingArena] No hypotheses available for expert review')
+      return
+    }
+
+    this.state.status = 'awaiting_expert_review'
+
+    this.emit({
+      type: 'expert_review_requested',
+      iteration: this.state.currentIteration,
+      hypothesesForReview: topHypotheses,
+      message: `Expert review requested for top ${topHypotheses.length} hypotheses`,
+      timestamp: Date.now(),
+    })
+
+    console.log(`[HypothesisRacingArena] Awaiting expert review for ${topHypotheses.length} hypotheses`)
+
+    try {
+      // Call the expert review callback and wait for reviews
+      const reviews = await this.config.onExpertReviewRequested(
+        topHypotheses,
+        this.state.currentIteration
+      )
+
+      // Process expert reviews
+      this.applyExpertReviews(reviews)
+
+      this.emit({
+        type: 'expert_review_complete',
+        iteration: this.state.currentIteration,
+        expertReviews: reviews,
+        message: `Expert review complete: ${reviews.length} reviews received`,
+        timestamp: Date.now(),
+      })
+
+      console.log(`[HypothesisRacingArena] Expert review complete: ${reviews.length} reviews`)
+
+    } catch (error) {
+      console.error('[HypothesisRacingArena] Expert review failed:', error)
+      // Continue without expert review on error
+    }
+  }
+
+  /**
+   * Apply expert reviews to hypotheses
+   */
+  private applyExpertReviews(reviews: ExpertReview[]): void {
+    this.state.expertReviews = reviews
+
+    for (const review of reviews) {
+      const hypothesis = this.state.hypotheses.get(review.hypothesisId)
+      if (!hypothesis) continue
+
+      // Store expert review on hypothesis
+      ;(hypothesis as any).expertReview = review
+
+      switch (review.decision) {
+        case 'approve':
+          // Mark as expert approved
+          hypothesis.status = 'breakthrough' // Elevate status
+          if (!this.state.expertApprovedHypotheses.find(h => h.id === hypothesis.id)) {
+            this.state.expertApprovedHypotheses.push(hypothesis)
+          }
+          // Also add to breakthrough candidates if not already there
+          if (!this.state.breakthroughCandidates.find(h => h.id === hypothesis.id)) {
+            this.state.breakthroughCandidates.push(hypothesis)
+            this.state.statistics.totalBreakthroughs++
+          }
+          console.log(`[HypothesisRacingArena] Expert approved: ${hypothesis.id.slice(-8)}`)
+          break
+
+        case 'reject':
+          // Move to eliminated
+          hypothesis.status = 'eliminated'
+          hypothesis.eliminatedReason = `Rejected by expert: ${review.feedback || 'No reason provided'}`
+          const activeIdx = this.state.activeHypotheses.findIndex(h => h.id === hypothesis.id)
+          if (activeIdx >= 0) {
+            this.state.activeHypotheses.splice(activeIdx, 1)
+            this.state.eliminatedHypotheses.push(hypothesis)
+            this.state.statistics.totalEliminated++
+          }
+          console.log(`[HypothesisRacingArena] Expert rejected: ${hypothesis.id.slice(-8)}`)
+          break
+
+        case 'refine':
+          // Apply refinement suggestions (if provided)
+          if (review.refinements && review.refinements.length > 0) {
+            // Store refinement suggestions for future iteration or manual editing
+            ;(hypothesis as any).expertRefinements = review.refinements
+            console.log(`[HypothesisRacingArena] Expert refinements for: ${hypothesis.id.slice(-8)}`)
+          }
+          break
+      }
+    }
+
+    // Update leaderboard after expert reviews
+    this.state.leaderboard = this.buildHybridLeaderboard(this.state.activeHypotheses)
   }
 
   /**

@@ -123,13 +123,13 @@ const TECHNOLOGY_BENCHMARKS: Record<
  * Physical constraints (absolute limits)
  */
 const PHYSICAL_CONSTRAINTS = {
-  capacityFactor: { min: 0, max: 100 }, // percentage
-  efficiency: { min: 0, max: 100 }, // percentage
-  lifetime: { min: 1, max: 100 }, // years
-  discountRate: { min: 0, max: 50 }, // percentage
-  temperature: { min: -273.15, max: 3000 }, // °C (absolute zero to practical max)
-  pressure: { min: 0, max: 100 }, // MPa (practical limits)
-  irr: { min: -100, max: 1000 }, // percentage (allow wide range for validation)
+  capacityFactor: { min: 0, max: 100, unit: '%' },
+  efficiency: { min: 0, max: 100, unit: '%' },
+  lifetime: { min: 1, max: 100, unit: 'years' },
+  discountRate: { min: 0, max: 50, unit: '%' },
+  temperature: { min: -273.15, max: 3000, unit: '°C' },
+  pressure: { min: 0, max: 100, unit: 'MPa' },
+  irr: { min: -100, max: 1000, unit: '%' },
 }
 
 /**
@@ -449,7 +449,7 @@ export class CalculationValidator {
   private validateFormulas() {
     for (const prov of this.provenance) {
       // Check if formula is documented
-      const formulaDocumented = prov.formula && prov.formula.length > 0
+      const formulaDocumented = Boolean(prov.formula && prov.formula.length > 0)
 
       this.checks.push({
         metric: `${prov.metric} Formula`,

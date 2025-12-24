@@ -14,7 +14,8 @@
  * Reference: Perovskite PV Manufacturing TEA report (Ethiopia)
  */
 
-import type { TEAInput_v2, TechnologyPerformance } from '@/types/tea'
+import type { TEAInput_v2 } from '@/types/tea'
+import type { TechnologyPerformance } from '@/types/tea-process'
 
 export interface SolarPVSpecs {
   // Module specifications
@@ -302,6 +303,8 @@ export function getSolarPVDefaults(technology: SolarPVSpecs['module']['technolog
       module: {
         pce: 22,
         technology: 'silicon',
+        moduleArea: 2.0, // m² per module (standard 72-cell)
+        modulePower: 400, // W per module
         degradationRate: 0.5,
         temperatureCoefficient: -0.40,
         moduleLifetime: 25,
@@ -317,6 +320,8 @@ export function getSolarPVDefaults(technology: SolarPVSpecs['module']['technolog
       module: {
         pce: 20,
         technology: 'perovskite',
+        moduleArea: 2.0, // m² per module
+        modulePower: 360, // W per module (lower due to lower PCE)
         degradationRate: 3.0, // Higher degradation currently
         temperatureCoefficient: -0.30,
         moduleLifetime: 15, // Shorter lifetime currently
@@ -332,6 +337,8 @@ export function getSolarPVDefaults(technology: SolarPVSpecs['module']['technolog
       module: {
         pce: 24,
         technology: 'tandem',
+        moduleArea: 2.0, // m² per module
+        modulePower: 480, // W per module (higher due to higher PCE)
         degradationRate: 1.0,
         temperatureCoefficient: -0.32,
         moduleLifetime: 25,

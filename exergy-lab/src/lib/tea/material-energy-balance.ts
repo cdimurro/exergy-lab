@@ -575,14 +575,15 @@ export class BalanceValidator {
     else if (errorPercent > tolerance * 100) severity = 'minor'
 
     const converged = balance.converged || errorPercent < tolerance * 100
+    const componentName = 'component' in balance ? balance.component : 'Energy'
 
     return {
       converged,
       errorPercent,
       severity,
       message: converged
-        ? `${balance.component || 'Energy'} balance converged (${errorPercent.toFixed(3)}% error)`
-        : `${balance.component || 'Energy'} balance NOT converged (${errorPercent.toFixed(3)}% error > ${tolerance * 100}% tolerance)`,
+        ? `${componentName} balance converged (${errorPercent.toFixed(3)}% error)`
+        : `${componentName} balance NOT converged (${errorPercent.toFixed(3)}% error > ${tolerance * 100}% tolerance)`,
     }
   }
 

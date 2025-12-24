@@ -1230,6 +1230,7 @@ RESEARCH POINTERS:
       economic: 'Cost advantage is key - ensure economic calculations are rigorous and sourced',
       'cross-domain': 'Cross-domain insight is unique - strengthen the transfer mechanism',
       paradigm: 'Paradigm-shift potential is rare - double down on trajectory and impact',
+      fusion: 'Multi-domain synthesis is powerful - ensure all 3+ domains contribute meaningfully to the fusion',
     }
 
     opportunities.push(typeAdvice[agentType])

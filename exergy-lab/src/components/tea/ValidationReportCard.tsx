@@ -24,8 +24,13 @@ export function ValidationReportCard({
   qualityAssessment,
   showDetails = true,
 }: ValidationReportCardProps) {
-  const { overallConfidence, qualityScore, stages, shouldGenerateReport, recommendations } =
-    orchestrationResult
+  const {
+    overallConfidence = 0,
+    qualityScore = 0,
+    stages = [],
+    shouldGenerateReport = false,
+    recommendations = []
+  } = orchestrationResult || {}
 
   return (
     <Card className="bg-elevated border-border overflow-hidden">
@@ -44,7 +49,7 @@ export function ValidationReportCard({
 
           {/* Overall Status Badge */}
           <Badge
-            variant={shouldGenerateReport ? 'default' : 'destructive'}
+            variant={shouldGenerateReport ? 'default' : 'error'}
             className="text-sm px-3 py-1"
           >
             {shouldGenerateReport ? '✓ Approved' : '✗ Needs Review'}
@@ -78,16 +83,16 @@ export function ValidationReportCard({
           </span>
           <div className="flex items-baseline gap-2 mt-1">
             <span className="text-3xl font-bold text-foreground">
-              {qualityScore.toFixed(1)}/10
+              {qualityScore?.toFixed(1) || '0.0'}/10
             </span>
-            <Badge variant={qualityAssessment.grade === 'A' ? 'default' : 'secondary'}>
-              Grade {qualityAssessment.grade}
+            <Badge variant={qualityAssessment?.grade === 'A' ? 'default' : 'secondary'}>
+              Grade {qualityAssessment?.grade || 'N/A'}
             </Badge>
           </div>
           <div className="mt-2 h-2 bg-border rounded-full overflow-hidden">
             <div
-              className={`h-full transition-all ${getQualityColor(qualityScore)}`}
-              style={{ width: `${(qualityScore / 10) * 100}%` }}
+              className={`h-full transition-all ${getQualityColor(qualityScore || 0)}`}
+              style={{ width: `${((qualityScore || 0) / 10) * 100}%` }}
             />
           </div>
         </div>
@@ -132,7 +137,7 @@ export function ValidationReportCard({
           </h4>
 
           <div className="space-y-3">
-            {qualityAssessment.criteriaScores.map((score, index) => (
+            {qualityAssessment?.criteriaScores?.map((score, index) => (
               <div key={index} className="flex items-center justify-between">
                 <div className="flex items-center gap-3 flex-1">
                   <div
@@ -202,7 +207,7 @@ export function ValidationReportCard({
                         stage.status === 'complete'
                           ? 'default'
                           : stage.status === 'failed'
-                            ? 'destructive'
+                            ? 'error'
                             : 'secondary'
                       }
                     >
@@ -341,7 +346,7 @@ function ConfidenceBadge({ confidence }: { confidence: number }) {
     )
   } else {
     return (
-      <Badge variant="destructive" className="bg-error">
+      <Badge variant="error" className="bg-error">
         Poor
       </Badge>
     )
@@ -384,11 +389,11 @@ export function DetailedValidationMetrics({ qualityAssessment }: DetailedValidat
 
         {/* Summary */}
         <div className="mb-6 p-4 bg-background rounded-lg border border-border">
-          <p className="text-sm text-foreground whitespace-pre-line">{qualityAssessment.summary}</p>
+          <p className="text-sm text-foreground whitespace-pre-line">{qualityAssessment?.summary || 'No summary available'}</p>
         </div>
 
         {/* Strengths */}
-        {qualityAssessment.strengths.length > 0 && (
+        {qualityAssessment?.strengths && qualityAssessment.strengths.length > 0 && (
           <div className="mb-4">
             <h5 className="text-sm font-semibold text-success mb-2 flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4" />
@@ -406,7 +411,7 @@ export function DetailedValidationMetrics({ qualityAssessment }: DetailedValidat
         )}
 
         {/* Weaknesses */}
-        {qualityAssessment.weaknesses.length > 0 && (
+        {qualityAssessment?.weaknesses && qualityAssessment.weaknesses.length > 0 && (
           <div className="mb-4">
             <h5 className="text-sm font-semibold text-warning mb-2 flex items-center gap-2">
               <AlertCircle className="w-4 h-4" />
@@ -424,10 +429,11 @@ export function DetailedValidationMetrics({ qualityAssessment }: DetailedValidat
         )}
 
         {/* Criteria Details */}
-        <div>
-          <h5 className="text-sm font-semibold text-foreground mb-3">Criteria Evidence</h5>
-          <div className="space-y-4">
-            {qualityAssessment.criteriaScores.map((score, index) => (
+        {qualityAssessment?.criteriaScores && qualityAssessment.criteriaScores.length > 0 && (
+          <div>
+            <h5 className="text-sm font-semibold text-foreground mb-3">Criteria Evidence</h5>
+            <div className="space-y-4">
+              {qualityAssessment.criteriaScores.map((score, index) => (
               <details key={index} className="group">
                 <summary className="cursor-pointer p-3 bg-background rounded-lg border border-border hover:border-primary/50 transition-colors">
                   <div className="flex items-center justify-between">
@@ -479,6 +485,7 @@ export function DetailedValidationMetrics({ qualityAssessment }: DetailedValidat
             ))}
           </div>
         </div>
+        )}
       </div>
     </Card>
   )

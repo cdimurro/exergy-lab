@@ -1,8 +1,10 @@
 /**
  * HypGen Agents Module
  *
- * Exports all 5 specialized hypothesis generation agents for the Breakthrough Engine.
+ * Exports all 6 specialized hypothesis generation agents for the Breakthrough Engine.
  * Each agent has a unique strategic focus for generating diverse hypotheses.
+ *
+ * v0.0.4.0: Added Fusion Agent for multi-domain synthesis (3+ domains)
  *
  * @see base.ts - Shared base class and types
  * @see ../hypothesis-racer.ts - Racing arena that orchestrates these agents
@@ -37,6 +39,14 @@ export { CrossDomainHypGenAgent, createCrossDomainHypGenAgent } from './cross-do
 // Paradigm Agent - Paradigm-shift focus
 export { ParadigmHypGenAgent, createParadigmHypGenAgent } from './paradigm'
 
+// Fusion Agent - Multi-domain synthesis (3+ domains) [v0.0.4.0]
+export {
+  FusionHypGenAgent,
+  createFusionHypGenAgent,
+  FUSION_CATEGORIES,
+  calculateCitationDistance,
+} from './fusion'
+
 // ============================================================================
 // Factory Functions
 // ============================================================================
@@ -47,6 +57,7 @@ import { FeasibleHypGenAgent } from './feasible'
 import { EconomicHypGenAgent } from './economic'
 import { CrossDomainHypGenAgent } from './cross-domain'
 import { ParadigmHypGenAgent } from './paradigm'
+import { FusionHypGenAgent } from './fusion'
 import { BaseHypGenAgent } from './base'
 
 /**
@@ -67,13 +78,16 @@ export function createHypGenAgent(
       return new CrossDomainHypGenAgent(config)
     case 'paradigm':
       return new ParadigmHypGenAgent(config)
+    case 'fusion':
+      return new FusionHypGenAgent(config)
     default:
       throw new Error(`Unknown HypGen agent type: ${type}`)
   }
 }
 
 /**
- * Create all 5 HypGen agents
+ * Create all 6 HypGen agents
+ * v0.0.4.0: Added Fusion agent for multi-domain synthesis
  */
 export function createAllHypGenAgents(
   config?: Partial<HypGenConfig>
@@ -85,12 +99,14 @@ export function createAllHypGenAgents(
   agents.set('economic', new EconomicHypGenAgent(config))
   agents.set('cross-domain', new CrossDomainHypGenAgent(config))
   agents.set('paradigm', new ParadigmHypGenAgent(config))
+  agents.set('fusion', new FusionHypGenAgent(config))
 
   return agents
 }
 
 /**
  * Agent type descriptions for UI
+ * v0.0.4.0: Added Fusion agent
  */
 export const HYPGEN_AGENT_DESCRIPTIONS: Record<HypGenAgentType, {
   name: string
@@ -133,5 +149,12 @@ export const HYPGEN_AGENT_DESCRIPTIONS: Record<HypGenAgentType, {
     description: 'Challenges fundamental assumptions for breakthrough potential',
     icon: 'Zap',
     color: '#EF4444', // Red
+  },
+  fusion: {
+    name: 'Fusion Agent',
+    shortName: 'Fusion',
+    description: 'Synthesizes 3+ distant domains for paradigm-shifting breakthroughs',
+    icon: 'Combine',
+    color: '#EC4899', // Pink
   },
 }

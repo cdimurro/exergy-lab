@@ -2966,6 +2966,11 @@ function generateFindings(
       'Enables previously impossible applications',
       'Creates new value propositions for end users',
     ],
+    fusion: [
+      'Combines 3+ domains for novel synthesis',
+      'High citation distance indicates paradigm potential',
+      'Multi-disciplinary approach reduces blind spots',
+    ],
   }
 
   const weaknesses: Record<string, string[]> = {

@@ -161,7 +161,7 @@ export class SensitivityEngine {
       total_capex: calculations.totalCapex,
       annual_opex: calculations.totalOpexAnnual,
       total_lifetime_cost: calculations.totalLifetimeCost,
-      annual_production_mwh: input.annual_production_mwh || 0,
+      annual_production_mwh: this.config.baselineInput.annual_production_mwh || 0,
       lifetime_production_mwh: 0,
       annual_revenue: 0,
       lifetime_revenue_npv: 0,
@@ -374,7 +374,7 @@ export class SensitivityEngine {
       total_capex: calculations.totalCapex,
       annual_opex: calculations.totalOpexAnnual,
       total_lifetime_cost: calculations.totalLifetimeCost,
-      annual_production_mwh: input.annual_production_mwh || 0,
+      annual_production_mwh: this.config.baselineInput.annual_production_mwh || 0,
       lifetime_production_mwh: 0,
       annual_revenue: 0,
       lifetime_revenue_npv: 0,
@@ -438,7 +438,7 @@ export async function runSensitivityAnalysis(
  */
 export function generateSpiderPlotData(
   sensitivityResult: SensitivityAnalysisResult,
-  metric: 'npv' | 'lcoe' | 'irr' = 'npv'
+  metric: 'npv' | 'lcoe' = 'npv'
 ): {
   parameters: string[]
   baseCaseValues: number[]
@@ -453,14 +453,15 @@ export function generateSpiderPlotData(
   for (const data of sensitivityResult.tornadoData.slice(0, 8)) {
     // Top 8 parameters
     parameters.push(data.parameter)
-    baseCaseValues.push(data.baseCase[metric])
+    const baseValue = metric === 'npv' ? data.baseCase.npv : data.baseCase.lcoe
+    baseCaseValues.push(baseValue)
 
     if (metric === 'npv') {
       lowCaseImpacts.push(data.lowCase.impact)
       highCaseImpacts.push(data.highCase.impact)
     } else {
-      lowCaseImpacts.push(data.lowCase[metric] - data.baseCase[metric])
-      highCaseImpacts.push(data.highCase[metric] - data.baseCase[metric])
+      lowCaseImpacts.push(data.lowCase.lcoe - data.baseCase.lcoe)
+      highCaseImpacts.push(data.highCase.lcoe - data.baseCase.lcoe)
     }
   }
 

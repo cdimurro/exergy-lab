@@ -86,12 +86,38 @@ export interface TEAReportData {
     cashFlowChart?: string // base64 image
     costBreakdownChart?: string // base64 image
   }
+
+  // Data Sources & References
+  dataSources?: {
+    webSources?: Array<{
+      title: string
+      url: string
+      source: string
+      credibilityTier: 'government' | 'academic' | 'industry' | 'news' | 'other'
+      accessedDate?: string
+    }>
+    academicSources?: Array<{
+      title: string
+      authors?: string[]
+      journal?: string
+      year?: number
+      doi?: string
+      url?: string
+    }>
+    datasetSources?: Array<{
+      name: string
+      provider: string
+      url?: string
+      description?: string
+    }>
+  }
 }
 
 interface TOCEntry {
   title: string
   page: number
   level: number
+  yPosition: number // Y coordinate on the destination page for internal linking
 }
 
 export class PDFGenerator {
@@ -102,9 +128,9 @@ export class PDFGenerator {
   private currentY = 20
   private tocEntries: TOCEntry[] = []
   private currentPage = 1
-  private readonly primaryColor = [16, 185, 129] // Emerald-500
-  private readonly secondaryColor = [12, 17, 27] // Dark background
-  private readonly accentColor = [59, 130, 246] // Blue-500
+  private readonly primaryColor: [number, number, number] = [16, 185, 129] // Emerald-500
+  private readonly secondaryColor: [number, number, number] = [12, 17, 27] // Dark background
+  private readonly accentColor: [number, number, number] = [59, 130, 246] // Blue-500
 
   constructor() {
     this.doc = new jsPDF({
@@ -189,6 +215,7 @@ export class PDFGenerator {
         title: text,
         page: this.currentPage,
         level,
+        yPosition: this.currentY, // Store Y position for internal linking
       })
     }
 
@@ -283,7 +310,7 @@ export class PDFGenerator {
   }
 
   private addInfoBox(title: string, content: string, type: 'info' | 'warning' | 'success' = 'info') {
-    const colors = {
+    const colors: Record<string, [number, number, number]> = {
       info: [59, 130, 246], // blue
       warning: [245, 158, 11], // amber
       success: [16, 185, 129], // emerald
@@ -470,6 +497,14 @@ export class PDFGenerator {
     this.addHeader('Table of Contents', 1, false)
     this.currentY += 5
 
+    // Add instruction text for interactivity
+    this.doc.setFontSize(8)
+    this.doc.setFont('helvetica', 'italic')
+    this.doc.setTextColor(100, 116, 139) // slate-500
+    this.doc.text('Click on any section below to jump directly to that page', this.margin, this.currentY)
+    this.doc.setTextColor(0, 0, 0)
+    this.currentY += 6
+
     this.tocEntries.forEach((entry) => {
       const indent = (entry.level - 1) * 5
       const dotLineY = this.currentY - 2
@@ -477,9 +512,11 @@ export class PDFGenerator {
       this.doc.setFontSize(10)
       this.doc.setFont('helvetica', entry.level === 1 ? 'bold' : 'normal')
 
-      // Title
+      // Title - use primary color for clickable appearance
       const titleX = this.margin + indent
+      this.doc.setTextColor(...this.primaryColor)
       this.doc.text(entry.title, titleX, this.currentY)
+      this.doc.setTextColor(0, 0, 0)
 
       // Page number
       const pageNum = `${entry.page}`
@@ -488,10 +525,24 @@ export class PDFGenerator {
 
       // Dotted line
       this.doc.setDrawColor(200, 200, 200)
-      this.doc.setLineDash([1, 1])
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ;(this.doc as any).setLineDash([1, 1])
       const titleWidth = this.doc.getTextWidth(entry.title)
       this.doc.line(titleX + titleWidth + 2, dotLineY, pageX - 2, dotLineY)
-      this.doc.setLineDash([])
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ;(this.doc as any).setLineDash([])
+
+      // Add internal link - creates a clickable region that jumps to the target page
+      // The link covers the entire row (title + page number)
+      const linkHeight = 5
+      const linkWidth = this.pageWidth - 2 * this.margin
+      this.doc.link(
+        this.margin,
+        this.currentY - linkHeight + 1,
+        linkWidth,
+        linkHeight,
+        { pageNumber: entry.page }
+      )
 
       this.currentY += 6
       this.checkPageBreak(10)
@@ -1671,6 +1722,112 @@ Inverter supply chains feature both string inverter and central inverter archite
     this.currentY += 5
   }
 
+  private addDataSources(data: TEAReportData) {
+    if (!data.dataSources) return
+
+    const hasWebSources = data.dataSources.webSources && data.dataSources.webSources.length > 0
+    const hasAcademicSources = data.dataSources.academicSources && data.dataSources.academicSources.length > 0
+    const hasDatasetSources = data.dataSources.datasetSources && data.dataSources.datasetSources.length > 0
+
+    if (!hasWebSources && !hasAcademicSources && !hasDatasetSources) return
+
+    this.addNewPage()
+    this.addHeader('Data Sources & References', 1)
+
+    this.addText(
+      'This analysis incorporates data from authoritative sources including government agencies, academic research, and industry databases. Sources are organized by credibility tier to ensure transparency in data provenance.'
+    )
+    this.currentY += 3
+
+    // Web Sources (from Google Custom Search)
+    if (hasWebSources) {
+      this.addHeader('Web Sources', 2)
+
+      // Group by credibility tier
+      const tiers = ['government', 'academic', 'industry', 'news', 'other'] as const
+      const tierLabels: Record<typeof tiers[number], string> = {
+        government: 'Government & International Organizations',
+        academic: 'Academic & Research Institutions',
+        industry: 'Industry Reports & Analysis',
+        news: 'Trade Publications & News',
+        other: 'Other Sources',
+      }
+
+      for (const tier of tiers) {
+        const sources = data.dataSources.webSources!.filter(s => s.credibilityTier === tier)
+        if (sources.length === 0) continue
+
+        this.addHeader(tierLabels[tier], 3, false)
+
+        for (const source of sources) {
+          this.checkPageBreak(15)
+          this.addBulletPoint(`${source.title}`)
+          this.doc.setFontSize(8)
+          this.doc.setTextColor(100, 100, 100)
+          this.doc.text(`Source: ${source.source} | ${source.url}`, this.margin + 5, this.currentY)
+          this.currentY += 4
+          this.doc.setTextColor(0, 0, 0)
+        }
+        this.currentY += 3
+      }
+    }
+
+    // Academic Sources
+    if (hasAcademicSources) {
+      this.addHeader('Academic References', 2)
+
+      for (const source of data.dataSources.academicSources!) {
+        this.checkPageBreak(12)
+        const authors = source.authors?.slice(0, 3).join(', ') || 'Unknown'
+        const authorsEtAl = source.authors && source.authors.length > 3 ? ' et al.' : ''
+        const citation = `${authors}${authorsEtAl} (${source.year || 'n.d.'}). "${source.title}." ${source.journal || ''}${source.doi ? ` DOI: ${source.doi}` : ''}`
+        this.addBulletPoint(citation)
+      }
+      this.currentY += 3
+    }
+
+    // Dataset Sources
+    if (hasDatasetSources) {
+      this.addHeader('Datasets & Databases', 2)
+
+      const datasetTable = data.dataSources.datasetSources!.map(ds => [
+        ds.name,
+        ds.provider,
+        ds.description || '-',
+      ])
+
+      autoTable(this.doc, {
+        startY: this.currentY,
+        head: [['Dataset', 'Provider', 'Description']],
+        body: datasetTable,
+        theme: 'striped',
+        headStyles: { fillColor: this.primaryColor },
+        margin: { left: this.margin, right: this.margin },
+        styles: { fontSize: 9 },
+      })
+
+      this.currentY = (this.doc as any).lastAutoTable.finalY + 5
+    }
+
+    // Data source attribution
+    this.currentY += 5
+    this.doc.setFontSize(8)
+    this.doc.setTextColor(100, 100, 100)
+    this.doc.text(
+      'Web search powered by Google Custom Search API with curated energy-focused sources.',
+      this.margin,
+      this.currentY
+    )
+    this.currentY += 4
+    this.doc.text(
+      'Academic sources retrieved via Semantic Scholar, OpenAlex, and arXiv APIs.',
+      this.margin,
+      this.currentY
+    )
+    this.doc.setTextColor(0, 0, 0)
+    this.currentY += 5
+  }
+
   public generateTEAReport(data: TEAReportData): jsPDF {
     // Cover page
     this.addCoverPage(data)
@@ -1704,6 +1861,11 @@ Inverter supply chains feature both string inverter and central inverter archite
 
     if (data.aiInsights) {
       this.addAIInsights(data)
+    }
+
+    // Data Sources & References (web search, academic, datasets)
+    if (data.dataSources) {
+      this.addDataSources(data)
     }
 
     this.addAppendices(data)

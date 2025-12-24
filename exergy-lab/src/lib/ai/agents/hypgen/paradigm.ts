@@ -70,7 +70,7 @@ export class ParadigmHypGenAgent extends BaseHypGenAgent {
     super({
       ...config,
       agentType: 'paradigm',
-      hypothesesPerGeneration: config.hypothesesPerGeneration ?? 3,
+      hypothesesPerGeneration: config.hypothesesPerGeneration ?? 5,
       minNoveltyScore: config.minNoveltyScore ?? 80, // Very high novelty threshold
       temperature: config.temperature ?? 0.95, // Highest temperature for breakthrough thinking
     })

@@ -58,7 +58,7 @@ export class CrossDomainHypGenAgent extends BaseHypGenAgent {
     super({
       ...config,
       agentType: 'cross-domain',
-      hypothesesPerGeneration: config.hypothesesPerGeneration ?? 3,
+      hypothesesPerGeneration: config.hypothesesPerGeneration ?? 5,
       temperature: config.temperature ?? 0.85, // Higher for creative connections
     })
   }

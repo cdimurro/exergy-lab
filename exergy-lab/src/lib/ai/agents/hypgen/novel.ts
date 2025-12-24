@@ -20,7 +20,7 @@ export class NovelHypGenAgent extends BaseHypGenAgent {
     super({
       ...config,
       agentType: 'novel',
-      hypothesesPerGeneration: config.hypothesesPerGeneration ?? 3,
+      hypothesesPerGeneration: config.hypothesesPerGeneration ?? 5,
       minNoveltyScore: config.minNoveltyScore ?? 75, // Higher novelty threshold
       temperature: config.temperature ?? 0.9, // Higher temperature for creativity
     })

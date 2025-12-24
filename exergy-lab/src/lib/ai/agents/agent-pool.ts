@@ -32,11 +32,11 @@ export interface AgentPoolConfig {
 }
 
 export const DEFAULT_POOL_CONFIG: AgentPoolConfig = {
-  maxConcurrency: 5, // All 5 agents in parallel
+  maxConcurrency: 6, // All 6 agents in parallel (v0.0.4.0: added fusion)
   timeoutMs: 60000, // 60 seconds per generation
   retryAttempts: 2,
   retryDelayMs: 1000,
-  enabledAgents: ['novel', 'feasible', 'economic', 'cross-domain', 'paradigm'],
+  enabledAgents: ['novel', 'feasible', 'economic', 'cross-domain', 'paradigm', 'fusion'],
 }
 
 export interface AgentStatus {

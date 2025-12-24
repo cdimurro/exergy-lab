@@ -334,7 +334,7 @@ export class TEACalculator {
     }
 
     // Payback not achieved within project lifetime
-    return this.input.project_lifetime_years
+    const payback = this.input.project_lifetime_years
 
     this.addProvenance({
       metric: 'Simple Payback',
@@ -353,6 +353,8 @@ export class TEACalculator {
       confidence: 90,
       validated: false,
     })
+
+    return payback
   }
 
   /**

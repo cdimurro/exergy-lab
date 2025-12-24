@@ -20,7 +20,7 @@ export class EconomicHypGenAgent extends BaseHypGenAgent {
     super({
       ...config,
       agentType: 'economic',
-      hypothesesPerGeneration: config.hypothesesPerGeneration ?? 3,
+      hypothesesPerGeneration: config.hypothesesPerGeneration ?? 5,
       temperature: config.temperature ?? 0.75,
     })
   }

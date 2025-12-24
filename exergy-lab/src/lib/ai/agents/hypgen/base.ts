@@ -28,6 +28,7 @@ export type HypGenAgentType =
   | 'economic'
   | 'cross-domain'
   | 'paradigm'
+  | 'fusion' // v0.0.4.0: Multi-domain fusion agent
 
 export interface HypGenConfig {
   agentType: HypGenAgentType
@@ -41,7 +42,7 @@ export interface HypGenConfig {
 
 export const DEFAULT_HYPGEN_CONFIG: HypGenConfig = {
   agentType: 'novel',
-  hypothesesPerGeneration: 3,
+  hypothesesPerGeneration: 5, // Increased from 3 to 5 (v0.0.4.0) - yields 25 total hypotheses (5 agents x 5)
   minNoveltyScore: 60,
   minFeasibilityScore: 50,
   temperature: 0.8,

@@ -10,7 +10,8 @@
  * Based on RSB SAF TEA Tool and ICAO CORSIA standards
  */
 
-import type { TEAInput_v2, FeedstockSpecification, EconomicAllocation } from '@/types/tea'
+import type { TEAInput_v2 } from '@/types/tea'
+import type { FeedstockSpecification, EconomicAllocation } from '@/types/tea-process'
 
 export interface HEFASAFSpecs {
   // Plant capacity
@@ -227,11 +228,20 @@ export class HEFASAFModel {
   }
 
   /**
+   * Calculate total CAPEX
+   */
+  calculateCAPEX(): { total: number } {
+    return { total: this.specs.costs.fciTotal * 1e6 } // Convert million USD to USD
+  }
+
+  /**
    * Convert to TEAInput_v2
    */
   toTEAInput(projectName: string, capacityFactor: number = 85): TEAInput_v2 {
     const capex = this.calculateCAPEX()
     const production = this.calculateAnnualProduction(capacityFactor)
+    const omPercentOfCapex = 5 // Default 5% O&M cost
+    const systemLifetime = 25 // Default 25 year lifetime
 
     return {
       project_name: projectName,
@@ -244,10 +254,10 @@ export class HEFASAFModel {
       land_cost: 100000,
       grid_connection_cost: 150000,
       opex_per_kw_year: 20,
-      fixed_opex_annual: capex.total * (this.specs.costs.omCostsPercent / 100),
-      variable_opex_per_mwh: this.specs.costs.electricityCost || 50,
+      fixed_opex_annual: capex.total * (omPercentOfCapex / 100),
+      variable_opex_per_mwh: this.specs.costs.electricityPrice || 50,
       insurance_rate: 0.5,
-      project_lifetime_years: this.specs.technology.systemLifetime,
+      project_lifetime_years: systemLifetime,
       discount_rate: 12,
       debt_ratio: 0.5,
       interest_rate: 6,

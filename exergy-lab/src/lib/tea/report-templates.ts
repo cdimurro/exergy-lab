@@ -323,13 +323,23 @@ export function customizeTemplate(
   customizations: Partial<TEAReportConfig>
 ): TEAReportConfig {
   const template = getReportTemplate(baseTemplate)
+  const defaultColors = { primary: '#1e3a8a', secondary: '#3b82f6', accent: '#10b981' }
+
   return {
     ...template,
     ...customizations,
     sections: { ...template.sections, ...customizations.sections },
     customization: { ...template.customization, ...customizations.customization },
     visualizations: { ...template.visualizations, ...customizations.visualizations },
-    branding: { ...template.branding, ...customizations.branding },
+    branding: {
+      ...template.branding,
+      ...customizations.branding,
+      colors: {
+        ...defaultColors,
+        ...template.branding?.colors,
+        ...customizations.branding?.colors,
+      },
+    },
   }
 }
 

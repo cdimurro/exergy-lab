@@ -89,3 +89,11 @@ export type {
 // Refinement visualization (iteration progress display)
 export { RefinementVisualization, CompactRefinementProgress } from './RefinementVisualization'
 export type { IterationData, CriterionScore } from './RefinementVisualization'
+
+// Expert review (human-in-the-loop validation)
+export { ExpertReviewPanel } from './ExpertReviewPanel'
+export type { ExpertDecision, ExpertReview, ExpertReviewPanelProps } from './ExpertReviewPanel'
+export { ExpertApprovalBadge, VerifiedBadge } from './ExpertApprovalBadge'
+export type { ExpertApprovalBadgeProps, VerifiedBadgeProps } from './ExpertApprovalBadge'
+export { HypothesisFeedbackForm } from './HypothesisFeedbackForm'
+export type { StructuredFeedback, HypothesisFeedbackFormProps } from './HypothesisFeedbackForm'

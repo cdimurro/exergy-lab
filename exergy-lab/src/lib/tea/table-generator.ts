@@ -20,7 +20,8 @@
  */
 
 import type { ProcessStream, EquipmentItem, MaterialBalance } from '@/types/tea-process'
-import type { TEAResult_v2 } from '@/types/tea'
+import type { TEAResult_v2, TEAInput_v2 } from '@/types/tea'
+import type { ProFormaStatement } from './financial-engine'
 
 /**
  * Stream Table Generator (NETL Standard Format)
