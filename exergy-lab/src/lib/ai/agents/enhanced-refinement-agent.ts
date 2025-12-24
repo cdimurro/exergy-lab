@@ -5,6 +5,14 @@
  * Analyzes evaluation results and provides specific improvement suggestions
  * for each dimension.
  *
+ * Poetiq-Inspired Enhancements (v0.0.3.2):
+ * - Solution history tracking with iteration records
+ * - Diff-based feedback visualization (BEFORE/AFTER)
+ * - Structured 5-part prompts for consistent refinement
+ * - Improving order (worst-to-best) for learning progression
+ * - Feedback integration showing past attempts with lessons
+ * - Trajectory tracking (improving/stable/declining)
+ *
  * GPU-Aware Features:
  * - Quick GPU validation of refinements on T4
  * - Reverts refinements that degrade physics validity
@@ -13,20 +21,29 @@
  * @see breakthrough-evaluator.ts - Provides evaluation results
  * @see hypgen/base.ts - RefinementFeedback type
  * @see gpu-pool.ts - GPU validation integration
+ * @see hypothesis-history.ts - History tracking system
+ * @see .claude/poetiq-analysis.md - Poetiq ARC-AGI solver analysis
  */
 
 import { generateText } from '../model-router'
-import type { GPUValidationPool, GPUResult } from '@/lib/simulation/gpu-pool'
+import type { GPUResult } from '@/lib/simulation/gpu-pool'
 import type { GPUFeedbackBridge } from './gpu-bridge'
 import type {
   BreakthroughDimension,
   DimensionScore,
   RefinementFeedback,
-  ClassificationTier,
-  DIMENSION_CONFIGS,
 } from '../rubrics/types-breakthrough'
 import type { RacingHypothesis, HypGenAgentType } from './hypgen/base'
 import type { HypothesisEvaluation, LeaderboardEntry } from './breakthrough-evaluator'
+import {
+  hypothesisHistoryManager,
+  type HypothesisHistory,
+  type HypothesisIterationRecord,
+  type DimensionDiff,
+  type ScoreTrajectory,
+  createDimensionDiff,
+  calculateTrajectory,
+} from './hypothesis-history'
 
 // ============================================================================
 // Types
@@ -43,6 +60,13 @@ export interface RefinementConfig {
   revertOnPhysicsFailure: boolean
   includeGPUContext: boolean
   gpuValidationThreshold: number // Minimum score to trigger GPU validation
+  // Poetiq-inspired options (v0.0.3.2)
+  enableHistoryTracking: boolean      // Track iteration history
+  maxHistoryInPrompt: number          // Max iterations to include in prompt
+  useImprovingOrder: boolean          // Show worst-to-best (Poetiq pattern)
+  includeDiffVisualization: boolean   // Show BEFORE/AFTER diffs
+  includeLessonsLearned: boolean      // Include lessons from past iterations
+  enableTrajectoryTracking: boolean   // Track improving/stable/declining
 }
 
 export const DEFAULT_REFINEMENT_CONFIG: RefinementConfig = {
@@ -56,6 +80,13 @@ export const DEFAULT_REFINEMENT_CONFIG: RefinementConfig = {
   revertOnPhysicsFailure: true,
   includeGPUContext: true,
   gpuValidationThreshold: 6.0,
+  // Poetiq-inspired defaults (v0.0.3.2)
+  enableHistoryTracking: true,
+  maxHistoryInPrompt: 5,
+  useImprovingOrder: true,           // Show worst-to-best like Poetiq
+  includeDiffVisualization: true,
+  includeLessonsLearned: true,
+  enableTrajectoryTracking: true,
 }
 
 export interface RefinementContext {
@@ -73,6 +104,23 @@ export interface RefinementContext {
     confidenceScore: number
     previousResult?: GPUResult
   }
+  // Poetiq-inspired trajectory tracking (v0.0.3.2)
+  trajectory?: {
+    current: ScoreTrajectory
+    averageDelta: number
+    consistency: number
+    previousScore?: number
+  }
+}
+
+/**
+ * Extended dimension feedback with trajectory and diff information
+ */
+export interface ExtendedDimensionFeedback extends DimensionFeedback {
+  trajectory: ScoreTrajectory
+  previousScore?: number
+  scoreDelta: number
+  diff?: DimensionDiff
 }
 
 export interface DimensionFeedback {
@@ -111,20 +159,44 @@ export class EnhancedRefinementAgent {
 
   /**
    * Generate comprehensive refinement feedback for a hypothesis
+   *
+   * Poetiq-inspired enhancements (v0.0.3.2):
+   * - Tracks hypothesis history across iterations
+   * - Includes trajectory analysis (improving/stable/declining)
+   * - Generates diff-based feedback for BEFORE/AFTER visualization
    */
   async generateFeedback(context: RefinementContext): Promise<RefinementFeedback> {
+    const trajectoryIcon = context.trajectory?.current === 'improving' ? '[+]' :
+                          context.trajectory?.current === 'declining' ? '[-]' : '[=]'
+
     console.log(
       `[EnhancedRefinementAgent] Generating feedback for ${context.hypothesis.id} ` +
-      `(score: ${context.evaluation.overallScore.toFixed(1)})`
+      `(score: ${context.evaluation.overallScore.toFixed(1)}) ${trajectoryIcon}`
     )
 
-    // Analyze dimensions to prioritize
-    const dimensionAnalysis = this.analyzeDimensions(context.evaluation)
+    // Track history if enabled (Poetiq pattern #1)
+    let history: HypothesisHistory | undefined
+    if (this.config.enableHistoryTracking) {
+      hypothesisHistoryManager.recordIteration(context.hypothesis)
+      history = hypothesisHistoryManager.getHistory(context.hypothesis)
+    }
+
+    // Calculate trajectory if enabled (Poetiq pattern #6)
+    const trajectory = this.config.enableTrajectoryTracking
+      ? this.calculateContextTrajectory(context, history)
+      : undefined
+
+    // Analyze dimensions to prioritize with trajectory
+    const dimensionAnalysis = this.analyzeDimensionsWithTrajectory(
+      context.evaluation,
+      history
+    )
 
     // Generate AI-enhanced feedback for weak dimensions
     const enhancedFeedback = await this.generateAIEnhancedFeedback(
       context,
-      dimensionAnalysis
+      dimensionAnalysis,
+      history
     )
 
     // Generate strategic guidance
@@ -138,16 +210,22 @@ export class EnhancedRefinementAgent {
       ? this.generateCompetitiveInsights(context)
       : { leadingHypotheses: [], differentiationOpportunities: [] }
 
-    // Determine priority based on score gap
-    const scoreGap = context.targetScore - context.evaluation.overallScore
-    const priority = scoreGap > 3 ? 'critical' : scoreGap > 2 ? 'high' : scoreGap > 1 ? 'normal' : 'low'
+    // Determine priority based on score gap and trajectory
+    const priority = this.calculatePriorityWithTrajectory(context, trajectory)
+
+    // Build overall assessment with trajectory context
+    const overallAssessment = this.generateOverallAssessmentWithTrajectory(
+      context,
+      trajectory,
+      history
+    )
 
     return {
       targetAgent: context.hypothesis.agentSource,
       hypothesisId: context.hypothesis.id,
       iteration: context.iteration,
       timestamp: Date.now(),
-      overallAssessment: this.generateOverallAssessment(context),
+      overallAssessment,
       currentScore: context.evaluation.overallScore,
       targetScore: context.targetScore,
       dimensionFeedback: enhancedFeedback.map(df => ({
@@ -162,6 +240,133 @@ export class EnhancedRefinementAgent {
       competitiveInsight,
       priority,
     }
+  }
+
+  /**
+   * Calculate trajectory context for the current iteration
+   */
+  private calculateContextTrajectory(
+    context: RefinementContext,
+    history?: HypothesisHistory
+  ): RefinementContext['trajectory'] {
+    if (!history || history.iterations.length === 0) {
+      return {
+        current: 'first',
+        averageDelta: 0,
+        consistency: 1,
+      }
+    }
+
+    const scores = history.iterations.map(i => i.score)
+    scores.push(context.evaluation.overallScore)
+
+    const current = calculateTrajectory(scores)
+
+    // Calculate average delta over all iterations
+    const deltas: number[] = []
+    for (let i = 1; i < scores.length; i++) {
+      deltas.push(scores[i] - scores[i - 1])
+    }
+    const averageDelta = deltas.length > 0
+      ? deltas.reduce((a, b) => a + b, 0) / deltas.length
+      : 0
+
+    // Calculate consistency (how often deltas agree in direction)
+    const positiveCount = deltas.filter(d => d > 0).length
+    const negativeCount = deltas.filter(d => d < 0).length
+    const consistency = deltas.length > 0
+      ? Math.max(positiveCount, negativeCount) / deltas.length
+      : 1
+
+    return {
+      current,
+      averageDelta,
+      consistency,
+      previousScore: history.iterations[history.iterations.length - 1]?.score,
+    }
+  }
+
+  /**
+   * Calculate priority considering trajectory
+   */
+  private calculatePriorityWithTrajectory(
+    context: RefinementContext,
+    trajectory?: RefinementContext['trajectory']
+  ): 'critical' | 'high' | 'normal' | 'low' {
+    const scoreGap = context.targetScore - context.evaluation.overallScore
+
+    // Base priority on score gap
+    let priority: 'critical' | 'high' | 'normal' | 'low' =
+      scoreGap > 3 ? 'critical' : scoreGap > 2 ? 'high' : scoreGap > 1 ? 'normal' : 'low'
+
+    // Adjust based on trajectory
+    if (trajectory) {
+      if (trajectory.current === 'declining' && priority === 'normal') {
+        priority = 'high' // Escalate if declining
+      }
+      if (trajectory.current === 'declining' && priority === 'high') {
+        priority = 'critical' // Double escalate if declining and already high
+      }
+      if (trajectory.current === 'improving' && trajectory.consistency > 0.7 && priority === 'high') {
+        priority = 'normal' // De-escalate if consistently improving
+      }
+    }
+
+    return priority
+  }
+
+  /**
+   * Analyze dimensions with trajectory information (Poetiq pattern #6)
+   */
+  private analyzeDimensionsWithTrajectory(
+    evaluation: HypothesisEvaluation,
+    history?: HypothesisHistory
+  ): Map<BreakthroughDimension, ExtendedDimensionFeedback> {
+    const analysis = new Map<BreakthroughDimension, ExtendedDimensionFeedback>()
+    const previousIteration = history?.iterations[history.iterations.length - 1]
+
+    for (const [dimension, score] of evaluation.dimensionScores.entries()) {
+      const targetScore = this.getTargetScore(dimension, score.percentOfMax)
+      const priority = this.calculatePriority(dimension, score)
+
+      // Get previous score for this dimension
+      const previousDimScore = previousIteration?.dimensionScores.get(dimension)
+      const previousScore = previousDimScore?.percentOfMax
+      const scoreDelta = previousScore !== undefined
+        ? score.percentOfMax - previousScore
+        : 0
+
+      // Calculate trajectory for this dimension
+      let trajectory: ScoreTrajectory = 'first'
+      if (previousScore !== undefined) {
+        if (scoreDelta > 5) trajectory = 'improving'
+        else if (scoreDelta < -5) trajectory = 'declining'
+        else trajectory = 'stable'
+      }
+
+      // Create diff if enabled (Poetiq pattern #2)
+      const diff = this.config.includeDiffVisualization && previousDimScore
+        ? createDimensionDiff(dimension, previousDimScore, score, targetScore)
+        : undefined
+
+      analysis.set(dimension, {
+        dimension,
+        currentScore: score.percentOfMax,
+        targetScore,
+        percentAchieved: score.percentOfMax,
+        priority,
+        specificImprovements: [], // Will be filled by AI
+        researchPointers: [], // Will be filled by AI
+        exampleStrategies: this.getExampleStrategies(dimension),
+        // Trajectory fields
+        trajectory,
+        previousScore,
+        scoreDelta,
+        diff,
+      })
+    }
+
+    return analysis
   }
 
   /**
@@ -354,47 +559,31 @@ export class EnhancedRefinementAgent {
   }
 
   /**
-   * Analyze dimensions to determine priorities
-   */
-  private analyzeDimensions(
-    evaluation: HypothesisEvaluation
-  ): Map<BreakthroughDimension, DimensionFeedback> {
-    const analysis = new Map<BreakthroughDimension, DimensionFeedback>()
-
-    for (const [dimension, score] of evaluation.dimensionScores.entries()) {
-      const targetScore = this.getTargetScore(dimension, score.percentOfMax)
-      const priority = this.calculatePriority(dimension, score)
-
-      analysis.set(dimension, {
-        dimension,
-        currentScore: score.percentOfMax,
-        targetScore,
-        percentAchieved: score.percentOfMax,
-        priority,
-        specificImprovements: [], // Will be filled by AI
-        researchPointers: [], // Will be filled by AI
-        exampleStrategies: this.getExampleStrategies(dimension),
-      })
-    }
-
-    return analysis
-  }
-
-  /**
    * Generate AI-enhanced feedback for weak dimensions
+   *
+   * Poetiq-inspired: Now accepts history for including past iterations in prompt
    */
   private async generateAIEnhancedFeedback(
     context: RefinementContext,
-    dimensionAnalysis: Map<BreakthroughDimension, DimensionFeedback>
-  ): Promise<DimensionFeedback[]> {
+    dimensionAnalysis: Map<BreakthroughDimension, ExtendedDimensionFeedback>,
+    history?: HypothesisHistory
+  ): Promise<ExtendedDimensionFeedback[]> {
     // Get dimensions that need improvement (below target)
+    // Sort by trajectory first (declining gets priority), then by priority, then by gap
     const weakDimensions = Array.from(dimensionAnalysis.entries())
       .filter(([, df]) => df.currentScore < df.targetScore)
       .sort((a, b) => {
-        // Sort by priority, then by gap
+        // Declining dimensions get priority
+        const trajectoryOrder = { declining: 0, stable: 1, first: 2, improving: 3 }
+        const trajectoryDiff = trajectoryOrder[a[1].trajectory] - trajectoryOrder[b[1].trajectory]
+        if (trajectoryDiff !== 0) return trajectoryDiff
+
+        // Then by priority
         const priorityOrder = { critical: 0, high: 1, medium: 2, low: 3 }
         const priorityDiff = priorityOrder[a[1].priority] - priorityOrder[b[1].priority]
         if (priorityDiff !== 0) return priorityDiff
+
+        // Then by gap
         return (b[1].targetScore - b[1].currentScore) - (a[1].targetScore - a[1].currentScore)
       })
       .slice(0, 5) // Focus on top 5 weakest dimensions
@@ -403,16 +592,17 @@ export class EnhancedRefinementAgent {
       return Array.from(dimensionAnalysis.values())
     }
 
-    // Generate AI feedback for weak dimensions
-    const prompt = this.buildFeedbackPrompt(context, weakDimensions)
+    // Generate AI feedback for weak dimensions with history context
+    const prompt = this.buildFeedbackPromptWithHistory(context, weakDimensions, history)
 
     try {
       const result = await generateText('discovery', prompt, {
         temperature: this.config.temperature,
         model: this.config.model,
+        maxTokens: 4000, // Increased for detailed feedback
       })
 
-      const aiFeedback = this.parseAIFeedback(result, weakDimensions)
+      const aiFeedback = this.parseAIFeedbackExtended(result, weakDimensions)
 
       // Merge AI feedback with analysis
       for (const [dimension, df] of dimensionAnalysis) {
@@ -437,78 +627,291 @@ export class EnhancedRefinementAgent {
   }
 
   /**
-   * Build prompt for AI feedback generation
+   * Build prompt for AI feedback generation (5-part Poetiq-style structure)
+   *
+   * Poetiq-inspired improvements (v0.0.3.2):
+   * - PART 1: Current state with trajectory analysis
+   * - PART 2: Dimension-by-dimension gap analysis with diffs
+   * - PART 3: Past improvement trajectory (improving order)
+   * - PART 4: Competitive context
+   * - PART 5: Task specification with clear examples
    */
-  private buildFeedbackPrompt(
+  private buildFeedbackPromptWithHistory(
     context: RefinementContext,
-    weakDimensions: [BreakthroughDimension, DimensionFeedback][]
+    weakDimensions: [BreakthroughDimension, ExtendedDimensionFeedback][],
+    history?: HypothesisHistory
   ): string {
-    // Bug 2.4 fix: Make feedback more specific with examples and benchmarks
+    const sections: string[] = []
+
+    // ========================================================================
+    // PART 1: CURRENT STATE ANALYSIS
+    // ========================================================================
+    const trajectoryIcon = context.trajectory?.current === 'improving' ? '[+]' :
+                          context.trajectory?.current === 'declining' ? '[-]' : '[=]'
+
+    sections.push(`## PART 1: CURRENT STATE ANALYSIS
+
+Hypothesis: "${context.hypothesis.title}"
+Statement: ${context.hypothesis.statement}
+
+Current Score: ${context.evaluation.overallScore.toFixed(1)}/10 ${trajectoryIcon}
+Target Score: ${context.targetScore}/10
+Gap to Close: ${Math.max(0, context.targetScore - context.evaluation.overallScore).toFixed(1)} points
+Iterations Remaining: ${context.maxIterations - context.iteration}`)
+
+    // Add trajectory analysis
+    if (context.trajectory && context.trajectory.current !== 'first') {
+      const deltaStr = context.trajectory.averageDelta >= 0 ? '+' : ''
+      sections.push(`
+Trajectory: ${context.trajectory.current.toUpperCase()}
+Average Change: ${deltaStr}${context.trajectory.averageDelta.toFixed(2)} points/iteration
+Consistency: ${(context.trajectory.consistency * 100).toFixed(0)}%
+Previous Score: ${context.trajectory.previousScore?.toFixed(1) ?? 'N/A'}`)
+    }
+
+    // ========================================================================
+    // PART 2: DIMENSION-BY-DIMENSION GAP ANALYSIS
+    // ========================================================================
+    sections.push(`\n## PART 2: DIMENSION-BY-DIMENSION GAP ANALYSIS
+
+Focus on these ${weakDimensions.length} dimensions that need improvement:`)
+
+    for (const [dim, df] of weakDimensions) {
+      const trajectoryMarker = df.trajectory === 'improving' ? '[+]' :
+                               df.trajectory === 'declining' ? '[-]' :
+                               df.trajectory === 'stable' ? '[=]' : '[NEW]'
+
+      sections.push(`
+### ${dim} ${trajectoryMarker}
+Current: ${df.currentScore.toFixed(0)}% | Target: ${df.targetScore.toFixed(0)}% | Priority: ${df.priority}`)
+
+      // Add trajectory info for this dimension
+      if (df.previousScore !== undefined) {
+        const deltaStr = df.scoreDelta >= 0 ? '+' : ''
+        sections.push(`Previous: ${df.previousScore.toFixed(0)}% | Change: ${deltaStr}${df.scoreDelta.toFixed(0)}%`)
+      }
+
+      // Add diff visualization if available (Poetiq pattern #2)
+      if (df.diff && df.diff.stillMissing.length > 0) {
+        sections.push(`\nMissing Elements:`)
+        for (const missing of df.diff.stillMissing.slice(0, 3)) {
+          sections.push(`[ ] ${missing}`)
+        }
+      }
+
+      if (df.diff && df.diff.improvementsMade.length > 0) {
+        sections.push(`\nImprovements Already Made:`)
+        for (const done of df.diff.improvementsMade.slice(0, 2)) {
+          sections.push(`[x] ${done}`)
+        }
+      }
+    }
+
+    // ========================================================================
+    // PART 3: PAST IMPROVEMENT TRAJECTORY (Poetiq pattern #4 & #5)
+    // ========================================================================
+    if (this.config.enableHistoryTracking && history && history.iterations.length > 0) {
+      // Get iterations in improving order (worst to best) - Poetiq pattern #4
+      const historyPrompt = hypothesisHistoryManager.formatHistoryForPrompt(
+        context.hypothesis.id,
+        {
+          maxIterations: this.config.maxHistoryInPrompt,
+          improvingOrder: this.config.useImprovingOrder,
+          includeFullDiffs: false, // Keep prompt concise
+        }
+      )
+
+      if (historyPrompt) {
+        sections.push(`\n${historyPrompt}`)
+      }
+    }
+
+    // ========================================================================
+    // PART 4: COMPETITIVE CONTEXT
+    // ========================================================================
     const topCompetitors = context.leaderboard
       .slice(0, 3)
       .filter(e => e.hypothesisId !== context.hypothesis.id)
       .map(e => `- "${e.title}" (Score: ${e.score.toFixed(1)})`)
       .join('\n')
 
+    if (topCompetitors) {
+      sections.push(`\n## PART 4: COMPETITIVE CONTEXT
+
+Top 3 Competitors:
+${topCompetitors}
+
+Current Rank: ${context.leaderboard.findIndex(e => e.hypothesisId === context.hypothesis.id) + 1}/${context.leaderboard.length}`)
+    }
+
+    // ========================================================================
+    // PART 5: TASK SPECIFICATION
+    // ========================================================================
     const dimensionGuidance = this.getDimensionSpecificGuidance(weakDimensions)
 
-    return `You are providing refinement feedback for a clean energy hypothesis competing against other hypotheses.
+    sections.push(`\n## PART 5: YOUR TASK
 
-## CURRENT HYPOTHESIS
-Title: ${context.hypothesis.title}
-Statement: ${context.hypothesis.statement}
-Current Score: ${context.evaluation.overallScore.toFixed(1)}/10
-Target Score: ${context.targetScore}/10
-Iteration: ${context.iteration}/${context.maxIterations}
-Points needed for breakthrough: ${Math.max(0, 9.0 - context.evaluation.overallScore).toFixed(1)}
+Generate specific, actionable improvements for each weak dimension listed above.
 
-## TOP COMPETITORS (Benchmark)
-${topCompetitors || 'No other hypotheses in leaderboard yet'}
-
-## WEAK DIMENSIONS (Need Improvement)
-${weakDimensions.map(([dim, df]) => `
-### ${dim}
-Current: ${df.currentScore.toFixed(0)}%
-Target: ${df.targetScore.toFixed(0)}%
-Priority: ${df.priority}
-Gap to close: ${(df.targetScore - df.currentScore).toFixed(0)} percentage points
-`).join('\n')}
-
-## DIMENSION-SPECIFIC GUIDANCE
+### Dimension-Specific Benchmarks
 ${dimensionGuidance}
 
-## YOUR TASK
+### Output Format
 For EACH weak dimension, provide:
-1. 2-3 SPECIFIC improvements with concrete numbers/targets
-2. 1-2 example sentences showing BEFORE → AFTER improvement
-3. 1-2 research areas or papers to consult for evidence
-
-Format your response as:
 
 DIMENSION: [dimension_name]
 IMPROVEMENTS:
-- [Specific improvement with concrete numbers, e.g., "Increase claimed efficiency from 25% to 30%"]
-- [Another specific improvement]
-EXAMPLES:
-BEFORE: "[Current weak statement from hypothesis]"
-AFTER: "[How it should read after improvement]"
+- [Specific improvement with numbers, e.g., "Increase efficiency claim from 25% to 33%"]
+- [Another improvement with quantifiable target]
+BEFORE:
+"[Quote the current weak statement or describe the gap]"
+AFTER:
+"[Show exactly how the improved statement should read]"
 RESEARCH POINTERS:
-- [Specific research area or type of paper to find]
+- [Specific paper type or database to search]
 
-Repeat for each dimension listed above.
+### Critical Rules
+1. Be SPECIFIC - use numbers, percentages, and concrete metrics
+2. Reference SOTA benchmarks: Solar 33.7%, Wind 59.3%, Battery 300 Wh/kg
+3. Provide BEFORE/AFTER examples that are directly usable
+4. Address declining dimensions FIRST (marked with [-])
+5. Build on what worked in past iterations
+6. Focus on the TOP 3 gaps for each dimension`)
 
-CRITICAL RULES:
-- Be SPECIFIC - use numbers, percentages, and concrete metrics
-- Reference SOTA benchmarks in your suggestions
-- Provide BEFORE/AFTER examples that are directly usable
-- Focus on scientific rigor and quantifiable improvements`
+    // Add GPU context if available
+    const gpuContext = this.generateGPUContext(context)
+    if (gpuContext) {
+      sections.push(gpuContext)
+    }
+
+    return sections.join('\n')
+  }
+
+  /**
+   * Parse extended AI feedback response (handles trajectory-aware format)
+   */
+  private parseAIFeedbackExtended(
+    result: string,
+    weakDimensions: [BreakthroughDimension, ExtendedDimensionFeedback][]
+  ): ExtendedDimensionFeedback[] {
+    const feedback: ExtendedDimensionFeedback[] = []
+
+    for (const [dimension, df] of weakDimensions) {
+      // Find the section for this dimension
+      const sectionPattern = new RegExp(
+        `DIMENSION:\\s*${dimension}[\\s\\S]*?(?=DIMENSION:|$)`,
+        'i'
+      )
+      const sectionMatch = result.match(sectionPattern)
+
+      if (sectionMatch) {
+        const section = sectionMatch[0]
+
+        // Extract improvements
+        const improvementsMatch = section.match(
+          /IMPROVEMENTS:[\s\S]*?(?=BEFORE:|RESEARCH POINTERS:|DIMENSION:|$)/i
+        )
+        const improvements = improvementsMatch
+          ? improvementsMatch[0]
+              .split('\n')
+              .filter(line => line.trim().startsWith('-'))
+              .map(line => line.replace(/^-\s*/, '').trim())
+              .filter(line => line.length > 0)
+          : []
+
+        // Extract research pointers
+        const researchMatch = section.match(
+          /RESEARCH POINTERS:[\s\S]*?(?=DIMENSION:|$)/i
+        )
+        const researchPointers = researchMatch
+          ? researchMatch[0]
+              .split('\n')
+              .filter(line => line.trim().startsWith('-'))
+              .map(line => line.replace(/^-\s*/, '').trim())
+              .filter(line => line.length > 0)
+          : []
+
+        feedback.push({
+          ...df,
+          specificImprovements: improvements,
+          researchPointers,
+        })
+      } else {
+        // Use template feedback if AI didn't provide for this dimension
+        feedback.push({
+          ...df,
+          specificImprovements: this.getTemplateFeedback(dimension, df.currentScore),
+        })
+      }
+    }
+
+    return feedback
+  }
+
+  /**
+   * Generate overall assessment with trajectory context
+   */
+  private generateOverallAssessmentWithTrajectory(
+    context: RefinementContext,
+    trajectory?: RefinementContext['trajectory'],
+    history?: HypothesisHistory
+  ): string {
+    const { evaluation, iteration, maxIterations, targetScore } = context
+    const { overallScore, classification, passedDimensions, failedDimensions } = evaluation
+
+    const scoreGap = targetScore - overallScore
+    const iterationsRemaining = maxIterations - iteration
+
+    // Add trajectory context to assessment
+    let trajectoryNote = ''
+    if (trajectory && trajectory.current !== 'first') {
+      if (trajectory.current === 'improving') {
+        trajectoryNote = ` Trajectory: IMPROVING (avg +${trajectory.averageDelta.toFixed(2)}/iter).`
+      } else if (trajectory.current === 'declining') {
+        trajectoryNote = ` WARNING: Trajectory DECLINING (avg ${trajectory.averageDelta.toFixed(2)}/iter) - requires strategy change.`
+      } else {
+        trajectoryNote = ` Trajectory: STABLE - need more significant changes.`
+      }
+    }
+
+    // Add history-based insight
+    let historyInsight = ''
+    if (history && history.cumulativeLessons.length > 0) {
+      historyInsight = ` Key lesson: ${history.cumulativeLessons[history.cumulativeLessons.length - 1]}`
+    }
+
+    if (overallScore >= 9.0) {
+      return `Breakthrough candidate! Score ${overallScore.toFixed(1)}/10. ` +
+        `Passed ${passedDimensions.length}/8 dimensions. Ready for validation phase.${trajectoryNote}`
+    }
+
+    if (overallScore >= 8.0) {
+      return `Near breakthrough (${classification}). Score ${overallScore.toFixed(1)}/10. ` +
+        `Gap: ${scoreGap.toFixed(1)} points. ${iterationsRemaining} iterations remaining. ` +
+        `Focus on: ${failedDimensions.slice(0, 2).join(', ')}.${trajectoryNote}${historyInsight}`
+    }
+
+    if (overallScore >= 6.0) {
+      return `Making progress (${classification}). Score ${overallScore.toFixed(1)}/10. ` +
+        `${failedDimensions.length} dimensions need improvement. ` +
+        `${iterationsRemaining} iterations remaining.${trajectoryNote}${historyInsight}`
+    }
+
+    if (overallScore >= 5.0) {
+      return `At risk of elimination. Score ${overallScore.toFixed(1)}/10. ` +
+        `Significant improvements needed in: ${failedDimensions.slice(0, 3).join(', ')}. ` +
+        `${iterationsRemaining} iterations remaining.${trajectoryNote}${historyInsight}`
+    }
+
+    return `Below elimination threshold. Score ${overallScore.toFixed(1)}/10. ` +
+      `Will be eliminated unless score improves above 5.0 in remaining ${iterationsRemaining} iterations.${trajectoryNote}`
   }
 
   /**
    * Get dimension-specific guidance based on breakthrough requirements
    */
   private getDimensionSpecificGuidance(
-    weakDimensions: [BreakthroughDimension, DimensionFeedback][]
+    weakDimensions: [BreakthroughDimension, DimensionFeedback | ExtendedDimensionFeedback][]
   ): string {
     const guidance: string[] = []
 
@@ -563,72 +966,13 @@ CRITICAL RULES:
   }
 
   /**
-   * Parse AI feedback response
-   */
-  private parseAIFeedback(
-    result: string,
-    weakDimensions: [BreakthroughDimension, DimensionFeedback][]
-  ): DimensionFeedback[] {
-    const feedback: DimensionFeedback[] = []
-
-    for (const [dimension, df] of weakDimensions) {
-      // Find the section for this dimension
-      const sectionPattern = new RegExp(
-        `DIMENSION:\\s*${dimension}[\\s\\S]*?(?=DIMENSION:|$)`,
-        'i'
-      )
-      const sectionMatch = result.match(sectionPattern)
-
-      if (sectionMatch) {
-        const section = sectionMatch[0]
-
-        // Extract improvements
-        const improvementsMatch = section.match(
-          /IMPROVEMENTS:[\s\S]*?(?=RESEARCH POINTERS:|DIMENSION:|$)/i
-        )
-        const improvements = improvementsMatch
-          ? improvementsMatch[0]
-              .split('\n')
-              .filter(line => line.trim().startsWith('-'))
-              .map(line => line.replace(/^-\s*/, '').trim())
-              .filter(line => line.length > 0)
-          : []
-
-        // Extract research pointers
-        const researchMatch = section.match(
-          /RESEARCH POINTERS:[\s\S]*?(?=DIMENSION:|$)/i
-        )
-        const researchPointers = researchMatch
-          ? researchMatch[0]
-              .split('\n')
-              .filter(line => line.trim().startsWith('-'))
-              .map(line => line.replace(/^-\s*/, '').trim())
-              .filter(line => line.length > 0)
-          : []
-
-        feedback.push({
-          ...df,
-          specificImprovements: improvements,
-          researchPointers,
-        })
-      } else {
-        // Use template feedback if AI didn't provide for this dimension
-        feedback.push({
-          ...df,
-          specificImprovements: this.getTemplateFeedback(dimension, df.currentScore),
-        })
-      }
-    }
-
-    return feedback
-  }
-
-  /**
    * Generate strategic guidance based on context
+   *
+   * Enhanced with trajectory awareness (v0.0.3.2)
    */
   private generateStrategicGuidance(
     context: RefinementContext,
-    dimensionAnalysis: Map<BreakthroughDimension, DimensionFeedback>
+    dimensionAnalysis: Map<BreakthroughDimension, DimensionFeedback | ExtendedDimensionFeedback>
   ): RefinementFeedback['strategicGuidance'] {
     // Find the most impactful dimension to focus on
     const sortedDimensions = Array.from(dimensionAnalysis.entries())
@@ -697,43 +1041,6 @@ CRITICAL RULES:
       leadingHypotheses,
       differentiationOpportunities,
     }
-  }
-
-  /**
-   * Generate overall assessment text
-   */
-  private generateOverallAssessment(context: RefinementContext): string {
-    const { evaluation, iteration, maxIterations, targetScore } = context
-    const { overallScore, classification, passedDimensions, failedDimensions } = evaluation
-
-    const scoreGap = targetScore - overallScore
-    const iterationsRemaining = maxIterations - iteration
-
-    if (overallScore >= 9.0) {
-      return `Breakthrough candidate! Score ${overallScore.toFixed(1)}/10. ` +
-        `Passed ${passedDimensions.length}/8 dimensions. Ready for validation phase.`
-    }
-
-    if (overallScore >= 8.0) {
-      return `Near breakthrough (${classification}). Score ${overallScore.toFixed(1)}/10. ` +
-        `Gap: ${scoreGap.toFixed(1)} points. ${iterationsRemaining} iterations remaining. ` +
-        `Focus on: ${failedDimensions.slice(0, 2).join(', ')}.`
-    }
-
-    if (overallScore >= 6.0) {
-      return `Making progress (${classification}). Score ${overallScore.toFixed(1)}/10. ` +
-        `${failedDimensions.length} dimensions need improvement. ` +
-        `${iterationsRemaining} iterations remaining.`
-    }
-
-    if (overallScore >= 5.0) {
-      return `At risk of elimination. Score ${overallScore.toFixed(1)}/10. ` +
-        `Significant improvements needed in: ${failedDimensions.slice(0, 3).join(', ')}. ` +
-        `${iterationsRemaining} iterations remaining.`
-    }
-
-    return `Below elimination threshold. Score ${overallScore.toFixed(1)}/10. ` +
-      `Will be eliminated unless score improves above 5.0 in remaining ${iterationsRemaining} iterations.`
   }
 
   /**
@@ -941,3 +1248,15 @@ export function createEnhancedRefinementAgent(
 ): EnhancedRefinementAgent {
   return new EnhancedRefinementAgent(config, gpuBridge)
 }
+
+// ============================================================================
+// Singleton Export (backwards compatibility)
+// ============================================================================
+
+/**
+ * Default refinement agent instance
+ *
+ * Note: For new code, prefer creating instances via createEnhancedRefinementAgent()
+ * to enable custom configuration and GPU bridge integration.
+ */
+export const refinementAgent = new EnhancedRefinementAgent()
