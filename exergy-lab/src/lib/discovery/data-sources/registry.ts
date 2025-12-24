@@ -516,8 +516,10 @@ export async function initializeDataSourceRegistry(): Promise<DataSourceRegistry
     safeRegister(() => import('../sources/pubmed'), 'pubmed'),
     safeRegister(() => import('../sources/crossref'), 'crossref'),
     safeRegister(() => import('../sources/core'), 'core'),
-    // USPTO disabled until API key is obtained - see https://patentsview.org/
-    // safeRegister(() => import('../sources/uspto'), 'uspto'),
+    // USPTO - PatentsView API (API key configured)
+    safeRegister(() => import('../sources/uspto'), 'uspto'),
+    // Web Search - Google Custom Search API for pricing/policy/benchmarks
+    safeRegister(() => import('../sources/web-search'), 'web-search'),
   ])
 
   console.log(`[DataSourceRegistry] Initialized with ${registry.getAll().length} adapters:`,

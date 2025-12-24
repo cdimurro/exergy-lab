@@ -36,6 +36,8 @@ import {
   Microscope,
   Award,
   Link2,
+  Globe,
+  Newspaper,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -46,7 +48,7 @@ import { Input } from '@/components/ui/input'
 
 export interface ResearchSource {
   id: string
-  type: 'paper' | 'patent' | 'dataset' | 'materials' | 'other'
+  type: 'paper' | 'patent' | 'dataset' | 'materials' | 'web' | 'news' | 'other'
   title: string
   authors?: string[]
   source: string
@@ -56,6 +58,7 @@ export interface ResearchSource {
   abstract?: string
   relevanceScore: number
   citationCount?: number
+  credibilityTier?: 'government' | 'academic' | 'industry' | 'news' | 'other'
 }
 
 export interface KeyFinding {
@@ -136,6 +139,7 @@ export function ResearchInsightsCard({
     totalSources: data.sources.length,
     papers: data.sources.filter(s => s.type === 'paper').length,
     patents: data.sources.filter(s => s.type === 'patent').length,
+    webSources: data.sources.filter(s => s.type === 'web' || s.type === 'news').length,
     findings: data.keyFindings.length,
     gaps: data.technologicalGaps.length,
     crossDomain: data.crossDomainInsights.length,
@@ -185,7 +189,7 @@ export function ResearchInsightsCard({
           icon={FileText}
           label="Sources"
           value={stats.totalSources}
-          sublabel={`${stats.papers} papers, ${stats.patents} patents`}
+          sublabel={`${stats.papers} papers, ${stats.patents} patents${stats.webSources > 0 ? `, ${stats.webSources} web` : ''}`}
         />
         <StatBox
           icon={Lightbulb}
@@ -412,6 +416,8 @@ function SourcesTable({ sources, searchQuery }: SourcesTableProps) {
     patent: Award,
     dataset: Database,
     materials: Microscope,
+    web: Globe,
+    news: Newspaper,
     other: FileText,
   }
 

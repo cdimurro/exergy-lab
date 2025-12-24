@@ -80,13 +80,15 @@ export class SearchOrchestrator {
       openAlexResult,
       registryResult,
       preprintsResult,
-      newsResult
+      newsResult,
+      webSearchResult
     ] = await Promise.allSettled([
       this.searchSemanticScholar(cleanQuery, prompt.domains),
       this.searchOpenAlex(cleanQuery, prompt.domains),
       this.searchViaRegistry(cleanQuery, prompt.domains),
       this.searchArxiv(prompt.domains, cleanQuery),
-      this.searchNews(cleanQuery)
+      this.searchNews(cleanQuery),
+      this.searchWeb(cleanQuery, prompt.domains)
     ])
 
     // Extract successful results
@@ -95,6 +97,7 @@ export class SearchOrchestrator {
     const registrySources = registryResult.status === 'fulfilled' ? registryResult.value : { sources: [], bySource: {} }
     const preprints = preprintsResult.status === 'fulfilled' ? preprintsResult.value : []
     const news = newsResult.status === 'fulfilled' ? newsResult.value : []
+    const webSources = webSearchResult.status === 'fulfilled' ? webSearchResult.value : []
 
     // Log any failures
     if (semanticScholarResult.status === 'rejected') {
@@ -111,6 +114,9 @@ export class SearchOrchestrator {
     }
     if (newsResult.status === 'rejected') {
       console.error('[Discovery] NewsAPI search failed:', newsResult.reason)
+    }
+    if (webSearchResult.status === 'rejected') {
+      console.error('[Discovery] Web search failed:', webSearchResult.reason)
     }
 
     // Combine all papers and deduplicate
@@ -132,8 +138,11 @@ export class SearchOrchestrator {
       'dataset'
     )
 
+    // Convert web sources to standard format
+    const webSourcesConverted = this.convertRegistryToSources(webSources, 'news')
+
     // Combine all sources
-    const allSources = [...allPapers, ...patents, ...datasets, ...preprints, ...news]
+    const allSources = [...allPapers, ...patents, ...datasets, ...preprints, ...news, ...webSourcesConverted]
 
     // Sort by relevance score
     allSources.sort((a, b) => b.relevanceScore - a.relevanceScore)
@@ -143,7 +152,7 @@ export class SearchOrchestrator {
       papers: allPapers.length,
       patents: patents.length,
       reports: preprints.length,
-      news: news.length,
+      news: news.length + webSourcesConverted.length, // Include web sources in news count
       datasets: datasets.length,
       sources: allSources.slice(0, 100), // Limit to top 100
       searchTimeMs: Date.now() - startTime,
@@ -151,7 +160,7 @@ export class SearchOrchestrator {
     }
 
     console.log(`[Discovery] Search complete in ${results.searchTimeMs}ms: ${results.totalSources} total sources`)
-    console.log(`  Papers: ${results.papers}, Patents: ${results.patents}, Reports: ${results.reports}, News: ${results.news}, Datasets: ${results.datasets}`)
+    console.log(`  Papers: ${results.papers}, Patents: ${results.patents}, Reports: ${results.reports}, News: ${results.news}, Datasets: ${results.datasets}, Web: ${webSourcesConverted.length}`)
 
     return results
   }
@@ -501,6 +510,43 @@ export class SearchOrchestrator {
     } catch (error) {
       console.error('[NewsAPI] Search failed:', error)
       throw error
+    }
+  }
+
+  /**
+   * Web Search - Google Custom Search API
+   * Searches authoritative sources for pricing, policy, and benchmark data
+   * Uses tiered credibility scoring (government > academic > industry > news)
+   */
+  private async searchWeb(query: string, domains: string[]): Promise<any[]> {
+    try {
+      const registry = getDataSourceRegistry()
+      const adapter = registry.get('web-search')
+
+      if (!adapter) {
+        console.log('[Web Search] Adapter not registered')
+        return []
+      }
+
+      const isAvailable = await adapter.isAvailable()
+      if (!isAvailable) {
+        console.log('[Web Search] Not available - API not configured')
+        return []
+      }
+
+      // Build domain-aware query
+      const domainContext = domains.length > 0
+        ? domains.map(d => d.replace(/-/g, ' ')).join(' OR ')
+        : 'clean energy'
+      const enhancedQuery = `${query} (${domainContext})`
+
+      const result = await adapter.search(enhancedQuery, { limit: 15 })
+
+      console.log(`[Web Search] Found ${result.sources.length} sources`)
+      return result.sources || []
+    } catch (error) {
+      console.error('[Web Search] Search failed:', error)
+      return [] // Return empty instead of throwing to not break parallel execution
     }
   }
 

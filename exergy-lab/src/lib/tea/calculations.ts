@@ -8,6 +8,8 @@
  */
 
 import type { TEAInput_v2, TEAResult_v2, CalculationProvenance } from '@/types/tea'
+import { exergyCalculator } from './exergy'
+import type { ExergyAnalysisResult } from './exergy'
 
 /**
  * Core Calculation Results Interface
@@ -35,6 +37,19 @@ export interface TEACalculations {
   mitigationCost?: number // USD/tCO2e avoided
   carbonIntensity?: number // gCO2e/MJ
   avoidedEmissions?: number // tCO2e/year
+
+  // Exergy metrics (Second-law thermodynamic analysis)
+  exergy?: {
+    appliedExergyLeverage: number
+    secondLawEfficiency: number
+    firstLawEfficiency: number
+    exergyDestructionRatio: number
+    fossilComparisonMultiple: number
+    fossilComparisonStatement: string
+    fossilEquivalentTechnology: string
+    confidence: 'high' | 'medium' | 'low'
+    dataSource: string
+  }
 
   // Cost breakdowns
   totalCapex: number
@@ -106,6 +121,9 @@ export class TEACalculator {
     const carbonIntensity = this.input.carbon_intensity_avoided
     const avoidedEmissions = this.calculateAvoidedEmissions()
 
+    // Calculate exergy metrics
+    const exergy = this.calculateExergyMetrics()
+
     // Cost aggregations
     const totalCapex = this.calculateTotalCAPEX()
     const totalOpexAnnual = this.calculateAnnualOPEX()
@@ -127,6 +145,7 @@ export class TEACalculator {
       mitigationCost,
       carbonIntensity,
       avoidedEmissions,
+      exergy,
       totalCapex,
       totalOpexAnnual,
       totalLifetimeCost,
@@ -659,6 +678,85 @@ export class TEACalculator {
     const avoidedEmissions = ((fossilEmissions - safEmissions) / 1e6) * annualEnergyMJ
 
     return avoidedEmissions
+  }
+
+  /**
+   * Calculate Exergy Metrics (Second-Law Thermodynamic Analysis)
+   *
+   * Provides device-level exergy analysis including:
+   * - Applied Exergy Leverage score
+   * - Second-law efficiency
+   * - Comparison to fossil fuel equivalent
+   *
+   * Reference: Thermodynamic second-law analysis, Petela solar exergy
+   */
+  private calculateExergyMetrics(): TEACalculations['exergy'] | undefined {
+    // Map TEA technology type to exergy profile technology type
+    const technologyMapping: Record<string, string> = {
+      solar: 'solar-pv',
+      wind: 'wind-onshore',
+      offshore_wind: 'wind-offshore',
+      hydrogen: 'electrolyzer',
+      storage: 'battery-storage',
+      nuclear: 'nuclear',
+      geothermal: 'geothermal',
+      hydro: 'hydro',
+      biomass: 'biomass',
+      generic: 'ccgt', // Use CCGT as baseline for generic
+    }
+
+    const exergyTechType = technologyMapping[this.input.technology_type] || this.input.technology_type
+
+    // Perform exergy analysis
+    const exergyResult = exergyCalculator.analyzeProcess(exergyTechType)
+
+    if (!exergyResult) {
+      // No exergy profile found for this technology
+      return undefined
+    }
+
+    // Add provenance for exergy calculation
+    this.addProvenance({
+      metric: 'Applied Exergy Leverage',
+      formula: 'Second-Law Efficiency x Output Energy Quality Factor',
+      inputs: {
+        secondLawEfficiency: {
+          value: exergyResult.secondLawEfficiency,
+          unit: 'fraction',
+          source: exergyResult.dataSource,
+        },
+        outputQualityFactor: {
+          value: exergyResult.outputQualityFactor,
+          unit: 'fraction',
+          source: 'Energy quality classification',
+        },
+      },
+      assumptions: [
+        'Device-level analysis (excludes upstream/downstream losses)',
+        'Steady-state operation assumed',
+        `Reference temperature: 300K (ambient)`,
+      ],
+      references: [
+        exergyResult.dataSource,
+        'Second-law thermodynamic analysis methodology',
+      ],
+      calculatedValue: exergyResult.appliedExergyLeverage,
+      unit: 'dimensionless',
+      confidence: exergyResult.confidence === 'high' ? 90 : exergyResult.confidence === 'medium' ? 75 : 60,
+      validated: false,
+    })
+
+    return {
+      appliedExergyLeverage: exergyResult.appliedExergyLeverage,
+      secondLawEfficiency: exergyResult.secondLawEfficiency,
+      firstLawEfficiency: exergyResult.firstLawEfficiency,
+      exergyDestructionRatio: exergyResult.exergyDestructionRatio,
+      fossilComparisonMultiple: exergyResult.fossilComparison.leverageMultiple,
+      fossilComparisonStatement: exergyResult.fossilComparison.statement,
+      fossilEquivalentTechnology: exergyResult.fossilComparison.equivalentTechnology,
+      confidence: exergyResult.confidence,
+      dataSource: exergyResult.dataSource,
+    }
   }
 
   /**

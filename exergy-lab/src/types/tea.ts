@@ -353,6 +353,28 @@ export interface TEAResult_v2 extends TEAResult {
     mitigationCost?: number // USD/tCO2e avoided
     carbonIntensity?: number // gCO2e/MJ or kgCO2e/unit
     avoidedEmissions?: number // tCO2e/year
+
+    // Exergy metrics (Second-law thermodynamic analysis)
+    exergy?: {
+      /** Applied Exergy Leverage score (0-1+) */
+      appliedExergyLeverage: number
+      /** Second-law efficiency (0-1, except heat pumps) */
+      secondLawEfficiency: number
+      /** First-law efficiency for reference */
+      firstLawEfficiency: number
+      /** Exergy destruction ratio (0-1) */
+      exergyDestructionRatio: number
+      /** Comparison multiple vs fossil equivalent */
+      fossilComparisonMultiple: number
+      /** Human-readable comparison statement */
+      fossilComparisonStatement: string
+      /** Fossil technology used for comparison */
+      fossilEquivalentTechnology: string
+      /** Confidence level in the analysis */
+      confidence: 'high' | 'medium' | 'low'
+      /** Data source citation */
+      dataSource: string
+    }
   }
 
   // Detailed cost breakdowns (NETL 5-level structure)

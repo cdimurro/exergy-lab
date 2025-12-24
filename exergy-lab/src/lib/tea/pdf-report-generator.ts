@@ -552,6 +552,121 @@ export class EnhancedTEAReportGenerator {
 
       this.addTable('Energy Balance', ['Parameter', 'Value'], energyData)
     }
+
+    // Exergy Analysis (Second-Law Efficiency)
+    if (this.data.results.extendedMetrics?.exergy) {
+      this.addExergyAnalysisSection()
+    }
+  }
+
+  /**
+   * Exergy Analysis Subsection (Second-Law Thermodynamic Efficiency)
+   */
+  private addExergyAnalysisSection() {
+    const exergy = this.data.results.extendedMetrics?.exergy
+    if (!exergy) return
+
+    this.checkPageBreak(80)
+    this.addSectionHeader('Exergy Analysis (Second-Law Efficiency)', 2)
+
+    // Introduction text
+    this.doc.setFontSize(10)
+    this.doc.setFont('helvetica', 'normal')
+    this.doc.setTextColor(60, 60, 60)
+    const introText =
+      'Exergy analysis evaluates energy quality rather than just quantity. ' +
+      'While first-law efficiency measures energy conservation, second-law efficiency ' +
+      'measures how well the system converts available work potential (exergy) from input to output.'
+    const introLines = this.doc.splitTextToSize(introText, this.pageWidth - 2 * this.margin)
+    introLines.forEach((line: string) => {
+      this.doc.text(line, this.margin, this.currentY)
+      this.currentY += 5
+    })
+    this.currentY += 5
+
+    // Exergy metrics table
+    const exergyData = [
+      [
+        'Applied Exergy Leverage',
+        exergy.appliedExergyLeverage.toFixed(3),
+        'Combined efficiency and output quality score',
+      ],
+      [
+        'Second-Law Efficiency',
+        `${(exergy.secondLawEfficiency * 100).toFixed(1)}%`,
+        'Exergy output / Exergy input',
+      ],
+      [
+        'First-Law Efficiency',
+        `${(exergy.firstLawEfficiency * 100).toFixed(1)}%`,
+        'Energy output / Energy input',
+      ],
+      [
+        'Exergy Destruction',
+        `${(exergy.exergyDestructionRatio * 100).toFixed(1)}%`,
+        'Fraction of exergy lost to irreversibilities',
+      ],
+      [
+        'Fossil Comparison',
+        `${exergy.fossilComparisonMultiple.toFixed(2)}x`,
+        `vs. ${exergy.fossilEquivalentTechnology}`,
+      ],
+    ]
+
+    this.addTable(
+      'Device-Level Exergy Metrics',
+      ['Metric', 'Value', 'Description'],
+      exergyData,
+      { fontSize: 9 }
+    )
+
+    // Fossil comparison callout box
+    this.checkPageBreak(30)
+    this.currentY += 5
+    const boxStartY = this.currentY
+
+    // Draw callout box with green left border
+    this.doc.setDrawColor(34, 197, 94) // Green border
+    this.doc.setLineWidth(1.5)
+    this.doc.line(this.margin, boxStartY, this.margin, boxStartY + 20)
+
+    // Light green background
+    this.doc.setFillColor(240, 253, 244)
+    this.doc.rect(this.margin + 2, boxStartY, this.pageWidth - 2 * this.margin - 2, 20, 'F')
+
+    // Statement text
+    this.doc.setTextColor(22, 101, 52) // Dark green text
+    this.doc.setFontSize(10)
+    this.doc.setFont('helvetica', 'italic')
+    const statementLines = this.doc.splitTextToSize(
+      exergy.fossilComparisonStatement,
+      this.pageWidth - 2 * this.margin - 10
+    )
+    let textY = boxStartY + 7
+    statementLines.forEach((line: string) => {
+      this.doc.text(line, this.margin + 5, textY)
+      textY += 5
+    })
+
+    this.currentY = boxStartY + 25
+
+    // Confidence indicator
+    this.doc.setTextColor(100, 100, 100)
+    this.doc.setFontSize(8)
+    this.doc.setFont('helvetica', 'normal')
+    const confidenceLabel =
+      exergy.confidence === 'high'
+        ? 'High Confidence'
+        : exergy.confidence === 'medium'
+          ? 'Medium Confidence'
+          : 'Low Confidence'
+    this.doc.text(`Data Confidence: ${confidenceLabel}`, this.margin, this.currentY)
+    this.currentY += 4
+    this.doc.text(`Source: ${exergy.dataSource}`, this.margin, this.currentY)
+
+    // Reset text color
+    this.doc.setTextColor(0, 0, 0)
+    this.currentY += 10
   }
 
   /**

@@ -36,6 +36,7 @@ export type DataSourceName =
   | 'zenodo'
   | 'inspire'
   | 'newsapi'
+  | 'web-search'
 
 /**
  * Type of data source
