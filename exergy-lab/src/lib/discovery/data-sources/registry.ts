@@ -504,20 +504,27 @@ export async function initializeDataSourceRegistry(): Promise<DataSourceRegistry
 
   // Import all adapters in parallel
   await Promise.all([
-    // Existing adapters
-    safeRegister(() => import('../sources/nrel'), 'nrel'),
-    safeRegister(() => import('../sources/ieee'), 'ieee'),
-    safeRegister(() => import('../sources/biorxiv'), 'biorxiv'),
-    safeRegister(() => import('../sources/chemrxiv'), 'chemrxiv'),
-    safeRegister(() => import('../sources/consensus'), 'consensus'),
-    safeRegister(() => import('../sources/google-patents'), 'google-patents'),
-
-    // New adapters
+    // Core academic sources
+    safeRegister(() => import('../sources/semantic-scholar'), 'semantic-scholar'),
+    safeRegister(() => import('../sources/arxiv'), 'arxiv'),
+    safeRegister(() => import('../sources/openalex'), 'openalex'),
     safeRegister(() => import('../sources/pubmed'), 'pubmed'),
     safeRegister(() => import('../sources/crossref'), 'crossref'),
     safeRegister(() => import('../sources/core'), 'core'),
-    // USPTO - PatentsView API (API key configured)
+    safeRegister(() => import('../sources/ieee'), 'ieee'),
+
+    // Preprint servers
+    safeRegister(() => import('../sources/biorxiv'), 'biorxiv'),
+    safeRegister(() => import('../sources/chemrxiv'), 'chemrxiv'),
+
+    // Domain-specific data sources
+    safeRegister(() => import('../sources/nrel'), 'nrel'),
+    safeRegister(() => import('../sources/consensus'), 'consensus'),
+
+    // Patents
+    safeRegister(() => import('../sources/google-patents'), 'google-patents'),
     safeRegister(() => import('../sources/uspto'), 'uspto'),
+
     // Web Search - Google Custom Search API for pricing/policy/benchmarks
     safeRegister(() => import('../sources/web-search'), 'web-search'),
   ])

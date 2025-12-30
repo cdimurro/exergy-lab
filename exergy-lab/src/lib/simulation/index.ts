@@ -74,3 +74,34 @@ export {
   type ValidationResult,
   type BatchValidationResult,
 } from './orchestrator/simulation-orchestrator'
+
+// Cost Control Service (v0.0.4.2)
+export {
+  CostControlService,
+  getCostControlService,
+  estimateSimulationCost,
+  DEFAULT_COST_LIMITS,
+  type CostLimits,
+  type CostRecord,
+  type CostSummary,
+  type CostCheckResult,
+} from './cost-control-service'
+
+// Validation Module (v0.0.5)
+export {
+  UncertaintyQuantifier,
+  createUncertaintyQuantifier,
+  DEFAULT_UNCERTAINTY_CONFIG,
+  BenchmarkValidator,
+  createBenchmarkValidator,
+  validateSimulation,
+  BENCHMARK_DATABASE,
+  type UncertaintyResult,
+  type UncertaintyConfig,
+  type ParameterSensitivity,
+  type ConvergenceAnalysis,
+  type BenchmarkCase,
+  type ValidationResult as BenchmarkValidationResult,
+  type MetricValidation,
+  type Domain as BenchmarkDomain,
+} from './validation'

@@ -97,3 +97,6 @@ export { ExpertApprovalBadge, VerifiedBadge } from './ExpertApprovalBadge'
 export type { ExpertApprovalBadgeProps, VerifiedBadgeProps } from './ExpertApprovalBadge'
 export { HypothesisFeedbackForm } from './HypothesisFeedbackForm'
 export type { StructuredFeedback, HypothesisFeedbackFormProps } from './HypothesisFeedbackForm'
+
+// Success rate tracking (hypothesis approval analytics)
+export { SuccessRateTracker, SuccessRateCompact } from './SuccessRateTracker'

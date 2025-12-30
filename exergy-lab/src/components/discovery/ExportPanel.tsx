@@ -47,7 +47,7 @@ interface ExportError {
 // Types
 // ============================================================================
 
-type ExportFormat = 'pdf' | 'json' | 'latex' | 'bibtex' | 'markdown' | 'ai-report'
+type ExportFormat = 'pdf' | 'json' | 'latex' | 'bibtex' | 'ris' | 'markdown' | 'ai-report'
 
 interface ExportOption {
   format: ExportFormat
@@ -149,6 +149,14 @@ const EXPORT_OPTIONS: ExportOption[] = [
     icon: <BookOpen className="w-5 h-5" />,
     extension: '.bib',
     mimeType: 'application/x-bibtex',
+  },
+  {
+    format: 'ris',
+    label: 'RIS Citations',
+    description: 'Reference manager format (EndNote, Zotero, Mendeley)',
+    icon: <BookOpen className="w-5 h-5" />,
+    extension: '.ris',
+    mimeType: 'application/x-research-info-systems',
   },
 ]
 
@@ -507,6 +515,102 @@ function generateBibTeX(result: DiscoveryResult): string {
     '',
     ...entries,
   ].join('\n\n')
+}
+
+/**
+ * Generate RIS format citations
+ * Compatible with EndNote, Zotero, Mendeley, and other reference managers
+ */
+function generateRIS(result: DiscoveryResult): string {
+  const entries: string[] = []
+  const processedDois = new Set<string>()
+
+  // RIS field reference:
+  // TY - Type (JOUR=Journal Article, CONF=Conference, BOOK=Book, etc.)
+  // TI - Title
+  // AU - Author (one per line)
+  // PY - Year
+  // JO - Journal name
+  // VL - Volume
+  // IS - Issue
+  // SP - Start page
+  // EP - End page
+  // DO - DOI
+  // UR - URL
+  // AB - Abstract
+  // KW - Keywords (one per line)
+  // ER - End of Reference
+
+  // Extract citations from research phase
+  const researchPhase = result.phases?.find((p) => p.phase === 'research')
+  if (researchPhase?.finalOutput?.sources) {
+    for (const source of researchPhase.finalOutput.sources) {
+      if (source.doi && !processedDois.has(source.doi)) {
+        processedDois.add(source.doi)
+
+        const entry: string[] = []
+        entry.push('TY  - JOUR') // Default to journal article
+
+        if (source.title) {
+          entry.push(`TI  - ${source.title}`)
+        }
+
+        // Add authors (one per line)
+        if (source.authors && source.authors.length > 0) {
+          for (const author of source.authors) {
+            entry.push(`AU  - ${author}`)
+          }
+        }
+
+        if (source.year) {
+          entry.push(`PY  - ${source.year}`)
+        }
+
+        if (source.journal) {
+          entry.push(`JO  - ${source.journal}`)
+        }
+
+        if (source.volume) {
+          entry.push(`VL  - ${source.volume}`)
+        }
+
+        if (source.issue) {
+          entry.push(`IS  - ${source.issue}`)
+        }
+
+        if (source.pages) {
+          const [start, end] = source.pages.split('-')
+          if (start) entry.push(`SP  - ${start.trim()}`)
+          if (end) entry.push(`EP  - ${end.trim()}`)
+        }
+
+        if (source.doi) {
+          entry.push(`DO  - ${source.doi}`)
+          entry.push(`UR  - https://doi.org/${source.doi}`)
+        }
+
+        if (source.abstract) {
+          entry.push(`AB  - ${source.abstract}`)
+        }
+
+        // Add keywords if available
+        if (source.keywords && source.keywords.length > 0) {
+          for (const keyword of source.keywords) {
+            entry.push(`KW  - ${keyword}`)
+          }
+        }
+
+        entry.push('ER  - ') // End of reference
+        entries.push(entry.join('\n'))
+      }
+    }
+  }
+
+  if (entries.length === 0) {
+    return 'TY  - GEN\nTI  - No citations found in discovery results\nER  - \n'
+  }
+
+  return entries.join('\n\n')
 }
 
 function generateLaTeX(
@@ -952,6 +1056,9 @@ export function ExportPanel({
         case 'bibtex':
           data = generateBibTeX(result)
           break
+        case 'ris':
+          data = generateRIS(result)
+          break
         case 'latex':
           data = generateLaTeX(result, query, config)
           break
@@ -1028,6 +1135,9 @@ export function ExportPanel({
           break
         case 'bibtex':
           data = generateBibTeX(result)
+          break
+        case 'ris':
+          data = generateRIS(result)
           break
         case 'latex':
           data = generateLaTeX(result, query, config)

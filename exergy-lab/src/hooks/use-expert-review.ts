@@ -1,18 +1,23 @@
 /**
- * useExpertReview Hook (v0.0.4.1)
+ * useExpertReview Hook (v0.0.5)
  *
  * Hook for managing expert review state and workflow.
  * Handles review submissions, feedback storage, and integration
  * with the hypothesis racing pipeline.
  *
+ * Now integrated with ExpertFeedbackStore for persistent storage
+ * and success rate tracking.
+ *
  * @see ExpertReviewPanel.tsx - UI component
  * @see hypothesis-racer.ts - Integration point
+ * @see lib/store/expert-feedback-store.ts - Persistent storage
  */
 
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useEffect } from 'react'
 import type { RacingHypothesis } from '@/lib/ai/agents/hypgen'
 import type { ExpertDecision, ExpertReview } from '@/components/discovery/ExpertReviewPanel'
 import type { StructuredFeedback } from '@/components/discovery/HypothesisFeedbackForm'
+import { useExpertFeedbackStore } from '@/lib/store/expert-feedback-store'
 
 // ============================================================================
 // Types
@@ -32,7 +37,7 @@ export interface ExpertReviewState {
 }
 
 export interface ExpertReviewActions {
-  startReview: (hypotheses: RacingHypothesis[], expertId?: string) => void
+  startReview: (hypotheses: RacingHypothesis[], expertId?: string, discoveryId?: string) => void
   submitReview: (hypothesisId: string, decision: ExpertDecision, feedback?: string) => void
   submitStructuredFeedback: (hypothesisId: string, feedback: StructuredFeedback) => void
   skipHypothesis: (hypothesisId: string) => void
@@ -43,6 +48,8 @@ export interface ExpertReviewActions {
   cancelReview: () => void
   getReviewForHypothesis: (hypothesisId: string) => ExpertReview | undefined
   isHypothesisReviewed: (hypothesisId: string) => boolean
+  getSuccessMetrics: () => import('@/lib/store/expert-feedback-store').ExpertSuccessMetrics
+  getPromptTuningData: (domain: string, agent: string) => import('@/lib/store/expert-feedback-store').PromptTuningData
 }
 
 export interface ExpertReviewSummary {
@@ -97,12 +104,21 @@ export function useExpertReview(options: UseExpertReviewOptions = {}): [
 
   const [state, setState] = useState<ExpertReviewState>(createInitialState())
 
+  // Access the persistent expert feedback store
+  const feedbackStore = useExpertFeedbackStore()
+
+  // Current discovery ID for persistence (set when startReview is called)
+  const [currentDiscoveryId, setCurrentDiscoveryId] = useState<string>('')
+
   // ============================================================================
   // Actions
   // ============================================================================
 
   const startReview = useCallback(
-    (hypotheses: RacingHypothesis[], expertId?: string) => {
+    (hypotheses: RacingHypothesis[], expertId?: string, discoveryId?: string) => {
+      // Set current discovery ID for persistence
+      setCurrentDiscoveryId(discoveryId || `discovery-${Date.now()}`)
+
       setState({
         isReviewMode: true,
         reviews: new Map(),
@@ -131,9 +147,26 @@ export function useExpertReview(options: UseExpertReviewOptions = {}): [
         timestamp,
       }
 
+      // Find the hypothesis to get additional context
+      const hypothesis = state.pendingHypotheses.find((h) => h.id === hypothesisId)
+
+      // Persist to the expert feedback store
+      if (hypothesis) {
+        feedbackStore.addReview({
+          hypothesisId,
+          discoveryId: currentDiscoveryId,
+          expertId: state.expertId,
+          decision,
+          confidence: 0.75, // Default confidence, can be overridden in structured feedback
+          feedback,
+          domain: 'general', // Domain is determined by research context, not hypothesis
+          agentSource: hypothesis.agentSource,
+        })
+      }
+
       setState((prev) => {
-        const hypothesis = prev.pendingHypotheses.find((h) => h.id === hypothesisId)
-        if (!hypothesis) return prev
+        const hyp = prev.pendingHypotheses.find((h) => h.id === hypothesisId)
+        if (!hyp) return prev
 
         const newReviews = new Map(prev.reviews)
         newReviews.set(hypothesisId, review)
@@ -141,15 +174,15 @@ export function useExpertReview(options: UseExpertReviewOptions = {}): [
         const newPending = prev.pendingHypotheses.filter((h) => h.id !== hypothesisId)
         const newApproved =
           decision === 'approve'
-            ? [...prev.approvedHypotheses, hypothesis]
+            ? [...prev.approvedHypotheses, hyp]
             : prev.approvedHypotheses
         const newRejected =
           decision === 'reject'
-            ? [...prev.rejectedHypotheses, hypothesis]
+            ? [...prev.rejectedHypotheses, hyp]
             : prev.rejectedHypotheses
         const newRefinement =
           decision === 'refine'
-            ? [...prev.refinementRequested, hypothesis]
+            ? [...prev.refinementRequested, hyp]
             : prev.refinementRequested
 
         // Auto-advance to next hypothesis
@@ -177,7 +210,7 @@ export function useExpertReview(options: UseExpertReviewOptions = {}): [
         timestamp,
       })
     },
-    [state.expertId, autoAdvance, onHypothesisReviewed]
+    [state.expertId, state.pendingHypotheses, autoAdvance, onHypothesisReviewed, feedbackStore, currentDiscoveryId]
   )
 
   const submitStructuredFeedback = useCallback(
@@ -207,9 +240,58 @@ export function useExpertReview(options: UseExpertReviewOptions = {}): [
         timestamp,
       }
 
+      // Find the hypothesis to get additional context
+      const hypothesis = state.pendingHypotheses.find((h) => h.id === hypothesisId)
+
+      // Persist to the expert feedback store with full structured data
+      if (hypothesis) {
+        // Map confidence level to numeric value
+        const confidenceMap: Record<string, number> = {
+          'very_low': 0.2,
+          'low': 0.4,
+          'medium': 0.6,
+          'high': 0.8,
+          'very_high': 0.95,
+        }
+
+        // Create tags from strengths and weaknesses for pattern analysis
+        const tags = [
+          ...feedback.strengths.map(s => `strength:${s}`),
+          ...feedback.weaknesses.map(w => `weakness:${w}`),
+        ]
+
+        const reviewId = feedbackStore.addReview({
+          hypothesisId,
+          discoveryId: currentDiscoveryId,
+          expertId: state.expertId,
+          decision: feedback.decision,
+          confidence: confidenceMap[feedback.confidenceLevel] || 0.6,
+          feedback: feedbackText,
+          refinements,
+          tags,
+          domain: 'general', // Domain is determined by research context, not hypothesis
+          agentSource: hypothesis.agentSource,
+        })
+
+        // Add detailed structured feedback entries for analytics
+        const feedbackCategories = ['novelty', 'feasibility', 'clarity', 'mechanism', 'evidence', 'impact', 'testability'] as const
+
+        // Add rating-based structured feedback if applicable
+        if (feedback.overallRating) {
+          feedbackStore.addStructuredFeedback({
+            reviewId,
+            category: 'impact',
+            aspect: 'overall_quality',
+            rating: feedback.overallRating,
+            comment: feedback.additionalNotes,
+            actionable: feedback.refinementSuggestions.length > 0,
+          })
+        }
+      }
+
       setState((prev) => {
-        const hypothesis = prev.pendingHypotheses.find((h) => h.id === hypothesisId)
-        if (!hypothesis) return prev
+        const hyp = prev.pendingHypotheses.find((h) => h.id === hypothesisId)
+        if (!hyp) return prev
 
         const newReviews = new Map(prev.reviews)
         newReviews.set(hypothesisId, review)
@@ -217,15 +299,15 @@ export function useExpertReview(options: UseExpertReviewOptions = {}): [
         const newPending = prev.pendingHypotheses.filter((h) => h.id !== hypothesisId)
         const newApproved =
           feedback.decision === 'approve'
-            ? [...prev.approvedHypotheses, hypothesis]
+            ? [...prev.approvedHypotheses, hyp]
             : prev.approvedHypotheses
         const newRejected =
           feedback.decision === 'reject'
-            ? [...prev.rejectedHypotheses, hypothesis]
+            ? [...prev.rejectedHypotheses, hyp]
             : prev.rejectedHypotheses
         const newRefinement =
           feedback.decision === 'refine'
-            ? [...prev.refinementRequested, hypothesis]
+            ? [...prev.refinementRequested, hyp]
             : prev.refinementRequested
 
         const newIndex = autoAdvance
@@ -246,7 +328,7 @@ export function useExpertReview(options: UseExpertReviewOptions = {}): [
 
       onHypothesisReviewed?.(review)
     },
-    [state.expertId, autoAdvance, onHypothesisReviewed]
+    [state.expertId, state.pendingHypotheses, autoAdvance, onHypothesisReviewed, feedbackStore, currentDiscoveryId]
   )
 
   const skipHypothesis = useCallback((hypothesisId: string) => {
@@ -336,6 +418,25 @@ export function useExpertReview(options: UseExpertReviewOptions = {}): [
     [state.reviews]
   )
 
+  /**
+   * Get success metrics from the persistent store
+   * Tracks approval rates by domain and agent for prompt tuning
+   */
+  const getSuccessMetrics = useCallback(() => {
+    return feedbackStore.getSuccessMetrics()
+  }, [feedbackStore])
+
+  /**
+   * Get prompt tuning data for a specific domain and agent
+   * Returns patterns, failure reasons, and refinement suggestions
+   */
+  const getPromptTuningData = useCallback(
+    (domain: string, agent: string) => {
+      return feedbackStore.getPromptTuningData(domain, agent)
+    },
+    [feedbackStore]
+  )
+
   // ============================================================================
   // Memoized Actions Object
   // ============================================================================
@@ -353,6 +454,8 @@ export function useExpertReview(options: UseExpertReviewOptions = {}): [
       cancelReview,
       getReviewForHypothesis,
       isHypothesisReviewed,
+      getSuccessMetrics,
+      getPromptTuningData,
     }),
     [
       startReview,
@@ -366,6 +469,8 @@ export function useExpertReview(options: UseExpertReviewOptions = {}): [
       cancelReview,
       getReviewForHypothesis,
       isHypothesisReviewed,
+      getSuccessMetrics,
+      getPromptTuningData,
     ]
   )
 

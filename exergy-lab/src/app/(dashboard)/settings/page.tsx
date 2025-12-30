@@ -3,6 +3,7 @@
 import * as React from 'react'
 import { Card, Button, Input, Badge } from '@/components/ui'
 import { useTheme, type Theme } from '@/hooks/use-theme'
+import { DataSourcesSettings } from '@/components/settings/DataSourcesSettings'
 import {
   User,
   Bell,
@@ -16,6 +17,7 @@ import {
   Sun,
   Monitor,
   Check,
+  Database,
 } from 'lucide-react'
 
 const TABS = [
@@ -25,6 +27,7 @@ const TABS = [
   { id: 'billing', label: 'Billing', icon: CreditCard },
   { id: 'appearance', label: 'Appearance', icon: Palette },
   { id: 'api', label: 'API Keys', icon: Key },
+  { id: 'data-sources', label: 'Data Sources', icon: Database },
 ]
 
 export default function SettingsPage() {
@@ -343,6 +346,8 @@ export default function SettingsPage() {
               </Card>
             </>
           )}
+
+          {activeTab === 'data-sources' && <DataSourcesSettings />}
         </div>
       </div>
     </div>
