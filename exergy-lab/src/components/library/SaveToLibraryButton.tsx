@@ -14,32 +14,16 @@ import {
   BookmarkCheck,
   FolderPlus,
   Check,
-  ChevronDown,
+  X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { Modal } from '@/components/ui/modal'
 import { useLibraryStore } from '@/lib/library'
 import type {
   LibraryItemType,
   LibraryItemData,
-  LibraryFolder,
 } from '@/lib/library/library-types'
 
 // ============================================================================
@@ -70,7 +54,7 @@ export function SaveToLibraryButton({
   onSaved,
 }: SaveToLibraryButtonProps) {
   const [isSaved, setIsSaved] = useState(false)
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null)
   const [newFolderName, setNewFolderName] = useState('')
   const [tags, setTags] = useState<string[]>([])
@@ -78,7 +62,7 @@ export function SaveToLibraryButton({
 
   const { folders, saveItem, createFolder } = useLibraryStore()
 
-  // Build folder tree for display
+  // Build folder list for display
   const rootFolders = folders.filter((f) => f.parentId === null)
 
   const handleQuickSave = () => {
@@ -90,16 +74,16 @@ export function SaveToLibraryButton({
     setTimeout(() => setIsSaved(false), 2000)
   }
 
-  const handleSaveToFolder = (folderId: string | null) => {
-    const item = saveItem(itemType, title, data, { folderId })
-    setIsSaved(true)
-    onSaved?.(item.id)
-
-    setTimeout(() => setIsSaved(false), 2000)
+  const handleOpenModal = () => {
+    setIsModalOpen(true)
   }
 
-  const handleOpenDialog = () => {
-    setIsDialogOpen(true)
+  const handleCloseModal = () => {
+    setIsModalOpen(false)
+    setSelectedFolderId(null)
+    setNewFolderName('')
+    setTags([])
+    setTagInput('')
   }
 
   const handleCreateFolderAndSave = () => {
@@ -112,9 +96,7 @@ export function SaveToLibraryButton({
     })
 
     setIsSaved(true)
-    setIsDialogOpen(false)
-    setNewFolderName('')
-    setTags([])
+    handleCloseModal()
     onSaved?.(item.id)
 
     setTimeout(() => setIsSaved(false), 2000)
@@ -127,9 +109,7 @@ export function SaveToLibraryButton({
     })
 
     setIsSaved(true)
-    setIsDialogOpen(false)
-    setSelectedFolderId(null)
-    setTags([])
+    handleCloseModal()
     onSaved?.(item.id)
 
     setTimeout(() => setIsSaved(false), 2000)
@@ -153,60 +133,49 @@ export function SaveToLibraryButton({
     }
   }
 
-  // Icon-only button
+  // Icon-only button with quick save
   if (size === 'icon' || variant === 'icon') {
     return (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className={className}
-            aria-label={isSaved ? 'Saved to library' : 'Save to library'}
-          >
-            {isSaved ? (
-              <BookmarkCheck className="h-4 w-4 text-green-500" />
-            ) : (
-              <Bookmark className="h-4 w-4" />
-            )}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuLabel>Save to Library</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleQuickSave}>
-            <Bookmark className="mr-2 h-4 w-4" />
-            Quick Save
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuLabel className="text-xs text-muted-foreground">
-            Folders
-          </DropdownMenuLabel>
-          {rootFolders.length === 0 ? (
-            <DropdownMenuItem disabled className="text-muted-foreground">
-              No folders yet
-            </DropdownMenuItem>
+      <>
+        <Button
+          variant="ghost"
+          size="icon"
+          className={className}
+          onClick={handleQuickSave}
+          onContextMenu={(e) => {
+            e.preventDefault()
+            handleOpenModal()
+          }}
+          title={isSaved ? 'Saved to library' : 'Save to library (right-click for options)'}
+          aria-label={isSaved ? 'Saved to library' : 'Save to library'}
+        >
+          {isSaved ? (
+            <BookmarkCheck className="h-4 w-4 text-green-500" />
           ) : (
-            rootFolders.map((folder) => (
-              <DropdownMenuItem
-                key={folder.id}
-                onClick={() => handleSaveToFolder(folder.id)}
-              >
-                <span
-                  className="mr-2 h-3 w-3 rounded-sm"
-                  style={{ backgroundColor: folder.color ? `var(--${folder.color})` : '#6B7280' }}
-                />
-                {folder.name}
-              </DropdownMenuItem>
-            ))
+            <Bookmark className="h-4 w-4" />
           )}
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleOpenDialog}>
-            <FolderPlus className="mr-2 h-4 w-4" />
-            Save with options...
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+        </Button>
+
+        <SaveModal
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          title={title}
+          itemType={itemType}
+          folders={rootFolders}
+          selectedFolderId={selectedFolderId}
+          onSelectFolder={setSelectedFolderId}
+          newFolderName={newFolderName}
+          onNewFolderNameChange={setNewFolderName}
+          tags={tags}
+          tagInput={tagInput}
+          onTagInputChange={setTagInput}
+          onAddTag={handleAddTag}
+          onRemoveTag={handleRemoveTag}
+          onKeyDown={handleKeyDown}
+          onCreateFolderAndSave={handleCreateFolderAndSave}
+          onSaveWithOptions={handleSaveWithOptions}
+        />
+      </>
     )
   }
 
@@ -231,118 +200,153 @@ export function SaveToLibraryButton({
           </>
         )}
       </Button>
-
-      {/* Save with options dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Save to Library</DialogTitle>
-            <DialogDescription>
-              Choose a folder and add tags to organize your saved item.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 py-4">
-            {/* Item preview */}
-            <div className="rounded-md border p-3">
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary">{itemType}</Badge>
-                <span className="text-sm font-medium line-clamp-1">{title}</span>
-              </div>
-            </div>
-
-            {/* Folder selection */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Folder</label>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between">
-                    {selectedFolderId
-                      ? folders.find((f) => f.id === selectedFolderId)?.name
-                      : 'No folder (root)'}
-                    <ChevronDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-full">
-                  <DropdownMenuItem onClick={() => setSelectedFolderId(null)}>
-                    No folder (root)
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  {rootFolders.map((folder) => (
-                    <DropdownMenuItem
-                      key={folder.id}
-                      onClick={() => setSelectedFolderId(folder.id)}
-                    >
-                      {folder.name}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-
-            {/* Create new folder */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Or create new folder</label>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Folder name"
-                  value={newFolderName}
-                  onChange={(e) => setNewFolderName(e.target.value)}
-                />
-                <Button
-                  variant="secondary"
-                  onClick={handleCreateFolderAndSave}
-                  disabled={!newFolderName.trim()}
-                >
-                  Create & Save
-                </Button>
-              </div>
-            </div>
-
-            {/* Tags */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Tags</label>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Add tag..."
-                  value={tagInput}
-                  onChange={(e) => setTagInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                />
-                <Button variant="secondary" onClick={handleAddTag}>
-                  Add
-                </Button>
-              </div>
-              {tags.length > 0 && (
-                <div className="flex flex-wrap gap-1 pt-2">
-                  {tags.map((tag) => (
-                    <Badge
-                      key={tag}
-                      variant="secondary"
-                      className="cursor-pointer"
-                      onClick={() => handleRemoveTag(tag)}
-                    >
-                      {tag}
-                      <span className="ml-1">×</span>
-                    </Badge>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSaveWithOptions}>
-              <Bookmark className="mr-2 h-4 w-4" />
-              Save to Library
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
+  )
+}
+
+// ============================================================================
+// Save Modal Component
+// ============================================================================
+
+interface SaveModalProps {
+  isOpen: boolean
+  onClose: () => void
+  title: string
+  itemType: LibraryItemType
+  folders: Array<{ id: string; name: string; color?: string }>
+  selectedFolderId: string | null
+  onSelectFolder: (id: string | null) => void
+  newFolderName: string
+  onNewFolderNameChange: (name: string) => void
+  tags: string[]
+  tagInput: string
+  onTagInputChange: (value: string) => void
+  onAddTag: () => void
+  onRemoveTag: (tag: string) => void
+  onKeyDown: (e: React.KeyboardEvent) => void
+  onCreateFolderAndSave: () => void
+  onSaveWithOptions: () => void
+}
+
+function SaveModal({
+  isOpen,
+  onClose,
+  title,
+  itemType,
+  folders,
+  selectedFolderId,
+  onSelectFolder,
+  newFolderName,
+  onNewFolderNameChange,
+  tags,
+  tagInput,
+  onTagInputChange,
+  onAddTag,
+  onRemoveTag,
+  onKeyDown,
+  onCreateFolderAndSave,
+  onSaveWithOptions,
+}: SaveModalProps) {
+  if (!isOpen) return null
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Save to Library">
+      <div className="space-y-4">
+        {/* Item preview */}
+        <div className="rounded-md border p-3 bg-muted/50">
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary">{itemType}</Badge>
+            <span className="text-sm font-medium line-clamp-1">{title}</span>
+          </div>
+        </div>
+
+        {/* Folder selection */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Select Folder</label>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant={selectedFolderId === null ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => onSelectFolder(null)}
+            >
+              No folder (root)
+            </Button>
+            {folders.map((folder) => (
+              <Button
+                key={folder.id}
+                variant={selectedFolderId === folder.id ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => onSelectFolder(folder.id)}
+              >
+                {folder.name}
+              </Button>
+            ))}
+          </div>
+        </div>
+
+        {/* Create new folder */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Or create new folder</label>
+          <div className="flex gap-2">
+            <Input
+              placeholder="Folder name"
+              value={newFolderName}
+              onChange={(e) => onNewFolderNameChange(e.target.value)}
+            />
+            <Button
+              variant="secondary"
+              onClick={onCreateFolderAndSave}
+              disabled={!newFolderName.trim()}
+            >
+              <FolderPlus className="mr-2 h-4 w-4" />
+              Create & Save
+            </Button>
+          </div>
+        </div>
+
+        {/* Tags */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Tags</label>
+          <div className="flex gap-2">
+            <Input
+              placeholder="Add tag..."
+              value={tagInput}
+              onChange={(e) => onTagInputChange(e.target.value)}
+              onKeyDown={onKeyDown}
+            />
+            <Button variant="secondary" onClick={onAddTag}>
+              Add
+            </Button>
+          </div>
+          {tags.length > 0 && (
+            <div className="flex flex-wrap gap-1 pt-2">
+              {tags.map((tag) => (
+                <Badge
+                  key={tag}
+                  variant="secondary"
+                  className="cursor-pointer hover:bg-destructive hover:text-destructive-foreground"
+                  onClick={() => onRemoveTag(tag)}
+                >
+                  {tag}
+                  <X className="ml-1 h-3 w-3" />
+                </Badge>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div className="flex justify-end gap-2 pt-4 border-t">
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button onClick={onSaveWithOptions}>
+            <Bookmark className="mr-2 h-4 w-4" />
+            Save to Library
+          </Button>
+        </div>
+      </div>
+    </Modal>
   )
 }
 
