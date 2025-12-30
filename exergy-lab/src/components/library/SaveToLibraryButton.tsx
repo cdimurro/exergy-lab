@@ -34,8 +34,9 @@ interface SaveToLibraryButtonProps {
   itemType: LibraryItemType
   title: string
   data: LibraryItemData
-  variant?: 'default' | 'ghost' | 'outline' | 'icon'
-  size?: 'default' | 'sm' | 'lg' | 'icon'
+  variant?: 'primary' | 'secondary' | 'ghost' | 'outline'
+  size?: 'sm' | 'md' | 'lg'
+  iconOnly?: boolean
   className?: string
   onSaved?: (itemId: string) => void
 }
@@ -49,7 +50,8 @@ export function SaveToLibraryButton({
   title,
   data,
   variant = 'ghost',
-  size = 'icon',
+  size = 'sm',
+  iconOnly = true,
   className,
   onSaved,
 }: SaveToLibraryButtonProps) {
@@ -134,13 +136,13 @@ export function SaveToLibraryButton({
   }
 
   // Icon-only button with quick save
-  if (size === 'icon' || variant === 'icon') {
+  if (iconOnly) {
     return (
       <>
         <Button
           variant="ghost"
-          size="icon"
-          className={className}
+          size="sm"
+          className={`p-2 h-8 w-8 ${className || ''}`}
           onClick={handleQuickSave}
           onContextMenu={(e) => {
             e.preventDefault()
@@ -265,7 +267,7 @@ function SaveModal({
           <label className="text-sm font-medium">Select Folder</label>
           <div className="flex flex-wrap gap-2">
             <Button
-              variant={selectedFolderId === null ? 'default' : 'outline'}
+              variant={selectedFolderId === null ? 'primary' : 'outline'}
               size="sm"
               onClick={() => onSelectFolder(null)}
             >
@@ -274,7 +276,7 @@ function SaveModal({
             {folders.map((folder) => (
               <Button
                 key={folder.id}
-                variant={selectedFolderId === folder.id ? 'default' : 'outline'}
+                variant={selectedFolderId === folder.id ? 'primary' : 'outline'}
                 size="sm"
                 onClick={() => onSelectFolder(folder.id)}
               >
