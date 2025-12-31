@@ -1,61 +1,154 @@
-# Exergy Lab - Clean Energy Research Platform
+<p align="center">
+  <img src="https://img.shields.io/badge/Exergy-Lab-0066CC?style=for-the-badge&labelColor=000000" alt="Exergy Lab" />
+</p>
 
-> AI-powered platform for clean energy research, experiments, and analysis
+<h1 align="center">Exergy Lab</h1>
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Next.js](https://img.shields.io/badge/Next.js-14+-black)](https://nextjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue)](https://www.typescriptlang.org/)
-[![Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black)](https://vercel.com)
+<p align="center">
+  <strong>The AI-Powered Research Platform for Clean Energy Innovation</strong>
+</p>
 
-**Live Demo:** [exergy-lab.vercel.app](https://exergy-lab.vercel.app)
+<p align="center">
+  <em>Accelerate discoveries. Validate technologies. Publish findings.</em>
+</p>
+
+<p align="center">
+  <a href="https://exergy-lab.vercel.app"><img src="https://img.shields.io/badge/Live%20Demo-exergy--lab.vercel.app-blue?style=flat-square" alt="Live Demo" /></a>
+  <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License" />
+  <img src="https://img.shields.io/badge/Next.js-14+-black?style=flat-square" alt="Next.js" />
+  <img src="https://img.shields.io/badge/TypeScript-5.0+-blue?style=flat-square" alt="TypeScript" />
+</p>
 
 ---
 
-## Overview
+## The Problem
 
-Exergy Lab is a comprehensive platform that combines AI, real-time data, and computational modeling to accelerate clean energy innovation. From literature discovery to techno-economic analysis, we provide researchers and engineers with powerful tools to design, test, and implement clean energy solutions.
+Clean energy researchers waste **40% of their time** on literature reviews, data gathering, and report generation. Investment teams spend weeks validating technical claims that could be assessed in hours. The gap between breakthrough research and commercial deployment grows wider every year.
 
-### Key Features
+## The Solution
 
-🔬 **AI-Powered Experiment Designer**
-- Generate complete laboratory protocols from research questions
+**Exergy Lab** is an integrated research environment that combines AI-powered literature discovery, physics-based simulation, and automated report generation into a single platform. We help researchers move from hypothesis to publication faster, and help investors separate genuine innovation from hype.
+
+---
+
+## Who Uses Exergy Lab
+
+### Researchers & Scientists
+
+- **Literature Discovery**: Search 15+ academic databases simultaneously with AI-synthesized summaries
+- **Experiment Design**: Generate laboratory protocols with safety analysis and resource estimation
+- **Simulation**: Run physics-based models from quick estimates to GPU-accelerated Monte Carlo
+- **Publication Support**: Export professional reports, figures, and data for journal submission
+
+### Engineers & Technical Teams
+
+- **Techno-Economic Analysis**: Comprehensive NPV, IRR, LCOE calculations with sensitivity analysis
+- **Technology Comparison**: Side-by-side evaluation of competing approaches with real data
+- **Design Optimization**: Parameter sweeps and multi-objective optimization
+- **Documentation**: Auto-generated technical reports for stakeholders
+
+### Investors & Venture Capital
+
+- **Due Diligence**: Validate technical claims against peer-reviewed literature in minutes
+- **Technology Assessment**: Physics-based models reveal realistic performance expectations
+- **Market Intelligence**: Cross-reference patents, papers, and datasets to map competitive landscapes
+- **Risk Analysis**: Identify technical risks and failure modes before committing capital
+
+---
+
+## Core Capabilities
+
+### AI-Powered Academic Search
+
+Query 15 data sources simultaneously and receive synthesized insights:
+
+| Category | Sources |
+|----------|---------|
+| **Academic Databases** | Semantic Scholar, OpenAlex, PubMed, IEEE Xplore, Crossref, CORE |
+| **Preprint Servers** | arXiv, ChemRxiv, bioRxiv |
+| **Patent Databases** | Google Patents, USPTO PatentsView |
+| **Research Data** | NREL, Materials Project |
+| **Specialized** | Consensus, Web Search |
+
+**Features:**
+- AI-generated research summaries with inline citations
+- Follow-up question chat powered by Gemini
+- In-app paper viewer with PDF access
+- Smart caching for instant repeated searches
+- Cross-reference detection across sources
+
+### 3-Tier Simulation Engine
+
+Progressive fidelity modeling for different use cases:
+
+| Tier | Method | Time | Accuracy | Cost |
+|------|--------|------|----------|------|
+| **Analytical** | Closed-form physics | ~10 seconds | +/- 20% | Free |
+| **Browser AI** | ML-enhanced models | ~2 minutes | +/- 10% | Free |
+| **Cloud GPU** | Monte Carlo simulation | ~5 minutes | +/- 2% | $0.50-2.00 |
+
+**Supported Technologies:**
+- Solar PV (crystalline, thin-film, perovskite, tandem)
+- Wind (onshore, offshore, floating)
+- Energy Storage (Li-ion, flow batteries, thermal)
+- Hydrogen (electrolysis, fuel cells, storage)
+- Carbon Capture (DAC, point-source, mineralization)
+- Geothermal, Biomass, Nuclear
+
+### Techno-Economic Analysis
+
+Generate investor-ready financial analysis:
+
+- **Input Methods**: Manual entry, file upload (PDF/Excel/CSV), or AI parameter extraction
+- **Financial Metrics**: NPV, IRR, payback period, LCOE/LCOH, capacity factor
+- **Analysis Types**: Sensitivity analysis, tornado charts, Monte Carlo uncertainty
+- **Exergy Analysis**: True thermodynamic efficiency beyond simple energy ratios
+- **Output**: Professional PDF reports with executive summary
+
+### AI Experiment Designer
+
+Generate complete laboratory protocols from research questions:
+
+- Hypothesis-driven experimental design
+- Materials and equipment specifications
+- Step-by-step procedures with safety considerations
 - Failure mode analysis with risk scoring
-- Resource estimation and cost calculation
-- Auto-save and version control
+- Data collection and analysis plans
+- Cost and timeline estimation
 
-⚡ **3-Tier Simulation Engine**
-- **Tier 1 (Local):** Instant results, ±20% accuracy, free
-- **Tier 2 (Browser AI):** 2-minute runs, ±10% accuracy, free
-- **Tier 3 (Cloud GPU):** High-fidelity Monte Carlo, ±2% accuracy, $0.50-2.00
+### Discovery Engine
 
-📊 **TEA Report Generator**
-- Upload files or manual entry
-- AI parameter extraction
-- NPV, IRR, LCOE calculations
-- Sensitivity analysis
-- PDF export with professional formatting
+AI-powered cross-domain innovation synthesis:
 
-🔍 **Academic Search** (15 Data Sources)
-- **Academic Papers:** Semantic Scholar, OpenAlex, PubMed, IEEE Xplore, Crossref, CORE
-- **Preprints:** arXiv, ChemRxiv, bioRxiv
-- **Patents:** Google Patents, USPTO PatentsView
-- **Datasets:** NREL, Materials Project
-- **Other:** Consensus (paid), Web Search (requires setup)
-- Smart caching (10-minute TTL), pagination (20 results/page), automatic retry logic
+- Identify unexplored research intersections
+- Generate novel hypotheses from existing literature
+- Validate ideas against patent and paper databases
+- Automatically generate experiments to test discoveries
 
-💡 **Discovery Engine**
-- Cross-domain innovation synthesis
-- AI-generated research opportunities
-- Evidence-based validation
-- Automatic experiment generation
+---
 
-⚡ **Performance Optimizations** (New!)
-- Search result caching for instant repeated searches
-- Pagination for large result sets (80% faster rendering)
-- Error boundaries for component resilience
-- Timeout protection (30-second default)
-- Automatic retry with exponential backoff
-- Structured logging and performance monitoring
+## Platform Architecture
+
+```
+exergy-lab/
+├── src/
+│   ├── app/                    # Next.js App Router
+│   │   ├── api/                # API endpoints (40+ routes)
+│   │   └── (dashboard)/        # Feature pages
+│   ├── components/             # React components
+│   │   ├── ui/                 # Design system (20+ components)
+│   │   ├── search/             # Academic search interface
+│   │   ├── simulations/        # Simulation controls
+│   │   ├── tea/                # TEA report builder
+│   │   └── experiments/        # Experiment designer
+│   ├── lib/                    # Core utilities
+│   │   ├── ai/                 # AI agent orchestration
+│   │   ├── simulation-engine/  # Physics models
+│   │   └── store/              # State management
+│   └── types/                  # TypeScript definitions
+├── modal-simulations/          # GPU compute service
+└── docs/                       # Documentation
+```
 
 ---
 
@@ -64,24 +157,21 @@ Exergy Lab is a comprehensive platform that combines AI, real-time data, and com
 ### Prerequisites
 
 - Node.js 20.x or higher
-- npm 9.x or higher
 - Google AI API key ([Get one here](https://makersuite.google.com/app/apikey))
 
 ### Installation
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/clean-energy-platform.git
-cd clean-energy-platform/exergy-lab
+git clone https://github.com/cdimurro/exergy-lab.git
+cd exergy-lab/exergy-lab
 
 # Install dependencies
 npm install
 
-# Create environment file
+# Configure environment
 cp .env.example .env.local
-
-# Add your API key
-echo "GOOGLE_AI_API_KEY=your_key_here" >> .env.local
+# Add your GOOGLE_AI_API_KEY to .env.local
 
 # Start development server
 npm run dev
@@ -89,492 +179,164 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000)
 
-### Quick Commands
-
-```bash
-npm run dev          # Start development server
-npm run build        # Build for production
-npm run start        # Start production server
-npm run lint         # Run ESLint
-npx tsc --noEmit     # Type check
-```
-
----
-
-## Tech Stack
-
-### Frontend
-- **Next.js 14+** - React framework with App Router
-- **TypeScript** - Type-safe code
-- **Tailwind CSS** - Utility-first styling
-- **Zustand** - State management with persistence
-- **Lucide Icons** - Modern icon library
-
-### AI & Machine Learning
-- **Google AI (Gemini)** - Primary LLM
-- **OpenAI** - Fallback LLM
-- **HuggingFace** - Specialized models
-
-### Cloud Services
-- **Vercel** - Deployment and hosting
-- **Modal Labs** - GPU compute for simulations (optional)
-- **Clerk** - Authentication (planned)
-
-### External APIs (15 Data Sources)
-- **Academic Papers:** Semantic Scholar, OpenAlex, PubMed, IEEE Xplore, Crossref, CORE
-- **Preprints:** arXiv, ChemRxiv, bioRxiv
-- **Patents:** Google Patents, USPTO PatentsView
-- **Datasets & Reports:** NREL, Materials Project
-- **Other:** Consensus, Web Search
-
-See [SOURCE_AUDIT.md](SOURCE_AUDIT.md) for complete details on API keys and setup.
-
----
-
-## Project Structure
-
-```
-clean-energy-platform/
-├── exergy-lab/                    # Main Next.js application
-│   ├── src/
-│   │   ├── app/                   # Next.js App Router
-│   │   │   ├── (dashboard)/       # Dashboard pages
-│   │   │   │   ├── page.tsx       # Dashboard home
-│   │   │   │   ├── search/        # Search feature
-│   │   │   │   ├── tea-generator/ # TEA reports
-│   │   │   │   ├── experiments/   # Experiment designer
-│   │   │   │   ├── simulations/   # Simulation engine
-│   │   │   │   └── discovery/     # Discovery engine
-│   │   │   ├── api/               # API routes
-│   │   │   └── layout.tsx         # Root layout
-│   │   ├── components/            # React components
-│   │   │   ├── ui/                # Reusable UI components
-│   │   │   ├── layout/            # Layout components
-│   │   │   ├── experiments/       # Feature-specific components
-│   │   │   ├── simulations/
-│   │   │   ├── tea/
-│   │   │   └── search/
-│   │   ├── lib/                   # Utilities & services
-│   │   │   ├── store/             # Zustand stores
-│   │   │   ├── ai/                # AI integrations
-│   │   │   ├── discovery/         # Discovery engine
-│   │   │   └── simulation-engine.ts
-│   │   ├── types/                 # TypeScript types
-│   │   └── hooks/                 # Custom React hooks
-│   ├── public/                    # Static assets
-│   └── ...
-├── modal-simulations/             # GPU simulation service
-│   ├── simulation_runner.py
-│   └── requirements.txt
-├── docs/                          # Documentation
-│   ├── USER_GUIDE.md
-│   ├── DEVELOPER_GUIDE.md
-│   ├── API_REFERENCE.md
-│   └── DEPLOYMENT.md
-└── README.md                      # This file
-```
-
----
-
-## Documentation
-
-### Key Documents
-
-- **[SOURCE_AUDIT.md](SOURCE_AUDIT.md)** - Complete data source setup guide (15 sources)
-- **[CLAUDE.md](CLAUDE.md)** - Development workflow and session management
-- **[SOURCE_AUDIT.md](SOURCE_AUDIT.md)** - API keys, rate limits, source status
-
-### Directory Documentation
-
-Comprehensive documentation is available in the `/docs` directory:
-
-- **[User Guide](docs/USER_GUIDE.md)** - How to use each feature
-- **[Developer Guide](docs/DEVELOPER_GUIDE.md)** - Architecture, setup, contributing
-- **[API Reference](docs/API_REFERENCE.md)** - Complete API documentation
-- **[Deployment Guide](docs/DEPLOYMENT.md)** - Production deployment steps
-
----
-
-## Features in Detail
-
-### 🔬 Experiment Designer
-
-Generate complete laboratory protocols using AI:
-
-```typescript
-// Example: Generate solar cell experiment
-const protocol = await generateExperiment({
-  hypothesis: "Perovskite coating improves efficiency",
-  domain: "solar",
-  constraints: ["cost < $5000", "duration < 3 months"]
-})
-
-// Returns:
-// - Materials list with specifications
-// - Step-by-step procedure
-// - Safety considerations
-// - Data collection plan
-// - Expected results
-// - Failure mode analysis
-```
-
-**Key Features:**
-- Hypothesis-driven protocol generation
-- Comprehensive safety analysis
-- Resource cost estimation
-- Auto-save every 30 seconds
-- PDF export
-
-### ⚡ 3-Tier Simulation Engine
-
-Progressive accuracy system for different use cases:
-
-| Tier | Speed | Cost | Accuracy | Use Case |
-|------|-------|------|----------|----------|
-| Local | ~10s | Free | ±20% | Quick validation, learning |
-| Browser | ~2min | Free | ±10% | Detailed analysis, optimization |
-| Cloud | ~5min | $0.50-2 | ±2% | Publications, final designs |
-
-**Supported Systems:**
-- Solar PV (crystalline, thin-film, perovskite)
-- Wind turbines (onshore, offshore)
-- Battery storage (Li-ion, flow batteries)
-- Hydrogen (electrolysis, fuel cells)
-- Geothermal, biomass, carbon capture
-
-### 📊 TEA Report Generator
-
-Automated techno-economic analysis with AI:
-
-**Input Methods:**
-1. Manual entry via form
-2. File upload (PDF, Excel, CSV) with AI extraction
-
-**Outputs:**
-- Executive summary
-- Cost breakdown (CAPEX, OPEX)
-- Financial metrics (NPV, IRR, payback, LCOE)
-- Cash flow projections
-- Sensitivity analysis with tornado charts
-- Risk assessment
-- Professional PDF reports
-
-### 🔍 Academic Search (15 Data Sources)
-
-Real-time search across 15 integrated data sources:
-
-```typescript
-const results = await search("perovskite solar cells")
-
-// Searches across 15 sources in parallel:
-// Academic Papers: Semantic Scholar, OpenAlex, PubMed, IEEE Xplore, Crossref, CORE
-// Preprints: arXiv, ChemRxiv, bioRxiv
-// Patents: Google Patents, USPTO PatentsView
-// Datasets: NREL, Materials Project
-// Specialized: Consensus, Web Search
-
-// Features:
-// - 10-minute intelligent caching
-// - 20 results per page (pagination)
-// - Automatic retry on failures (3 attempts)
-// - 30-second timeout protection
-// - Structured error reporting
-// - Citation tracking and paper viewer integration
-```
-
-**Performance Improvements:**
-- Cache hit: instant results (<100ms)
-- Cache miss: 2-3 seconds for 15 sources
-- Pagination: 80% faster rendering vs. all results at once
-- Retry logic: Automatic recovery from transient failures
-
-### 💡 Discovery Engine
-
-AI-powered cross-domain innovation:
-
-```typescript
-const discoveries = await discover({
-  description: "Improve hydrogen production",
-  domains: ["hydrogen", "materials-science"],
-  targetImpact: "high"
-})
-
-// AI generates novel ideas by combining:
-// - Current research gaps
-// - Cross-domain techniques
-// - Emerging technologies
-// - Validated with real papers/patents
-```
-
----
-
-## Recent Improvements (Q4 2024)
-
-### Performance Optimizations
-
-| Feature | Benefit | Location |
-|---------|---------|----------|
-| **Search Caching** | Instant results on repeated searches | `src/lib/search-cache.ts` |
-| **Pagination** | 80% faster rendering for 50+ results | `EnhancedSearchPage.tsx` |
-| **Error Boundaries** | Graceful error handling, app stays functional | `ErrorBoundary.tsx` |
-| **Timeout Protection** | Prevents hanging requests (30s default) | `src/lib/paper-content/index.ts` |
-| **Retry Logic** | Auto-recovery with exponential backoff | `src/lib/retry.ts` |
-| **Logging System** | Structured logging for debugging | `src/lib/logger.ts` |
-
-### Code Quality
-
-- Removed `.passthrough()` from Zod schemas for better type safety
-- Added proper TypeScript types for all components
-- Implemented error recovery strategies
-- Added performance monitoring utilities
-- Improved error messages for troubleshooting
-
-### Codebase Health
-
-- All TypeScript type errors resolved
-- No `any` types in new code
-- Proper error handling patterns established
-- Logging integrated into search pipeline
-- Performance monitoring hooks available
-
----
-
-## Development
-
 ### Environment Variables
-
-Create `.env.local`:
 
 ```bash
 # Required
 GOOGLE_AI_API_KEY=your_gemini_key
 
-# Recommended
-OPENAI_API_KEY=your_openai_key
-NEWSAPI_KEY=your_newsapi_key
+# Recommended (enables more data sources)
+SEMANTIC_SCHOLAR_API_KEY=your_key
+IEEE_API_KEY=your_key
 
-# Optional (for full features)
-HUGGINGFACE_API_KEY=your_hf_key
-MODAL_API_KEY=your_modal_key
-MODAL_ENDPOINT=your_modal_endpoint
-ENABLE_CLOUD_GPU=false
-
-# Auth (future)
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_xxx
-CLERK_SECRET_KEY=sk_xxx
-```
-
-### Code Style
-
-- **TypeScript strict mode** - No `any` types
-- **Functional components** with hooks
-- **Path aliases** - Use `@/components` not relative imports
-- **Conventional commits** - `feat:`, `fix:`, `docs:`, etc.
-
-### Git Workflow
-
-```bash
-# Create feature branch
-git checkout -b feature/your-feature
-
-# Make changes and commit
-git add .
-git commit -m "feat: add new feature"
-
-# Push and create PR
-git push origin feature/your-feature
+# Optional (enhanced features)
+OPENAI_API_KEY=your_key
+MODAL_API_KEY=your_key      # GPU simulations
 ```
 
 ---
 
-## Deployment
+## Use Cases
 
-### Deploy to Vercel (Recommended)
+### For Researchers: Accelerate Your Next Publication
 
-1. Push code to GitHub
-2. Import project on [vercel.com](https://vercel.com)
-3. Configure:
-   - Root Directory: `exergy-lab`
-   - Framework: Next.js
-4. Add environment variables
-5. Deploy
+1. **Literature Review** (10 minutes vs. 10 hours)
+   - Search across 15 databases simultaneously
+   - Get AI-synthesized summaries with citations
+   - Export bibliography in any format
 
-See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for detailed instructions.
+2. **Experimental Design** (1 hour vs. 1 week)
+   - Generate protocols from research questions
+   - Identify potential failure modes
+   - Estimate costs and timelines
 
-### Self-Hosting
+3. **Simulation & Validation** (minutes vs. days)
+   - Run physics-based models on your designs
+   - Compare against published benchmarks
+   - Generate publication-ready figures
 
-```bash
-# Build
-npm run build
+### For Engineers: Design Better Systems
 
-# Start
-npm run start
-```
+1. **Technology Selection**
+   - Compare technologies with consistent methodology
+   - Understand trade-offs with sensitivity analysis
+   - Access real performance data from NREL and Materials Project
 
-Requires Node.js 20+ in production environment.
+2. **Optimization**
+   - Run parameter sweeps to find optimal configurations
+   - Multi-objective optimization (cost vs. efficiency vs. reliability)
+   - Export results for further analysis
 
----
+3. **Documentation**
+   - Generate technical reports automatically
+   - Include all assumptions and calculations
+   - Professional formatting for stakeholders
 
-## Performance
+### For Investors: Make Informed Decisions
 
-### Lighthouse Scores (Target)
+1. **Technical Due Diligence** (hours vs. weeks)
+   - Validate claims against peer-reviewed literature
+   - Check patent landscapes for IP risks
+   - Identify key technical risks
 
-- Performance: 90+
-- Accessibility: 95+
-- Best Practices: 95+
-- SEO: 100
+2. **Technology Assessment**
+   - Run independent simulations on proposed technologies
+   - Compare against industry benchmarks
+   - Understand realistic performance expectations
 
-### Optimizations
-
-- Server-side rendering with Next.js App Router
-- Image optimization with `next/image`
-- Code splitting and lazy loading
-- 24-hour API response caching
-- CDN distribution via Vercel
-- Tailwind CSS purging
-
----
-
-## Security
-
-- Environment variables for all secrets
-- API key rotation supported
-- Rate limiting on all endpoints (planned)
-- Input validation and sanitization
-- HTTPS everywhere
-- Security headers configured
-- No sensitive data logged
-
-**Report vulnerabilities:** security@exergylab.com
+3. **Market Intelligence**
+   - Map competitive landscapes
+   - Track research trends and emerging technologies
+   - Identify potential acquisition targets
 
 ---
 
-## Implementation Status
+## Technology Stack
 
-### ✅ Fully Implemented (v1.0)
+| Layer | Technology |
+|-------|------------|
+| **Frontend** | Next.js 14+, React, TypeScript, Tailwind CSS |
+| **State** | Zustand with persistence |
+| **AI** | Google Gemini (primary), OpenAI (fallback) |
+| **Compute** | Modal Labs (GPU), Vercel (serverless) |
+| **Data** | 15 academic APIs, federated search |
 
-**Core Features**
-- Dashboard with analytics
-- Academic search with 15 data sources
-- TEA report generator with AI extraction
-- Experiment designer with failure mode analysis
-- 3-tier simulation engine (Analytical, Browser, Cloud)
-- Discovery engine with cross-domain innovation
-- State persistence with Zustand
-- Auto-save (30-second intervals)
-- PDF export for all major features
-- In-app paper viewer with chat integration
-- Follow-up question chat system (Gemini-powered)
+---
 
-**Performance & Quality** (Recently Added)
-- Search result caching (10-minute TTL)
-- Result pagination (20 items/page)
-- Error boundaries for component resilience
-- Timeout protection on async operations
-- Automatic retry logic with exponential backoff
-- Structured logging and performance monitoring
-- Improved TypeScript type safety
-- Visual hierarchy and professional UI design
+## Roadmap
 
-### 🚧 In Development (v1.1)
+### Now Available (v1.0)
+- 15-source academic search with AI synthesis
+- 3-tier simulation engine
+- TEA report generator with exergy analysis
+- AI experiment designer
+- Discovery engine
+- In-app paper viewer with chat
 
-- User authentication via Clerk (keys configured)
-- Paper content extraction from multiple sources
-- Advanced source-specific error recovery
-- Enhanced chat history management
-- PDF content parsing and extraction
-- Figure and table extraction from papers
+### Coming Soon (v1.1)
+- User authentication and saved projects
+- Enhanced PDF parsing and figure extraction
+- Collaborative workspaces
+- API access for programmatic use
 
-### ⏳ Planned (v2.0+)
+### Future (v2.0+)
+- Database integration for persistent storage
+- Real-time collaboration
+- Jupyter notebook integration
+- Python SDK for automation
+- Enterprise features (SSO, audit logs)
 
-- [ ] Database integration (PostgreSQL)
-- [ ] Project collaboration & sharing
-- [ ] Real-time collaboration with WebSockets
-- [ ] Mobile apps (iOS, Android)
-- [ ] Jupyter notebook integration
-- [ ] Python SDK for automation
-- [ ] REST API for external tools
-- [ ] Enhanced data export (Excel, JSON, XML)
-- [ ] Advanced simulation visualizations
-- [ ] Enterprise features (SSO, audit logs, activity tracking)
-- [ ] Batch operations for simulations
-- [ ] Webhook support for integrations
-- [ ] Custom simulation engine builder
-- [ ] Multi-user project workspaces
+---
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [SOURCE_AUDIT.md](SOURCE_AUDIT.md) | Data source configuration and API keys |
+| [CLAUDE.md](CLAUDE.md) | Development workflow |
+| [MODAL_SETUP.md](MODAL_SETUP.md) | GPU simulation setup |
+| [docs/USER_GUIDE.md](docs/USER_GUIDE.md) | Feature documentation |
+| [docs/API_REFERENCE.md](docs/API_REFERENCE.md) | API documentation |
 
 ---
 
 ## Contributing
 
-We welcome contributions! Please see [DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md) for:
+We welcome contributions from researchers, engineers, and developers. See [docs/DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md) for setup instructions.
 
-- Development setup
-- Code style guidelines
-- Testing requirements
-- Pull request process
-
-**Areas we need help:**
-- Unit tests for simulation engine
-- Mobile UI improvements
-- Accessibility enhancements
+**Priority Areas:**
+- Additional simulation models
+- New data source integrations
+- UI/UX improvements
 - Documentation and tutorials
-- Additional simulation types
-- Internationalization (i18n)
-
----
-
-## Support
-
-- **Documentation:** [docs/](docs/)
-- **Issues:** [GitHub Issues](https://github.com/your-username/clean-energy-platform/issues)
-- **Discussions:** [GitHub Discussions](https://github.com/your-username/clean-energy-platform/discussions)
-- **Email:** support@exergylab.com
 
 ---
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details
-
----
-
-## Acknowledgments
-
-**Built with:**
-- [Next.js](https://nextjs.org/) - React framework
-- [Tailwind CSS](https://tailwindcss.com/) - Styling
-- [Vercel](https://vercel.com/) - Hosting
-- [Modal Labs](https://modal.com/) - GPU compute
-- [Google AI](https://ai.google.dev/) - Gemini LLM
-- [OpenAI](https://openai.com/) - GPT models
-
-**Data sources:**
-- [Semantic Scholar](https://www.semanticscholar.org/)
-- [arXiv](https://arxiv.org/)
-- [USPTO](https://www.uspto.gov/)
-- [NewsAPI](https://newsapi.org/)
-
-**Special thanks** to the open-source community for making this project possible.
+MIT License - see [LICENSE](LICENSE) for details.
 
 ---
 
 ## Citation
 
-If you use Exergy Lab in your research, please cite:
+If Exergy Lab contributes to your research, please cite:
 
 ```bibtex
 @software{exergy_lab_2024,
   title = {Exergy Lab: AI-Powered Clean Energy Research Platform},
-  author = {Your Name},
+  author = {DiMurro, Chris},
   year = {2024},
-  url = {https://github.com/your-username/clean-energy-platform}
+  url = {https://github.com/cdimurro/exergy-lab}
 }
 ```
 
 ---
 
-<div align="center">
-  <strong>Made with ❤️ for the clean energy transition</strong>
-  <br>
-  <sub>Powered by Next.js, AI, and renewable energy data</sub>
-</div>
+<p align="center">
+  <strong>Built for researchers who want to spend less time searching and more time discovering.</strong>
+</p>
+
+<p align="center">
+  <a href="https://exergy-lab.vercel.app">Try Exergy Lab</a>
+</p>
