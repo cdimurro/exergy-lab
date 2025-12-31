@@ -278,7 +278,7 @@ class WindDomainModule extends BaseDomainModule {
 
         // Probability above cut-in (3 m/s)
         const v_cutin = 3
-        const prob_above = Math.exp(-(v_cutin / c) ** k) * 100
+        const prob_above = Math.exp(-((v_cutin / c) ** k)) * 100
 
         // Energy density (cubic mean of wind speed)
         // P/A = 0.5 * rho * v³_mean_cubic

@@ -544,7 +544,16 @@ export async function fetchArxivDailyDigest(
  * Generate digest summary from feed items
  */
 export function generateArxivDigestSummary(items: FeedItem[]): DigestSummary {
-  const bySource: Record<string, number> = { arxiv: items.length }
+  const bySource: Record<string, number> = {
+    arxiv: items.length,
+    pubmed: 0,
+    biorxiv: 0,
+    chemrxiv: 0,
+    'google-patents': 0,
+    uspto: 0,
+    'semantic-scholar': 0,
+    crossref: 0,
+  }
   const byPriority: Record<FeedPriority, number> = {
     low: 0,
     medium: 0,
@@ -587,7 +596,7 @@ export function generateArxivDigestSummary(items: FeedItem[]): DigestSummary {
 
   return {
     totalItems: items.length,
-    bySource: bySource as Record<'arxiv', number>,
+    bySource,
     byPriority,
     topKeywords,
     topAuthors,

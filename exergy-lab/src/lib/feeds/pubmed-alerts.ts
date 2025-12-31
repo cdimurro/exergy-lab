@@ -630,7 +630,16 @@ export async function fetchPubMedAlerts(
  * Generate digest summary
  */
 export function generatePubMedDigestSummary(items: FeedItem[]): DigestSummary {
-  const bySource: Record<string, number> = { pubmed: items.length }
+  const bySource: Record<string, number> = {
+    arxiv: 0,
+    pubmed: items.length,
+    biorxiv: 0,
+    chemrxiv: 0,
+    'google-patents': 0,
+    uspto: 0,
+    'semantic-scholar': 0,
+    crossref: 0,
+  }
   const byPriority: Record<FeedPriority, number> = {
     low: 0,
     medium: 0,
@@ -674,7 +683,7 @@ export function generatePubMedDigestSummary(items: FeedItem[]): DigestSummary {
 
   return {
     totalItems: items.length,
-    bySource: bySource as Record<'pubmed', number>,
+    bySource,
     byPriority,
     topKeywords,
     topAuthors,

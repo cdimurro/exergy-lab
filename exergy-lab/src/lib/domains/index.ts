@@ -35,7 +35,7 @@ export {
 } from './registry'
 
 // Individual domain modules
-export { SolarDomainModule } from './solar'
-export { WindDomainModule } from './wind'
-export { BatteryDomainModule } from './battery'
+export { SolarDomain as SolarDomainModule } from './solar'
+export { WindDomain as WindDomainModule } from './wind'
+export { BatteryDomain as BatteryDomainModule } from './battery'
 export { HydrogenDomainModule } from './hydrogen'

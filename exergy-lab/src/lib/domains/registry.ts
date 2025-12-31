@@ -18,9 +18,9 @@ import type {
   CalculatorResult,
 } from './base'
 
-import { SolarDomainModule } from './solar'
-import { WindDomainModule } from './wind'
-import { BatteryDomainModule } from './battery'
+import { SolarDomain as SolarDomainModule } from './solar'
+import { WindDomain as WindDomainModule } from './wind'
+import { BatteryDomain as BatteryDomainModule } from './battery'
 import { HydrogenDomainModule } from './hydrogen'
 
 // ============================================================================
@@ -240,10 +240,16 @@ export class DomainRegistry {
     inputs: Record<string, number | string>
   ): Array<{ rule: ValidationRule; passed: boolean }> {
     const rules = this.getValidationRules(domainId)
-    return rules.map((rule) => ({
-      rule,
-      passed: rule.validate(inputs as Record<string, number>),
-    }))
+    return rules.map((rule) => {
+      // Extract the numeric value that matches this rule's id prefix
+      const rulePrefix = rule.id.split('_')[0]
+      const inputKey = Object.keys(inputs).find(k => k.toLowerCase().includes(rulePrefix.toLowerCase()))
+      const value = inputKey ? Number(inputs[inputKey]) : 0
+      return {
+        rule,
+        passed: rule.check(value, inputs as Record<string, number>),
+      }
+    })
   }
 
   /**
