@@ -16,9 +16,12 @@ import { Card, Button, Badge, Input } from '@/components/ui'
 import { SourceSelector, ALL_SOURCES } from './SourceSelector'
 import { SourceComparisonPanel, SOURCE_DISPLAY_NAMES } from './SourceComparisonPanel'
 import { AIRelevanceExplanation } from './AIRelevanceExplanation'
-import { AISearchInsights } from './AISearchInsights'
+import { AISearchInsights, type CitedPaper } from './AISearchInsights'
 import { CrossReferenceIndicator } from './CrossReferenceIndicator'
 import { PaperCard } from './paper-card'
+import { PaperViewerPanel } from './PaperViewerPanel'
+import { SearchChatPanel } from './SearchChatPanel'
+import { useSearchUIStore } from '@/lib/store/search-ui-store'
 import type { DataSourceName, Source } from '@/types/sources'
 import type { Domain } from '@/types/discovery'
 
@@ -93,6 +96,17 @@ export function EnhancedSearchPage({ domains = [] }: EnhancedSearchPageProps) {
   const [viewMode, setViewMode] = React.useState<'list' | 'grid'>('list')
   const [sourceFilter, setSourceFilter] = React.useState<DataSourceName | null>(null)
 
+  // Search UI store for paper viewer and chat
+  const {
+    activeView,
+    selectedPaper,
+    openPaperViewer,
+    closePaperViewer,
+    openChat,
+    closeChat,
+    setSearchContext,
+  } = useSearchUIStore()
+
   // Filter options
   const [dateRange, setDateRange] = React.useState<{ from: string; to: string } | undefined>()
   const [minCitations, setMinCitations] = React.useState<number | undefined>()
@@ -158,7 +172,50 @@ export function EnhancedSearchPage({ domains = [] }: EnhancedSearchPageProps) {
     return searchResponse.crossReferences.filter(cr => cr.primaryId === resultId)
   }
 
-  // PaperCard now accepts Source type directly, no conversion needed
+  // Update search context when results change
+  React.useEffect(() => {
+    if (searchResponse?.results && query) {
+      setSearchContext(query, searchResponse.results)
+    }
+  }, [searchResponse?.results, query, setSearchContext])
+
+  // Handle citation click from AI Insights - open paper viewer
+  const handleCitationClick = (citedPaper: CitedPaper) => {
+    // Find the full Source object from results
+    const fullPaper = searchResponse?.results.find(r => r.id === citedPaper.id)
+    if (fullPaper) {
+      openPaperViewer(fullPaper)
+    }
+  }
+
+  // Handle follow-up question click - open chat panel
+  const handleQuestionClick = (question: string) => {
+    openChat(question)
+  }
+
+  // Handle paper card click - open paper viewer
+  const handlePaperClick = (paper: Source) => {
+    openPaperViewer(paper)
+  }
+
+  // If viewing a paper or chat, show that panel instead of results
+  if (activeView === 'paper' && selectedPaper) {
+    return (
+      <PaperViewerPanel
+        paper={selectedPaper}
+        onBack={closePaperViewer}
+      />
+    )
+  }
+
+  if (activeView === 'chat') {
+    return (
+      <SearchChatPanel
+        query={query}
+        onBack={closeChat}
+      />
+    )
+  }
 
   return (
     <div className="h-full flex flex-col">
@@ -428,6 +485,8 @@ export function EnhancedSearchPage({ domains = [] }: EnhancedSearchPageProps) {
                   citationCount: r.metadata.citationCount,
                 }))}
                 onRegenerate={() => {}}
+                onCitationClick={handleCitationClick}
+                onQuestionClick={handleQuestionClick}
               />
             )}
 
@@ -480,7 +539,10 @@ export function EnhancedSearchPage({ domains = [] }: EnhancedSearchPageProps) {
 
                 return (
                   <div key={result.id} className="relative">
-                    <PaperCard paper={result} />
+                    <PaperCard
+                      paper={result}
+                      onClick={() => handlePaperClick(result)}
+                    />
 
                     {/* Overlay indicators */}
                     <div className="absolute top-3 right-3 flex items-center gap-2">

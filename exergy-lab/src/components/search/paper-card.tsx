@@ -61,9 +61,10 @@ export interface PaperCardProps {
   paper: Source
   onSave?: (paper: Source) => void
   isSaved?: boolean
+  onClick?: () => void
 }
 
-export function PaperCard({ paper, onSave, isSaved }: PaperCardProps) {
+export function PaperCard({ paper, onSave, isSaved, onClick }: PaperCardProps) {
   const [saved, setSaved] = React.useState(isSaved || false)
 
   const handleSave = () => {
@@ -82,8 +83,20 @@ export function PaperCard({ paper, onSave, isSaved }: PaperCardProps) {
   const citationCount = paper.metadata.citationCount || 0
   const publicationDate = paper.metadata.publicationDate
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Don't trigger if clicking on a button or link
+    const target = e.target as HTMLElement
+    if (target.closest('a') || target.closest('button')) {
+      return
+    }
+    onClick?.()
+  }
+
   return (
-    <Card className="p-6 hover:shadow-md transition-shadow">
+    <Card
+      className={`p-6 hover:shadow-md transition-shadow ${onClick ? 'cursor-pointer' : ''}`}
+      onClick={handleCardClick}
+    >
       <div className="flex flex-col gap-4">
         {/* Header */}
         <div className="flex items-start justify-between gap-4">
@@ -94,6 +107,7 @@ export function PaperCard({ paper, onSave, isSaved }: PaperCardProps) {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="hover:text-primary transition-colors"
+                onClick={(e) => e.stopPropagation()}
               >
                 {paper.title}
               </a>

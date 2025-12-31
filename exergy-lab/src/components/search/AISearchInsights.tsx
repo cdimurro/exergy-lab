@@ -64,6 +64,8 @@ export interface AISearchInsightsProps {
   }>
   isLoading?: boolean
   onRegenerate?: () => void
+  onCitationClick?: (paper: CitedPaper) => void
+  onQuestionClick?: (question: string) => void
   className?: string
 }
 
@@ -76,6 +78,8 @@ export function AISearchInsights({
   results,
   isLoading = false,
   onRegenerate,
+  onCitationClick,
+  onQuestionClick,
   className = '',
 }: AISearchInsightsProps) {
   const [expanded, setExpanded] = React.useState(true)
@@ -148,6 +152,16 @@ export function AISearchInsights({
     return summary?.citedPapers.find(p => p.id === id)
   }
 
+  // Handle citation click - opens paper viewer or external link
+  const handleCitationClick = (paper: CitedPaper, e: React.MouseEvent) => {
+    e.preventDefault()
+    if (onCitationClick) {
+      onCitationClick(paper)
+    } else if (paper.url) {
+      window.open(paper.url, '_blank', 'noopener,noreferrer')
+    }
+  }
+
   // Render inline citations
   const renderSummaryWithCitations = (text: string) => {
     // Match citation patterns like [1], [2,3], [1-3]
@@ -166,17 +180,15 @@ export function AISearchInsights({
         return (
           <span key={idx} className="inline-flex items-center">
             {papers.map((paper, pIdx) => (
-              <a
+              <button
                 key={paper!.id}
-                href={paper!.url || `#paper-${paper!.id}`}
-                target={paper!.url ? '_blank' : undefined}
-                rel={paper!.url ? 'noopener noreferrer' : undefined}
+                onClick={(e) => handleCitationClick(paper!, e)}
                 className="inline-flex items-center justify-center w-5 h-5 mx-0.5 text-[10px] font-medium
-                         bg-primary/10 text-primary rounded hover:bg-primary/20 transition-colors"
-                title={paper!.title}
+                         bg-primary/10 text-primary rounded hover:bg-primary/20 transition-colors cursor-pointer"
+                title={`View: ${paper!.title}`}
               >
                 {indices[pIdx] + 1}
-              </a>
+              </button>
             ))}
           </span>
         )
@@ -305,17 +317,15 @@ export function AISearchInsights({
                             const idx = summary.citedPapers.findIndex(p => p.id === id)
                             if (!paper) return null
                             return (
-                              <a
+                              <button
                                 key={id}
-                                href={paper.url || `#paper-${id}`}
-                                target={paper.url ? '_blank' : undefined}
-                                rel={paper.url ? 'noopener noreferrer' : undefined}
+                                onClick={(e) => handleCitationClick(paper, e)}
                                 className="inline-flex items-center justify-center w-5 h-5 text-[10px] font-medium
-                                         bg-primary/10 text-primary rounded hover:bg-primary/20 transition-colors"
-                                title={paper.title}
+                                         bg-primary/10 text-primary rounded hover:bg-primary/20 transition-colors cursor-pointer"
+                                title={`View: ${paper.title}`}
                               >
                                 {idx + 1}
-                              </a>
+                              </button>
                             )
                           })}
                         </div>
@@ -335,13 +345,11 @@ export function AISearchInsights({
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {summary.citedPapers.slice(0, 6).map((paper, idx) => (
-                <a
+                <button
                   key={paper.id}
-                  href={paper.url || `#paper-${paper.id}`}
-                  target={paper.url ? '_blank' : undefined}
-                  rel={paper.url ? 'noopener noreferrer' : undefined}
+                  onClick={(e) => handleCitationClick(paper, e)}
                   className="flex items-start gap-2 p-2.5 bg-background-surface hover:bg-background-elevated
-                           rounded-lg transition-colors group"
+                           rounded-lg transition-colors group text-left w-full"
                 >
                   <span className="flex-shrink-0 w-5 h-5 flex items-center justify-center
                                  bg-primary/10 text-primary text-xs font-medium rounded">
@@ -367,7 +375,7 @@ export function AISearchInsights({
                     </div>
                   </div>
                   <ExternalLink className="h-3.5 w-3.5 text-foreground-muted opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-1" />
-                </a>
+                </button>
               ))}
             </div>
             {summary.citedPapers.length > 6 && (
@@ -386,13 +394,15 @@ export function AISearchInsights({
               </div>
               <div className="flex flex-wrap gap-2">
                 {summary.suggestedFollowUp.map((followUp, idx) => (
-                  <Badge
+                  <button
                     key={idx}
-                    variant="secondary"
-                    className="cursor-pointer hover:bg-primary/10 hover:text-primary transition-colors"
+                    onClick={() => onQuestionClick?.(followUp)}
+                    className="inline-flex items-center px-3 py-1.5 text-sm bg-background-surface
+                             hover:bg-primary/10 hover:text-primary text-foreground rounded-full
+                             transition-colors cursor-pointer border border-transparent hover:border-primary/20"
                   >
                     {followUp}
-                  </Badge>
+                  </button>
                 ))}
               </div>
             </div>

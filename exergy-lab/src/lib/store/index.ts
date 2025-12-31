@@ -8,6 +8,17 @@ export { useDiscoveriesStore } from './discoveries-store'
 export { useExperimentsStore } from './experiments-store'
 export { useSimulationsStore } from './simulations-store'
 export {
+  useSearchUIStore,
+  getRecentChats,
+  formatRelativeTime,
+} from './search-ui-store'
+export type {
+  SearchView,
+  ChatMessage,
+  SearchChatSession,
+  SearchUIState,
+} from './search-ui-store'
+export {
   useWorkflowContext,
   extractParametersFromPapers,
   extractParametersFromProtocol,
