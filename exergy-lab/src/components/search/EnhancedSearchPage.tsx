@@ -16,6 +16,7 @@ import { Card, Button, Badge, Input } from '@/components/ui'
 import { SourceSelector, ALL_SOURCES } from './SourceSelector'
 import { SourceComparisonPanel, SOURCE_DISPLAY_NAMES } from './SourceComparisonPanel'
 import { AIRelevanceExplanation } from './AIRelevanceExplanation'
+import { AISearchInsights } from './AISearchInsights'
 import { CrossReferenceIndicator } from './CrossReferenceIndicator'
 import { PaperCard } from './paper-card'
 import type { DataSourceName, Source } from '@/types/sources'
@@ -425,14 +426,20 @@ export function EnhancedSearchPage({ domains = [] }: EnhancedSearchPageProps) {
               </div>
             </div>
 
-            {/* AI Enhancements Panel */}
-            {searchResponse.aiEnhancements && (
-              <AIRelevanceExplanation
-                resultId="search-level"
-                expandedQuery={searchResponse.aiEnhancements.expandedQuery}
-                queryInterpretation={searchResponse.aiEnhancements.queryInterpretation}
-                recommendations={searchResponse.aiEnhancements.topRecommendations}
-                variant="panel"
+            {/* AI Search Insights - Synthesized Summary */}
+            {includeAIEnhancements && searchResponse.results.length > 0 && (
+              <AISearchInsights
+                query={query}
+                results={searchResponse.results.map(r => ({
+                  id: r.id,
+                  title: r.title,
+                  authors: r.authors,
+                  abstract: r.abstract,
+                  year: r.metadata.publicationDate ? parseInt(r.metadata.publicationDate.split('-')[0]) : undefined,
+                  url: r.url,
+                  citationCount: r.metadata.citationCount,
+                }))}
+                onRegenerate={() => {}}
               />
             )}
 
