@@ -158,19 +158,7 @@ export function EnhancedSearchPage({ domains = [] }: EnhancedSearchPageProps) {
     return searchResponse.crossReferences.filter(cr => cr.primaryId === resultId)
   }
 
-  // Convert Source to Paper format for PaperCard
-  const sourceToPaper = (source: Source) => ({
-    id: source.id,
-    title: source.title,
-    authors: source.authors,
-    abstract: source.abstract || '',
-    url: source.url || '',
-    publicationDate: source.metadata.publicationDate || '',
-    citationCount: source.metadata.citationCount || 0,
-    venue: undefined,
-    fields: [] as string[],
-    pdfUrl: undefined,
-  })
+  // PaperCard now accepts Source type directly, no conversion needed
 
   return (
     <div className="h-full flex flex-col">
@@ -492,7 +480,7 @@ export function EnhancedSearchPage({ domains = [] }: EnhancedSearchPageProps) {
 
                 return (
                   <div key={result.id} className="relative">
-                    <PaperCard paper={sourceToPaper(result)} />
+                    <PaperCard paper={result} />
 
                     {/* Overlay indicators */}
                     <div className="absolute top-3 right-3 flex items-center gap-2">

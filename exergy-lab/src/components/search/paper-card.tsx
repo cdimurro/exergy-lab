@@ -3,11 +3,63 @@
 import * as React from 'react'
 import { ExternalLink, FileText, Download, BookmarkPlus, BookmarkCheck, Users, Calendar, Award } from 'lucide-react'
 import { Card, Button, Badge } from '@/components/ui'
-import type { Paper } from '@/types/search'
+import type { Source, DataSourceName } from '@/types/sources'
+
+// Source display names mapping
+const SOURCE_DISPLAY_NAMES: Record<DataSourceName, string> = {
+  'semantic-scholar': 'Semantic Scholar',
+  'openalex': 'OpenAlex',
+  'arxiv': 'arXiv',
+  'pubmed': 'PubMed',
+  'crossref': 'Crossref',
+  'core': 'CORE',
+  'consensus': 'Consensus',
+  'google-patents': 'Google Patents',
+  'uspto': 'USPTO',
+  'epo': 'EPO',
+  'chemrxiv': 'ChemRxiv',
+  'biorxiv': 'bioRxiv',
+  'medrxiv': 'medRxiv',
+  'nrel': 'NREL',
+  'ieee': 'IEEE Xplore',
+  'iea': 'IEA',
+  'eia': 'EIA',
+  'materials-project': 'Materials Project',
+  'zenodo': 'Zenodo',
+  'inspire': 'INSPIRE',
+  'newsapi': 'NewsAPI',
+  'web-search': 'Web Search',
+}
+
+// Source badge color mapping
+const SOURCE_BADGE_COLORS: Record<DataSourceName, 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'error'> = {
+  'semantic-scholar': 'secondary',
+  'openalex': 'secondary',
+  'arxiv': 'primary',
+  'pubmed': 'success',
+  'crossref': 'secondary',
+  'core': 'secondary',
+  'consensus': 'primary',
+  'google-patents': 'warning',
+  'uspto': 'warning',
+  'epo': 'warning',
+  'chemrxiv': 'primary',
+  'biorxiv': 'success',
+  'medrxiv': 'success',
+  'nrel': 'primary',
+  'ieee': 'secondary',
+  'iea': 'secondary',
+  'eia': 'secondary',
+  'materials-project': 'primary',
+  'zenodo': 'secondary',
+  'inspire': 'secondary',
+  'newsapi': 'default',
+  'web-search': 'default',
+}
 
 export interface PaperCardProps {
-  paper: Paper
-  onSave?: (paper: Paper) => void
+  paper: Source
+  onSave?: (paper: Source) => void
   isSaved?: boolean
 }
 
@@ -19,25 +71,16 @@ export function PaperCard({ paper, onSave, isSaved }: PaperCardProps) {
     onSave?.(paper)
   }
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString?: string) => {
     if (!dateString) return 'Unknown'
     const date = new Date(dateString)
     return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short' })
   }
 
-  const getSourceBadgeColor = () => {
-    if (paper.id.startsWith('s2-')) return 'secondary'
-    if (paper.id.startsWith('arxiv-')) return 'primary'
-    if (paper.id.startsWith('pubmed-')) return 'success'
-    return 'default'
-  }
-
-  const getSourceName = () => {
-    if (paper.id.startsWith('s2-')) return 'Semantic Scholar'
-    if (paper.id.startsWith('arxiv-')) return 'arXiv'
-    if (paper.id.startsWith('pubmed-')) return 'PubMed'
-    return 'Unknown'
-  }
+  const sourceName = SOURCE_DISPLAY_NAMES[paper.metadata.source] || paper.metadata.source
+  const sourceBadgeColor = SOURCE_BADGE_COLORS[paper.metadata.source] || 'default'
+  const citationCount = paper.metadata.citationCount || 0
+  const publicationDate = paper.metadata.publicationDate
 
   return (
     <Card className="p-6 hover:shadow-md transition-shadow">
@@ -69,24 +112,25 @@ export function PaperCard({ paper, onSave, isSaved }: PaperCardProps) {
 
             {/* Metadata */}
             <div className="flex flex-wrap items-center gap-3 text-xs text-foreground-muted">
-              {paper.publicationDate && (
+              {publicationDate && (
                 <div className="flex items-center gap-1">
                   <Calendar className="w-3.5 h-3.5" />
-                  {formatDate(paper.publicationDate)}
+                  {formatDate(publicationDate)}
                 </div>
               )}
 
-              {paper.citationCount !== undefined && paper.citationCount > 0 && (
+              {citationCount > 0 && (
                 <div className="flex items-center gap-1">
                   <Award className="w-3.5 h-3.5" />
-                  {paper.citationCount.toLocaleString()} citations
+                  {citationCount.toLocaleString()} citations
                 </div>
               )}
 
-              {paper.venue && (
+              {/* Show verification status */}
+              {paper.metadata.verificationStatus !== 'unverified' && (
                 <div className="flex items-center gap-1">
                   <span>•</span>
-                  <span className="line-clamp-1">{paper.venue}</span>
+                  <span className="capitalize">{paper.metadata.verificationStatus}</span>
                 </div>
               )}
             </div>
@@ -118,43 +162,52 @@ export function PaperCard({ paper, onSave, isSaved }: PaperCardProps) {
 
         {/* Footer */}
         <div className="flex items-center justify-between gap-4 pt-2 border-t border-border">
-          {/* Tags and Source */}
+          {/* Source Badge */}
           <div className="flex items-center gap-2 flex-wrap">
-            <Badge variant={getSourceBadgeColor()} size="sm">
-              {getSourceName()}
+            <Badge variant={sourceBadgeColor} size="sm">
+              {sourceName}
             </Badge>
 
-            {paper.fields && paper.fields.slice(0, 3).map((field) => (
-              <Badge key={field} variant="secondary" size="sm">
-                {field}
+            {/* Access type badge */}
+            {paper.metadata.accessType === 'open' && (
+              <Badge variant="success" size="sm">
+                Open Access
               </Badge>
-            ))}
+            )}
           </div>
 
           {/* Links */}
           <div className="flex items-center gap-2 shrink-0">
-            <a
-              href={paper.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-foreground-muted hover:text-foreground hover:bg-background-elevated rounded-md transition-colors"
-            >
-              <FileText className="w-4 h-4" />
-              View Paper
-              <ExternalLink className="w-3 h-3" />
-            </a>
-
-            {paper.pdfUrl && (
+            {paper.url && (
               <a
-                href={paper.pdfUrl}
+                href={paper.url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-foreground-muted hover:text-foreground hover:bg-background-elevated rounded-md transition-colors"
               >
-                <Download className="w-4 h-4" />
-                PDF
+                <FileText className="w-4 h-4" />
+                View Paper
+                <ExternalLink className="w-3 h-3" />
               </a>
             )}
+
+            {(() => {
+              const pdfUrl = 'pdfUrl' in paper ? paper.pdfUrl : undefined
+              if (typeof pdfUrl === 'string') {
+                return (
+                  <a
+                    href={pdfUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-foreground-muted hover:text-foreground hover:bg-background-elevated rounded-md transition-colors"
+                  >
+                    <Download className="w-4 h-4" />
+                    PDF
+                  </a>
+                )
+              }
+              return null
+            })()}
           </div>
         </div>
       </div>
