@@ -34,11 +34,11 @@ const mainNavItems: NavItem[] = [
   { name: 'Experiments', href: '/experiments', icon: FlaskConical },
   { name: 'Simulations', href: '/simulations', icon: Bot },
   { name: 'TEA Reports', href: '/tea-generator', icon: Calculator },
-  { name: 'Criteria', href: '/criteria', icon: ClipboardCheck },
 ]
 
 const secondaryNavItems: NavItem[] = [
   { name: 'Activity Logs', href: '/admin/logs', icon: Activity },
+  { name: 'Criteria', href: '/criteria', icon: ClipboardCheck },
   { name: 'Settings', href: '/settings', icon: Settings },
   { name: 'Help', href: '/help', icon: HelpCircle },
 ]
@@ -181,13 +181,13 @@ export function Sidebar() {
               Powered by AI
             </p>
             <span className="text-xs text-muted-foreground/60 font-mono">
-              v0.0.2
+              v0.0.6
             </span>
           </div>
         ) : (
           <div className="flex justify-center">
             <span className="text-xs text-muted-foreground/60 font-mono">
-              v0.0.2
+              v0.0.6
             </span>
           </div>
         )}

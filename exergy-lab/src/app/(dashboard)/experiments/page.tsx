@@ -1,8 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { FlaskConical } from 'lucide-react'
-import { FeatureWizard } from '@/components/feature-wizard'
+import { ExperimentLab } from '@/components/experiments/ExperimentLab'
 import type { Domain } from '@/types/discovery'
 
 const DOMAINS: Domain[] = [
@@ -21,13 +20,7 @@ const DOMAINS: Domain[] = [
 export default function ExperimentsPage() {
   return (
     <div className="h-full flex flex-col">
-      <FeatureWizard
-        pageType="experiments"
-        pageTitle="Experiment Designer"
-        pageSubtitle="AI-powered experiment protocol generation with failure analysis"
-        pageIcon={<FlaskConical className="h-5 w-5" />}
-        domains={DOMAINS}
-      />
+      <ExperimentLab domains={DOMAINS} />
     </div>
   )
 }

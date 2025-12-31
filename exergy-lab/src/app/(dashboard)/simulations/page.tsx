@@ -1,8 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { Bot } from 'lucide-react'
-import { FeatureWizard } from '@/components/feature-wizard'
+import { SimulationPlatform } from '@/components/simulations/SimulationPlatform'
 import type { Domain } from '@/types/discovery'
 
 const DOMAINS: Domain[] = [
@@ -21,13 +20,7 @@ const DOMAINS: Domain[] = [
 export default function SimulationsPage() {
   return (
     <div className="h-full flex flex-col">
-      <FeatureWizard
-        pageType="simulations"
-        pageTitle="Simulations"
-        pageSubtitle="3-tier computational system for clean energy simulations"
-        pageIcon={<Bot className="h-5 w-5" />}
-        domains={DOMAINS}
-      />
+      <SimulationPlatform domains={DOMAINS} />
     </div>
   )
 }
