@@ -44,7 +44,7 @@ export function PdfViewerOverlay({ url, onClose }: PdfViewerOverlayProps) {
       <header className="sticky top-0 z-10 bg-elevated border-b border-border px-6 py-3 flex items-center justify-between">
         <button
           onClick={onClose}
-          className="flex items-center gap-2 text-muted hover:text-foreground transition-colors"
+          className="flex items-center gap-2 text-muted hover:text-foreground transition-colors cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />
           <span className="text-sm font-medium">Back to Paper</span>
@@ -55,7 +55,7 @@ export function PdfViewerOverlay({ url, onClose }: PdfViewerOverlayProps) {
             onClick={handleDownload}
             className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium
                      bg-muted/10 text-muted hover:text-foreground hover:bg-muted/20
-                     rounded-lg transition-colors"
+                     rounded-lg transition-colors cursor-pointer"
           >
             <Download className="w-4 h-4" />
             Download PDF
@@ -65,7 +65,7 @@ export function PdfViewerOverlay({ url, onClose }: PdfViewerOverlayProps) {
             onClick={handleOpenInNewTab}
             className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium
                      bg-muted/10 text-muted hover:text-foreground hover:bg-muted/20
-                     rounded-lg transition-colors"
+                     rounded-lg transition-colors cursor-pointer"
           >
             <ExternalLink className="w-4 h-4" />
             Open in New Tab
@@ -100,7 +100,7 @@ export function PdfViewerOverlay({ url, onClose }: PdfViewerOverlayProps) {
                 <button
                   onClick={handleOpenInNewTab}
                   className="flex items-center gap-2 px-4 py-2 bg-primary text-white
-                           rounded-lg hover:bg-primary/90 transition-colors"
+                           rounded-lg hover:bg-primary/90 transition-colors cursor-pointer"
                 >
                   <ExternalLink className="w-4 h-4" />
                   Open in New Tab
@@ -108,7 +108,7 @@ export function PdfViewerOverlay({ url, onClose }: PdfViewerOverlayProps) {
                 <button
                   onClick={handleDownload}
                   className="flex items-center gap-2 px-4 py-2 bg-muted/20 text-foreground
-                           rounded-lg hover:bg-muted/30 transition-colors"
+                           rounded-lg hover:bg-muted/30 transition-colors cursor-pointer"
                 >
                   <Download className="w-4 h-4" />
                   Download

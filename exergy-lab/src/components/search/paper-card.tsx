@@ -102,15 +102,26 @@ export function PaperCard({ paper, onSave, isSaved, onClick }: PaperCardProps) {
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
             <h3 className="text-lg font-semibold text-foreground mb-2 line-clamp-2">
-              <a
-                href={paper.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-primary transition-colors"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {paper.title}
-              </a>
+              {onClick ? (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onClick()
+                  }}
+                  className="hover:text-primary transition-colors text-left cursor-pointer"
+                >
+                  {paper.title}
+                </button>
+              ) : (
+                <a
+                  href={paper.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-primary transition-colors"
+                >
+                  {paper.title}
+                </a>
+              )}
             </h3>
 
             {/* Authors */}

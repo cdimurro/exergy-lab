@@ -13,7 +13,7 @@ import {
   Clock,
 } from 'lucide-react'
 import { useSearchChat } from '@/hooks/use-search-chat'
-import { formatRelativeTime } from '@/lib/store/search-ui-store'
+import { formatRelativeTime, useSearchUIStore } from '@/lib/store/search-ui-store'
 import { ChatHistoryDropdown } from './ChatHistoryDropdown'
 
 /**
@@ -115,8 +115,11 @@ export function SearchChatPanel({
 }: SearchChatPanelProps) {
   const [input, setInput] = useState(initialQuestion || '')
   const [showHistory, setShowHistory] = useState(false)
+  const [hasTriggeredPending, setHasTriggeredPending] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+
+  const { pendingQuestion, clearPendingQuestion } = useSearchUIStore()
 
   const {
     session,
@@ -142,13 +145,23 @@ export function SearchChatPanel({
     }
   }, [])
 
-  // Send initial question if provided and no active chat
+  // Send pending question from store (when user clicks a follow-up question)
   useEffect(() => {
-    if (initialQuestion && !session && messages.length === 0) {
+    if (pendingQuestion && !hasTriggeredPending && !isGenerating) {
+      setHasTriggeredPending(true)
+      startChat(pendingQuestion)
+      clearPendingQuestion()
+      setInput('')
+    }
+  }, [pendingQuestion, hasTriggeredPending, isGenerating, startChat, clearPendingQuestion])
+
+  // Send initial question if provided via prop (legacy support)
+  useEffect(() => {
+    if (initialQuestion && !session && messages.length === 0 && !pendingQuestion) {
       startChat(initialQuestion)
       setInput('')
     }
-  }, [initialQuestion, session, messages.length, startChat])
+  }, [initialQuestion, session, messages.length, startChat, pendingQuestion])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -172,7 +185,7 @@ export function SearchChatPanel({
         <div className="flex items-center justify-between">
           <button
             onClick={onBack}
-            className="flex items-center gap-2 text-muted hover:text-foreground transition-colors"
+            className="flex items-center gap-2 text-muted hover:text-foreground transition-colors cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4" />
             <span className="text-sm font-medium">Back to Results</span>
@@ -186,7 +199,7 @@ export function SearchChatPanel({
                   onClick={() => setShowHistory(!showHistory)}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-sm
                            bg-muted/10 text-muted hover:text-foreground hover:bg-muted/20
-                           rounded-lg transition-colors"
+                           rounded-lg transition-colors cursor-pointer"
                 >
                   <History className="w-4 h-4" />
                   <span>History</span>

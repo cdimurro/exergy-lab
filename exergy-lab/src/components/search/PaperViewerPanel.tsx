@@ -119,7 +119,7 @@ export function PaperViewerPanel({ paper, onBack }: PaperViewerPanelProps) {
       <header className="sticky top-0 z-10 bg-elevated border-b border-border px-6 py-3 flex items-center justify-between">
         <button
           onClick={onBack}
-          className="flex items-center gap-2 text-muted hover:text-foreground transition-colors"
+          className="flex items-center gap-2 text-muted hover:text-foreground transition-colors cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />
           <span className="text-sm font-medium">Back to Results</span>
@@ -131,7 +131,7 @@ export function PaperViewerPanel({ paper, onBack }: PaperViewerPanelProps) {
               onClick={handleViewPdf}
               className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium
                        bg-primary/10 text-primary hover:bg-primary/20
-                       rounded-lg transition-colors"
+                       rounded-lg transition-colors cursor-pointer"
             >
               <FileText className="w-4 h-4" />
               View PDF
@@ -142,7 +142,7 @@ export function PaperViewerPanel({ paper, onBack }: PaperViewerPanelProps) {
             onClick={handleOpenExternal}
             className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium
                      bg-muted/10 text-muted hover:text-foreground hover:bg-muted/20
-                     rounded-lg transition-colors"
+                     rounded-lg transition-colors cursor-pointer"
           >
             <ExternalLink className="w-4 h-4" />
             Open Original

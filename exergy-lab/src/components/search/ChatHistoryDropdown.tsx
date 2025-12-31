@@ -71,7 +71,7 @@ export function ChatHistoryDropdown({
         <h3 className="text-sm font-medium text-foreground">Chat History</h3>
         <button
           onClick={onClose}
-          className="p-1 text-muted hover:text-foreground transition-colors rounded"
+          className="p-1 text-muted hover:text-foreground transition-colors rounded cursor-pointer"
         >
           <X className="w-4 h-4" />
         </button>
@@ -89,7 +89,7 @@ export function ChatHistoryDropdown({
               key={session.id}
               onClick={() => onSelect(session.id)}
               className="w-full flex items-start gap-3 px-4 py-3 hover:bg-muted/10
-                       transition-colors text-left border-b border-border last:border-0"
+                       transition-colors text-left border-b border-border last:border-0 cursor-pointer"
             >
               {/* Icon */}
               <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -120,7 +120,7 @@ export function ChatHistoryDropdown({
               <button
                 onClick={(e) => handleDelete(session.id, e)}
                 className="flex-shrink-0 p-1.5 text-muted hover:text-error
-                         hover:bg-error/10 rounded transition-colors"
+                         hover:bg-error/10 rounded transition-colors cursor-pointer"
                 title="Delete chat"
               >
                 <Trash2 className="w-3.5 h-3.5" />

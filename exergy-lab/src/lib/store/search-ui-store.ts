@@ -65,6 +65,7 @@ export interface SearchUIState {
   // Chat state
   chatSessions: SearchChatSession[]
   activeChatId: string | null
+  pendingQuestion: string | null // Question that needs AI response
   currentSearchQuery: string
   currentSearchPapers: Source[]
 
@@ -92,6 +93,7 @@ export interface SearchUIState {
   resumeChat: (sessionId: string) => void
   deleteChat: (sessionId: string) => void
   getChatSession: (sessionId: string) => SearchChatSession | undefined
+  clearPendingQuestion: () => void
 
   // Actions - Reset
   reset: () => void
@@ -110,6 +112,7 @@ const initialState = {
   pdfUrl: null as string | null,
   chatSessions: [] as SearchChatSession[],
   activeChatId: null as string | null,
+  pendingQuestion: null as string | null,
   currentSearchQuery: '',
   currentSearchPapers: [] as Source[],
 }
@@ -191,17 +194,12 @@ export const useSearchUIStore = create<SearchUIState>()(
       // Chat actions
       openChat: (question) => {
         const state = get()
-        let chatId = state.activeChatId
-
-        // Create new session if we have a question and no active chat
-        if (question && !chatId) {
-          chatId = get().createChatSession(question)
-        }
 
         set({
           activeView: 'chat',
           previousView: state.activeView,
-          activeChatId: chatId,
+          // Store the question to be processed by SearchChatPanel
+          pendingQuestion: question || null,
         })
       },
 
@@ -287,6 +285,8 @@ export const useSearchUIStore = create<SearchUIState>()(
       getChatSession: (sessionId) => {
         return get().chatSessions.find((s) => s.id === sessionId)
       },
+
+      clearPendingQuestion: () => set({ pendingQuestion: null }),
 
       // Reset
       reset: () => set(initialState),

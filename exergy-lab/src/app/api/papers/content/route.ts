@@ -19,22 +19,23 @@ import {
 import type { PaperContentResponse, FetchContentOptions } from '@/lib/paper-content'
 
 // Request validation schema - permissive to accept various paper formats
+// Using .nullable() to handle null values from JSON serialization
 const RequestSchema = z.object({
   paper: z.object({
     id: z.string(),
     title: z.string(),
-    url: z.string().optional(),
-    abstract: z.string().optional(),
-    authors: z.array(z.string()).optional(),
-    doi: z.string().optional(),
+    url: z.string().optional().nullable(),
+    abstract: z.string().optional().nullable(),
+    authors: z.array(z.string()).optional().nullable(),
+    doi: z.string().optional().nullable(),
     metadata: z.object({
       source: z.string(),
-      sourceType: z.string().optional(),
-      quality: z.number().optional(),
-      publicationDate: z.string().optional(),
-      citationCount: z.number().optional(),
-      verificationStatus: z.string().optional(),
-      accessType: z.string().optional(),
+      sourceType: z.string().optional().nullable(),
+      quality: z.number().optional().nullable(),
+      publicationDate: z.string().optional().nullable(),
+      citationCount: z.number().optional().nullable(),
+      verificationStatus: z.string().optional().nullable(),
+      accessType: z.string().optional().nullable(),
     }).passthrough(),
   }),
   options: z.object({
@@ -47,23 +48,24 @@ const RequestSchema = z.object({
 
 /**
  * Convert validated request paper to Source type with proper defaults
+ * Converts null values to undefined for proper TypeScript compatibility
  */
 function toSource(paper: z.infer<typeof RequestSchema>['paper']): Source {
   return {
     id: paper.id,
     title: paper.title,
-    url: paper.url,
-    abstract: paper.abstract,
-    doi: paper.doi,
-    authors: paper.authors || [],
+    url: paper.url ?? undefined,
+    abstract: paper.abstract ?? undefined,
+    doi: paper.doi ?? undefined,
+    authors: paper.authors ?? [],
     metadata: {
       source: paper.metadata.source as Source['metadata']['source'],
-      sourceType: (paper.metadata.sourceType || 'academic-paper') as Source['metadata']['sourceType'],
-      quality: paper.metadata.quality || 75,
-      verificationStatus: (paper.metadata.verificationStatus || 'unverified') as Source['metadata']['verificationStatus'],
-      accessType: (paper.metadata.accessType || 'open') as Source['metadata']['accessType'],
-      publicationDate: paper.metadata.publicationDate,
-      citationCount: paper.metadata.citationCount,
+      sourceType: (paper.metadata.sourceType ?? 'academic-paper') as Source['metadata']['sourceType'],
+      quality: paper.metadata.quality ?? 75,
+      verificationStatus: (paper.metadata.verificationStatus ?? 'unverified') as Source['metadata']['verificationStatus'],
+      accessType: (paper.metadata.accessType ?? 'open') as Source['metadata']['accessType'],
+      publicationDate: paper.metadata.publicationDate ?? undefined,
+      citationCount: paper.metadata.citationCount ?? undefined,
     },
   }
 }
