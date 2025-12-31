@@ -421,8 +421,8 @@ export default function CriteriaPage() {
   const [expandedPhase, setExpandedPhase] = React.useState<string | null>('research')
 
   return (
-    <div className="h-full overflow-y-auto">
-      <div className="space-y-6 pb-8">
+    <div className="h-full flex flex-col">
+      <div className="space-y-6 pb-8 flex-1 overflow-y-auto">
         {/* Page Header */}
         <div>
           <div className="flex items-center gap-3">
