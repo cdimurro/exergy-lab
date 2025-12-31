@@ -26,6 +26,17 @@ import {
   ModalTier3Provider,
   type ModalProgressEvent,
 } from './providers/modal-provider'
+import {
+  getDataSourceRegistry,
+  getParameterResolver,
+  getMaterialsDatabase,
+  getEnvironmentalDatabase,
+} from './data-sources'
+
+/**
+ * Status of a data source
+ */
+export type DataSourceHealthStatus = 'available' | 'fallback' | 'unavailable'
 
 // ============================================================================
 // Configuration
@@ -266,6 +277,73 @@ export class SimulationManager {
     const provider = getSimulationProvider(tier)
     return provider.isAvailable()
   }
+}
+
+// ============================================================================
+// Data Source Integration
+// ============================================================================
+
+/**
+ * Data source health information for monitoring
+ */
+export interface DataSourceHealth {
+  overall: 'healthy' | 'degraded' | 'unavailable'
+  sources: Record<string, DataSourceHealthStatus>
+  lastChecked: string
+  usingFallbacks: boolean
+}
+
+/**
+ * Get the health status of all data sources
+ */
+export async function getDataSourceHealth(): Promise<DataSourceHealth> {
+  const registry = getDataSourceRegistry()
+  const status = await registry.checkDataSourceHealth()
+
+  // Determine overall health
+  const healthyCount = Object.values(status).filter(s => s === 'available').length
+  const totalCount = Object.keys(status).length
+
+  let overall: 'healthy' | 'degraded' | 'unavailable'
+  if (healthyCount === totalCount) {
+    overall = 'healthy'
+  } else if (healthyCount > 0) {
+    overall = 'degraded'
+  } else {
+    overall = 'unavailable'
+  }
+
+  // Check if any fallbacks are being used
+  const usingFallbacks = Object.values(status).some(s => s === 'fallback')
+
+  return {
+    overall,
+    sources: status,
+    lastChecked: new Date().toISOString(),
+    usingFallbacks,
+  }
+}
+
+/**
+ * Get data sources for direct access (useful for debugging/monitoring)
+ */
+export function getDataSources() {
+  return {
+    registry: getDataSourceRegistry(),
+    parameterResolver: getParameterResolver(),
+    materialsDatabase: getMaterialsDatabase(),
+    environmentalDatabase: getEnvironmentalDatabase(),
+  }
+}
+
+/**
+ * Clear all caches (data sources and providers)
+ * Useful for testing or when data needs to be refreshed
+ */
+export function clearAllCaches(): void {
+  clearProviderCache()
+  // Data source caches are internal to their modules
+  console.log('[SimulationFactory] All caches cleared')
 }
 
 // ============================================================================

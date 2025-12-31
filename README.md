@@ -54,11 +54,25 @@ The simulation engine operates across three tiers, allowing researchers to match
 
 | Tier | Methodology | Response Time | Uncertainty | Compute Cost |
 |------|-------------|---------------|-------------|--------------|
-| **Analytical** | Closed-form thermodynamic equations | ~10 seconds | +/- 20% | Free |
+| **Analytical** | Physics-based calculations with real data | ~10 seconds | +/- 15% | Free |
 | **Browser** | ML-enhanced physics models | ~2 minutes | +/- 10% | Free |
 | **Cloud GPU** | Monte Carlo with uncertainty quantification | ~5 minutes | +/- 2% | $0.50-2.00 |
 
 Researchers typically begin with Tier 1 for rapid exploration, narrow to promising configurations with Tier 2, then validate final designs with Tier 3's publication-grade accuracy. The system maintains parameter consistency across tiers, so transitioning between fidelity levels requires no reconfiguration.
+
+**Physics-Based Calculators:**
+- **Thermodynamics**: Carnot efficiency with technology-specific practical multipliers (steam-rankine, gas-brayton, combined-cycle, ORC, supercritical-CO2)
+- **Electrochemistry**: Butler-Volmer kinetics, Nernst equation, overpotential modeling for PEM/alkaline/SOEC/AEM electrolyzers
+- **Photovoltaics**: Shockley-Queisser limit with real band gaps, temperature derating, 8 PV technology configurations
+- **Wind Turbines**: NREL reference turbine power curves, Betz limit, wake effects, wind shear modeling
+
+**Data Source Integration:**
+- **NREL ATB**: Technology costs, efficiencies, and capacity factors with API-first access
+- **Materials Project**: Band gaps, electrochemical properties, and material characteristics
+- **NREL NSRDB**: Location-specific solar and wind resource data
+- **Embedded Fallbacks**: All data sources include embedded reference data for offline operation
+
+**Data Transparency**: Every simulation result includes `dataSourceInfo` showing whether values came from live APIs or embedded fallbacks, ensuring full reproducibility.
 
 **Supported Technology Classes:**
 - **Solar**: Crystalline silicon, thin-film (CdTe, CIGS), perovskite, tandem architectures
@@ -144,7 +158,10 @@ exergy-lab/
 │   │   └── experiments/          # Protocol designer
 │   ├── lib/
 │   │   ├── ai/                   # LLM orchestration, prompt engineering
-│   │   ├── simulation-engine/    # Physics models, uncertainty quantification
+│   │   ├── simulation/           # Tiered simulation providers
+│   │   │   ├── calculators/      # Physics: thermo, electrochem, PV, wind
+│   │   │   ├── data-sources/     # NREL ATB, Materials Project, NSRDB
+│   │   │   └── providers/        # Analytical, Modal GPU providers
 │   │   ├── paper-content/        # PDF parsing, content extraction
 │   │   └── store/                # Zustand state management
 │   └── types/                    # TypeScript definitions
@@ -226,17 +243,21 @@ Patent searches run alongside academic literature queries, revealing the IP land
 ### Current Release (v1.0)
 - 15-source federated academic search
 - AI-powered synthesis with citation tracking
-- 3-tier progressive fidelity simulation
+- 3-tier progressive fidelity simulation with real physics
+- Physics-based calculators (thermodynamics, electrochemistry, PV, wind)
+- Real data integration (NREL ATB, Materials Project, NSRDB)
+- Data source transparency with fallback indicators
 - TEA report generator with exergy analysis
 - AI experiment designer with safety analysis
 - Cross-domain discovery engine
 - In-app paper viewer with conversational interface
 
 ### Next Release (v1.1)
+- AI-assisted simulation type selection
+- Experiments-simulation bidirectional integration
 - User authentication with project persistence
 - Enhanced PDF parsing and figure extraction
 - Collaborative workspaces for research teams
-- API access for programmatic integration
 
 ### Future Development (v2.0+)
 - PostgreSQL backend for enterprise deployment

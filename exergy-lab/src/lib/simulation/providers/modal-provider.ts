@@ -20,6 +20,7 @@ import type {
   SimulationTier,
   ExergyAnalysis,
 } from '../types'
+import { getNumber } from './utils'
 
 // ============================================================================
 // Types
@@ -250,17 +251,17 @@ export class ModalSimulationProvider implements SimulationProvider {
     const mcConfig: MonteCarloConfig = {
       hypothesis_id: params.experimentId,
       parameters: {
-        efficiency_mean: params.inputs.efficiency || params.inputs.practicalEfficiency || 0.35,
-        efficiency_std: params.inputs.efficiencyStd || 0.05,
-        cost_mean: params.inputs.costPerKw || params.inputs.cost || 100,
-        cost_std: params.inputs.costStd || 20,
-        capacity_kw: params.inputs.capacityKw || 1000,
-        capacity_factor: params.inputs.capacityFactor || 0.25,
-        capacity_factor_std: params.inputs.capacityFactorStd || 0.05,
-        lifetime_years: params.inputs.lifetimeYears || 25,
-        lifetime_std: params.inputs.lifetimeStd || 5,
+        efficiency_mean: getNumber(params.inputs.efficiency, getNumber(params.inputs.practicalEfficiency, 0.35)),
+        efficiency_std: getNumber(params.inputs.efficiencyStd, 0.05),
+        cost_mean: getNumber(params.inputs.costPerKw, getNumber(params.inputs.cost, 100)),
+        cost_std: getNumber(params.inputs.costStd, 20),
+        capacity_kw: getNumber(params.inputs.capacityKw, 1000),
+        capacity_factor: getNumber(params.inputs.capacityFactor, 0.25),
+        capacity_factor_std: getNumber(params.inputs.capacityFactorStd, 0.05),
+        lifetime_years: getNumber(params.inputs.lifetimeYears, 25),
+        lifetime_std: getNumber(params.inputs.lifetimeStd, 5),
       },
-      seed: params.inputs.seed || Math.floor(Math.random() * 2147483647),
+      seed: getNumber(params.inputs.seed, Math.floor(Math.random() * 2147483647)),
     }
 
     // Determine number of iterations based on tier
@@ -366,37 +367,45 @@ export class ModalSimulationProvider implements SimulationProvider {
     const sweepParams: Record<string, { min: number; max: number; log_scale?: boolean }> = {}
 
     // Determine which parameters to sweep based on what's provided
-    if (params.inputs.efficiencyMin !== undefined && params.inputs.efficiencyMax !== undefined) {
+    const effMin = getNumber(params.inputs.efficiencyMin, 0)
+    const effMax = getNumber(params.inputs.efficiencyMax, 0)
+    const baseEfficiency = getNumber(params.inputs.efficiency, 0.35)
+
+    if (effMin > 0 && effMax > 0) {
       sweepParams.efficiency = {
-        min: params.inputs.efficiencyMin,
-        max: params.inputs.efficiencyMax,
+        min: effMin,
+        max: effMax,
       }
     } else {
       sweepParams.efficiency = {
-        min: (params.inputs.efficiency || 0.35) * 0.5,
-        max: Math.min((params.inputs.efficiency || 0.35) * 1.5, 0.9),
+        min: baseEfficiency * 0.5,
+        max: Math.min(baseEfficiency * 1.5, 0.9),
       }
     }
 
-    if (params.inputs.costMin !== undefined && params.inputs.costMax !== undefined) {
+    const costMin = getNumber(params.inputs.costMin, 0)
+    const costMax = getNumber(params.inputs.costMax, 0)
+    const baseCost = getNumber(params.inputs.costPerKw, 100)
+
+    if (costMin > 0 && costMax > 0) {
       sweepParams.cost_per_kw = {
-        min: params.inputs.costMin,
-        max: params.inputs.costMax,
+        min: costMin,
+        max: costMax,
       }
     } else {
       sweepParams.cost_per_kw = {
-        min: (params.inputs.costPerKw || 100) * 0.5,
-        max: (params.inputs.costPerKw || 100) * 2.0,
+        min: baseCost * 0.5,
+        max: baseCost * 2.0,
       }
     }
 
     // Base configuration for sweep
     const baseConfig = {
-      efficiency: params.inputs.efficiency || 0.35,
-      cost_per_kw: params.inputs.costPerKw || 100,
-      lifetime_years: params.inputs.lifetimeYears || 25,
-      capacity_factor: params.inputs.capacityFactor || 0.25,
-      capacity_kw: params.inputs.capacityKw || 1000,
+      efficiency: getNumber(params.inputs.efficiency, 0.35),
+      cost_per_kw: getNumber(params.inputs.costPerKw, 100),
+      lifetime_years: getNumber(params.inputs.lifetimeYears, 25),
+      capacity_factor: getNumber(params.inputs.capacityFactor, 0.25),
+      capacity_kw: getNumber(params.inputs.capacityKw, 1000),
     }
 
     const nSamplesPerDim = this.tier === 'tier3' ? 50 : 25

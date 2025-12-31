@@ -1,11 +1,10 @@
 /**
  * Tier 1: Analytical Simulation Provider
  *
- * Fast JavaScript-based analytical calculations for:
- * - Thermodynamic equilibrium
- * - Mass/energy balances
- * - First-order kinetics
- * - Efficiency calculations
+ * Fast JavaScript-based analytical calculations with real data from:
+ * - NREL ATB for technology efficiencies and costs
+ * - Materials Project for material properties
+ * - Physics-based calculator modules
  *
  * This serves as the default/fallback provider and is always available.
  */
@@ -18,6 +17,14 @@ import type {
   SimulationOutput,
   ExergyAnalysis,
 } from '../types'
+
+import { getParameterResolver } from '../data-sources'
+import {
+  calculatePracticalEfficiency,
+  calculateCarnotEfficiency,
+  calculateExergyImprovement,
+} from '../calculators/thermodynamics'
+import { calculateElectrochemicalCell } from '../calculators/electrochemistry'
 
 // ============================================================================
 // Thermodynamic Constants
@@ -40,111 +47,112 @@ const LIMITS = {
 }
 
 // ============================================================================
+// Helper Functions
+// ============================================================================
+
+/**
+ * Safely get a number from inputs with a default value
+ */
+function getNum(value: number | undefined, defaultValue: number): number {
+  return value ?? defaultValue
+}
+
+// ============================================================================
+// Data Source Tracking
+// ============================================================================
+
+interface DataSourceInfo {
+  name: string
+  source: string
+  isFallback: boolean
+}
+
+// ============================================================================
 // Analytical Models
 // ============================================================================
 
-function calculateThermodynamic(params: SimulationParams): SimulationOutput[] {
+async function calculateThermodynamic(params: SimulationParams): Promise<{
+  outputs: SimulationOutput[]
+  dataSources: DataSourceInfo[]
+}> {
   const inputs = params.inputs
-  const outputs: SimulationOutput[] = []
+  const dataSources: DataSourceInfo[] = []
 
   // Temperature-dependent efficiency
-  const tHot = inputs.temperatureHot || 1073 // K
-  const tCold = inputs.temperatureCold || 298 // K
-  const carnotEff = LIMITS.carnotEfficiency(tHot, tCold)
+  const tHot = inputs.temperatureHot ?? 1073 // K
+  const tCold = inputs.temperatureCold ?? 298 // K
 
-  // Add realistic inefficiencies
-  const practicalEff = carnotEff * (0.65 + Math.random() * 0.15)
+  // Get cycle type from inputs (use numeric mapping if needed)
+  const cycleType = 'steam-rankine' // Default, could be extended with mapping
 
-  outputs.push({
-    name: 'carnotEfficiency',
-    value: carnotEff,
-    unit: '',
-    uncertainty: 0,
+  // Use the thermodynamics calculator with real data
+  const result = await calculatePracticalEfficiency({
+    cycleType,
+    temperatureHot: tHot,
+    temperatureCold: tCold,
+    heatInput: getNum(inputs.heatInput, 1000),
+    massFlowRate: getNum(inputs.massFlowRate, 1),
   })
 
-  outputs.push({
+  dataSources.push({
     name: 'practicalEfficiency',
-    value: practicalEff,
-    unit: '',
-    uncertainty: practicalEff * 0.05,
+    source: result.dataSourceInfo.source,
+    isFallback: result.dataSourceInfo.isFallback,
   })
 
-  // Heat transfer
-  const heatInput = inputs.heatInput || 1000 // W
-  const workOutput = heatInput * practicalEff
-
-  outputs.push({
-    name: 'workOutput',
-    value: workOutput,
-    unit: 'W',
-    uncertainty: workOutput * 0.05,
-  })
-
-  outputs.push({
-    name: 'heatRejected',
-    value: heatInput - workOutput,
-    unit: 'W',
-    uncertainty: (heatInput - workOutput) * 0.05,
-  })
-
-  return outputs
+  return {
+    outputs: result.outputs,
+    dataSources,
+  }
 }
 
-function calculateElectrochemical(params: SimulationParams): SimulationOutput[] {
+async function calculateElectrochemical(params: SimulationParams): Promise<{
+  outputs: SimulationOutput[]
+  dataSources: DataSourceInfo[]
+}> {
   const inputs = params.inputs
-  const outputs: SimulationOutput[] = []
+  const dataSources: DataSourceInfo[] = []
 
-  // Nernst equation for cell voltage
-  const temperature = inputs.temperature || 298 // K
-  const pressure = inputs.pressure || 1 // atm
-  const currentDensity = inputs.currentDensity || 0.5 // A/cm²
+  // Map numeric electrolyzer type to string (0=alkaline, 1=pem, 2=soec, 3=aem)
+  const electrolyzerTypes: Array<'alkaline' | 'pem' | 'soec' | 'aem'> = ['alkaline', 'pem', 'soec', 'aem']
+  const electrolyzerTypeIndex = Math.min(Math.max(0, Math.floor(inputs.electrolyzerType ?? 1)), 3)
+  const electrolyzerType = electrolyzerTypes[electrolyzerTypeIndex]
 
-  // Reversible voltage (approximately 1.23V for water electrolysis at standard conditions)
-  const E0 = 1.23
-  const nernstCorrection = (CONSTANTS.R * temperature / (2 * CONSTANTS.F)) * Math.log(pressure)
-  const reversibleVoltage = E0 + nernstCorrection
+  // Use the electrochemistry calculator with real faradaic efficiency data
+  const result = await calculateElectrochemicalCell({
+    electrolyzerType,
+    temperature: getNum(inputs.temperature, 333),
+    pressure: getNum(inputs.pressure, 1),
+    currentDensity: getNum(inputs.currentDensity, 0.5),
+    cellArea: getNum(inputs.cellArea, 100),
+    catalystMaterial: '', // Catalyst material would need extended params
+  })
 
-  // Overpotentials
-  const activationOverpotential = 0.05 + 0.1 * currentDensity
-  const ohmicOverpotential = 0.1 * currentDensity
-  const concentrationOverpotential = 0.02 * Math.pow(currentDensity, 2)
+  dataSources.push({
+    name: 'faradaicEfficiency',
+    source: result.dataSourceInfo.faradaicEfficiencySource,
+    isFallback: result.dataSourceInfo.isFallback,
+  })
 
-  const totalOverpotential = activationOverpotential + ohmicOverpotential + concentrationOverpotential
-  const cellVoltage = reversibleVoltage + totalOverpotential
-
-  // Efficiency
-  const voltageEfficiency = reversibleVoltage / cellVoltage
-  const faradaicEfficiency = 0.95 + Math.random() * 0.04 // 95-99%
-  const totalEfficiency = voltageEfficiency * faradaicEfficiency
-
-  outputs.push(
-    { name: 'cellVoltage', value: cellVoltage, unit: 'V', uncertainty: 0.02 },
-    { name: 'reversibleVoltage', value: reversibleVoltage, unit: 'V', uncertainty: 0.01 },
-    { name: 'activationOverpotential', value: activationOverpotential, unit: 'V' },
-    { name: 'ohmicOverpotential', value: ohmicOverpotential, unit: 'V' },
-    { name: 'voltageEfficiency', value: voltageEfficiency, unit: '', uncertainty: 0.02 },
-    { name: 'faradaicEfficiency', value: faradaicEfficiency, unit: '' },
-    { name: 'totalEfficiency', value: totalEfficiency, unit: '', uncertainty: 0.03 }
-  )
-
-  // Hydrogen production rate
-  const cellArea = inputs.cellArea || 100 // cm²
-  const hydrogenRate = (currentDensity * cellArea * faradaicEfficiency) / (2 * CONSTANTS.F) * 22.4 * 3600
-  outputs.push({ name: 'hydrogenRate', value: hydrogenRate, unit: 'L/h', uncertainty: hydrogenRate * 0.05 })
-
-  return outputs
+  return {
+    outputs: result.outputs,
+    dataSources,
+  }
 }
 
-function calculateKinetics(params: SimulationParams): SimulationOutput[] {
+async function calculateKinetics(params: SimulationParams): Promise<{
+  outputs: SimulationOutput[]
+  dataSources: DataSourceInfo[]
+}> {
   const inputs = params.inputs
   const outputs: SimulationOutput[] = []
 
   // Arrhenius equation
-  const temperature = inputs.temperature || 298 // K
-  const activationEnergy = inputs.activationEnergy || 50000 // J/mol
-  const preExponentialFactor = inputs.preExponentialFactor || 1e10 // 1/s
-  const initialConcentration = inputs.initialConcentration || 1 // mol/L
-  const time = inputs.reactionTime || 3600 // s
+  const temperature = getNum(inputs.temperature, 298) // K
+  const activationEnergy = getNum(inputs.activationEnergy, 50000) // J/mol
+  const preExponentialFactor = getNum(inputs.preExponentialFactor, 1e10) // 1/s
+  const initialConcentration = getNum(inputs.initialConcentration, 1) // mol/L
+  const time = getNum(inputs.reactionTime, 3600) // s
 
   // Rate constant
   const k = preExponentialFactor * Math.exp(-activationEnergy / (CONSTANTS.R * temperature))
@@ -161,19 +169,25 @@ function calculateKinetics(params: SimulationParams): SimulationOutput[] {
     { name: 'halfLife', value: halfLife, unit: 's' }
   )
 
-  return outputs
+  return {
+    outputs,
+    dataSources: [{ name: 'kinetics', source: 'analytical-arrhenius', isFallback: false }],
+  }
 }
 
-function calculateHeatTransfer(params: SimulationParams): SimulationOutput[] {
+async function calculateHeatTransfer(params: SimulationParams): Promise<{
+  outputs: SimulationOutput[]
+  dataSources: DataSourceInfo[]
+}> {
   const inputs = params.inputs
   const outputs: SimulationOutput[] = []
 
   // Heat transfer parameters
-  const surfaceArea = inputs.surfaceArea || 1 // m²
-  const heatTransferCoeff = inputs.heatTransferCoeff || 100 // W/(m²·K)
-  const temperatureDiff = inputs.temperatureDifference || 50 // K
-  const thermalConductivity = inputs.thermalConductivity || 50 // W/(m·K)
-  const thickness = inputs.thickness || 0.01 // m
+  const surfaceArea = getNum(inputs.surfaceArea, 1) // m2
+  const heatTransferCoeff = getNum(inputs.heatTransferCoeff, 100) // W/(m2·K)
+  const temperatureDiff = getNum(inputs.temperatureDifference, 50) // K
+  const thermalConductivity = getNum(inputs.thermalConductivity, 50) // W/(m·K)
+  const thickness = getNum(inputs.thickness, 0.01) // m
 
   // Convective heat transfer
   const convectiveHeat = heatTransferCoeff * surfaceArea * temperatureDiff
@@ -187,22 +201,28 @@ function calculateHeatTransfer(params: SimulationParams): SimulationOutput[] {
   outputs.push(
     { name: 'convectiveHeatRate', value: convectiveHeat, unit: 'W', uncertainty: convectiveHeat * 0.1 },
     { name: 'conductiveHeatRate', value: conductiveHeat, unit: 'W', uncertainty: conductiveHeat * 0.1 },
-    { name: 'overallHeatTransferCoeff', value: overallCoeff, unit: 'W/(m²·K)' }
+    { name: 'overallHeatTransferCoeff', value: overallCoeff, unit: 'W/(m2·K)' }
   )
 
-  return outputs
+  return {
+    outputs,
+    dataSources: [{ name: 'heatTransfer', source: 'analytical-fourier', isFallback: false }],
+  }
 }
 
-function calculateMassTransfer(params: SimulationParams): SimulationOutput[] {
+async function calculateMassTransfer(params: SimulationParams): Promise<{
+  outputs: SimulationOutput[]
+  dataSources: DataSourceInfo[]
+}> {
   const inputs = params.inputs
   const outputs: SimulationOutput[] = []
 
   // Mass transfer parameters
-  const concentration1 = inputs.concentration1 || 1 // mol/m³
-  const concentration2 = inputs.concentration2 || 0.1 // mol/m³
-  const diffusivity = inputs.diffusivity || 1e-9 // m²/s
-  const filmThickness = inputs.filmThickness || 0.001 // m
-  const surfaceArea = inputs.surfaceArea || 0.01 // m²
+  const concentration1 = getNum(inputs.concentration1, 1) // mol/m3
+  const concentration2 = getNum(inputs.concentration2, 0.1) // mol/m3
+  const diffusivity = getNum(inputs.diffusivity, 1e-9) // m2/s
+  const filmThickness = getNum(inputs.filmThickness, 0.001) // m
+  const surfaceArea = getNum(inputs.surfaceArea, 0.01) // m2
 
   // Mass transfer coefficient
   const massTransferCoeff = diffusivity / filmThickness
@@ -215,41 +235,56 @@ function calculateMassTransfer(params: SimulationParams): SimulationOutput[] {
 
   outputs.push(
     { name: 'massTransferCoeff', value: massTransferCoeff, unit: 'm/s' },
-    { name: 'molarFlux', value: molarFlux, unit: 'mol/(m²·s)' },
+    { name: 'molarFlux', value: molarFlux, unit: 'mol/(m2·s)' },
     { name: 'massTransferRate', value: massTransferRate, unit: 'mol/s', uncertainty: massTransferRate * 0.1 }
   )
 
-  return outputs
+  return {
+    outputs,
+    dataSources: [{ name: 'massTransfer', source: 'analytical-fick', isFallback: false }],
+  }
 }
 
-function calculateExergyAnalysis(outputs: SimulationOutput[], params: SimulationParams): ExergyAnalysis {
+async function calculateExergyAnalysis(
+  outputs: SimulationOutput[],
+  params: SimulationParams
+): Promise<{
+  exergy: ExergyAnalysis
+  dataSources: DataSourceInfo[]
+}> {
   // Find efficiency from outputs
   const efficiencyOutput = outputs.find(o =>
     o.name.toLowerCase().includes('efficiency') && !o.name.toLowerCase().includes('faradaic')
   )
   const efficiency = efficiencyOutput?.value || 0.7
 
+  // Technology is determined by simulation type (string params not currently supported)
+  const technology = 'default'
+
+  // Use the real exergy improvement calculator
+  const improvementResult = await calculateExergyImprovement(
+    technology,
+    efficiency,
+    'power-generation'
+  )
+
   // Calculate exergy destruction based on inputs
-  const heatInput = params.inputs.heatInput || params.inputs.powerInput || 1000
+  const heatInput = getNum(params.inputs.heatInput, getNum(params.inputs.powerInput, 1000))
   const exergyInput = heatInput * 0.9 // Approximate exergy of heat input
   const exergyDestruction = exergyInput * (1 - efficiency)
 
-  // Identify major losses
-  const majorLosses: string[] = []
-  if (efficiency < 0.5) majorLosses.push('High thermal irreversibilities')
-  if (params.inputs.currentDensity && params.inputs.currentDensity > 1) {
-    majorLosses.push('Ohmic losses at high current density')
-  }
-  if (params.inputs.temperature && params.inputs.temperature > 1000) {
-    majorLosses.push('Heat loss at high operating temperature')
-  }
-  if (majorLosses.length === 0) majorLosses.push('Inherent process inefficiencies')
-
   return {
-    efficiency,
-    exergyDestruction,
-    majorLosses,
-    improvementPotential: (1 - efficiency) * 0.3, // Assume 30% of losses are recoverable
+    exergy: {
+      efficiency,
+      exergyDestruction,
+      majorLosses: improvementResult.majorOpportunities,
+      improvementPotential: improvementResult.improvementPotential,
+    },
+    dataSources: [{
+      name: 'exergyImprovement',
+      source: improvementResult.source,
+      isFallback: improvementResult.isFallback,
+    }],
   }
 }
 
@@ -271,50 +306,72 @@ export class AnalyticalSimulationProvider implements SimulationProvider {
   async execute(params: SimulationParams): Promise<SimulationResult> {
     const startTime = Date.now()
 
+    // Track all data sources used
+    let allDataSources: DataSourceInfo[] = []
+
     // Select calculation based on type
-    let outputs: SimulationOutput[]
+    let result: { outputs: SimulationOutput[]; dataSources: DataSourceInfo[] }
 
     switch (params.type) {
       case 'thermodynamic':
-        outputs = calculateThermodynamic(params)
+        result = await calculateThermodynamic(params)
         break
       case 'electrochemical':
-        outputs = calculateElectrochemical(params)
+        result = await calculateElectrochemical(params)
         break
       case 'kinetics':
-        outputs = calculateKinetics(params)
+        result = await calculateKinetics(params)
         break
       case 'heat-transfer':
-        outputs = calculateHeatTransfer(params)
+        result = await calculateHeatTransfer(params)
         break
       case 'mass-transfer':
-        outputs = calculateMassTransfer(params)
+        result = await calculateMassTransfer(params)
         break
       default:
         // Default to thermodynamic for unknown types
-        outputs = calculateThermodynamic(params)
+        result = await calculateThermodynamic(params)
     }
 
-    // Calculate exergy analysis
-    const exergy = calculateExergyAnalysis(outputs, params)
+    allDataSources = [...allDataSources, ...result.dataSources]
 
-    // Simulate some computation time (50-200ms)
-    await new Promise(resolve => setTimeout(resolve, 50 + Math.random() * 150))
+    // Calculate exergy analysis
+    const exergyResult = await calculateExergyAnalysis(result.outputs, params)
+    allDataSources = [...allDataSources, ...exergyResult.dataSources]
+
+    // Simulate minimal computation time (for UX)
+    await new Promise(resolve => setTimeout(resolve, 50))
 
     const duration = Date.now() - startTime
+
+    // Check if any data source used fallback
+    const usingFallback = allDataSources.some(ds => ds.isFallback)
+
+    // Build data source summary
+    const dataSourceSummary = allDataSources.reduce((acc, ds) => {
+      acc[ds.name] = {
+        source: ds.source,
+        isFallback: ds.isFallback,
+      }
+      return acc
+    }, {} as Record<string, { source: string; isFallback: boolean }>)
 
     return {
       experimentId: params.experimentId,
       converged: true,
       iterations: 1,
-      outputs,
-      exergy,
+      outputs: result.outputs,
+      exergy: exergyResult.exergy,
       metadata: {
         provider: this.name,
         tier: this.tier,
         duration,
         cost: 0, // Free for analytical models
         timestamp: new Date().toISOString(),
+        dataSourceInfo: {
+          usingFallback,
+          sources: dataSourceSummary,
+        },
       },
     }
   }

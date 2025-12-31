@@ -125,6 +125,17 @@ export interface ExergyAnalysis {
   improvementPotential: number
 }
 
+/**
+ * Data source information for transparency
+ */
+export interface DataSourceInfo {
+  usingFallback: boolean
+  sources: Record<string, {
+    source: string
+    isFallback: boolean
+  }>
+}
+
 export interface SimulationResult {
   experimentId: string
   converged: boolean
@@ -139,6 +150,8 @@ export interface SimulationResult {
     duration: number
     cost?: number
     timestamp: string
+    /** Data source transparency - shows where values came from */
+    dataSourceInfo?: DataSourceInfo
   }
 }
 
