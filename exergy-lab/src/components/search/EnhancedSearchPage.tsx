@@ -183,7 +183,7 @@ export function EnhancedSearchPage({ domains = [] }: EnhancedSearchPageProps) {
           <div>
             <h1 className="text-xl font-bold text-foreground">Enhanced Search</h1>
             <p className="text-sm text-foreground-muted">
-              AI-powered search across 21+ scientific databases
+              AI-powered search across 15 scientific databases
             </p>
           </div>
         </div>
@@ -357,7 +357,7 @@ export function EnhancedSearchPage({ domains = [] }: EnhancedSearchPageProps) {
                 <Search className="h-8 w-8 text-primary" />
               </div>
               <h3 className="text-lg font-semibold text-foreground mb-2">
-                Search Across 21+ Sources
+                Search Across 15 Sources
               </h3>
               <p className="text-sm text-foreground-muted">
                 Enter a query to search academic papers, preprints, patents, datasets, and more.

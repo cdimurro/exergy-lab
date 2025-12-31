@@ -2,7 +2,7 @@
  * useSearch Hook (v0.0.6)
  *
  * Comprehensive search hook for the PowerSearchPage that leverages
- * all 22+ data sources through the DataSourceRegistry.
+ * all 15 data sources through the DataSourceRegistry.
  *
  * Features:
  * - Multi-source federation with parallel execution
@@ -76,28 +76,28 @@ export type ViewMode = 'list' | 'grid' | 'graph'
 // Constants
 // ============================================================================
 
+// 15 implemented data sources
 export const ALL_DATA_SOURCES: DataSourceName[] = [
-  // Academic
+  // Academic (6)
   'semantic-scholar',
   'openalex',
-  'arxiv',
   'pubmed',
   'crossref',
   'core',
   'ieee',
-  // Preprints
+  // Preprints (3)
+  'arxiv',
   'biorxiv',
   'chemrxiv',
-  'medrxiv',
-  // Patents
+  // Patents (2)
   'google-patents',
   'uspto',
-  'epo',
-  // Datasets
+  // Datasets (2)
   'nrel',
   'materials-project',
-  // Other
+  // AI/Consensus (1)
   'consensus',
+  // Web (1)
   'web-search',
 ]
 

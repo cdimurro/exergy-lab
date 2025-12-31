@@ -34,6 +34,7 @@ interface SourceGroup {
   }>
 }
 
+// Only include sources that have actual implementations
 const SOURCE_GROUPS: SourceGroup[] = [
   {
     type: 'academic-paper',
@@ -43,7 +44,7 @@ const SOURCE_GROUPS: SourceGroup[] = [
       { name: 'semantic-scholar', label: 'Semantic Scholar', description: '200M+ papers with citation analysis' },
       { name: 'openalex', label: 'OpenAlex', description: 'Open catalog of scholarly papers' },
       { name: 'pubmed', label: 'PubMed', description: 'Biomedical and life sciences' },
-      { name: 'ieee', label: 'IEEE Xplore', description: 'Engineering and technology' },
+      { name: 'ieee', label: 'IEEE Xplore', description: 'Engineering and technology (API key required)' },
       { name: 'crossref', label: 'Crossref', description: 'DOI registration and metadata' },
       { name: 'core', label: 'CORE', description: 'Open access research outputs' },
     ],
@@ -56,7 +57,6 @@ const SOURCE_GROUPS: SourceGroup[] = [
       { name: 'arxiv', label: 'arXiv', description: 'Physics, math, CS preprints' },
       { name: 'chemrxiv', label: 'ChemRxiv', description: 'Chemistry preprints' },
       { name: 'biorxiv', label: 'bioRxiv', description: 'Biology preprints' },
-      { name: 'medrxiv', label: 'medRxiv', description: 'Medical preprints' },
     ],
   },
   {
@@ -64,9 +64,8 @@ const SOURCE_GROUPS: SourceGroup[] = [
     label: 'Patents',
     icon: <Scale className="h-4 w-4" />,
     sources: [
-      { name: 'google-patents', label: 'Google Patents', description: 'Global patent search' },
+      { name: 'google-patents', label: 'Google Patents', description: 'Global patent search (API key required)' },
       { name: 'uspto', label: 'USPTO', description: 'US Patent and Trademark Office' },
-      { name: 'epo', label: 'EPO', description: 'European Patent Office' },
     ],
   },
   {
@@ -75,10 +74,7 @@ const SOURCE_GROUPS: SourceGroup[] = [
     icon: <Database className="h-4 w-4" />,
     sources: [
       { name: 'nrel', label: 'NREL', description: 'National Renewable Energy Lab' },
-      { name: 'iea', label: 'IEA', description: 'International Energy Agency' },
-      { name: 'eia', label: 'EIA', description: 'US Energy Information Admin' },
-      { name: 'materials-project', label: 'Materials Project', description: 'Materials science database' },
-      { name: 'zenodo', label: 'Zenodo', description: 'Open research datasets' },
+      { name: 'materials-project', label: 'Materials Project', description: 'Materials science database (API key required)' },
     ],
   },
   {
@@ -86,8 +82,7 @@ const SOURCE_GROUPS: SourceGroup[] = [
     label: 'Consensus & AI',
     icon: <FlaskConical className="h-4 w-4" />,
     sources: [
-      { name: 'consensus', label: 'Consensus', description: 'AI-powered scientific consensus' },
-      { name: 'inspire', label: 'INSPIRE HEP', description: 'High energy physics' },
+      { name: 'consensus', label: 'Consensus', description: 'AI-powered scientific consensus (API key required)' },
     ],
   },
   {
@@ -95,8 +90,7 @@ const SOURCE_GROUPS: SourceGroup[] = [
     label: 'News & Web',
     icon: <Globe className="h-4 w-4" />,
     sources: [
-      { name: 'newsapi', label: 'News API', description: 'Recent news articles' },
-      { name: 'web-search', label: 'Web Search', description: 'General web results' },
+      { name: 'web-search', label: 'Web Search', description: 'Energy-focused web results (API key required)' },
     ],
   },
 ]

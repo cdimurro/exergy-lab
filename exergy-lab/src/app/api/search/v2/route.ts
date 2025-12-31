@@ -4,7 +4,7 @@
  * POST /api/search/v2
  *
  * Multi-source scientific search with:
- * - All 21+ data sources searched by default
+ * - All 15 data sources searched by default
  * - AI-powered query expansion and relevance explanations
  * - Cross-reference detection across sources
  * - Source health monitoring and graceful degradation
@@ -429,7 +429,7 @@ export async function GET(): Promise<NextResponse> {
       description: 'Enhanced Search API v2',
       version: '2.0.0',
       features: [
-        'Multi-source parallel search (21+ sources)',
+        'Multi-source parallel search (15 sources)',
         'AI-powered query expansion',
         'Relevance explanations for top results',
         'Cross-reference detection across sources',

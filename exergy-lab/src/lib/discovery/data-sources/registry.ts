@@ -520,6 +520,7 @@ export async function initializeDataSourceRegistry(): Promise<DataSourceRegistry
     // Domain-specific data sources
     safeRegister(() => import('../sources/nrel'), 'nrel'),
     safeRegister(() => import('../sources/consensus'), 'consensus'),
+    safeRegister(() => import('../sources/materials-project'), 'materials-project'),
 
     // Patents
     safeRegister(() => import('../sources/google-patents'), 'google-patents'),
