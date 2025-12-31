@@ -5,326 +5,284 @@
 <h1 align="center">Exergy Lab</h1>
 
 <p align="center">
-  <strong>The AI-Powered Research Platform for Clean Energy Innovation</strong>
+  <strong>The Integrated Research Platform for Clean Energy Discovery</strong>
 </p>
 
 <p align="center">
-  <em>Accelerate discoveries. Validate technologies. Publish findings.</em>
-</p>
-
-<p align="center">
-  <a href="https://exergy-lab.vercel.app"><img src="https://img.shields.io/badge/Live%20Demo-exergy--lab.vercel.app-blue?style=flat-square" alt="Live Demo" /></a>
+  <a href="https://exergy-lab.vercel.app"><img src="https://img.shields.io/badge/Live%20Platform-exergy--lab.vercel.app-0066CC?style=flat-square" alt="Live Platform" /></a>
   <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License" />
-  <img src="https://img.shields.io/badge/Next.js-14+-black?style=flat-square" alt="Next.js" />
-  <img src="https://img.shields.io/badge/TypeScript-5.0+-blue?style=flat-square" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/Data%20Sources-15+-purple?style=flat-square" alt="Data Sources" />
+  <img src="https://img.shields.io/badge/Simulation%20Tiers-3-orange?style=flat-square" alt="Simulation Tiers" />
 </p>
 
 ---
 
-## The Problem
+## What is Exergy Lab
 
-Clean energy researchers waste **40% of their time** on literature reviews, data gathering, and report generation. Investment teams spend weeks validating technical claims that could be assessed in hours. The gap between breakthrough research and commercial deployment grows wider every year.
+Exergy Lab unifies the entire clean energy research workflow into a single intelligent platform. From initial literature discovery through simulation, analysis, and publication-ready reporting, researchers operate within one environment that understands context, maintains state, and accelerates every phase of scientific investigation.
 
-## The Solution
-
-**Exergy Lab** is an integrated research environment that combines AI-powered literature discovery, physics-based simulation, and automated report generation into a single platform. We help researchers move from hypothesis to publication faster, and help investors separate genuine innovation from hype.
+The platform integrates **15 academic data sources**, **physics-based simulation engines**, **AI-powered synthesis**, and **automated report generation** into a cohesive system where each capability enhances the others. Search results inform simulations. Simulations validate hypotheses. Validated hypotheses generate experiments. The research cycle that traditionally spans weeks compresses into hours.
 
 ---
 
-## Who Uses Exergy Lab
+## Platform Capabilities
 
-### Researchers & Scientists
+### Federated Academic Intelligence
 
-- **Literature Discovery**: Search 15+ academic databases simultaneously with AI-synthesized summaries
-- **Experiment Design**: Generate laboratory protocols with safety analysis and resource estimation
-- **Simulation**: Run physics-based models from quick estimates to GPU-accelerated Monte Carlo
-- **Publication Support**: Export professional reports, figures, and data for journal submission
+Exergy Lab queries 15 data sources simultaneously and synthesizes results using large language models trained on scientific literature:
 
-### Engineers & Technical Teams
-
-- **Techno-Economic Analysis**: Comprehensive NPV, IRR, LCOE calculations with sensitivity analysis
-- **Technology Comparison**: Side-by-side evaluation of competing approaches with real data
-- **Design Optimization**: Parameter sweeps and multi-objective optimization
-- **Documentation**: Auto-generated technical reports for stakeholders
-
-### Investors & Venture Capital
-
-- **Due Diligence**: Validate technical claims against peer-reviewed literature in minutes
-- **Technology Assessment**: Physics-based models reveal realistic performance expectations
-- **Market Intelligence**: Cross-reference patents, papers, and datasets to map competitive landscapes
-- **Risk Analysis**: Identify technical risks and failure modes before committing capital
-
----
-
-## Core Capabilities
-
-### AI-Powered Academic Search
-
-Query 15 data sources simultaneously and receive synthesized insights:
-
-| Category | Sources |
-|----------|---------|
+| Category | Integrated Sources |
+|----------|-------------------|
 | **Academic Databases** | Semantic Scholar, OpenAlex, PubMed, IEEE Xplore, Crossref, CORE |
-| **Preprint Servers** | arXiv, ChemRxiv, bioRxiv |
-| **Patent Databases** | Google Patents, USPTO PatentsView |
+| **Preprint Archives** | arXiv, ChemRxiv, bioRxiv |
+| **Patent Systems** | Google Patents, USPTO PatentsView |
 | **Research Data** | NREL, Materials Project |
 | **Specialized** | Consensus, Web Search |
 
-**Features:**
-- AI-generated research summaries with inline citations
-- Follow-up question chat powered by Gemini
-- In-app paper viewer with PDF access
-- Smart caching for instant repeated searches
-- Cross-reference detection across sources
+The AI synthesis layer doesn't just aggregate results. It identifies connections across sources, highlights contradictions in the literature, surfaces relevant patents alongside papers, and generates follow-up research questions. Every citation links to an in-app viewer where researchers can read papers, ask questions about content, and extract data without leaving the platform.
 
-### 3-Tier Simulation Engine
+**Technical Implementation:**
+- Parallel API queries with intelligent rate limiting
+- Cross-reference detection identifies the same work across multiple databases
+- 10-minute smart caching eliminates redundant requests
+- Automatic retry with exponential backoff handles transient failures
+- Structured logging enables performance monitoring and debugging
 
-Progressive fidelity modeling for different use cases:
+### Progressive Fidelity Simulation
 
-| Tier | Method | Time | Accuracy | Cost |
-|------|--------|------|----------|------|
-| **Analytical** | Closed-form physics | ~10 seconds | +/- 20% | Free |
-| **Browser AI** | ML-enhanced models | ~2 minutes | +/- 10% | Free |
-| **Cloud GPU** | Monte Carlo simulation | ~5 minutes | +/- 2% | $0.50-2.00 |
+The simulation engine operates across three tiers, allowing researchers to match computational investment to their current needs:
 
-**Supported Technologies:**
-- Solar PV (crystalline, thin-film, perovskite, tandem)
-- Wind (onshore, offshore, floating)
-- Energy Storage (Li-ion, flow batteries, thermal)
-- Hydrogen (electrolysis, fuel cells, storage)
-- Carbon Capture (DAC, point-source, mineralization)
-- Geothermal, Biomass, Nuclear
+| Tier | Methodology | Response Time | Uncertainty | Compute Cost |
+|------|-------------|---------------|-------------|--------------|
+| **Analytical** | Closed-form thermodynamic equations | ~10 seconds | +/- 20% | Free |
+| **Browser** | ML-enhanced physics models | ~2 minutes | +/- 10% | Free |
+| **Cloud GPU** | Monte Carlo with uncertainty quantification | ~5 minutes | +/- 2% | $0.50-2.00 |
 
-### Techno-Economic Analysis
+Researchers typically begin with Tier 1 for rapid exploration, narrow to promising configurations with Tier 2, then validate final designs with Tier 3's publication-grade accuracy. The system maintains parameter consistency across tiers, so transitioning between fidelity levels requires no reconfiguration.
 
-Generate investor-ready financial analysis:
+**Supported Technology Classes:**
+- **Solar**: Crystalline silicon, thin-film (CdTe, CIGS), perovskite, tandem architectures
+- **Wind**: Onshore, offshore fixed, floating offshore
+- **Storage**: Lithium-ion chemistries, flow batteries, thermal storage, compressed air
+- **Hydrogen**: PEM/alkaline/solid oxide electrolysis, fuel cells, storage systems
+- **Carbon**: Direct air capture, point-source capture, mineralization, utilization
+- **Other**: Geothermal, biomass conversion, advanced nuclear
 
-- **Input Methods**: Manual entry, file upload (PDF/Excel/CSV), or AI parameter extraction
-- **Financial Metrics**: NPV, IRR, payback period, LCOE/LCOH, capacity factor
-- **Analysis Types**: Sensitivity analysis, tornado charts, Monte Carlo uncertainty
-- **Exergy Analysis**: True thermodynamic efficiency beyond simple energy ratios
-- **Output**: Professional PDF reports with executive summary
+### Techno-Economic Analysis Engine
+
+The TEA module generates investor-grade financial analysis from technical parameters:
+
+**Input Flexibility:**
+- Manual parameter entry with guided forms
+- File upload (PDF, Excel, CSV) with AI-powered extraction
+- Direct import from simulation results
+- Template library for common technology configurations
+
+**Financial Modeling:**
+- Net Present Value (NPV) with configurable discount rates
+- Internal Rate of Return (IRR) calculation
+- Levelized Cost of Energy/Hydrogen (LCOE/LCOH)
+- Payback period under multiple scenarios
+- Capacity factor sensitivity
+
+**Advanced Analysis:**
+- Tornado charts identifying key cost drivers
+- Monte Carlo uncertainty propagation
+- Exergy efficiency analysis (thermodynamic second-law metrics)
+- Comparison against industry benchmarks
+
+**Output:**
+- Executive summary for stakeholder communication
+- Detailed methodology documentation
+- Publication-ready figures and tables
+- Professional PDF reports
 
 ### AI Experiment Designer
 
-Generate complete laboratory protocols from research questions:
+Given a research hypothesis, the experiment designer generates complete laboratory protocols:
 
-- Hypothesis-driven experimental design
-- Materials and equipment specifications
-- Step-by-step procedures with safety considerations
-- Failure mode analysis with risk scoring
-- Data collection and analysis plans
-- Cost and timeline estimation
+- **Materials Specification**: Chemicals, equipment, quantities with supplier references
+- **Procedure Generation**: Step-by-step instructions with timing and conditions
+- **Safety Analysis**: Hazard identification, required PPE, emergency procedures
+- **Failure Mode Analysis**: Potential issues ranked by likelihood and impact
+- **Data Collection Plan**: Measurements, frequencies, statistical requirements
+- **Resource Estimation**: Cost projections, timeline, personnel requirements
+
+The generated protocols incorporate domain knowledge from the literature search, ensuring experimental designs reflect current best practices and avoid known failure modes.
 
 ### Discovery Engine
 
-AI-powered cross-domain innovation synthesis:
+The discovery engine identifies unexplored research opportunities by analyzing patterns across the federated data sources:
 
-- Identify unexplored research intersections
-- Generate novel hypotheses from existing literature
-- Validate ideas against patent and paper databases
-- Automatically generate experiments to test discoveries
+- **Gap Analysis**: Identifies research questions with sparse literature coverage
+- **Cross-Domain Synthesis**: Finds techniques from adjacent fields applicable to target problems
+- **Trend Detection**: Surfaces emerging research directions from recent publications
+- **Hypothesis Generation**: Proposes novel research directions with supporting evidence
+- **Experiment Synthesis**: Automatically generates protocols to test discovered hypotheses
+
+Each discovery includes confidence scoring, supporting citations, and one-click experiment generation.
 
 ---
 
-## Platform Architecture
+## Architecture
 
 ```
 exergy-lab/
 ├── src/
-│   ├── app/                    # Next.js App Router
-│   │   ├── api/                # API endpoints (40+ routes)
-│   │   └── (dashboard)/        # Feature pages
-│   ├── components/             # React components
-│   │   ├── ui/                 # Design system (20+ components)
-│   │   ├── search/             # Academic search interface
-│   │   ├── simulations/        # Simulation controls
-│   │   ├── tea/                # TEA report builder
-│   │   └── experiments/        # Experiment designer
-│   ├── lib/                    # Core utilities
-│   │   ├── ai/                 # AI agent orchestration
-│   │   ├── simulation-engine/  # Physics models
-│   │   └── store/              # State management
-│   └── types/                  # TypeScript definitions
-├── modal-simulations/          # GPU compute service
-└── docs/                       # Documentation
+│   ├── app/                      # Next.js 14 App Router
+│   │   ├── api/                  # 40+ API endpoints
+│   │   │   ├── search/           # Federated search orchestration
+│   │   │   ├── simulation/       # Physics engine interfaces
+│   │   │   ├── tea/              # Financial modeling
+│   │   │   └── discovery/        # AI synthesis pipelines
+│   │   └── (dashboard)/          # Application pages
+│   ├── components/
+│   │   ├── ui/                   # Design system (20+ components)
+│   │   ├── search/               # Paper viewer, chat, results
+│   │   ├── simulations/          # Parameter controls, visualizations
+│   │   ├── tea/                  # Report builder interface
+│   │   └── experiments/          # Protocol designer
+│   ├── lib/
+│   │   ├── ai/                   # LLM orchestration, prompt engineering
+│   │   ├── simulation-engine/    # Physics models, uncertainty quantification
+│   │   ├── paper-content/        # PDF parsing, content extraction
+│   │   └── store/                # Zustand state management
+│   └── types/                    # TypeScript definitions
+├── modal-simulations/            # GPU compute service (Modal Labs)
+└── docs/                         # Technical documentation
 ```
+
+**Technology Foundation:**
+- **Runtime**: Next.js 14+ with App Router, React Server Components
+- **Language**: TypeScript with strict mode, comprehensive type coverage
+- **Styling**: Tailwind CSS with custom design system
+- **State**: Zustand with localStorage persistence
+- **AI**: Google Gemini (primary), OpenAI GPT-4 (fallback)
+- **Compute**: Modal Labs for GPU workloads, Vercel for serverless
+- **Data**: 15 federated APIs with unified query interface
 
 ---
 
-## Quick Start
+## Getting Started
 
-### Prerequisites
+### Requirements
 
 - Node.js 20.x or higher
-- Google AI API key ([Get one here](https://makersuite.google.com/app/apikey))
+- Google AI API key ([obtain here](https://makersuite.google.com/app/apikey))
 
 ### Installation
 
 ```bash
-# Clone the repository
 git clone https://github.com/cdimurro/exergy-lab.git
 cd exergy-lab/exergy-lab
-
-# Install dependencies
 npm install
-
-# Configure environment
 cp .env.example .env.local
-# Add your GOOGLE_AI_API_KEY to .env.local
-
-# Start development server
+# Add GOOGLE_AI_API_KEY to .env.local
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000)
+Access the platform at [http://localhost:3000](http://localhost:3000)
 
-### Environment Variables
+### Configuration
 
 ```bash
 # Required
 GOOGLE_AI_API_KEY=your_gemini_key
 
-# Recommended (enables more data sources)
+# Recommended (expands data source coverage)
 SEMANTIC_SCHOLAR_API_KEY=your_key
 IEEE_API_KEY=your_key
 
-# Optional (enhanced features)
-OPENAI_API_KEY=your_key
-MODAL_API_KEY=your_key      # GPU simulations
+# Optional (enables additional capabilities)
+OPENAI_API_KEY=your_key          # Fallback LLM
+MODAL_API_KEY=your_key           # GPU simulations
+MODAL_ENDPOINT=your_endpoint     # Custom compute endpoint
 ```
 
 ---
 
 ## Use Cases
 
-### For Researchers: Accelerate Your Next Publication
+### Research Acceleration
 
-1. **Literature Review** (10 minutes vs. 10 hours)
-   - Search across 15 databases simultaneously
-   - Get AI-synthesized summaries with citations
-   - Export bibliography in any format
+Literature reviews that traditionally consume days complete in minutes. The federated search queries all 15 sources simultaneously, the AI synthesizes findings with inline citations, and the in-app viewer enables immediate deep dives into relevant papers. Researchers maintain flow state instead of context-switching between tools.
 
-2. **Experimental Design** (1 hour vs. 1 week)
-   - Generate protocols from research questions
-   - Identify potential failure modes
-   - Estimate costs and timelines
+### Technology Validation
 
-3. **Simulation & Validation** (minutes vs. days)
-   - Run physics-based models on your designs
-   - Compare against published benchmarks
-   - Generate publication-ready figures
+Before committing resources to experimental work, researchers validate concepts through progressive simulation. Tier 1 analytical models eliminate obviously non-viable approaches in seconds. Promising configurations advance to Tier 2 for refined estimates. Final candidates receive Tier 3 Monte Carlo treatment with full uncertainty quantification.
 
-### For Engineers: Design Better Systems
+### Investment Due Diligence
 
-1. **Technology Selection**
-   - Compare technologies with consistent methodology
-   - Understand trade-offs with sensitivity analysis
-   - Access real performance data from NREL and Materials Project
+Technical claims from startups and research proposals can be validated against peer-reviewed literature and independent simulation in hours rather than weeks. The platform reveals whether claimed performance metrics align with published benchmarks and physics-based expectations.
 
-2. **Optimization**
-   - Run parameter sweeps to find optimal configurations
-   - Multi-objective optimization (cost vs. efficiency vs. reliability)
-   - Export results for further analysis
+### Competitive Intelligence
 
-3. **Documentation**
-   - Generate technical reports automatically
-   - Include all assumptions and calculations
-   - Professional formatting for stakeholders
-
-### For Investors: Make Informed Decisions
-
-1. **Technical Due Diligence** (hours vs. weeks)
-   - Validate claims against peer-reviewed literature
-   - Check patent landscapes for IP risks
-   - Identify key technical risks
-
-2. **Technology Assessment**
-   - Run independent simulations on proposed technologies
-   - Compare against industry benchmarks
-   - Understand realistic performance expectations
-
-3. **Market Intelligence**
-   - Map competitive landscapes
-   - Track research trends and emerging technologies
-   - Identify potential acquisition targets
-
----
-
-## Technology Stack
-
-| Layer | Technology |
-|-------|------------|
-| **Frontend** | Next.js 14+, React, TypeScript, Tailwind CSS |
-| **State** | Zustand with persistence |
-| **AI** | Google Gemini (primary), OpenAI (fallback) |
-| **Compute** | Modal Labs (GPU), Vercel (serverless) |
-| **Data** | 15 academic APIs, federated search |
+Patent searches run alongside academic literature queries, revealing the IP landscape around any technology area. Cross-reference detection identifies which academic groups have filed patents, which patents cite which papers, and where white space exists for novel claims.
 
 ---
 
 ## Roadmap
 
-### Now Available (v1.0)
-- 15-source academic search with AI synthesis
-- 3-tier simulation engine
+### Current Release (v1.0)
+- 15-source federated academic search
+- AI-powered synthesis with citation tracking
+- 3-tier progressive fidelity simulation
 - TEA report generator with exergy analysis
-- AI experiment designer
-- Discovery engine
-- In-app paper viewer with chat
+- AI experiment designer with safety analysis
+- Cross-domain discovery engine
+- In-app paper viewer with conversational interface
 
-### Coming Soon (v1.1)
-- User authentication and saved projects
+### Next Release (v1.1)
+- User authentication with project persistence
 - Enhanced PDF parsing and figure extraction
-- Collaborative workspaces
-- API access for programmatic use
+- Collaborative workspaces for research teams
+- API access for programmatic integration
 
-### Future (v2.0+)
-- Database integration for persistent storage
-- Real-time collaboration
-- Jupyter notebook integration
-- Python SDK for automation
-- Enterprise features (SSO, audit logs)
+### Future Development (v2.0+)
+- PostgreSQL backend for enterprise deployment
+- Real-time collaboration with presence indicators
+- Jupyter notebook bidirectional integration
+- Python SDK for workflow automation
+- Enterprise SSO and audit logging
 
 ---
 
 ## Documentation
 
-| Document | Description |
+| Resource | Description |
 |----------|-------------|
-| [SOURCE_AUDIT.md](SOURCE_AUDIT.md) | Data source configuration and API keys |
-| [CLAUDE.md](CLAUDE.md) | Development workflow |
-| [MODAL_SETUP.md](MODAL_SETUP.md) | GPU simulation setup |
-| [docs/USER_GUIDE.md](docs/USER_GUIDE.md) | Feature documentation |
-| [docs/API_REFERENCE.md](docs/API_REFERENCE.md) | API documentation |
+| [SOURCE_AUDIT.md](SOURCE_AUDIT.md) | Data source configuration, API keys, rate limits |
+| [MODAL_SETUP.md](MODAL_SETUP.md) | GPU simulation infrastructure setup |
+| [docs/USER_GUIDE.md](docs/USER_GUIDE.md) | Feature documentation and tutorials |
+| [docs/API_REFERENCE.md](docs/API_REFERENCE.md) | API endpoint specifications |
+| [docs/DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md) | Contributing guidelines |
 
 ---
 
 ## Contributing
 
-We welcome contributions from researchers, engineers, and developers. See [docs/DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md) for setup instructions.
+Contributions welcome across all areas:
 
-**Priority Areas:**
-- Additional simulation models
-- New data source integrations
-- UI/UX improvements
-- Documentation and tutorials
+- **Simulation Models**: Additional technology types, improved physics fidelity
+- **Data Sources**: New academic API integrations
+- **AI Capabilities**: Enhanced synthesis, better extraction
+- **Documentation**: Tutorials, examples, translations
+
+See [DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md) for development setup.
 
 ---
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
+MIT License - see [LICENSE](LICENSE)
 
 ---
 
 ## Citation
 
-If Exergy Lab contributes to your research, please cite:
-
 ```bibtex
 @software{exergy_lab_2024,
-  title = {Exergy Lab: AI-Powered Clean Energy Research Platform},
+  title = {Exergy Lab: Integrated Research Platform for Clean Energy Discovery},
   author = {DiMurro, Chris},
   year = {2024},
   url = {https://github.com/cdimurro/exergy-lab}
@@ -334,9 +292,5 @@ If Exergy Lab contributes to your research, please cite:
 ---
 
 <p align="center">
-  <strong>Built for researchers who want to spend less time searching and more time discovering.</strong>
-</p>
-
-<p align="center">
-  <a href="https://exergy-lab.vercel.app">Try Exergy Lab</a>
+  <a href="https://exergy-lab.vercel.app"><strong>exergy-lab.vercel.app</strong></a>
 </p>
