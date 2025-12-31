@@ -228,7 +228,7 @@ export function EnhancedSearchPage({ domains = [] }: EnhancedSearchPageProps) {
           <div>
             <h1 className="text-xl font-bold text-foreground">Enhanced Search</h1>
             <p className="text-sm text-foreground-muted">
-              AI-powered search across 15 scientific databases
+              AI-powered search across {ALL_SOURCES.length} scientific databases
             </p>
           </div>
         </div>
