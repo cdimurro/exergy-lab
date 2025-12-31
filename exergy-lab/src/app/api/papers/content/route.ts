@@ -36,7 +36,7 @@ const RequestSchema = z.object({
       citationCount: z.number().optional().nullable(),
       verificationStatus: z.string().optional().nullable(),
       accessType: z.string().optional().nullable(),
-    }).passthrough(),
+    }),
   }),
   options: z.object({
     parsePdf: z.boolean().optional(),

@@ -12,7 +12,7 @@ import {
   ChevronUp,
   SlidersHorizontal,
 } from 'lucide-react'
-import { Card, Button, Badge, Input } from '@/components/ui'
+import { Card, Button, Badge, Input, ErrorBoundary } from '@/components/ui'
 import { SourceSelector, ALL_SOURCES } from './SourceSelector'
 import { SourceComparisonPanel, SOURCE_DISPLAY_NAMES } from './SourceComparisonPanel'
 import { AIRelevanceExplanation } from './AIRelevanceExplanation'
@@ -22,6 +22,9 @@ import { PaperCard } from './paper-card'
 import { PaperViewerPanel } from './PaperViewerPanel'
 import { SearchChatPanel } from './SearchChatPanel'
 import { useSearchUIStore } from '@/lib/store/search-ui-store'
+import { searchCache } from '@/lib/search-cache'
+import { logger, PerformanceMonitor } from '@/lib/logger'
+import { withRetry, RETRY_PRESETS } from '@/lib/retry'
 import type { DataSourceName, Source } from '@/types/sources'
 import type { Domain } from '@/types/discovery'
 
@@ -95,6 +98,8 @@ export function EnhancedSearchPage({ domains = [] }: EnhancedSearchPageProps) {
   const [showSourceComparison, setShowSourceComparison] = React.useState(false)
   const [viewMode, setViewMode] = React.useState<'list' | 'grid'>('list')
   const [sourceFilter, setSourceFilter] = React.useState<DataSourceName | null>(null)
+  const [currentPage, setCurrentPage] = React.useState(1)
+  const resultsPerPage = 20
 
   // Search UI store for paper viewer and chat
   const {
@@ -121,22 +126,52 @@ export function EnhancedSearchPage({ domains = [] }: EnhancedSearchPageProps) {
     setError(null)
     setSearchResponse(null)
 
+    const perf = new PerformanceMonitor('Search operation')
+
     try {
-      const response = await fetch('/api/search/v2', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      logger.info('search', 'Starting search', { query, sourceCount: selectedSources.length })
+
+      // Build search params for caching
+      const searchParams = {
+        query,
+        domains: selectedDomains.length > 0 ? selectedDomains : undefined,
+        sources: selectedSources.length < ALL_SOURCES.length ? selectedSources : undefined,
+        dateRange,
+        minCitations,
+        openAccessOnly,
+        peerReviewedOnly,
+        includeAIEnhancements,
+      }
+
+      // Check cache first
+      const cachedResult = searchCache.get<EnhancedSearchResponse>(searchParams)
+      if (cachedResult) {
+        logger.info('search', 'Cache hit', {
           query,
-          domains: selectedDomains.length > 0 ? selectedDomains : undefined,
-          sources: selectedSources.length < ALL_SOURCES.length ? selectedSources : undefined,
-          dateRange,
-          minCitations,
-          openAccessOnly,
-          peerReviewedOnly,
-          includeAIEnhancements,
-          limit: 50,
-        }),
-      })
+          resultCount: cachedResult.results?.length,
+        })
+        setSearchResponse(cachedResult)
+        setShowSourceComparison(true)
+        setIsSearching(false)
+        perf.end()
+        return
+      }
+
+      logger.info('search', 'Cache miss, fetching from API', { query })
+
+      // Fetch with retry logic for resilience
+      const response = await withRetry(
+        () =>
+          fetch('/api/search/v2', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              ...searchParams,
+              limit: 50,
+            }),
+          }),
+        RETRY_PRESETS.standard
+      )
 
       const data = await response.json()
 
@@ -144,10 +179,23 @@ export function EnhancedSearchPage({ domains = [] }: EnhancedSearchPageProps) {
         throw new Error(data.error || 'Search failed')
       }
 
+      // Cache the result
+      searchCache.set(searchParams, data)
+
+      logger.info('search', 'Search completed successfully', {
+        query,
+        resultCount: data.results?.length,
+        sourcesQueried: data.searchMeta?.sourcesQueried,
+        totalTime: data.searchMeta?.totalTime,
+      })
+
       setSearchResponse(data)
       setShowSourceComparison(true)
+      perf.end()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Search failed')
+      const errorMsg = err instanceof Error ? err.message : 'Search failed'
+      logger.error('search', 'Search failed', { query, error: errorMsg })
+      setError(errorMsg)
     } finally {
       setIsSearching(false)
     }
@@ -166,11 +214,25 @@ export function EnhancedSearchPage({ domains = [] }: EnhancedSearchPageProps) {
     return searchResponse.results.filter(r => r.metadata.source === sourceFilter)
   }, [searchResponse?.results, sourceFilter])
 
+  // Paginate filtered results
+  const paginatedResults = React.useMemo(() => {
+    const start = (currentPage - 1) * resultsPerPage
+    const end = start + resultsPerPage
+    return filteredResults.slice(start, end)
+  }, [filteredResults, currentPage])
+
+  const totalPages = Math.ceil(filteredResults.length / resultsPerPage)
+
   // Find cross-references for a result
   const getCrossRefsForResult = (resultId: string) => {
     if (!searchResponse?.crossReferences) return []
     return searchResponse.crossReferences.filter(cr => cr.primaryId === resultId)
   }
+
+  // Reset pagination when filters change
+  React.useEffect(() => {
+    setCurrentPage(1)
+  }, [sourceFilter, searchResponse?.results])
 
   // Update search context when results change
   React.useEffect(() => {
@@ -184,36 +246,59 @@ export function EnhancedSearchPage({ domains = [] }: EnhancedSearchPageProps) {
     // Find the full Source object from results
     const fullPaper = searchResponse?.results.find(r => r.id === citedPaper.id)
     if (fullPaper) {
+      logger.info('search', 'Opening paper from citation', {
+        paperId: citedPaper.id,
+        source: fullPaper.metadata.source,
+      })
       openPaperViewer(fullPaper)
     }
   }
 
   // Handle follow-up question click - open chat panel
   const handleQuestionClick = (question: string) => {
+    logger.info('search', 'Starting chat with follow-up question', {
+      query,
+      question: question.substring(0, 50) + '...',
+    })
     openChat(question)
   }
 
   // Handle paper card click - open paper viewer
   const handlePaperClick = (paper: Source) => {
+    logger.info('search', 'Opening paper from results', {
+      paperId: paper.id,
+      source: paper.metadata.source,
+      title: paper.title.substring(0, 50) + '...',
+    })
     openPaperViewer(paper)
   }
 
   // If viewing a paper or chat, show that panel instead of results
   if (activeView === 'paper' && selectedPaper) {
     return (
-      <PaperViewerPanel
-        paper={selectedPaper}
-        onBack={closePaperViewer}
-      />
+      <ErrorBoundary onError={(error) => {
+        console.error('Paper viewer error:', error)
+        closePaperViewer()
+      }}>
+        <PaperViewerPanel
+          paper={selectedPaper}
+          onBack={closePaperViewer}
+        />
+      </ErrorBoundary>
     )
   }
 
   if (activeView === 'chat') {
     return (
-      <SearchChatPanel
-        query={query}
-        onBack={closeChat}
-      />
+      <ErrorBoundary onError={(error) => {
+        console.error('Chat error:', error)
+        closeChat()
+      }}>
+        <SearchChatPanel
+          query={query}
+          onBack={closeChat}
+        />
+      </ErrorBoundary>
     )
   }
 
@@ -528,7 +613,7 @@ export function EnhancedSearchPage({ domains = [] }: EnhancedSearchPageProps) {
                   : 'space-y-4'
               }
             >
-              {filteredResults.map((result) => {
+              {paginatedResults.map((result) => {
                 const crossRefs = getCrossRefsForResult(result.id)
                 const relevance = searchResponse.aiEnhancements?.relevanceExplanations[result.id]
 
@@ -561,6 +646,43 @@ export function EnhancedSearchPage({ domains = [] }: EnhancedSearchPageProps) {
                 )
               })}
             </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && filteredResults.length > 0 && (
+              <div className="flex items-center justify-center gap-2 mt-8 pt-6 border-t border-border">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`h-9 w-9 rounded-md text-sm font-medium transition-colors ${
+                        currentPage === page
+                          ? 'bg-primary text-primary-foreground'
+                          : 'hover:bg-background-surface'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </Button>
+              </div>
+            )}
 
             {/* No Results After Filter */}
             {filteredResults.length === 0 && (
