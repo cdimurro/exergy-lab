@@ -188,8 +188,16 @@ export function SourceComparisonPanel({
                 {failedSources.length} source{failedSources.length > 1 ? 's' : ''} unavailable
               </div>
               <div className="text-xs text-amber-700 mt-1">
-                {failedSources.slice(0, 3).map(s => SOURCE_DISPLAY_NAMES[s.name]).join(', ')}
-                {failedSources.length > 3 && ` and ${failedSources.length - 3} more`}
+                {failedSources.map((s, idx) => (
+                  <div key={s.name} className="mt-1 first:mt-0">
+                    <span className="font-medium">{SOURCE_DISPLAY_NAMES[s.name]}</span>
+                    {s.error && (
+                      <span className="block text-amber-600 ml-2">
+                        Error: {s.error}
+                      </span>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           </div>
