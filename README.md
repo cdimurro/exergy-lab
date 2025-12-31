@@ -7,13 +7,13 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue)](https://www.typescriptlang.org/)
 [![Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black)](https://vercel.com)
 
-**Live Demo:** [your-app.vercel.app](https://your-app.vercel.app)
+**Live Demo:** [your-app.vercel.app](https://exergy-lab.vercel.app)
 
 ---
 
 ## Overview
 
-Exergy Lab is a comprehensive platform that combines AI, real-time data, and computational modeling to accelerate clean energy innovation. From literature discovery to techno-economic analysis, we provide researchers and engineers with powerful tools to design, test, and commercialize clean energy solutions.
+Exergy Lab is a comprehensive platform that combines AI, real-time data, and computational modeling to accelerate clean energy innovation. From literature discovery to techno-economic analysis, we provide researchers and engineers with powerful tools to design, test, and implement clean energy solutions.
 
 ### Key Features
 
