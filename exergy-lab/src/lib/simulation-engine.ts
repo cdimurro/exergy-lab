@@ -22,34 +22,35 @@ import type {
 
 /**
  * Tier capabilities definition
+ * Updated to reflect actual Modal Labs GPU integration
  */
 export const TIER_CAPABILITIES: Record<SimulationTier, TierCapabilities> = {
   local: {
     tier: 'local',
-    name: 'Local Execution',
-    description: 'JavaScript-based calculations running in your browser',
-    estimatedTime: '~10 seconds',
-    accuracy: '±20%',
+    name: 'Tier 1: Analytical',
+    description: 'Physics-based analytical calculations with literature data (NREL ATB)',
+    estimatedTime: '< 1 second',
+    accuracy: '+/- 5-10%',
     cost: 'FREE',
     computeLocation: 'browser',
   },
   browser: {
     tier: 'browser',
-    name: 'Browser AI',
-    description: 'AI-powered predictions using machine learning models',
-    estimatedTime: '~2 minutes',
-    accuracy: '±10%',
-    cost: 'FREE (rate limited)',
-    computeLocation: 'ai-inference',
+    name: 'Tier 2: T4 GPU',
+    description: 'GPU-accelerated Monte Carlo simulations via Modal Labs',
+    estimatedTime: '1-5 seconds',
+    accuracy: '+/- 2-5%',
+    cost: '~$0.01',
+    computeLocation: 'modal-t4',
   },
   cloud: {
     tier: 'cloud',
-    name: 'Cloud GPU',
-    description: 'Production-grade simulations on cloud infrastructure',
-    estimatedTime: '~10 minutes',
-    accuracy: '±2%',
-    cost: '$0.50 - $2.00',
-    computeLocation: 'cloud-gpu',
+    name: 'Tier 3: A10G GPU',
+    description: 'High-fidelity parametric sweeps on A10G/A100 GPU via Modal Labs',
+    estimatedTime: '5-30 seconds',
+    accuracy: '+/- 1-2%',
+    cost: '~$0.02',
+    computeLocation: 'modal-a10g',
   },
 }
 

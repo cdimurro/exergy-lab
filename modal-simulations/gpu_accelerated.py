@@ -46,7 +46,7 @@ base_image = modal.Image.debian_slim().pip_install(
     timeout=300,  # 5 minutes max
     image=base_image,
     memory=4096,
-    concurrency_limit=10,  # Allow 10 concurrent runs
+    allow_concurrent_inputs=10,  # Allow 10 concurrent requests per container
 )
 def monte_carlo_vectorized(
     configs: List[Dict[str, Any]],
@@ -676,7 +676,7 @@ def _calculate_rdf(
     gpu="T4",
     timeout=600,
     image=base_image,
-    concurrency_limit=10,
+    allow_concurrent_inputs=10,
 )
 def batch_hypothesis_validation(
     hypotheses: List[Dict[str, Any]],
@@ -789,13 +789,14 @@ class BatchValidationRequest(BaseModel):
     args: Dict[str, Any]
 
 
-@app.function(image=base_image, gpu="T4", timeout=300, concurrency_limit=10)
+@app.function(image=base_image, gpu="T4", timeout=300, allow_concurrent_inputs=10)
 @modal.web_endpoint(method="POST", docs=True)
-def monte_carlo_vectorized_endpoint(request: MonteCarloRequest) -> List[Dict[str, Any]]:
+def mc_endpoint(request: MonteCarloRequest) -> List[Dict[str, Any]]:
     """
     HTTP endpoint for Monte Carlo simulation.
 
     Wraps the GPU function for HTTP access from TypeScript frontend.
+    Short name to avoid Modal URL truncation.
     """
     configs = request.args.get("configs", [])
     n_iterations = request.args.get("n_iterations", 100000)
@@ -817,11 +818,12 @@ def parametric_sweep_endpoint(request: ParametricSweepRequest) -> Dict[str, Any]
     return parametric_sweep.local(base_config, sweep_params, n_samples_per_dim)
 
 
-@app.function(image=base_image, gpu="T4", timeout=600, concurrency_limit=10)
+@app.function(image=base_image, gpu="T4", timeout=600, allow_concurrent_inputs=10)
 @modal.web_endpoint(method="POST", docs=True)
-def batch_hypothesis_validation_endpoint(request: BatchValidationRequest) -> List[Dict[str, Any]]:
+def batch_validate_endpoint(request: BatchValidationRequest) -> List[Dict[str, Any]]:
     """
     HTTP endpoint for batch hypothesis validation.
+    Short name to avoid Modal URL truncation.
     """
     hypotheses = request.args.get("hypotheses", [])
     validation_type = request.args.get("validation_type", "full")

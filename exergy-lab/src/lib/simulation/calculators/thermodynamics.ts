@@ -33,10 +33,10 @@ interface PowerCycleConfig {
 const POWER_CYCLE_CONFIGS: Record<string, PowerCycleConfig> = {
   'steam-rankine': {
     name: 'Steam Rankine Cycle',
-    isentropicEfficiency: 0.88,
+    isentropicEfficiency: 0.82, // Realistic for steam turbines (was 0.88)
     mechanicalEfficiency: 0.98,
     generatorEfficiency: 0.985,
-    auxiliaryLosses: 0.05,
+    auxiliaryLosses: 0.07, // Pump work, condenser, cooling (was 0.05)
     minTemp: 300,
     maxTemp: 873,
     heatRecoveryFactor: 0,

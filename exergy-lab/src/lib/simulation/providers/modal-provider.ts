@@ -268,8 +268,9 @@ export class ModalSimulationProvider implements SimulationProvider {
     const nIterations = this.tier === 'tier3' ? 100000 : 10000
 
     // Call Modal API (using web endpoint)
+    // Using short endpoint name to avoid Modal URL truncation
     const mcResult = await this.callModalFunction<MonteCarloResult[]>(
-      'monte_carlo_vectorized_endpoint',
+      'mc_endpoint',
       {
         configs: [mcConfig],
         n_iterations: nIterations,
@@ -744,7 +745,7 @@ export class ModalSimulationProvider implements SimulationProvider {
     })
 
     const results = await this.callModalFunction<HypothesisValidationResult[]>(
-      'batch_hypothesis_validation_endpoint',
+      'batch_validate_endpoint',
       {
         hypotheses: hypotheses.map(h => ({
           id: h.id,
@@ -796,9 +797,10 @@ export class ModalSimulationProvider implements SimulationProvider {
 
     // Modal web endpoint URL format: insert function name before .modal.run
     // e.g., https://cdimurro--breakthrough-engine-gpu.modal.run
-    // becomes: https://cdimurro--breakthrough-engine-gpu--monte_carlo_vectorized.modal.run
+    // becomes: https://cdimurro--breakthrough-engine-gpu-monte-carlo-vectorized.modal.run
+    // Modal converts underscores to hyphens and uses single hyphen as separator
     const functionNameFormatted = functionName.replace(/_/g, '-')
-    const url = endpoint?.replace('.modal.run', `--${functionNameFormatted}.modal.run`) ||
+    const url = endpoint?.replace('.modal.run', `-${functionNameFormatted}.modal.run`) ||
                 `https://modal.run/${functionName}`
 
     let lastError: Error | null = null
@@ -905,7 +907,7 @@ export class ModalSimulationProvider implements SimulationProvider {
 
       // Run minimal Monte Carlo with few iterations just to warm up
       await this.callModalFunction<MonteCarloResult[]>(
-        'monte_carlo_vectorized_endpoint',
+        'mc_endpoint',
         {
           configs: [warmupConfig],
           n_iterations: 100, // Minimal iterations

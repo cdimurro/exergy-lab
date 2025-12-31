@@ -1,0 +1,915 @@
+{
+  "analysis": {
+    "timestamp": "2025-12-31T23:20:21.039Z",
+    "totalTests": 6,
+    "passedTests": 3,
+    "failedTests": 3,
+    "totalCostUsd": 0.04,
+    "totalExecutionMs": 13910
+  },
+  "tests": [
+    {
+      "testId": "tier1-thermo-rankine",
+      "tier": "tier1",
+      "testName": "Thermodynamic Rankine Cycle",
+      "timestamp": "2025-12-31T23:20:07.126Z",
+      "executionTimeMs": 53,
+      "memoryUsageMb": 0.13138580322265625,
+      "costUsd": 0,
+      "passedAllCriteria": true,
+      "criteriaResults": [
+        {
+          "criterion": "Below Carnot limit",
+          "expected": "< 63.8%",
+          "actual": "44.6%",
+          "passed": true,
+          "deviation": -0.19188977184082634
+        },
+        {
+          "criterion": "Within practical range",
+          "expected": "35-47%",
+          "actual": "44.6%",
+          "passed": true
+        },
+        {
+          "criterion": "Uncertainty bounds provided",
+          "expected": "Has uncertainty",
+          "actual": "Yes",
+          "passed": true
+        }
+      ],
+      "uncertaintyQuantified": true,
+      "confidenceInterval": null,
+      "dataSourceUsed": "api",
+      "simulationResult": {
+        "experimentId": "test-tier1-thermo",
+        "converged": true,
+        "iterations": 1,
+        "outputs": [
+          {
+            "name": "carnotEfficiency",
+            "value": 0.6379100850546779,
+            "unit": "",
+            "uncertainty": 0.006379100850546779
+          },
+          {
+            "name": "practicalEfficiency",
+            "value": 0.44611022815917367,
+            "unit": "",
+            "uncertainty": 0.022305511407958684
+          },
+          {
+            "name": "practicalEfficiencyMultiplier",
+            "value": 0.6993308909999999,
+            "unit": ""
+          },
+          {
+            "name": "workOutput",
+            "value": 44611.022815917364,
+            "unit": "W",
+            "uncertainty": 2230.5511407958684
+          },
+          {
+            "name": "heatRejected",
+            "value": 55388.977184082636,
+            "unit": "W",
+            "uncertainty": 2769.448859204132
+          },
+          {
+            "name": "exergyInput",
+            "value": 63791.00850546779,
+            "unit": "W"
+          },
+          {
+            "name": "exergyEfficiency",
+            "value": 0.6993308909999999,
+            "unit": ""
+          },
+          {
+            "name": "exergyDestruction",
+            "value": 19179.985689550427,
+            "unit": "W"
+          }
+        ],
+        "exergy": {
+          "efficiency": 0.6379100850546779,
+          "exergyDestruction": 32588.092345078985,
+          "majorLosses": [
+            "Heat recovery from exhaust gases",
+            "Improve combustion efficiency",
+            "Optimize operating temperatures"
+          ],
+          "improvementPotential": 0.08690157958687729
+        },
+        "metadata": {
+          "provider": "Analytical Models",
+          "tier": "tier1",
+          "duration": 51,
+          "cost": 0,
+          "timestamp": "2025-12-31T23:20:07.179Z",
+          "dataSourceInfo": {
+            "usingFallback": false,
+            "sources": {
+              "practicalEfficiency": {
+                "source": "literature-engineering-data",
+                "isFallback": false
+              },
+              "exergyImprovement": {
+                "source": "exergy-analysis-literature",
+                "isFallback": false
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "testId": "tier1-pem-electrolyzer",
+      "tier": "tier1",
+      "testName": "PEM Electrolyzer",
+      "timestamp": "2025-12-31T23:20:07.180Z",
+      "executionTimeMs": 53,
+      "memoryUsageMb": 0.03740692138671875,
+      "costUsd": 0,
+      "passedAllCriteria": true,
+      "criteriaResults": [
+        {
+          "criterion": "Stack voltage > Nernst minimum",
+          "expected": "> 1.18V",
+          "actual": "1.799V",
+          "passed": true,
+          "deviation": 0.6188803796028197
+        },
+        {
+          "criterion": "HHV efficiency within range",
+          "expected": "65-80%",
+          "actual": "72.3%",
+          "passed": true
+        },
+        {
+          "criterion": "Faradaic efficiency > 95%",
+          "expected": "> 95%",
+          "actual": "98.0%",
+          "passed": true
+        }
+      ],
+      "uncertaintyQuantified": true,
+      "confidenceInterval": null,
+      "dataSourceUsed": "api",
+      "simulationResult": {
+        "experimentId": "test-tier1-electrochem",
+        "converged": true,
+        "iterations": 1,
+        "outputs": [
+          {
+            "name": "cellVoltage",
+            "value": 1.7988803796028197,
+            "unit": "V",
+            "uncertainty": 0.02
+          },
+          {
+            "name": "reversibleVoltage",
+            "value": 1.3271731197906003,
+            "unit": "V",
+            "uncertainty": 0.005
+          },
+          {
+            "name": "thermoneutralVoltage",
+            "value": 1.464545,
+            "unit": "V"
+          },
+          {
+            "name": "activationOverpotential",
+            "value": 0.22562338710984178,
+            "unit": "V"
+          },
+          {
+            "name": "ohmicOverpotential",
+            "value": 0.22499999999999998,
+            "unit": "V"
+          },
+          {
+            "name": "concentrationOverpotential",
+            "value": 0.021083872702377687,
+            "unit": "V"
+          },
+          {
+            "name": "voltageEfficiency",
+            "value": 0.7377773057281501,
+            "unit": "",
+            "uncertainty": 0.02
+          },
+          {
+            "name": "faradaicEfficiency",
+            "value": 0.9796996996996997,
+            "unit": "",
+            "uncertainty": 0.015
+          },
+          {
+            "name": "totalEfficiency",
+            "value": 0.7228002048671223,
+            "unit": "",
+            "uncertainty": 0.03
+          },
+          {
+            "name": "thermalEfficiency",
+            "value": 0.8141425169823473,
+            "unit": ""
+          },
+          {
+            "name": "exergyEfficiency",
+            "value": 0.6660592991930343,
+            "unit": ""
+          },
+          {
+            "name": "hydrogenRate",
+            "value": 61.41082845814151,
+            "unit": "L/h",
+            "uncertainty": 3.0705414229070755
+          },
+          {
+            "name": "power",
+            "value": 269.83205694042294,
+            "unit": "W"
+          },
+          {
+            "name": "specificEnergy",
+            "value": 48.820933396921525,
+            "unit": "kWh/kg"
+          }
+        ],
+        "exergy": {
+          "efficiency": 0.7377773057281501,
+          "exergyDestruction": 236.00042484466488,
+          "majorLosses": [
+            "Improve combustion efficiency",
+            "Optimize operating temperatures"
+          ],
+          "improvementPotential": 0.06293344662524396
+        },
+        "metadata": {
+          "provider": "Analytical Models",
+          "tier": "tier1",
+          "duration": 53,
+          "cost": 0,
+          "timestamp": "2025-12-31T23:20:07.233Z",
+          "dataSourceInfo": {
+            "usingFallback": false,
+            "sources": {
+              "faradaicEfficiency": {
+                "source": "electrochemistry-literature",
+                "isFallback": false
+              },
+              "exergyImprovement": {
+                "source": "exergy-analysis-literature",
+                "isFallback": false
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "testId": "tier2-solar-monte-carlo",
+      "tier": "tier2",
+      "testName": "Solar PV Monte Carlo",
+      "timestamp": "2025-12-31T23:20:07.233Z",
+      "executionTimeMs": 3096,
+      "memoryUsageMb": 1.293914794921875,
+      "costUsd": 0,
+      "passedAllCriteria": false,
+      "criteriaResults": [],
+      "uncertaintyQuantified": false,
+      "confidenceInterval": null,
+      "dataSourceUsed": "unknown",
+      "simulationResult": null,
+      "error": "fetch failed"
+    },
+    {
+      "testId": "tier2-wind-monte-carlo",
+      "tier": "tier2",
+      "testName": "Wind Monte Carlo",
+      "timestamp": "2025-12-31T23:20:10.329Z",
+      "executionTimeMs": 3008,
+      "memoryUsageMb": 0.31982421875,
+      "costUsd": 0,
+      "passedAllCriteria": false,
+      "criteriaResults": [],
+      "uncertaintyQuantified": false,
+      "confidenceInterval": null,
+      "dataSourceUsed": "unknown",
+      "simulationResult": null,
+      "error": "fetch failed"
+    },
+    {
+      "testId": "tier3-thermo-sweep",
+      "tier": "tier3",
+      "testName": "Thermodynamic Parametric Sweep",
+      "timestamp": "2025-12-31T23:20:13.337Z",
+      "executionTimeMs": 7272,
+      "memoryUsageMb": 0.6831893920898438,
+      "costUsd": 0.02,
+      "passedAllCriteria": false,
+      "criteriaResults": [
+        {
+          "criterion": "Maximum efficiency < Carnot",
+          "expected": "< 70%",
+          "actual": "68.0%",
+          "passed": true
+        },
+        {
+          "criterion": "Optimal efficiency in CC range",
+          "expected": "55-65%",
+          "actual": "68.0%",
+          "passed": false
+        },
+        {
+          "criterion": "Sweep points evaluated",
+          "expected": "> 500 points",
+          "actual": "2500 points",
+          "passed": true
+        }
+      ],
+      "uncertaintyQuantified": false,
+      "confidenceInterval": null,
+      "dataSourceUsed": "unknown",
+      "simulationResult": {
+        "experimentId": "test-tier3-sweep",
+        "converged": true,
+        "iterations": 2500,
+        "outputs": [
+          {
+            "name": "optimalEfficiency",
+            "value": 0.68,
+            "unit": ""
+          },
+          {
+            "name": "optimalCost",
+            "value": 600,
+            "unit": "$/kW"
+          },
+          {
+            "name": "optimalLCOE",
+            "value": 0.000039500086900191176,
+            "unit": "$/kWh"
+          },
+          {
+            "name": "efficiencySensitivity",
+            "value": 0,
+            "unit": ""
+          },
+          {
+            "name": "costSensitivity",
+            "value": 0,
+            "unit": ""
+          },
+          {
+            "name": "pointsEvaluated",
+            "value": 2500,
+            "unit": ""
+          },
+          {
+            "name": "efficiencyThreshold",
+            "value": 0.6359183673469389,
+            "unit": ""
+          }
+        ],
+        "fields": {
+          "paretoEfficiency": [
+            0.68
+          ],
+          "paretoLcoe": [
+            0.000039500086900191176
+          ],
+          "sensitivity_efficiency_values": [
+            0.5,
+            0.5036734693877551,
+            0.5073469387755102,
+            0.5110204081632653,
+            0.5146938775510204,
+            0.5183673469387755,
+            0.5220408163265307,
+            0.5257142857142857,
+            0.5293877551020408,
+            0.5330612244897959,
+            0.536734693877551,
+            0.5404081632653062,
+            0.5440816326530612,
+            0.5477551020408163,
+            0.5514285714285715,
+            0.5551020408163265,
+            0.5587755102040817,
+            0.5624489795918367,
+            0.5661224489795919,
+            0.569795918367347,
+            0.573469387755102,
+            0.5771428571428572,
+            0.5808163265306123,
+            0.5844897959183674,
+            0.5881632653061225,
+            0.5918367346938775,
+            0.5955102040816327,
+            0.5991836734693878,
+            0.6028571428571429,
+            0.606530612244898,
+            0.610204081632653,
+            0.6138775510204082,
+            0.6175510204081633,
+            0.6212244897959184,
+            0.6248979591836735,
+            0.6285714285714286,
+            0.6322448979591837,
+            0.6359183673469389,
+            0.6395918367346939,
+            0.643265306122449,
+            0.6469387755102041,
+            0.6506122448979592,
+            0.6542857142857144,
+            0.6579591836734694,
+            0.6616326530612245,
+            0.6653061224489796,
+            0.6689795918367347,
+            0.6726530612244899,
+            0.676326530612245,
+            0.68
+          ],
+          "sensitivity_efficiency_response": [
+            12924.5759185324,
+            13019.531986505292,
+            13114.488054478184,
+            13209.444122451076,
+            13304.400190423965,
+            13399.356258396858,
+            13494.312326369749,
+            13589.268394342638,
+            13684.224462315531,
+            13779.18053028842,
+            13874.136598261312,
+            13969.092666234204,
+            14064.048734207092,
+            14159.004802179988,
+            14253.96087015288,
+            14348.916938125769,
+            14443.873006098662,
+            14538.829074071551,
+            14633.785142044442,
+            14728.741210017335,
+            14823.697277990223,
+            14918.653345963114,
+            15013.60941393601,
+            15108.565481908894,
+            15203.52154988179,
+            15298.477617854678,
+            15393.43368582757,
+            15488.38975380046,
+            15583.345821773353,
+            15678.301889746244,
+            15773.257957719134,
+            15868.214025692027,
+            15963.170093664918,
+            16058.126161637809,
+            16153.0822296107,
+            16248.03829758359,
+            16342.994365556482,
+            16437.95043352938,
+            16532.90650150226,
+            16627.862569475154,
+            16722.818637448047,
+            16817.77470542094,
+            16912.73077339383,
+            17007.686841366718,
+            17102.64290933961,
+            17197.598977312504,
+            17292.555045285393,
+            17387.511113258282,
+            17482.46718123118,
+            17577.423249204065
+          ],
+          "sensitivity_cost_per_kw_values": [
+            600,
+            612.2448979591836,
+            624.4897959183673,
+            636.734693877551,
+            648.9795918367347,
+            661.2244897959183,
+            673.469387755102,
+            685.7142857142857,
+            697.9591836734694,
+            710.204081632653,
+            722.4489795918367,
+            734.6938775510204,
+            746.9387755102041,
+            759.1836734693877,
+            771.4285714285714,
+            783.6734693877551,
+            795.9183673469388,
+            808.1632653061224,
+            820.4081632653061,
+            832.6530612244898,
+            844.8979591836735,
+            857.1428571428571,
+            869.3877551020407,
+            881.6326530612245,
+            893.8775510204082,
+            906.1224489795918,
+            918.3673469387754,
+            930.6122448979592,
+            942.8571428571429,
+            955.1020408163265,
+            967.3469387755101,
+            979.5918367346939,
+            991.8367346938776,
+            1004.0816326530612,
+            1016.3265306122448,
+            1028.5714285714284,
+            1040.8163265306123,
+            1053.061224489796,
+            1065.3061224489795,
+            1077.5510204081634,
+            1089.795918367347,
+            1102.0408163265306,
+            1114.2857142857142,
+            1126.5306122448978,
+            1138.7755102040815,
+            1151.0204081632653,
+            1163.265306122449,
+            1175.5102040816328,
+            1187.7551020408164,
+            1200
+          ],
+          "sensitivity_cost_per_kw_response": [
+            21965.699999999997,
+            21526.386000000002,
+            21104.3,
+            20698.448076923076,
+            20307.911320754713,
+            19931.83888888889,
+            19569.44181818182,
+            19219.987500000003,
+            18882.79473684211,
+            18557.229310344836,
+            18242.699999999997,
+            17938.655,
+            17644.57868852459,
+            17359.98870967743,
+            17084.433333333338,
+            16817.4890625,
+            16558.75846153846,
+            16307.868181818183,
+            16064.467164179103,
+            15828.225000000002,
+            15598.830434782612,
+            15375.99,
+            15159.426760563383,
+            14948.879166666668,
+            14744.1,
+            14544.855405405406,
+            14350.924000000005,
+            14162.096052631583,
+            13978.172727272724,
+            13798.965384615385,
+            13624.294936708873,
+            13453.99125,
+            13287.89259259259,
+            13125.845121951219,
+            12967.702409638556,
+            12813.325000000003,
+            12662.579999999998,
+            12515.340697674419,
+            12371.486206896554,
+            12230.901136363635,
+            12093.475280898878,
+            11959.103333333333,
+            11827.684615384615,
+            11699.122826086958,
+            11573.325806451618,
+            11450.205319148936,
+            11329.676842105266,
+            11211.659375,
+            11096.075257731958,
+            10982.849999999999
+          ]
+        },
+        "metadata": {
+          "provider": "Modal GPU (A10G)",
+          "tier": "tier3",
+          "duration": 7271,
+          "cost": 0.02,
+          "timestamp": "2025-12-31T23:20:20.609Z"
+        }
+      }
+    },
+    {
+      "testId": "tier3-electrolyzer-opt",
+      "tier": "tier3",
+      "testName": "Electrolyzer Optimization",
+      "timestamp": "2025-12-31T23:20:20.610Z",
+      "executionTimeMs": 428,
+      "memoryUsageMb": 0.24890899658203125,
+      "costUsd": 0.02,
+      "passedAllCriteria": true,
+      "criteriaResults": [
+        {
+          "criterion": "Optimized LCOH < realistic max",
+          "expected": "< $8/kg",
+          "actual": "$0.03/kg (estimated)",
+          "passed": true
+        },
+        {
+          "criterion": "Optimal efficiency > 65%",
+          "expected": "> 65%",
+          "actual": "85.0%",
+          "passed": true
+        },
+        {
+          "criterion": "Convergence achieved",
+          "expected": "Converged",
+          "actual": "Yes",
+          "passed": true
+        }
+      ],
+      "uncertaintyQuantified": false,
+      "confidenceInterval": null,
+      "dataSourceUsed": "unknown",
+      "simulationResult": {
+        "experimentId": "test-tier3-opt",
+        "converged": true,
+        "iterations": 2500,
+        "outputs": [
+          {
+            "name": "optimalEfficiency",
+            "value": 0.85,
+            "unit": ""
+          },
+          {
+            "name": "optimalCost",
+            "value": 300,
+            "unit": "$/kW"
+          },
+          {
+            "name": "optimalLCOE",
+            "value": 0.0008058017727639,
+            "unit": "$/kWh"
+          },
+          {
+            "name": "efficiencySensitivity",
+            "value": 0,
+            "unit": ""
+          },
+          {
+            "name": "costSensitivity",
+            "value": 0,
+            "unit": ""
+          },
+          {
+            "name": "pointsEvaluated",
+            "value": 2500,
+            "unit": ""
+          },
+          {
+            "name": "efficiencyThreshold",
+            "value": 0.8346938775510204,
+            "unit": ""
+          }
+        ],
+        "fields": {
+          "paretoEfficiency": [
+            0.85
+          ],
+          "paretoLcoe": [
+            0.0008058017727639
+          ],
+          "sensitivity_efficiency_values": [
+            0.6,
+            0.6051020408163265,
+            0.610204081632653,
+            0.6153061224489795,
+            0.6204081632653061,
+            0.6255102040816326,
+            0.6306122448979592,
+            0.6357142857142857,
+            0.6408163265306123,
+            0.6459183673469387,
+            0.6510204081632652,
+            0.6561224489795918,
+            0.6612244897959183,
+            0.6663265306122449,
+            0.6714285714285714,
+            0.676530612244898,
+            0.6816326530612244,
+            0.686734693877551,
+            0.6918367346938775,
+            0.6969387755102041,
+            0.7020408163265306,
+            0.7071428571428571,
+            0.7122448979591837,
+            0.7173469387755101,
+            0.7224489795918367,
+            0.7275510204081632,
+            0.7326530612244897,
+            0.7377551020408163,
+            0.7428571428571429,
+            0.7479591836734694,
+            0.7530612244897958,
+            0.7581632653061224,
+            0.7632653061224489,
+            0.7683673469387755,
+            0.773469387755102,
+            0.7785714285714285,
+            0.7836734693877551,
+            0.7887755102040817,
+            0.7938775510204081,
+            0.7989795918367346,
+            0.8040816326530612,
+            0.8091836734693877,
+            0.8142857142857143,
+            0.8193877551020408,
+            0.8244897959183672,
+            0.8295918367346938,
+            0.8346938775510204,
+            0.8397959183673469,
+            0.8448979591836734,
+            0.85
+          ],
+          "sensitivity_efficiency_response": [
+            454.41692521389587,
+            458.2810147140141,
+            462.1451042141323,
+            466.0091937142503,
+            469.8732832143685,
+            473.7373727144867,
+            477.6014622146049,
+            481.46555171472306,
+            485.3296412148413,
+            489.1937307149593,
+            493.05782021507736,
+            496.9219097151956,
+            500.78599921531384,
+            504.65008871543205,
+            508.51417821555015,
+            512.3782677156685,
+            516.2423572157865,
+            520.1064467159048,
+            523.9705362160228,
+            527.834625716141,
+            531.6987152162591,
+            535.5628047163773,
+            539.4268942164954,
+            543.2909837166136,
+            547.1550732167318,
+            551.0191627168499,
+            554.8832522169681,
+            558.7473417170863,
+            562.6114312172045,
+            566.4755207173225,
+            570.3396102174407,
+            574.203699717559,
+            578.067789217677,
+            581.9318787177953,
+            585.7959682179134,
+            589.6600577180316,
+            593.5241472181497,
+            597.388236718268,
+            601.2523262183861,
+            605.1164157185042,
+            608.9805052186224,
+            612.8445947187405,
+            616.7086842188586,
+            620.5727737189769,
+            624.4368632190949,
+            628.3009527192131,
+            632.1650422193316,
+            636.0291317194495,
+            639.8932212195677,
+            643.7573107196858
+          ],
+          "sensitivity_cost_per_kw_values": [
+            300,
+            314.2857142857143,
+            328.57142857142856,
+            342.8571428571429,
+            357.14285714285717,
+            371.42857142857144,
+            385.7142857142857,
+            400,
+            414.2857142857143,
+            428.57142857142856,
+            442.8571428571429,
+            457.1428571428571,
+            471.42857142857144,
+            485.7142857142857,
+            500,
+            514.2857142857143,
+            528.5714285714286,
+            542.8571428571429,
+            557.1428571428571,
+            571.4285714285714,
+            585.7142857142858,
+            600,
+            614.2857142857142,
+            628.5714285714287,
+            642.8571428571429,
+            657.1428571428571,
+            671.4285714285714,
+            685.7142857142858,
+            700,
+            714.2857142857143,
+            728.5714285714287,
+            742.8571428571429,
+            757.1428571428571,
+            771.4285714285714,
+            785.7142857142858,
+            800,
+            814.2857142857143,
+            828.5714285714286,
+            842.8571428571429,
+            857.1428571428572,
+            871.4285714285714,
+            885.7142857142858,
+            900,
+            914.2857142857143,
+            928.5714285714286,
+            942.8571428571429,
+            957.1428571428572,
+            971.4285714285714,
+            985.7142857142858,
+            1000
+          ],
+          "sensitivity_cost_per_kw_response": [
+            1058.4999999999998,
+            1010.3863636363636,
+            966.4565217391304,
+            926.1875,
+            889.1400000000006,
+            854.942307692308,
+            823.2777777777777,
+            793.8750000000005,
+            766.4999999999999,
+            740.95,
+            717.0483870967743,
+            694.640625,
+            673.5909090909092,
+            653.7794117647059,
+            635.1,
+            617.4583333333334,
+            600.7702702702704,
+            584.9605263157895,
+            569.9615384615385,
+            555.7124999999999,
+            542.1585365853658,
+            529.2499999999999,
+            516.9418604651161,
+            505.19318181818176,
+            493.9666666666667,
+            483.2282608695652,
+            472.9468085106383,
+            463.09375,
+            453.6428571428571,
+            444.5700000000003,
+            435.85294117647055,
+            427.471153846154,
+            419.40566037735834,
+            411.63888888888886,
+            404.1545454545453,
+            396.9375000000002,
+            389.97368421052636,
+            383.24999999999994,
+            376.75423728813564,
+            370.4749999999999,
+            364.4016393442622,
+            358.52419354838713,
+            352.83333333333326,
+            347.3203125,
+            341.9769230769231,
+            336.7954545454546,
+            331.7686567164179,
+            326.8897058823529,
+            322.1521739130435,
+            317.55
+          ]
+        },
+        "metadata": {
+          "provider": "Modal GPU (A10G)",
+          "tier": "tier3",
+          "duration": 428,
+          "cost": 0.02,
+          "timestamp": "2025-12-31T23:20:21.038Z"
+        }
+      }
+    }
+  ],
+  "findings": {
+    "publicationGrade": false,
+    "overallScore": 50,
+    "areasNeedingCorrection": [
+      "[tier2-solar-monte-carlo] fetch failed",
+      "[tier2-wind-monte-carlo] fetch failed",
+      "[tier3-thermo-sweep] Optimal efficiency in CC range: Expected 55-65%, got 68.0%"
+    ],
+    "recommendations": [
+      "Review Monte Carlo configuration and uncertainty propagation. Verify confidence interval calculation assumes correct distribution.",
+      "Review parametric sweep and optimization algorithms. Ensure convergence criteria are appropriate for the problem domain.",
+      "2 test(s) lack uncertainty quantification. Add uncertainty bounds to all simulation outputs for publication-grade results."
+    ]
+  }
+}

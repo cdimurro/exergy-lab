@@ -1,0 +1,351 @@
+{
+  "analysis": {
+    "timestamp": "2025-12-31T23:18:16.967Z",
+    "totalTests": 6,
+    "passedTests": 2,
+    "failedTests": 4,
+    "totalCostUsd": 0,
+    "totalExecutionMs": 12776
+  },
+  "tests": [
+    {
+      "testId": "tier1-thermo-rankine",
+      "tier": "tier1",
+      "testName": "Thermodynamic Rankine Cycle",
+      "timestamp": "2025-12-31T23:18:04.187Z",
+      "executionTimeMs": 53,
+      "memoryUsageMb": 0.13823699951171875,
+      "costUsd": 0,
+      "passedAllCriteria": true,
+      "criteriaResults": [
+        {
+          "criterion": "Below Carnot limit",
+          "expected": "< 63.8%",
+          "actual": "44.6%",
+          "passed": true,
+          "deviation": -0.19188977184082634
+        },
+        {
+          "criterion": "Within practical range",
+          "expected": "35-47%",
+          "actual": "44.6%",
+          "passed": true
+        },
+        {
+          "criterion": "Uncertainty bounds provided",
+          "expected": "Has uncertainty",
+          "actual": "Yes",
+          "passed": true
+        }
+      ],
+      "uncertaintyQuantified": true,
+      "confidenceInterval": null,
+      "dataSourceUsed": "api",
+      "simulationResult": {
+        "experimentId": "test-tier1-thermo",
+        "converged": true,
+        "iterations": 1,
+        "outputs": [
+          {
+            "name": "carnotEfficiency",
+            "value": 0.6379100850546779,
+            "unit": "",
+            "uncertainty": 0.006379100850546779
+          },
+          {
+            "name": "practicalEfficiency",
+            "value": 0.44611022815917367,
+            "unit": "",
+            "uncertainty": 0.022305511407958684
+          },
+          {
+            "name": "practicalEfficiencyMultiplier",
+            "value": 0.6993308909999999,
+            "unit": ""
+          },
+          {
+            "name": "workOutput",
+            "value": 44611.022815917364,
+            "unit": "W",
+            "uncertainty": 2230.5511407958684
+          },
+          {
+            "name": "heatRejected",
+            "value": 55388.977184082636,
+            "unit": "W",
+            "uncertainty": 2769.448859204132
+          },
+          {
+            "name": "exergyInput",
+            "value": 63791.00850546779,
+            "unit": "W"
+          },
+          {
+            "name": "exergyEfficiency",
+            "value": 0.6993308909999999,
+            "unit": ""
+          },
+          {
+            "name": "exergyDestruction",
+            "value": 19179.985689550427,
+            "unit": "W"
+          }
+        ],
+        "exergy": {
+          "efficiency": 0.6379100850546779,
+          "exergyDestruction": 32588.092345078985,
+          "majorLosses": [
+            "Heat recovery from exhaust gases",
+            "Improve combustion efficiency",
+            "Optimize operating temperatures"
+          ],
+          "improvementPotential": 0.08690157958687729
+        },
+        "metadata": {
+          "provider": "Analytical Models",
+          "tier": "tier1",
+          "duration": 52,
+          "cost": 0,
+          "timestamp": "2025-12-31T23:18:04.240Z",
+          "dataSourceInfo": {
+            "usingFallback": false,
+            "sources": {
+              "practicalEfficiency": {
+                "source": "literature-engineering-data",
+                "isFallback": false
+              },
+              "exergyImprovement": {
+                "source": "exergy-analysis-literature",
+                "isFallback": false
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "testId": "tier1-pem-electrolyzer",
+      "tier": "tier1",
+      "testName": "PEM Electrolyzer",
+      "timestamp": "2025-12-31T23:18:04.242Z",
+      "executionTimeMs": 52,
+      "memoryUsageMb": 0.0375518798828125,
+      "costUsd": 0,
+      "passedAllCriteria": true,
+      "criteriaResults": [
+        {
+          "criterion": "Stack voltage > Nernst minimum",
+          "expected": "> 1.18V",
+          "actual": "1.799V",
+          "passed": true,
+          "deviation": 0.6188803796028197
+        },
+        {
+          "criterion": "HHV efficiency within range",
+          "expected": "65-80%",
+          "actual": "72.3%",
+          "passed": true
+        },
+        {
+          "criterion": "Faradaic efficiency > 95%",
+          "expected": "> 95%",
+          "actual": "98.0%",
+          "passed": true
+        }
+      ],
+      "uncertaintyQuantified": true,
+      "confidenceInterval": null,
+      "dataSourceUsed": "api",
+      "simulationResult": {
+        "experimentId": "test-tier1-electrochem",
+        "converged": true,
+        "iterations": 1,
+        "outputs": [
+          {
+            "name": "cellVoltage",
+            "value": 1.7988803796028197,
+            "unit": "V",
+            "uncertainty": 0.02
+          },
+          {
+            "name": "reversibleVoltage",
+            "value": 1.3271731197906003,
+            "unit": "V",
+            "uncertainty": 0.005
+          },
+          {
+            "name": "thermoneutralVoltage",
+            "value": 1.464545,
+            "unit": "V"
+          },
+          {
+            "name": "activationOverpotential",
+            "value": 0.22562338710984178,
+            "unit": "V"
+          },
+          {
+            "name": "ohmicOverpotential",
+            "value": 0.22499999999999998,
+            "unit": "V"
+          },
+          {
+            "name": "concentrationOverpotential",
+            "value": 0.021083872702377687,
+            "unit": "V"
+          },
+          {
+            "name": "voltageEfficiency",
+            "value": 0.7377773057281501,
+            "unit": "",
+            "uncertainty": 0.02
+          },
+          {
+            "name": "faradaicEfficiency",
+            "value": 0.9796996996996997,
+            "unit": "",
+            "uncertainty": 0.015
+          },
+          {
+            "name": "totalEfficiency",
+            "value": 0.7228002048671223,
+            "unit": "",
+            "uncertainty": 0.03
+          },
+          {
+            "name": "thermalEfficiency",
+            "value": 0.8141425169823473,
+            "unit": ""
+          },
+          {
+            "name": "exergyEfficiency",
+            "value": 0.6660592991930343,
+            "unit": ""
+          },
+          {
+            "name": "hydrogenRate",
+            "value": 61.41082845814151,
+            "unit": "L/h",
+            "uncertainty": 3.0705414229070755
+          },
+          {
+            "name": "power",
+            "value": 269.83205694042294,
+            "unit": "W"
+          },
+          {
+            "name": "specificEnergy",
+            "value": 48.820933396921525,
+            "unit": "kWh/kg"
+          }
+        ],
+        "exergy": {
+          "efficiency": 0.7377773057281501,
+          "exergyDestruction": 236.00042484466488,
+          "majorLosses": [
+            "Improve combustion efficiency",
+            "Optimize operating temperatures"
+          ],
+          "improvementPotential": 0.06293344662524396
+        },
+        "metadata": {
+          "provider": "Analytical Models",
+          "tier": "tier1",
+          "duration": 52,
+          "cost": 0,
+          "timestamp": "2025-12-31T23:18:04.294Z",
+          "dataSourceInfo": {
+            "usingFallback": false,
+            "sources": {
+              "faradaicEfficiency": {
+                "source": "electrochemistry-literature",
+                "isFallback": false
+              },
+              "exergyImprovement": {
+                "source": "exergy-analysis-literature",
+                "isFallback": false
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "testId": "tier2-solar-monte-carlo",
+      "tier": "tier2",
+      "testName": "Solar PV Monte Carlo",
+      "timestamp": "2025-12-31T23:18:04.295Z",
+      "executionTimeMs": 3096,
+      "memoryUsageMb": 3.5005111694335938,
+      "costUsd": 0,
+      "passedAllCriteria": false,
+      "criteriaResults": [],
+      "uncertaintyQuantified": false,
+      "confidenceInterval": null,
+      "dataSourceUsed": "unknown",
+      "simulationResult": null,
+      "error": "fetch failed"
+    },
+    {
+      "testId": "tier2-wind-monte-carlo",
+      "tier": "tier2",
+      "testName": "Wind Monte Carlo",
+      "timestamp": "2025-12-31T23:18:07.391Z",
+      "executionTimeMs": 3012,
+      "memoryUsageMb": 0.31584930419921875,
+      "costUsd": 0,
+      "passedAllCriteria": false,
+      "criteriaResults": [],
+      "uncertaintyQuantified": false,
+      "confidenceInterval": null,
+      "dataSourceUsed": "unknown",
+      "simulationResult": null,
+      "error": "fetch failed"
+    },
+    {
+      "testId": "tier3-thermo-sweep",
+      "tier": "tier3",
+      "testName": "Thermodynamic Parametric Sweep",
+      "timestamp": "2025-12-31T23:18:10.403Z",
+      "executionTimeMs": 3345,
+      "memoryUsageMb": -2.144317626953125,
+      "costUsd": 0,
+      "passedAllCriteria": false,
+      "criteriaResults": [],
+      "uncertaintyQuantified": false,
+      "confidenceInterval": null,
+      "dataSourceUsed": "unknown",
+      "simulationResult": null,
+      "error": "Modal API error: 400 - modal-http: invalid host header\n"
+    },
+    {
+      "testId": "tier3-electrolyzer-opt",
+      "tier": "tier3",
+      "testName": "Electrolyzer Optimization",
+      "timestamp": "2025-12-31T23:18:13.748Z",
+      "executionTimeMs": 3218,
+      "memoryUsageMb": 0.4881591796875,
+      "costUsd": 0,
+      "passedAllCriteria": false,
+      "criteriaResults": [],
+      "uncertaintyQuantified": false,
+      "confidenceInterval": null,
+      "dataSourceUsed": "unknown",
+      "simulationResult": null,
+      "error": "Modal API error: 400 - modal-http: invalid host header\n"
+    }
+  ],
+  "findings": {
+    "publicationGrade": false,
+    "overallScore": 33.33333333333333,
+    "areasNeedingCorrection": [
+      "[tier2-solar-monte-carlo] fetch failed",
+      "[tier2-wind-monte-carlo] fetch failed",
+      "[tier3-thermo-sweep] Modal API error: 400 - modal-http: invalid host header\n",
+      "[tier3-electrolyzer-opt] Modal API error: 400 - modal-http: invalid host header\n"
+    ],
+    "recommendations": [
+      "Review Monte Carlo configuration and uncertainty propagation. Verify confidence interval calculation assumes correct distribution.",
+      "Review parametric sweep and optimization algorithms. Ensure convergence criteria are appropriate for the problem domain."
+    ]
+  }
+}

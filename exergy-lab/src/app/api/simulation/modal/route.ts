@@ -18,8 +18,7 @@ interface ModalRequest {
 // Modal endpoint configuration
 const MODAL_CONFIG = {
   endpoint: process.env.MODAL_ENDPOINT || 'https://cdimurro--breakthrough-engine-gpu.modal.run',
-  tokenId: process.env.MODAL_TOKEN_ID,
-  tokenSecret: process.env.MODAL_TOKEN_SECRET,
+  apiKey: process.env.MODAL_API_KEY,
   timeout: 300000, // 5 minutes
 }
 
@@ -35,11 +34,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if Modal is configured
-    if (!MODAL_CONFIG.tokenId || !MODAL_CONFIG.tokenSecret) {
+    if (!MODAL_CONFIG.apiKey) {
       return NextResponse.json(
         {
           error: 'Modal GPU not configured',
-          message: 'Set MODAL_TOKEN_ID and MODAL_TOKEN_SECRET environment variables',
+          message: 'Set MODAL_API_KEY environment variable',
           fallback: 'local',
         },
         { status: 503 }
@@ -85,10 +84,10 @@ export async function POST(request: NextRequest) {
  * Health check for Modal availability
  */
 export async function GET() {
-  if (!MODAL_CONFIG.tokenId || !MODAL_CONFIG.tokenSecret) {
+  if (!MODAL_CONFIG.apiKey) {
     return NextResponse.json({
       available: false,
-      reason: 'Modal credentials not configured',
+      reason: 'MODAL_API_KEY not configured',
     })
   }
 
@@ -121,11 +120,12 @@ export async function GET() {
  * Get the Modal function endpoint for a simulation type
  */
 function getModalFunctionEndpoint(type: string): string | null {
+  // Note: Using short function names to avoid Modal URL truncation
   const endpoints: Record<string, string> = {
-    'monte-carlo': 'monte-carlo-vectorized-endpoint',
-    'parametric-sweep': 'parametric-sweep-endpoint',
-    'batch-validation': 'batch-hypothesis-validation-endpoint',
-    'ml-md': 'ml-potential-md',
+    'monte-carlo': 'mc_endpoint',
+    'parametric-sweep': 'parametric_sweep_endpoint',
+    'batch-validation': 'batch_validate_endpoint',
+    'ml-md': 'ml_potential_md',
   }
 
   return endpoints[type] || null
@@ -139,9 +139,11 @@ async function callModalFunction(
   args: Record<string, unknown>
 ): Promise<unknown> {
   // Modal web endpoint URL format: insert function name before .modal.run
+  // Modal converts underscores to hyphens and uses single hyphen as separator
+  const functionNameFormatted = functionName.replace(/_/g, '-')
   const url = MODAL_CONFIG.endpoint.replace(
     '.modal.run',
-    `--${functionName}.modal.run`
+    `-${functionNameFormatted}.modal.run`
   )
 
   const controller = new AbortController()
@@ -152,8 +154,7 @@ async function callModalFunction(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        // Modal uses token-based auth
-        'Authorization': `Bearer ${MODAL_CONFIG.tokenId}:${MODAL_CONFIG.tokenSecret}`,
+        'Authorization': `Bearer ${MODAL_CONFIG.apiKey}`,
       },
       body: JSON.stringify({ args }),
       signal: controller.signal,

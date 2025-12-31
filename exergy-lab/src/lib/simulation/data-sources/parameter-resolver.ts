@@ -151,14 +151,17 @@ export class ParameterResolver {
   ): Promise<ResolvedParameter> {
     // Technology-specific practical efficiency multipliers from literature
     const multipliers: Record<string, { value: number; uncertainty: number }> = {
+      'steam-rankine': { value: 0.65, uncertainty: 0.05 }, // Subcritical steam Rankine
       'steam-turbine': { value: 0.70, uncertainty: 0.05 },
       'gas-turbine': { value: 0.75, uncertainty: 0.04 },
+      'gas-brayton': { value: 0.75, uncertainty: 0.04 }, // Same as gas-turbine
       'combined-cycle': { value: 0.82, uncertainty: 0.03 },
       'reciprocating-engine': { value: 0.72, uncertainty: 0.05 },
       'fuel-cell-sofc': { value: 0.78, uncertainty: 0.04 },
       'fuel-cell-pem': { value: 0.65, uncertainty: 0.05 },
       'heat-pump': { value: 0.75, uncertainty: 0.06 },
       'orc': { value: 0.68, uncertainty: 0.05 }, // Organic Rankine Cycle
+      'supercritical-co': { value: 0.75, uncertainty: 0.04 }, // sCO2 Brayton
       'default': { value: 0.72, uncertainty: 0.07 },
     }
 

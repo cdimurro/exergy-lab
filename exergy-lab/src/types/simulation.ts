@@ -8,10 +8,10 @@ export interface TierCapabilities {
   tier: SimulationTier
   name: string
   description: string
-  estimatedTime: string // e.g., "~10 seconds", "~2 minutes", "~10 minutes"
-  accuracy: string // e.g., "±20%", "±10%", "±2%"
-  cost: string // e.g., "FREE", "FREE", "$0.50-2.00"
-  computeLocation: 'browser' | 'ai-inference' | 'cloud-gpu'
+  estimatedTime: string // e.g., "< 1 second", "1-5 seconds", "5-30 seconds"
+  accuracy: string // e.g., "+/- 5-10%", "+/- 2-5%", "+/- 1-2%"
+  cost: string // e.g., "FREE", "~$0.01", "~$0.02"
+  computeLocation: 'browser' | 'ai-inference' | 'cloud-gpu' | 'modal-t4' | 'modal-a10g'
 }
 
 export interface SimulationParameter {

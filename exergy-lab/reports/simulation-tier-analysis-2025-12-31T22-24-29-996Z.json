@@ -1,0 +1,353 @@
+{
+  "analysis": {
+    "timestamp": "2025-12-31T22:24:29.996Z",
+    "totalTests": 6,
+    "passedTests": 1,
+    "failedTests": 5,
+    "totalCostUsd": 0,
+    "totalExecutionMs": 106
+  },
+  "tests": [
+    {
+      "testId": "tier1-thermo-rankine",
+      "tier": "tier1",
+      "testName": "Thermodynamic Rankine Cycle",
+      "timestamp": "2025-12-31T22:24:29.887Z",
+      "executionTimeMs": 54,
+      "memoryUsageMb": -1.0707473754882812,
+      "costUsd": 0,
+      "passedAllCriteria": false,
+      "criteriaResults": [
+        {
+          "criterion": "Below Carnot limit",
+          "expected": "< 63.8%",
+          "actual": "48.9%",
+          "passed": true,
+          "deviation": -0.1489518086269746
+        },
+        {
+          "criterion": "Within practical range",
+          "expected": "35-47%",
+          "actual": "48.9%",
+          "passed": false
+        },
+        {
+          "criterion": "Uncertainty bounds provided",
+          "expected": "Has uncertainty",
+          "actual": "Yes",
+          "passed": true
+        }
+      ],
+      "uncertaintyQuantified": true,
+      "confidenceInterval": null,
+      "dataSourceUsed": "api",
+      "simulationResult": {
+        "experimentId": "test-tier1-thermo",
+        "converged": true,
+        "iterations": 1,
+        "outputs": [
+          {
+            "name": "carnotEfficiency",
+            "value": 0.6379100850546779,
+            "unit": "",
+            "uncertainty": 0.006379100850546779
+          },
+          {
+            "name": "practicalEfficiency",
+            "value": 0.4890481913730254,
+            "unit": "",
+            "uncertainty": 0.024452409568651273
+          },
+          {
+            "name": "practicalEfficiencyMultiplier",
+            "value": 0.7666412599999999,
+            "unit": ""
+          },
+          {
+            "name": "workOutput",
+            "value": 48904.81913730254,
+            "unit": "W",
+            "uncertainty": 2445.240956865127
+          },
+          {
+            "name": "heatRejected",
+            "value": 51095.18086269746,
+            "unit": "W",
+            "uncertainty": 2554.759043134873
+          },
+          {
+            "name": "exergyInput",
+            "value": 63791.00850546779,
+            "unit": "W"
+          },
+          {
+            "name": "exergyEfficiency",
+            "value": 0.76664126,
+            "unit": ""
+          },
+          {
+            "name": "exergyDestruction",
+            "value": 14886.189368165251,
+            "unit": "W"
+          }
+        ],
+        "exergy": {
+          "efficiency": 0.6379100850546779,
+          "exergyDestruction": 32588.092345078985,
+          "majorLosses": [
+            "Heat recovery from exhaust gases",
+            "Improve combustion efficiency",
+            "Optimize operating temperatures"
+          ],
+          "improvementPotential": 0.08690157958687729
+        },
+        "metadata": {
+          "provider": "Analytical Models",
+          "tier": "tier1",
+          "duration": 52,
+          "cost": 0,
+          "timestamp": "2025-12-31T22:24:29.941Z",
+          "dataSourceInfo": {
+            "usingFallback": false,
+            "sources": {
+              "practicalEfficiency": {
+                "source": "literature-engineering-data",
+                "isFallback": false
+              },
+              "exergyImprovement": {
+                "source": "exergy-analysis-literature",
+                "isFallback": false
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "testId": "tier1-pem-electrolyzer",
+      "tier": "tier1",
+      "testName": "PEM Electrolyzer",
+      "timestamp": "2025-12-31T22:24:29.942Z",
+      "executionTimeMs": 52,
+      "memoryUsageMb": 0.0413055419921875,
+      "costUsd": 0,
+      "passedAllCriteria": true,
+      "criteriaResults": [
+        {
+          "criterion": "Stack voltage > Nernst minimum",
+          "expected": "> 1.18V",
+          "actual": "1.799V",
+          "passed": true,
+          "deviation": 0.6188803796028197
+        },
+        {
+          "criterion": "HHV efficiency within range",
+          "expected": "65-80%",
+          "actual": "72.3%",
+          "passed": true
+        },
+        {
+          "criterion": "Faradaic efficiency > 95%",
+          "expected": "> 95%",
+          "actual": "98.0%",
+          "passed": true
+        }
+      ],
+      "uncertaintyQuantified": true,
+      "confidenceInterval": null,
+      "dataSourceUsed": "api",
+      "simulationResult": {
+        "experimentId": "test-tier1-electrochem",
+        "converged": true,
+        "iterations": 1,
+        "outputs": [
+          {
+            "name": "cellVoltage",
+            "value": 1.7988803796028197,
+            "unit": "V",
+            "uncertainty": 0.02
+          },
+          {
+            "name": "reversibleVoltage",
+            "value": 1.3271731197906003,
+            "unit": "V",
+            "uncertainty": 0.005
+          },
+          {
+            "name": "thermoneutralVoltage",
+            "value": 1.464545,
+            "unit": "V"
+          },
+          {
+            "name": "activationOverpotential",
+            "value": 0.22562338710984178,
+            "unit": "V"
+          },
+          {
+            "name": "ohmicOverpotential",
+            "value": 0.22499999999999998,
+            "unit": "V"
+          },
+          {
+            "name": "concentrationOverpotential",
+            "value": 0.021083872702377687,
+            "unit": "V"
+          },
+          {
+            "name": "voltageEfficiency",
+            "value": 0.7377773057281501,
+            "unit": "",
+            "uncertainty": 0.02
+          },
+          {
+            "name": "faradaicEfficiency",
+            "value": 0.9796996996996997,
+            "unit": "",
+            "uncertainty": 0.015
+          },
+          {
+            "name": "totalEfficiency",
+            "value": 0.7228002048671223,
+            "unit": "",
+            "uncertainty": 0.03
+          },
+          {
+            "name": "thermalEfficiency",
+            "value": 0.8141425169823473,
+            "unit": ""
+          },
+          {
+            "name": "exergyEfficiency",
+            "value": 0.6660592991930343,
+            "unit": ""
+          },
+          {
+            "name": "hydrogenRate",
+            "value": 61.41082845814151,
+            "unit": "L/h",
+            "uncertainty": 3.0705414229070755
+          },
+          {
+            "name": "power",
+            "value": 269.83205694042294,
+            "unit": "W"
+          },
+          {
+            "name": "specificEnergy",
+            "value": 48.820933396921525,
+            "unit": "kWh/kg"
+          }
+        ],
+        "exergy": {
+          "efficiency": 0.7377773057281501,
+          "exergyDestruction": 236.00042484466488,
+          "majorLosses": [
+            "Improve combustion efficiency",
+            "Optimize operating temperatures"
+          ],
+          "improvementPotential": 0.06293344662524396
+        },
+        "metadata": {
+          "provider": "Analytical Models",
+          "tier": "tier1",
+          "duration": 52,
+          "cost": 0,
+          "timestamp": "2025-12-31T22:24:29.994Z",
+          "dataSourceInfo": {
+            "usingFallback": false,
+            "sources": {
+              "faradaicEfficiency": {
+                "source": "electrochemistry-literature",
+                "isFallback": false
+              },
+              "exergyImprovement": {
+                "source": "exergy-analysis-literature",
+                "isFallback": false
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "testId": "tier2-solar-monte-carlo",
+      "tier": "tier2",
+      "testName": "Solar PV Monte Carlo",
+      "timestamp": "2025-12-31T22:24:29.995Z",
+      "executionTimeMs": 0,
+      "memoryUsageMb": 0.0067596435546875,
+      "costUsd": 0,
+      "passedAllCriteria": false,
+      "criteriaResults": [],
+      "uncertaintyQuantified": false,
+      "confidenceInterval": null,
+      "dataSourceUsed": "unknown",
+      "simulationResult": null,
+      "error": "Provider for tier2 is not available. Check MODAL_API_KEY."
+    },
+    {
+      "testId": "tier2-wind-monte-carlo",
+      "tier": "tier2",
+      "testName": "Wind Monte Carlo",
+      "timestamp": "2025-12-31T22:24:29.995Z",
+      "executionTimeMs": 0,
+      "memoryUsageMb": 0.00185394287109375,
+      "costUsd": 0,
+      "passedAllCriteria": false,
+      "criteriaResults": [],
+      "uncertaintyQuantified": false,
+      "confidenceInterval": null,
+      "dataSourceUsed": "unknown",
+      "simulationResult": null,
+      "error": "Provider for tier2 is not available. Check MODAL_API_KEY."
+    },
+    {
+      "testId": "tier3-thermo-sweep",
+      "tier": "tier3",
+      "testName": "Thermodynamic Parametric Sweep",
+      "timestamp": "2025-12-31T22:24:29.995Z",
+      "executionTimeMs": 0,
+      "memoryUsageMb": 0.00390625,
+      "costUsd": 0,
+      "passedAllCriteria": false,
+      "criteriaResults": [],
+      "uncertaintyQuantified": false,
+      "confidenceInterval": null,
+      "dataSourceUsed": "unknown",
+      "simulationResult": null,
+      "error": "Provider for tier3 is not available. Check MODAL_API_KEY."
+    },
+    {
+      "testId": "tier3-electrolyzer-opt",
+      "tier": "tier3",
+      "testName": "Electrolyzer Optimization",
+      "timestamp": "2025-12-31T22:24:29.995Z",
+      "executionTimeMs": 0,
+      "memoryUsageMb": 0.00205230712890625,
+      "costUsd": 0,
+      "passedAllCriteria": false,
+      "criteriaResults": [],
+      "uncertaintyQuantified": false,
+      "confidenceInterval": null,
+      "dataSourceUsed": "unknown",
+      "simulationResult": null,
+      "error": "Provider for tier3 is not available. Check MODAL_API_KEY."
+    }
+  ],
+  "findings": {
+    "publicationGrade": false,
+    "overallScore": 16.666666666666664,
+    "areasNeedingCorrection": [
+      "[tier1-thermo-rankine] Within practical range: Expected 35-47%, got 48.9%",
+      "[tier2-solar-monte-carlo] Provider for tier2 is not available. Check MODAL_API_KEY.",
+      "[tier2-wind-monte-carlo] Provider for tier2 is not available. Check MODAL_API_KEY.",
+      "[tier3-thermo-sweep] Provider for tier3 is not available. Check MODAL_API_KEY.",
+      "[tier3-electrolyzer-opt] Provider for tier3 is not available. Check MODAL_API_KEY."
+    ],
+    "recommendations": [
+      "Review analytical calculator implementations for physics accuracy. Check thermodynamics.ts and electrochemistry.ts for formula correctness.",
+      "Review Monte Carlo configuration and uncertainty propagation. Verify confidence interval calculation assumes correct distribution.",
+      "Review parametric sweep and optimization algorithms. Ensure convergence criteria are appropriate for the problem domain."
+    ]
+  }
+}
