@@ -7,7 +7,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue)](https://www.typescriptlang.org/)
 [![Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black)](https://vercel.com)
 
-**Live Demo:** [your-app.vercel.app](https://exergy-lab.vercel.app)
+**Live Demo:** [exergy-lab.vercel.app](https://exergy-lab.vercel.app)
 
 ---
 
