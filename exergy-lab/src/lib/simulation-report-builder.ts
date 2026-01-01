@@ -47,15 +47,14 @@ const DOMAIN_PATTERNS: [RegExp, ExperimentDomain][] = [
  */
 function extractDomain(config: Partial<SimulationConfig>): ExperimentDomain {
   // 1. Check explicit domain field
-  const explicitDomain = (config as Record<string, unknown>).domain as string | undefined
-  if (explicitDomain) {
+  if (config.domain) {
     const validDomains: ExperimentDomain[] = [
       'solar', 'wind', 'battery', 'hydrogen', 'geothermal',
       'biomass', 'carbon-capture', 'energy-efficiency',
       'grid-optimization', 'materials-science',
     ]
-    if (validDomains.includes(explicitDomain as ExperimentDomain)) {
-      return explicitDomain as ExperimentDomain
+    if (validDomains.includes(config.domain as ExperimentDomain)) {
+      return config.domain as ExperimentDomain
     }
   }
 
@@ -72,6 +71,186 @@ function extractDomain(config: Partial<SimulationConfig>): ExperimentDomain {
 
   // 3. Default to energy-efficiency (neutral fallback instead of 'solar')
   return 'energy-efficiency'
+}
+
+/**
+ * Extract goals/objectives from a natural language simulation description
+ * Looks for action verbs like "analyze", "calculate", "determine", etc.
+ */
+export function extractGoalsFromDescription(description: string): string[] {
+  if (!description || description.trim().length === 0) {
+    return ['Perform thermodynamic simulation and analysis']
+  }
+
+  const goals: string[] = []
+
+  // Split into sentences
+  const sentences = description
+    .split(/[.!?]+/)
+    .map(s => s.trim())
+    .filter(s => s.length > 0)
+
+  // Look for goal-indicating verbs
+  const goalVerbs = [
+    'analyze', 'calculate', 'determine', 'assess', 'evaluate',
+    'model', 'simulate', 'compare', 'investigate', 'study',
+    'measure', 'predict', 'optimize', 'design', 'validate'
+  ]
+
+  for (const sentence of sentences) {
+    const lowerSentence = sentence.toLowerCase()
+    const hasGoalVerb = goalVerbs.some(verb =>
+      lowerSentence.includes(verb) ||
+      lowerSentence.startsWith(verb)
+    )
+
+    if (hasGoalVerb) {
+      // Capitalize first letter
+      const goal = sentence.charAt(0).toUpperCase() + sentence.slice(1)
+      goals.push(goal)
+    }
+  }
+
+  // If no goals found, use the whole description as a single goal
+  if (goals.length === 0) {
+    goals.push(description)
+  }
+
+  return goals
+}
+
+/**
+ * Generate recommendations based on simulation results and configuration
+ */
+function generateRecommendations(
+  result: SimulationResult,
+  config: Partial<SimulationConfig>,
+  domain: ExperimentDomain
+): {
+  designChanges: string[]
+  operationalOptimizations: string[]
+  furtherExperiments: string[]
+  researchDirections: string[]
+} {
+  const designChanges: string[] = []
+  const operationalOptimizations: string[] = []
+  const furtherExperiments: string[] = []
+  const researchDirections: string[] = []
+
+  // Extract key metrics
+  const efficiency = result.metrics.find(m =>
+    m.name.toLowerCase().includes('efficiency')
+  )
+  const power = result.metrics.find(m =>
+    m.name.toLowerCase().includes('power')
+  )
+
+  // Generate tier-specific recommendations
+  const tier = config.tier || 'local'
+  if (tier === 'local') {
+    // T1: Suggest upgrading for more detail
+    furtherExperiments.push(
+      'Run Tier 2 simulation with Monte Carlo uncertainty quantification for statistical validation'
+    )
+    furtherExperiments.push(
+      'Perform parametric sensitivity analysis to identify critical design parameters'
+    )
+  }
+
+  if (tier === 'browser') {
+    // T2: Suggest validation
+    furtherExperiments.push(
+      'Validate results with Tier 3 GPU-accelerated simulation for higher fidelity'
+    )
+    researchDirections.push(
+      'Compare simulation predictions against published experimental data or field measurements'
+    )
+  }
+
+  // Domain-specific recommendations
+  switch (domain) {
+    case 'battery':
+      designChanges.push('Consider thermal management optimization to reduce degradation')
+      operationalOptimizations.push('Implement adaptive charging strategy to balance speed and longevity')
+      researchDirections.push('Investigate alternative chemistries with higher cycle life at fast-charge rates')
+      break
+
+    case 'geothermal':
+      designChanges.push('Evaluate alternative working fluids for improved cycle efficiency')
+      operationalOptimizations.push('Optimize turbine inlet conditions to maximize net power output')
+      researchDirections.push('Assess hybrid configurations combining binary and flash cycles')
+      break
+
+    case 'solar':
+      designChanges.push('Explore multi-junction cell architectures to exceed single-junction limits')
+      operationalOptimizations.push('Implement maximum power point tracking with temperature compensation')
+      researchDirections.push('Investigate tandem perovskite-silicon configurations for higher efficiency')
+      break
+
+    case 'wind':
+      designChanges.push('Optimize blade profile for site-specific wind resource characteristics')
+      operationalOptimizations.push('Implement yaw and pitch control strategies to minimize wake losses')
+      researchDirections.push('Study atmospheric stability effects on power production and turbulence')
+      break
+
+    case 'hydrogen':
+      designChanges.push('Evaluate advanced membrane materials to reduce ohmic overpotential')
+      operationalOptimizations.push('Optimize operating temperature and pressure for maximum efficiency')
+      researchDirections.push('Investigate coupling with renewable energy for green hydrogen production')
+      break
+
+    case 'biomass':
+      designChanges.push('Optimize gasification temperature and pressure for maximum syngas yield')
+      operationalOptimizations.push('Implement feedstock pre-treatment to improve conversion efficiency')
+      researchDirections.push('Explore catalytic upgrading of bio-oil for higher energy density')
+      break
+
+    case 'carbon-capture':
+      designChanges.push('Evaluate novel sorbent materials with lower regeneration energy requirements')
+      operationalOptimizations.push('Optimize capture process parameters to minimize efficiency penalty')
+      researchDirections.push('Investigate direct air capture integration with renewable energy systems')
+      break
+
+    case 'grid-optimization':
+      designChanges.push('Implement advanced control algorithms for real-time load balancing')
+      operationalOptimizations.push('Optimize storage dispatch strategy to minimize peak demand charges')
+      researchDirections.push('Study integration of distributed energy resources with grid stability')
+      break
+
+    case 'materials-science':
+      designChanges.push('Explore nanostructured materials for enhanced catalytic activity')
+      operationalOptimizations.push('Optimize synthesis conditions to maximize material performance')
+      researchDirections.push('Investigate degradation mechanisms and stability under operating conditions')
+      break
+
+    case 'energy-efficiency':
+    default:
+      designChanges.push('Identify and minimize major exergy destruction sources through second-law analysis')
+      operationalOptimizations.push('Optimize operating parameters to maximize overall system efficiency')
+      researchDirections.push('Investigate advanced heat recovery and waste heat utilization strategies')
+      break
+  }
+
+  // Efficiency-based recommendations
+  if (efficiency && efficiency.value < 30) {
+    operationalOptimizations.push(
+      'Identify and minimize major exergy destruction sources through second-law analysis'
+    )
+  }
+
+  // Always suggest validation if not already present
+  if (!researchDirections.some(r => r.includes('validate') || r.includes('experimental'))) {
+    researchDirections.push(
+      'Validate model predictions with experimental measurements to calibrate assumptions'
+    )
+  }
+
+  return {
+    designChanges,
+    operationalOptimizations,
+    furtherExperiments,
+    researchDirections
+  }
 }
 
 /**
@@ -245,7 +424,7 @@ export function buildReportData(
       title: config.title || 'Simulation Report',
       description: config.description || 'Simulation results and analysis',
       domain,
-      goals: [],
+      goals: config.goals || [],
     },
 
     methodology: {
@@ -298,12 +477,20 @@ export function buildReportData(
       futureWork: result.structuredInsights?.nextSteps || [],
     },
 
-    recommendations: {
-      designChanges: [],
-      operationalOptimizations: result.structuredInsights?.recommendations || [],
-      furtherExperiments: [],
-      researchDirections: [],
-    },
+    recommendations: (() => {
+      // Try to use insights from simulation engine first
+      if (result.structuredInsights?.recommendations?.length) {
+        return {
+          designChanges: [],
+          operationalOptimizations: result.structuredInsights.recommendations,
+          furtherExperiments: [],
+          researchDirections: [],
+        }
+      }
+
+      // Otherwise generate recommendations based on results
+      return generateRecommendations(result, config, domain)
+    })(),
 
     references: [],
 

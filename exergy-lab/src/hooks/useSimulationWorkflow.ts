@@ -19,6 +19,7 @@ import type {
   PlanGenerationEvent,
   SimulationPlanParameter,
   WorkflowExecutionProgress,
+  SavedSimulation,
 } from '@/types/simulation-workflow'
 
 // ============================================================================
@@ -183,6 +184,14 @@ function workflowReducer(state: SimulationWorkflowState, action: WorkflowAction)
       }
     }
 
+    case 'LOAD_SAVED':
+      return {
+        ...state,
+        phase: 'complete',
+        plan: action.payload.plan,
+        results: action.payload.results,
+      }
+
     default:
       return state
   }
@@ -224,6 +233,11 @@ export interface UseSimulationWorkflowReturn {
   navigateToPhase: (phase: WorkflowPhase) => void
   navigateBack: () => void
   navigateNext: () => void
+
+  // Save/Load
+  saveCurrentSimulation: (name?: string, tags?: string[]) => SavedSimulation | null
+  loadSavedSimulation: (savedId: string) => void
+  dispatch: React.Dispatch<WorkflowAction>
 
   // Computed
   canGenerate: boolean
@@ -539,6 +553,39 @@ export function useSimulationWorkflow(): UseSimulationWorkflowReturn {
   }, [state.phase, state.plan, state.results])
 
   // ============================================================================
+  // Save/Load Saved Simulations
+  // ============================================================================
+
+  const saveCurrentSimulation = useCallback((name?: string, tags?: string[]): SavedSimulation | null => {
+    if (state.phase !== 'complete' || !state.plan || !state.results) {
+      console.warn('[SimulationWorkflow] Cannot save - simulation not complete')
+      return null
+    }
+
+    const savedSimulation: SavedSimulation = {
+      id: `saved-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      savedAt: new Date().toISOString(),
+      name: name || `${state.plan.simulationType} - ${new Date().toLocaleDateString()}`,
+      tier: state.tier,
+      simulationType: state.simulationType!,
+      goal: state.goal,
+      plan: state.plan,
+      results: state.results,
+      tags,
+      duration: state.elapsedTime,
+      cost: state.results.cost,
+    }
+
+    return savedSimulation
+  }, [state.phase, state.plan, state.results, state.tier, state.simulationType, state.goal, state.elapsedTime])
+
+  const loadSavedSimulation = useCallback((savedId: string) => {
+    // This will be called with saved simulation data from store
+    // Implementation will populate state and navigate to complete phase
+    console.log('[SimulationWorkflow] Load saved simulation:', savedId)
+  }, [])
+
+  // ============================================================================
   // Computed Values
   // ============================================================================
 
@@ -579,6 +626,11 @@ export function useSimulationWorkflow(): UseSimulationWorkflowReturn {
     navigateToPhase,
     navigateBack,
     navigateNext,
+
+    // Save/Load
+    saveCurrentSimulation,
+    loadSavedSimulation,
+    dispatch,
 
     // Computed
     canGenerate,

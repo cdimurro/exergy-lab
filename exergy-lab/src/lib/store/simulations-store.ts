@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { SimulationResult, SimulationTier } from '@/types/simulation'
+import type { SavedSimulation } from '@/types/simulation-workflow'
 
 interface SimulationHistory {
   id: string
@@ -48,6 +49,9 @@ export interface SimulationsState {
   // Comparison mode (compare up to 4 simulations)
   comparison: ComparisonMode
 
+  // Saved workflow states
+  savedSimulations: SavedSimulation[]
+
   // Actions
   addResult: (result: SimulationResult) => void
   setActiveSimulation: (id: string, tier: SimulationTier) => void
@@ -60,6 +64,12 @@ export interface SimulationsState {
   addToComparison: (id: string) => void
   removeFromComparison: (id: string) => void
   clearComparison: () => void
+
+  // Saved simulations
+  saveSimulation: (simulation: SavedSimulation) => void
+  deleteSavedSimulation: (id: string) => void
+  getRecentSimulations: (limit?: number) => SavedSimulation[]
+  getSimulationById: (id: string) => SavedSimulation | undefined
 }
 
 export const useSimulationsStore = create<SimulationsState>()(
@@ -77,6 +87,7 @@ export const useSimulationsStore = create<SimulationsState>()(
         enabled: false,
         simulationIds: []
       },
+      savedSimulations: [],
 
       addResult: (result) => set((state) => {
         const cost = result.cost || 0
@@ -164,14 +175,39 @@ export const useSimulationsStore = create<SimulationsState>()(
           enabled: false,
           simulationIds: []
         }
-      }))
+      })),
+
+      saveSimulation: (simulation) => set((state) => {
+        // Remove duplicate if re-saving
+        const filtered = state.savedSimulations.filter(s => s.id !== simulation.id)
+
+        return {
+          savedSimulations: [simulation, ...filtered].slice(0, 100) // Keep latest 100
+        }
+      }),
+
+      deleteSavedSimulation: (id) => set((state) => ({
+        savedSimulations: state.savedSimulations.filter(s => s.id !== id)
+      })),
+
+      getRecentSimulations: (limit = 5) => {
+        const state = get()
+        return state.savedSimulations
+          .sort((a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime())
+          .slice(0, limit)
+      },
+
+      getSimulationById: (id) => {
+        return get().savedSimulations.find(s => s.id === id)
+      }
     }),
     {
       name: 'exergy-lab-simulations-storage',
       partialize: (state) => ({
         results: state.results.slice(0, 50), // Only persist latest 50
         history: state.history,
-        stats: state.stats
+        stats: state.stats,
+        savedSimulations: state.savedSimulations // Persist saved simulations
         // Don't persist activeSimulation or comparison
       })
     }

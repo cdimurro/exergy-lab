@@ -6,14 +6,29 @@
  * Displays simulation results with key metrics and AI insights.
  */
 
-import { TrendingUp, TrendingDown, Minus, Info, AlertTriangle, CheckCircle } from 'lucide-react'
+import { TrendingUp, TrendingDown, Minus, Info, AlertTriangle, CheckCircle, ArrowRight, Zap, Activity, BarChart3, GitCompare, Target, FlaskConical, Microscope } from 'lucide-react'
 import { Card, Badge } from '@/components/ui'
 import type { SimulationResult } from '@/types/simulation'
-import type { SimulationPlan } from '@/types/simulation-workflow'
+import type { SimulationPlan, RecommendationAction } from '@/types/simulation-workflow'
+import { parseRecommendations } from '@/lib/recommendation-parser'
 
 export interface KeyFindingsProps {
   results: SimulationResult
   plan: SimulationPlan | null
+  onActionClick?: (action: RecommendationAction) => void
+}
+
+// Icon mapping for recommendation types
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  Zap,
+  TrendingUp,
+  Activity,
+  BarChart3,
+  GitCompare,
+  Target,
+  FlaskConical,
+  Microscope,
+  ArrowRight,
 }
 
 // Metric interpretation for common outputs
@@ -50,7 +65,7 @@ const METRIC_INTERPRETATIONS: Record<string, { good: [number, number]; unit: str
   },
 }
 
-export function KeyFindings({ results, plan }: KeyFindingsProps) {
+export function KeyFindings({ results, plan, onActionClick }: KeyFindingsProps) {
   // Get key metrics (high significance)
   const keyMetrics = results.metrics.filter((m) => {
     const name = m.name.toLowerCase()
@@ -69,6 +84,16 @@ export function KeyFindings({ results, plan }: KeyFindingsProps) {
 
   // Parse structured insights if available
   const insights = results.structuredInsights
+
+  // Parse recommendations into actionable items
+  const parsedRecommendations =
+    insights?.recommendations && plan
+      ? parseRecommendations(insights.recommendations, {
+          currentTier: plan.tier,
+          simulationType: plan.simulationType,
+          currentGoal: plan.methodology || '',
+        })
+      : { actions: [], unmapped: [] }
 
   const getMetricStatus = (name: string, value: number): 'good' | 'neutral' | 'warning' => {
     const lowerName = name.toLowerCase()
@@ -192,20 +217,63 @@ export function KeyFindings({ results, plan }: KeyFindingsProps) {
             </div>
           )}
 
-          {/* Recommendations */}
-          {insights.recommendations.length > 0 && (
+          {/* Recommended Next Steps - Interactive Actions */}
+          {(parsedRecommendations.actions.length > 0 || parsedRecommendations.unmapped.length > 0) && (
             <div>
-              <h5 className="text-xs font-medium text-muted mb-2">
-                Recommendations
+              <h5 className="text-xs font-medium text-muted mb-3">
+                Recommended Next Steps
               </h5>
-              <ul className="space-y-2">
-                {insights.recommendations.map((rec, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm">
-                    <TrendingUp className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
-                    <span className="text-muted">{rec}</span>
-                  </li>
-                ))}
-              </ul>
+
+              {/* Interactive Action Cards */}
+              {parsedRecommendations.actions.length > 0 && (
+                <div className="space-y-2 mb-3">
+                  {parsedRecommendations.actions.map((action) => {
+                    const IconComponent = ICON_MAP[action.icon] || ArrowRight
+
+                    return (
+                      <button
+                        key={action.id}
+                        onClick={() => onActionClick?.(action)}
+                        className="w-full text-left p-3 rounded-lg bg-primary/5 hover:bg-primary/10 border border-primary/20 hover:border-primary/30 transition-all group"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center flex-shrink-0">
+                            <IconComponent className="w-4 h-4 text-primary" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-sm font-medium text-foreground">
+                                {action.title}
+                              </span>
+                              {action.targetTier && (
+                                <Badge variant="secondary" className="text-xs">
+                                  {action.targetTier.toUpperCase()}
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted">
+                              {action.description}
+                            </p>
+                          </div>
+                          <ArrowRight className="w-4 h-4 text-muted group-hover:text-primary transition-colors flex-shrink-0 mt-1" />
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+
+              {/* Unmapped Recommendations (fallback) */}
+              {parsedRecommendations.unmapped.length > 0 && (
+                <ul className="space-y-2">
+                  {parsedRecommendations.unmapped.map((rec, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm">
+                      <TrendingUp className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
+                      <span className="text-muted">{rec}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           )}
         </Card>

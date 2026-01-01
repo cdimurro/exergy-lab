@@ -5,7 +5,10 @@
  * simulation goals and the AI generates detailed plans for review and execution.
  */
 
-import type { SimulationTier, SimulationResult } from './simulation'
+import type { SimulationTier as _SimulationTier, SimulationResult } from './simulation'
+
+// Re-export for convenience
+export type SimulationTier = _SimulationTier
 
 // ============================================================================
 // Workflow Phases
@@ -400,3 +403,82 @@ export type WorkflowAction =
   | { type: 'TICK_ELAPSED_TIME' }
   | { type: 'NAVIGATE_TO_PHASE'; payload: WorkflowPhase }
   | { type: 'UPDATE_NAVIGATION_STATE' }
+  | { type: 'LOAD_SAVED'; payload: { plan: SimulationPlan; results: SimulationResult } }
+
+// ============================================================================
+// Saved Workflow State
+// ============================================================================
+
+export interface SavedSimulation {
+  id: string
+  savedAt: string // ISO timestamp
+  name: string // Auto-generated or user-provided
+
+  // Workflow state snapshot
+  tier: SimulationTier
+  simulationType: SimulationType
+  goal: string
+  plan: SimulationPlan
+  results: SimulationResult
+
+  // Metadata
+  tags?: string[]
+  notes?: string
+  duration?: number // Total workflow duration in ms
+  cost?: number // From results
+}
+
+// ============================================================================
+// Recommendation Actions
+// ============================================================================
+
+export type RecommendationActionType =
+  | 'tier-upgrade'
+  | 'sensitivity-analysis'
+  | 'parametric-study'
+  | 'comparison'
+  | 'optimization'
+  | 'validation'
+  | 'experiment-design'
+
+export interface RecommendationAction {
+  id: string
+  type: RecommendationActionType
+  title: string
+  description: string
+  icon: string // Lucide icon name
+
+  // Pre-fill data
+  targetTier?: SimulationTier
+  targetGoal?: string
+  keepParameters?: boolean
+  navigateTo?: string // URL path
+
+  // Original recommendation text
+  rawRecommendation: string
+}
+
+export interface ParsedRecommendations {
+  actions: RecommendationAction[]
+  unmapped: string[] // Recommendations that couldn't be mapped
+}
+
+// ============================================================================
+// History Filters
+// ============================================================================
+
+export interface SimulationHistoryFilters {
+  tier?: SimulationTier | 'all'
+  simulationType?: SimulationType | 'all'
+  dateRange?: {
+    start: string // ISO date
+    end: string // ISO date
+  }
+  searchQuery?: string
+  tags?: string[]
+}
+
+export interface HistorySort {
+  field: 'savedAt' | 'name' | 'tier' | 'cost' | 'duration'
+  direction: 'asc' | 'desc'
+}

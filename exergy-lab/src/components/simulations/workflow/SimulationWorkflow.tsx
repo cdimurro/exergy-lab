@@ -8,6 +8,7 @@
  */
 
 import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { AlertCircle, ArrowLeft, Download, RefreshCw, Lightbulb, Check } from 'lucide-react'
 import { Card, Button, Badge } from '@/components/ui'
 import { useSimulationWorkflow } from '@/hooks/useSimulationWorkflow'
@@ -18,13 +19,20 @@ import { SimulationPlanCard } from './SimulationPlanCard'
 import { KeyFindings } from './KeyFindings'
 import { WorkflowStepper } from './WorkflowStepper'
 import { SampleSimulations } from '../SampleSimulations'
-import { buildReportData } from '@/lib/simulation-report-builder'
+import { buildReportData, extractGoalsFromDescription } from '@/lib/simulation-report-builder'
 import { ReportDownloadButton } from '../ReportDownloadButton'
+import { SaveWorkflowButton } from './SaveWorkflowButton'
+import { useSimulationsStore } from '@/lib/store/simulations-store'
 import type { SampleSimulation } from '@/data/sample-simulations'
+import type { ExperimentDomain } from '@/types/exergy-experiment'
+import type { RecommendationAction } from '@/types/simulation-workflow'
 
 export function SimulationWorkflow() {
   const workflow = useSimulationWorkflow()
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const [changeFeedback, setChangeFeedback] = useState('')
+  const { toggleComparison, getSimulationById } = useSimulationsStore()
 
   // Sample selection handler
   const handleSampleSelect = (sample: SampleSimulation) => {
@@ -36,6 +44,116 @@ export function SimulationWorkflow() {
       workflow.generatePlan()
     }, 500)
   }
+
+  // Recommendation action handler
+  const handleActionClick = (action: RecommendationAction) => {
+    switch (action.type) {
+      case 'tier-upgrade':
+        // Upgrade tier and regenerate plan with same goal
+        if (action.targetTier) {
+          workflow.setTier(action.targetTier)
+          // Keep current goal and parameters
+          setTimeout(() => {
+            workflow.generatePlan()
+          }, 300)
+        }
+        break
+
+      case 'sensitivity-analysis':
+        // Augment goal with sensitivity analysis request
+        if (action.targetGoal) {
+          workflow.setGoal(action.targetGoal)
+          setTimeout(() => {
+            workflow.generatePlan()
+          }, 300)
+        }
+        break
+
+      case 'parametric-study':
+        // Similar to sensitivity - augment goal
+        if (action.targetGoal) {
+          workflow.setGoal(action.targetGoal)
+          setTimeout(() => {
+            workflow.generatePlan()
+          }, 300)
+        }
+        break
+
+      case 'optimization':
+        // Augment goal with optimization request
+        if (action.targetGoal) {
+          workflow.setGoal(action.targetGoal)
+          setTimeout(() => {
+            workflow.generatePlan()
+          }, 300)
+        }
+        break
+
+      case 'comparison':
+        // Navigate to comparison mode or enable it
+        if (action.navigateTo) {
+          router.push(action.navigateTo)
+        } else {
+          toggleComparison()
+        }
+        break
+
+      case 'validation':
+      case 'experiment-design':
+        // Navigate to experiments page
+        if (action.navigateTo) {
+          router.push(action.navigateTo)
+        }
+        break
+
+      default:
+        console.warn('[SimulationWorkflow] Unknown action type:', action.type)
+    }
+  }
+
+  // URL-based loading of saved simulations
+  useEffect(() => {
+    const loadId = searchParams.get('load')
+    const rerunId = searchParams.get('rerun')
+
+    if (loadId) {
+      // Load complete saved simulation
+      const saved = getSimulationById(loadId)
+      if (saved) {
+        // Dispatch LOAD_SAVED action to workflow
+        workflow.dispatch({
+          type: 'LOAD_SAVED',
+          payload: {
+            plan: saved.plan,
+            results: saved.results,
+          },
+        })
+
+        // Clear URL params
+        router.replace('/simulations')
+      } else {
+        console.warn('[SimulationWorkflow] Saved simulation not found:', loadId)
+      }
+    } else if (rerunId) {
+      // Load parameters and regenerate plan
+      const saved = getSimulationById(rerunId)
+      if (saved) {
+        workflow.setTier(saved.tier)
+        workflow.setSimulationType(saved.simulationType)
+        workflow.setGoal(saved.goal)
+
+        // Trigger plan generation after a brief delay
+        setTimeout(() => {
+          workflow.generatePlan()
+        }, 500)
+
+        // Clear URL params
+        router.replace('/simulations')
+      } else {
+        console.warn('[SimulationWorkflow] Saved simulation not found:', rerunId)
+      }
+    }
+  }, [searchParams, getSimulationById, workflow, router])
 
   // Keyboard shortcuts for navigation
   useEffect(() => {
@@ -350,12 +468,15 @@ export function SimulationWorkflow() {
                 </p>
               </div>
               <div className="flex gap-2">
+                <SaveWorkflowButton onSave={workflow.saveCurrentSimulation} />
                 {workflow.results && workflow.plan && (
                   <ReportDownloadButton
                     reportData={buildReportData(workflow.results, {
                       tier: workflow.plan.tier,
                       title: workflow.plan.title,
                       description: workflow.plan.methodology,
+                      domain: workflow.plan.simulationType as ExperimentDomain,
+                      goals: extractGoalsFromDescription(workflow.goal),
                       parameters: workflow.plan.parameters.map(p => ({
                         name: p.name,
                         value: p.value,
@@ -377,6 +498,7 @@ export function SimulationWorkflow() {
               <KeyFindings
                 results={workflow.results}
                 plan={workflow.plan}
+                onActionClick={handleActionClick}
               />
             )}
           </div>
@@ -414,7 +536,7 @@ export function SimulationWorkflow() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="w-full">
       {/* Phase Indicator */}
       <div className="mb-8">
         <div className="flex items-center gap-2 mb-4">

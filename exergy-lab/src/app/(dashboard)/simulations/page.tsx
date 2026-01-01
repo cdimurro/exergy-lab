@@ -1,5 +1,6 @@
 'use client'
 
+import { Suspense } from 'react'
 import { Zap } from 'lucide-react'
 import { SimulationWorkflow } from '@/components/simulations/workflow'
 
@@ -23,7 +24,9 @@ export default function SimulationsPage() {
 
       {/* Main Content */}
       <div className="flex-1 overflow-auto p-6">
-        <SimulationWorkflow />
+        <Suspense fallback={<div className="flex items-center justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary" /></div>}>
+          <SimulationWorkflow />
+        </Suspense>
       </div>
     </div>
   )
