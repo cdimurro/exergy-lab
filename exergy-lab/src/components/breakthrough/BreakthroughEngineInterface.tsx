@@ -500,21 +500,21 @@ export function BreakthroughEngineInterface() {
           /* Idle State - Match Discovery Engine layout */
           <div className="h-full flex flex-col">
             {/* Header - Fixed at top */}
-            <div className="shrink-0 text-center pt-8 pb-6 px-6">
-              <div className="mb-4 flex justify-center">
-                <Microscope size={72} className="text-amber-600" />
+            <div className="shrink-0 text-center pt-6 pb-4 px-6">
+              <div className="mb-3 flex justify-center">
+                <Microscope size={56} className="text-amber-600" />
               </div>
-              <h1 className="text-5xl sm:text-6xl font-bold tracking-tight mb-3 text-amber-600">
+              <h1 className="text-4xl sm:text-5xl font-bold tracking-tight mb-2 text-amber-600">
                 Breakthrough Engine
               </h1>
-              <p className="text-lg text-muted-foreground max-w-xl mx-auto">
+              <p className="text-base text-muted-foreground max-w-xl mx-auto">
                 Multi-agent hypothesis generation with 12-dimension validation
               </p>
             </div>
 
-            {/* Instructions Card */}
-            <div className="flex-1 overflow-y-auto px-6 flex items-start justify-center pt-2">
-              <div className="max-w-4xl w-full">
+            {/* Instructions Card - Scrollable */}
+            <div className="flex-1 min-h-0 overflow-y-auto px-6 pb-4">
+              <div className="max-w-4xl w-full mx-auto">
                 <IdleStateCard
                   onExampleClick={(exampleQuery) => {
                     startDiscovery(exampleQuery)
@@ -524,7 +524,7 @@ export function BreakthroughEngineInterface() {
             </div>
 
             {/* Input Area - Fixed at bottom */}
-            <div className="shrink-0 border-t border-border px-6 py-4 bg-background">
+            <div className="shrink-0 border-t border-border px-6 py-3 bg-background">
               <form onSubmit={handleSubmit} className="w-full">
                 <div className="flex gap-3 items-end">
                   <textarea
@@ -535,7 +535,7 @@ export function BreakthroughEngineInterface() {
                     disabled={isInputDisabled}
                     placeholder="Describe a clean energy research challenge to discover potential breakthrough solutions..."
                     className={cn(
-                      'flex-1 min-h-[120px] max-h-[200px] p-4',
+                      'flex-1 min-h-[80px] max-h-[160px] p-3',
                       'rounded-xl border border-border bg-background',
                       'text-foreground placeholder:text-muted-foreground',
                       'resize-none focus:outline-none focus:ring-2 focus:ring-amber-500/50',
@@ -545,7 +545,7 @@ export function BreakthroughEngineInterface() {
                   <Button
                     type="submit"
                     disabled={isInputDisabled || !inputValue.trim()}
-                    className="h-[56px] px-8 shrink-0 bg-amber-600 hover:bg-amber-700"
+                    className="h-[48px] px-6 shrink-0 bg-amber-600 hover:bg-amber-700"
                   >
                     {isInputDisabled ? (
                       <Loader2 className="h-5 w-5 animate-spin" />
@@ -657,55 +657,55 @@ function IdleStateCard({
   ]
 
   return (
-    <div className="w-full rounded-xl border bg-card p-6">
-      <h2 className="text-xl font-semibold text-foreground mb-5">
+    <div className="w-full rounded-xl border bg-card p-5">
+      <h2 className="text-lg font-semibold text-foreground mb-4">
         How It Works
       </h2>
 
       {/* Steps - Compact inline layout */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-6">
-        <div className="flex items-start gap-3">
-          <div className="w-9 h-9 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0 text-amber-600 text-base font-semibold">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
+        <div className="flex items-start gap-2.5">
+          <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0 text-amber-600 text-sm font-semibold">
             1
           </div>
           <div>
-            <p className="text-base text-foreground font-medium">Enter a query</p>
-            <p className="text-sm text-muted-foreground mt-0.5">Describe a clean energy challenge.</p>
+            <p className="text-sm text-foreground font-medium">Enter a query</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Describe a clean energy challenge.</p>
           </div>
         </div>
 
-        <div className="flex items-start gap-3">
-          <div className="w-9 h-9 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0 text-amber-600 text-base font-semibold">
+        <div className="flex items-start gap-2.5">
+          <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0 text-amber-600 text-sm font-semibold">
             2
           </div>
           <div>
-            <p className="text-base text-foreground font-medium">Hypothesis Generation</p>
-            <p className="text-sm text-muted-foreground mt-0.5">Hypotheses are generated and refined.</p>
+            <p className="text-sm text-foreground font-medium">Hypothesis Generation</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Hypotheses are generated and refined.</p>
           </div>
         </div>
 
-        <div className="flex items-start gap-3">
-          <div className="w-9 h-9 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0 text-amber-600 text-base font-semibold">
+        <div className="flex items-start gap-2.5">
+          <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0 text-amber-600 text-sm font-semibold">
             3
           </div>
           <div>
-            <p className="text-base text-foreground font-medium">Breakthrough Evaluation</p>
-            <p className="text-sm text-muted-foreground mt-0.5">Hypotheses are evaluated for their potential.</p>
+            <p className="text-sm text-foreground font-medium">Breakthrough Evaluation</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Hypotheses are evaluated for their potential.</p>
           </div>
         </div>
       </div>
 
       {/* Examples */}
-      <div className="mb-6">
-        <h3 className="text-base font-medium text-foreground mb-3">
-          Example Challenges <span className="text-sm text-muted-foreground font-normal"></span>
+      <div className="mb-5">
+        <h3 className="text-sm font-medium text-foreground mb-2.5">
+          Example Challenges
         </h3>
-        <div className="space-y-2.5">
+        <div className="space-y-2">
           {examples.map((example, index) => (
             <button
               key={index}
               onClick={() => onExampleClick(example)}
-              className="w-full text-left p-3 rounded-lg bg-muted/50 border border-border text-base text-muted-foreground italic hover:bg-amber-500/10 hover:border-amber-500/30 hover:text-foreground transition-all duration-200 cursor-pointer group"
+              className="w-full text-left p-2.5 rounded-lg bg-muted/50 border border-border text-sm text-muted-foreground italic hover:bg-amber-500/10 hover:border-amber-500/30 hover:text-foreground transition-all duration-200 cursor-pointer group"
             >
               <span className="group-hover:text-amber-600">"{example}"</span>
             </button>
@@ -714,23 +714,23 @@ function IdleStateCard({
       </div>
 
       {/* 5 Agents & 12 Dimensions */}
-      <div className="pt-5 border-t">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      <div className="pt-4 border-t">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           {/* 5 HypGen Agents */}
           <div>
-            <h3 className="text-base font-medium text-foreground mb-3">5 Hypothesis Generation Agents</h3>
-            <div className="space-y-2">
+            <h3 className="text-sm font-medium text-foreground mb-2.5">5 Hypothesis Generation Agents</h3>
+            <div className="space-y-1.5">
               {(['novel', 'feasible', 'economic', 'cross-domain', 'paradigm'] as const).map((agent) => {
                 const agentConfig = AGENT_CONFIG[agent]
                 return (
-                  <div key={agent} className="flex items-center gap-2.5 text-sm">
+                  <div key={agent} className="flex items-center gap-2 text-sm">
                     <span
-                      className="w-6 h-6 rounded flex items-center justify-center"
+                      className="w-5 h-5 rounded flex items-center justify-center"
                       style={{ backgroundColor: `${agentConfig.color}20`, color: agentConfig.color }}
                     >
                       {agentConfig.icon}
                     </span>
-                    <span className="text-foreground">{agentConfig.label}</span>
+                    <span className="text-foreground text-xs">{agentConfig.label}</span>
                   </div>
                 )
               })}
@@ -739,8 +739,8 @@ function IdleStateCard({
 
           {/* 12 Breakthrough Dimensions */}
           <div>
-            <h3 className="text-base font-medium text-foreground mb-3">12-Dimension Scoring Criteria</h3>
-            <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground">
+            <h3 className="text-sm font-medium text-foreground mb-2.5">12-Dimension Scoring Criteria</h3>
+            <div className="grid grid-cols-2 gap-1.5 text-xs text-muted-foreground">
               <span>Performance Gains</span>
               <span>Cost Reductions</span>
               <span>Advanced Capabilities</span>
