@@ -133,7 +133,7 @@ export function ExperimentWorkflow() {
   }
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-6">
+    <div className="w-full space-y-6">
       {/* Error Display */}
       {workflow.error && (
         <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400">
