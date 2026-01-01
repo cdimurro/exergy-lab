@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { ExperimentProtocol } from '@/types/experiment'
+import type { SavedExperiment } from '@/types/experiment-workflow'
 
 interface ExperimentDraft {
   id: string
@@ -16,7 +17,7 @@ interface ExperimentHistory {
 }
 
 export interface ExperimentsState {
-  // Saved protocols
+  // Saved protocols (legacy)
   protocols: ExperimentProtocol[]
 
   // Auto-save draft (current work-in-progress)
@@ -24,6 +25,9 @@ export interface ExperimentsState {
 
   // Protocol history for quick access
   history: ExperimentHistory[]
+
+  // NEW: Saved experiments from workflow
+  savedExperiments: SavedExperiment[]
 
   // Actions
   saveProtocol: (protocol: ExperimentProtocol) => void
@@ -33,6 +37,13 @@ export interface ExperimentsState {
   deleteProtocol: (id: string) => void
   duplicateProtocol: (id: string) => void
   getStats: () => { total: number; drafts: number; completed: number }
+
+  // NEW: Workflow experiment actions
+  saveExperiment: (experiment: SavedExperiment) => void
+  deleteSavedExperiment: (id: string) => void
+  getRecentExperiments: (limit?: number) => SavedExperiment[]
+  getExperimentById: (id: string) => SavedExperiment | undefined
+  addToComparison: (id: string) => void
 }
 
 export const useExperimentsStore = create<ExperimentsState>()(
@@ -41,6 +52,7 @@ export const useExperimentsStore = create<ExperimentsState>()(
       protocols: [],
       currentDraft: null,
       history: [],
+      savedExperiments: [],
 
       saveProtocol: (protocol) => set((state) => {
         const id = protocol.title ? `exp_${Date.now()}` : `exp_${Date.now()}`
@@ -105,6 +117,32 @@ export const useExperimentsStore = create<ExperimentsState>()(
           drafts: state.currentDraft ? 1 : 0,
           completed: state.protocols.length
         }
+      },
+
+      // NEW: Workflow experiment methods
+      saveExperiment: (experiment) => set((state) => {
+        const filtered = state.savedExperiments.filter(e => e.id !== experiment.id)
+        return { savedExperiments: [experiment, ...filtered].slice(0, 100) }
+      }),
+
+      deleteSavedExperiment: (id) => set((state) => ({
+        savedExperiments: state.savedExperiments.filter(e => e.id !== id)
+      })),
+
+      getRecentExperiments: (limit = 5) => {
+        const state = get()
+        return state.savedExperiments
+          .sort((a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime())
+          .slice(0, limit)
+      },
+
+      getExperimentById: (id) => {
+        return get().savedExperiments.find(e => e.id === id)
+      },
+
+      addToComparison: (id) => {
+        // TODO: Implement comparison mode
+        console.log('Add to comparison:', id)
       }
     }),
     {
@@ -112,7 +150,8 @@ export const useExperimentsStore = create<ExperimentsState>()(
       partialize: (state) => ({
         protocols: state.protocols.slice(0, 20), // Only persist latest 20
         currentDraft: state.currentDraft,
-        history: state.history.slice(0, 50)
+        history: state.history.slice(0, 50),
+        savedExperiments: state.savedExperiments.slice(0, 100) // Persist latest 100 experiments
       })
     }
   )

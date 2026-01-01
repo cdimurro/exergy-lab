@@ -14,6 +14,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Validate context files
+        run: node .claude/scripts/validate-context.js
+        continue-on-error: true
+
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:

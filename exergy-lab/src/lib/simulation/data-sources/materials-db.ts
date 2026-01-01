@@ -254,14 +254,50 @@ interface CachedMaterial {
 }
 
 /**
+ * Rate limiter for API calls
+ */
+class RateLimiter {
+  private tokens: number
+  private maxTokens: number
+  private refillRate: number // tokens per ms
+  private lastRefill: number
+
+  constructor(requestsPerSecond: number = 10) {
+    this.maxTokens = requestsPerSecond
+    this.tokens = requestsPerSecond
+    this.refillRate = requestsPerSecond / 1000
+    this.lastRefill = Date.now()
+  }
+
+  async acquire(): Promise<void> {
+    this.refill()
+    if (this.tokens < 1) {
+      const waitTime = (1 - this.tokens) / this.refillRate
+      await new Promise(resolve => setTimeout(resolve, waitTime))
+      this.refill()
+    }
+    this.tokens -= 1
+  }
+
+  private refill(): void {
+    const now = Date.now()
+    const elapsed = now - this.lastRefill
+    this.tokens = Math.min(this.maxTokens, this.tokens + elapsed * this.refillRate)
+    this.lastRefill = now
+  }
+}
+
+/**
  * Materials Database class
  */
 export class MaterialsDatabase {
   private apiKey: string | null
   private cache: Map<string, CachedMaterial> = new Map()
+  private rateLimiter: RateLimiter
 
   constructor() {
     this.apiKey = process.env.MATERIALS_PROJECT_API_KEY || null
+    this.rateLimiter = new RateLimiter(10) // 10 requests per second
   }
 
   /**
@@ -439,6 +475,9 @@ export class MaterialsDatabase {
     if (!this.apiKey) return null
 
     try {
+      // Apply rate limiting before API call
+      await this.rateLimiter.acquire()
+
       const url = new URL('https://api.materialsproject.org/materials/summary/')
       url.searchParams.set('formula', formula)
       url.searchParams.set('_limit', '1')
@@ -478,6 +517,57 @@ export class MaterialsDatabase {
     } catch (error) {
       console.error('[MaterialsDatabase] API fetch error:', error)
       return null
+    }
+  }
+
+  /**
+   * Batch query for multiple materials
+   * Uses caching and parallelism with rate limiting
+   */
+  async getBatchMaterialProperties(
+    formulas: string[]
+  ): Promise<Map<string, MaterialProperties | null>> {
+    const results = new Map<string, MaterialProperties | null>()
+
+    // Process in parallel batches of 10 (respecting rate limit)
+    const batchSize = 10
+    for (let i = 0; i < formulas.length; i += batchSize) {
+      const batch = formulas.slice(i, i + batchSize)
+      const batchResults = await Promise.all(
+        batch.map(async formula => {
+          const props = await this.getMaterialProperties(formula)
+          return { formula, props }
+        })
+      )
+
+      for (const { formula, props } of batchResults) {
+        results.set(formula, props)
+      }
+    }
+
+    return results
+  }
+
+  /**
+   * Get data freshness info
+   */
+  getDataFreshness(): {
+    cachedCount: number
+    oldestCacheEntry: Date | null
+    apiAvailable: boolean
+  } {
+    let oldest: number | null = null
+
+    for (const cached of this.cache.values()) {
+      if (oldest === null || cached.timestamp < oldest) {
+        oldest = cached.timestamp
+      }
+    }
+
+    return {
+      cachedCount: this.cache.size,
+      oldestCacheEntry: oldest ? new Date(oldest) : null,
+      apiAvailable: !!this.apiKey,
     }
   }
 }

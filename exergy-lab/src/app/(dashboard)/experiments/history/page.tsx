@@ -1,10 +1,10 @@
 'use client'
 
 /**
- * Simulation History Page
+ * Experiment History Page
  *
- * Browse, search, and manage all saved simulation workflows.
- * Features: search, filters, bulk actions, comparison mode.
+ * Browse, search, and manage all saved experiment workflows.
+ * Features: search, filters, bulk actions, export.
  */
 
 import { useState, useMemo } from 'react'
@@ -14,78 +14,73 @@ import {
   Trash2,
   Play,
   Eye,
-  GitCompare,
   Download,
-  Flame,
   Sun,
   Wind,
   Battery,
+  Flame,
   Droplets,
   Recycle,
   Factory,
   Zap,
   Globe,
   Atom,
-  Bot,
+  FlaskConical,
   Clock,
   Filter,
 } from 'lucide-react'
 import { Card, Button, Badge } from '@/components/ui'
-import { useSimulationsStore } from '@/lib/store/simulations-store'
-import type { SimulationTier, SimulationType, SavedSimulation } from '@/types/simulation-workflow'
+import { useExperimentsStore } from '@/lib/store/experiments-store'
+import type { ExperimentDomain, SavedExperiment } from '@/types/experiment-workflow'
 
 // Icon mapping
-const SIMULATION_ICONS: Partial<Record<SimulationType, React.ComponentType<{ className?: string }>>> = {
+const DOMAIN_ICONS: Partial<Record<string, React.ComponentType<{ className?: string }>>> = {
+  'solar-energy': Sun,
+  'wind-energy': Wind,
+  'battery-storage': Battery,
   'geothermal': Flame,
-  'solar': Sun,
-  'wind': Wind,
-  'battery': Battery,
-  'hydrogen': Droplets,
+  'hydrogen-fuel': Droplets,
+  'biomass': Recycle,
   'carbon-capture': Factory,
-  'materials': Atom,
-  'process': Factory,
+  'energy-efficiency': Zap,
+  'grid-optimization': Globe,
+  'materials-science': Atom,
 }
 
-export default function SimulationHistoryPage() {
+export default function ExperimentHistoryPage() {
   const router = useRouter()
-  const { savedSimulations, deleteSavedSimulation, addToComparison } = useSimulationsStore()
+  const { savedExperiments, deleteSavedExperiment } = useExperimentsStore()
 
   // Filters and search
   const [searchQuery, setSearchQuery] = useState('')
-  const [tierFilter, setTierFilter] = useState<SimulationTier | 'all'>('all')
-  const [typeFilter, setTypeFilter] = useState<SimulationType | 'all'>('all')
+  const [domainFilter, setDomainFilter] = useState<ExperimentDomain | 'all'>('all')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
-  // Filtered simulations
-  const filteredSimulations = useMemo(() => {
-    let filtered = [...savedSimulations]
+  // Filtered experiments
+  const filteredExperiments = useMemo(() => {
+    let filtered = [...savedExperiments]
 
     // Search filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase()
       filtered = filtered.filter(
-        (sim) =>
-          sim.name.toLowerCase().includes(query) ||
-          sim.goal.toLowerCase().includes(query) ||
-          sim.tags?.some((tag) => tag.toLowerCase().includes(query))
+        (exp) =>
+          exp.name.toLowerCase().includes(query) ||
+          exp.goal.toLowerCase().includes(query) ||
+          exp.tags?.some((tag) => tag.toLowerCase().includes(query))
       )
     }
 
-    // Tier filter
-    if (tierFilter !== 'all') {
-      filtered = filtered.filter((sim) => sim.tier === tierFilter)
-    }
-
-    // Type filter
-    if (typeFilter !== 'all') {
-      filtered = filtered.filter((sim) => sim.simulationType === typeFilter)
+    // Domain filter
+    if (domainFilter !== 'all') {
+      filtered = filtered.filter((exp) => exp.domain === domainFilter)
     }
 
     // Sort by most recent
     return filtered.sort(
       (a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime()
     )
-  }, [savedSimulations, searchQuery, tierFilter, typeFilter])
+  }, [savedExperiments, searchQuery, domainFilter])
 
   // Selection handlers
   const toggleSelection = (id: string) => {
@@ -99,7 +94,7 @@ export default function SimulationHistoryPage() {
   }
 
   const selectAll = () => {
-    setSelectedIds(new Set(filteredSimulations.map((s) => s.id)))
+    setSelectedIds(new Set(filteredExperiments.map((e) => e.id)))
   }
 
   const clearSelection = () => {
@@ -111,34 +106,24 @@ export default function SimulationHistoryPage() {
     if (selectedIds.size === 0) return
     if (
       !window.confirm(
-        `Delete ${selectedIds.size} simulation${selectedIds.size > 1 ? 's' : ''}?`
+        `Delete ${selectedIds.size} experiment${selectedIds.size > 1 ? 's' : ''}?`
       )
     ) {
       return
     }
 
-    selectedIds.forEach((id) => deleteSavedSimulation(id))
+    selectedIds.forEach((id) => deleteSavedExperiment(id))
     setSelectedIds(new Set())
-  }
-
-  const handleBulkCompare = () => {
-    if (selectedIds.size < 2 || selectedIds.size > 4) {
-      alert('Select 2-4 simulations to compare')
-      return
-    }
-
-    selectedIds.forEach((id) => addToComparison(id))
-    router.push('/simulations?mode=compare')
   }
 
   const handleBulkExport = () => {
     if (selectedIds.size === 0) return
 
-    const selected = filteredSimulations.filter((s) => selectedIds.has(s.id))
+    const selected = filteredExperiments.filter((e) => selectedIds.has(e.id))
     const dataStr = JSON.stringify(selected, null, 2)
     const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(dataStr)}`
 
-    const exportFileDefaultName = `simulations-export-${Date.now()}.json`
+    const exportFileDefaultName = `experiments-export-${Date.now()}.json`
 
     const linkElement = document.createElement('a')
     linkElement.setAttribute('href', dataUri)
@@ -146,28 +131,28 @@ export default function SimulationHistoryPage() {
     linkElement.click()
   }
 
-  // Single simulation actions
+  // Single experiment actions
   const handleView = (id: string) => {
-    router.push(`/simulations?load=${id}`)
+    router.push(`/experiments?load=${id}`)
   }
 
   const handleRunAgain = (id: string) => {
-    router.push(`/simulations?rerun=${id}`)
+    router.push(`/experiments?rerun=${id}`)
   }
 
   const handleDelete = (id: string, name: string) => {
-    if (!window.confirm(`Delete simulation "${name}"?`)) return
-    deleteSavedSimulation(id)
+    if (!window.confirm(`Delete experiment "${name}"?`)) return
+    deleteSavedExperiment(id)
   }
 
-  // Export single simulation as JSON
-  const handleExportSingle = (sim: SavedSimulation) => {
-    const dataStr = JSON.stringify(sim, null, 2)
+  // Export single experiment as JSON
+  const handleExportSingle = (exp: SavedExperiment) => {
+    const dataStr = JSON.stringify(exp, null, 2)
     const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(dataStr)}`
 
     const linkElement = document.createElement('a')
     linkElement.setAttribute('href', dataUri)
-    linkElement.setAttribute('download', `simulation-${sim.id}.json`)
+    linkElement.setAttribute('download', `experiment-${exp.id}.json`)
     linkElement.click()
   }
 
@@ -191,18 +176,18 @@ export default function SimulationHistoryPage() {
   }
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-6">
+    <div className="w-full max-w-7xl mx-auto space-y-6 p-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-foreground mb-2">Simulation History</h1>
+        <h1 className="text-2xl font-bold text-foreground mb-2">Experiment History</h1>
         <p className="text-muted">
-          Browse, search, and manage all saved simulation workflows
+          Browse, search, and manage all saved experiment workflows
         </p>
       </div>
 
       {/* Filters */}
       <Card className="p-4 bg-card-dark border-border">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Search */}
           <div className="relative">
             <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted" />
@@ -215,35 +200,20 @@ export default function SimulationHistoryPage() {
             />
           </div>
 
-          {/* Tier Filter */}
+          {/* Domain Filter */}
           <div className="relative">
             <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted pointer-events-none" />
             <select
-              value={tierFilter}
-              onChange={(e) => setTierFilter(e.target.value as SimulationTier | 'all')}
+              value={domainFilter}
+              onChange={(e) => setDomainFilter(e.target.value as ExperimentDomain | 'all')}
               className="w-full pl-10 pr-4 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none"
             >
-              <option value="all">All Tiers</option>
-              <option value="local">Tier 1 (Local)</option>
-              <option value="browser">Tier 2 (Browser)</option>
-              <option value="cloud">Tier 3 (Cloud)</option>
-            </select>
-          </div>
-
-          {/* Type Filter */}
-          <div className="relative">
-            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted pointer-events-none" />
-            <select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value as SimulationType | 'all')}
-              className="w-full pl-10 pr-4 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none"
-            >
-              <option value="all">All Types</option>
+              <option value="all">All Domains</option>
+              <option value="solar-energy">Solar Energy</option>
+              <option value="wind-energy">Wind Energy</option>
+              <option value="battery-storage">Battery Storage</option>
               <option value="geothermal">Geothermal</option>
-              <option value="solar">Solar</option>
-              <option value="wind">Wind</option>
-              <option value="battery">Battery</option>
-              <option value="hydrogen">Hydrogen</option>
+              <option value="hydrogen-fuel">Hydrogen Fuel</option>
               <option value="biomass">Biomass</option>
               <option value="carbon-capture">Carbon Capture</option>
               <option value="energy-efficiency">Energy Efficiency</option>
@@ -267,20 +237,11 @@ export default function SimulationHistoryPage() {
                   Clear
                 </Button>
                 <Button size="sm" variant="outline" onClick={selectAll}>
-                  Select All ({filteredSimulations.length})
+                  Select All ({filteredExperiments.length})
                 </Button>
               </div>
             </div>
             <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleBulkCompare}
-                disabled={selectedIds.size < 2 || selectedIds.size > 4}
-              >
-                <GitCompare className="w-4 h-4 mr-2" />
-                Compare
-              </Button>
               <Button size="sm" variant="outline" onClick={handleBulkExport}>
                 <Download className="w-4 h-4 mr-2" />
                 Export
@@ -297,12 +258,12 @@ export default function SimulationHistoryPage() {
       {/* Results Count */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted">
-          {filteredSimulations.length} simulation{filteredSimulations.length !== 1 ? 's' : ''} found
+          {filteredExperiments.length} experiment{filteredExperiments.length !== 1 ? 's' : ''} found
         </p>
       </div>
 
       {/* Grid */}
-      {filteredSimulations.length === 0 ? (
+      {filteredExperiments.length === 0 ? (
         <Card className="p-12 bg-card-dark border-border">
           <div className="flex flex-col items-center text-center space-y-4">
             <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
@@ -310,30 +271,30 @@ export default function SimulationHistoryPage() {
             </div>
             <div>
               <h3 className="text-lg font-semibold text-foreground mb-2">
-                No simulations found
+                No experiments found
               </h3>
               <p className="text-muted max-w-md">
-                {searchQuery || tierFilter !== 'all' || typeFilter !== 'all'
+                {searchQuery || domainFilter !== 'all'
                   ? 'Try adjusting your filters or search query'
-                  : 'Complete and save a simulation to see it appear here'}
+                  : 'Complete and save an experiment to see it appear here'}
               </p>
             </div>
-            {savedSimulations.length === 0 && (
-              <Button onClick={() => router.push('/simulations')}>
-                Run Your First Simulation
+            {savedExperiments.length === 0 && (
+              <Button onClick={() => router.push('/experiments')}>
+                Design Your First Experiment
               </Button>
             )}
           </div>
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredSimulations.map((sim) => {
-            const Icon = SIMULATION_ICONS[sim.simulationType] || Bot
-            const isSelected = selectedIds.has(sim.id)
+          {filteredExperiments.map((exp) => {
+            const Icon = DOMAIN_ICONS[exp.domain] || FlaskConical
+            const isSelected = selectedIds.has(exp.id)
 
             return (
               <Card
-                key={sim.id}
+                key={exp.id}
                 className={`p-4 bg-card-dark border-border hover:border-primary/30 transition-all ${
                   isSelected ? 'ring-2 ring-primary/50 border-primary' : ''
                 }`}
@@ -344,7 +305,7 @@ export default function SimulationHistoryPage() {
                   <input
                     type="checkbox"
                     checked={isSelected}
-                    onChange={() => toggleSelection(sim.id)}
+                    onChange={() => toggleSelection(exp.id)}
                     className="mt-1 w-4 h-4 rounded border-border text-primary focus:ring-2 focus:ring-primary/50"
                   />
 
@@ -356,14 +317,11 @@ export default function SimulationHistoryPage() {
                   {/* Title and Badges */}
                   <div className="flex-1 min-w-0">
                     <h3 className="text-sm font-semibold text-foreground truncate mb-1">
-                      {sim.name}
+                      {exp.name}
                     </h3>
                     <div className="flex gap-2">
                       <Badge variant="secondary" className="text-xs">
-                        {sim.tier.toUpperCase()}
-                      </Badge>
-                      <Badge variant="secondary" className="text-xs">
-                        {sim.simulationType}
+                        {exp.domain}
                       </Badge>
                     </div>
                   </div>
@@ -371,33 +329,49 @@ export default function SimulationHistoryPage() {
 
                 {/* Goal Preview */}
                 <p className="text-xs text-muted line-clamp-2 mb-3">
-                  {sim.goal}
+                  {exp.goal}
                 </p>
 
                 {/* Metadata */}
                 <div className="grid grid-cols-2 gap-2 mb-3 text-xs">
                   <div>
                     <span className="text-foreground-subtle">Saved:</span>{' '}
-                    <span className="text-muted">{formatDate(sim.savedAt)}</span>
+                    <span className="text-muted">{formatDate(exp.savedAt)}</span>
                   </div>
                   <div>
                     <span className="text-foreground-subtle">Duration:</span>{' '}
-                    <span className="text-muted">{formatDuration(sim.duration)}</span>
+                    <span className="text-muted">{formatDuration(exp.duration)}</span>
                   </div>
-                  {sim.cost !== undefined && (
+                  {exp.cost !== undefined && (
                     <div className="col-span-2">
                       <span className="text-foreground-subtle">Cost:</span>{' '}
-                      <span className="text-muted">${sim.cost.toFixed(4)}</span>
+                      <span className="text-muted">${exp.cost.toFixed(2)}</span>
                     </div>
                   )}
                 </div>
+
+                {/* Validation Summary */}
+                {exp.validation && (
+                  <div className="p-2 rounded bg-background border border-border mb-3">
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <span className="text-muted">Literature:</span>{' '}
+                        <span className="text-foreground">{exp.validation.literatureAlignment.confidence}%</span>
+                      </div>
+                      <div>
+                        <span className="text-muted">Equipment:</span>{' '}
+                        <span className="text-foreground">{exp.validation.equipmentFeasibility.tier}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Actions */}
                 <div className="flex gap-2 pt-3 border-t border-border">
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => handleView(sim.id)}
+                    onClick={() => handleView(exp.id)}
                     className="flex-1"
                   >
                     <Eye className="w-3.5 h-3.5 mr-1.5" />
@@ -406,7 +380,7 @@ export default function SimulationHistoryPage() {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => handleRunAgain(sim.id)}
+                    onClick={() => handleRunAgain(exp.id)}
                     className="flex-1"
                   >
                     <Play className="w-3.5 h-3.5 mr-1.5" />
@@ -415,7 +389,7 @@ export default function SimulationHistoryPage() {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => handleExportSingle(sim)}
+                    onClick={() => handleExportSingle(exp)}
                     title="Export as JSON"
                   >
                     <Download className="w-3.5 h-3.5" />
@@ -423,7 +397,7 @@ export default function SimulationHistoryPage() {
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => handleDelete(sim.id, sim.name)}
+                    onClick={() => handleDelete(exp.id, exp.name)}
                   >
                     <Trash2 className="w-3.5 h-3.5 text-red-400" />
                   </Button>
