@@ -18,6 +18,7 @@ import type {
   SimulationDataPoint,
   TierComparison,
   CloudGPUProvider,
+  StructuredInsights,
 } from '@/types/simulation'
 
 /**
@@ -228,7 +229,9 @@ export class SimulationEngine {
     this.updateProgress({ status: 'processing', percentage: 95, currentStep: 'Generating insights' })
 
     // Generate insights
-    result.insights = await this.generateInsights(config, result.metrics)
+    const insightsResult = await this.generateInsights(config, result.metrics)
+    result.insights = insightsResult.raw
+    result.structuredInsights = insightsResult.structured
 
     this.updateProgress({ status: 'completed', percentage: 100 })
     result.progress.status = 'completed'
@@ -292,7 +295,9 @@ export class SimulationEngine {
       result.cost = this.estimateCloudCost(config)
 
       // Generate AI insights based on high-accuracy results
-      result.insights = await this.generateInsights(config, result.metrics)
+      const insightsResult = await this.generateInsights(config, result.metrics)
+      result.insights = insightsResult.raw
+      result.structuredInsights = insightsResult.structured
 
       this.updateProgress({ status: 'completed', percentage: 100 })
       result.progress.status = 'completed'
@@ -370,7 +375,9 @@ export class SimulationEngine {
     ]
 
     result.visualizations = this.generateCloudVisualizations(config, result.metrics)
-    result.insights = await this.generateInsights(config, result.metrics)
+    const insightsResult = await this.generateInsights(config, result.metrics)
+    result.insights = insightsResult.raw
+    result.structuredInsights = insightsResult.structured
     result.cost = this.estimateCloudCost(config)
 
     this.updateProgress({ status: 'completed', percentage: 100 })
@@ -443,24 +450,55 @@ Base your predictions on similar clean energy systems and fundamental physics pr
   }
 
   /**
-   * Helper: Generate AI insights
+   * Helper: Generate AI insights with structured sections
    */
   private async generateInsights(
     config: SimulationConfig,
     metrics: SimulationMetric[]
-  ): Promise<string> {
+  ): Promise<{ raw: string; structured?: { summary: string; observations: string[]; recommendations: string[]; warnings: string[]; nextSteps: string[] } }> {
     const metricsText = metrics.map((m) => `${m.name}: ${m.value} ${m.unit}`).join('\n')
 
-    const prompt = `Based on these simulation results:
+    const prompt = `You are a clean energy simulation analyst. Based on these simulation results:
 
 ${metricsText}
 
-Provide 2-3 key insights about the performance and potential optimizations.`
+Provide analysis in JSON format with the following structure:
+{
+  "summary": "A brief 1-2 sentence summary of the overall results",
+  "observations": ["key observation 1", "key observation 2"],
+  "recommendations": ["actionable recommendation 1", "actionable recommendation 2"],
+  "warnings": ["any concerns or limitations to note"],
+  "nextSteps": ["suggested next step 1", "suggested next step 2"]
+}
+
+Be specific and technical. Focus on clean energy performance metrics.`
 
     try {
-      return await aiRouter.execute('simulation-predict', prompt, { temperature: 0.7 })
+      const response = await aiRouter.execute('simulation-predict', prompt, { temperature: 0.5 })
+
+      // Try to parse JSON from response
+      const jsonMatch = response.match(/\{[\s\S]*\}/)
+      if (jsonMatch) {
+        try {
+          const parsed = JSON.parse(jsonMatch[0])
+          return {
+            raw: response,
+            structured: {
+              summary: parsed.summary || '',
+              observations: Array.isArray(parsed.observations) ? parsed.observations : [],
+              recommendations: Array.isArray(parsed.recommendations) ? parsed.recommendations : [],
+              warnings: Array.isArray(parsed.warnings) ? parsed.warnings : [],
+              nextSteps: Array.isArray(parsed.nextSteps) ? parsed.nextSteps : [],
+            }
+          }
+        } catch {
+          // JSON parsing failed, return raw only
+        }
+      }
+
+      return { raw: response }
     } catch (error) {
-      return 'Insights generation temporarily unavailable.'
+      return { raw: 'Insights generation temporarily unavailable.' }
     }
   }
 

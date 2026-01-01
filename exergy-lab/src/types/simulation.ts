@@ -62,13 +62,25 @@ export interface SimulationProgress {
   completedAt?: string
 }
 
+/**
+ * Structured AI insights with organized sections
+ */
+export interface StructuredInsights {
+  summary: string
+  observations: string[]
+  recommendations: string[]
+  warnings: string[]
+  nextSteps: string[]
+}
+
 export interface SimulationResult {
   id: string
   config: SimulationConfig
   progress: SimulationProgress
   metrics: SimulationMetric[]
   visualizations: SimulationVisualization[]
-  insights?: string // AI-generated insights about results
+  insights?: string // AI-generated insights about results (raw text)
+  structuredInsights?: StructuredInsights // Parsed structured insights
   rawData?: string // CSV or JSON export of raw data
   cost?: number // Actual cost for Tier 3
   error?: string

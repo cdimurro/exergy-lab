@@ -550,13 +550,16 @@ export function useSimulation() {
     if (!state.result) return
 
     try {
+      // Import the report builder dynamically to avoid circular dependencies
+      const { buildReportData } = await import('@/lib/simulation-report-builder')
+      const reportData = buildReportData(state.result, state.config)
+
       const response = await fetch('/api/simulations/report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          result: state.result,
-          config: state.config,
-          includeExergy: true,
+          reportData,
+          format: 'pdf',
         }),
       })
 
@@ -564,11 +567,24 @@ export function useSimulation() {
         throw new Error('Failed to generate report')
       }
 
-      const blob = await response.blob()
+      const result = await response.json()
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to generate report')
+      }
+
+      // Decode base64 PDF
+      const binaryString = atob(result.data)
+      const bytes = new Uint8Array(binaryString.length)
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i)
+      }
+      const blob = new Blob([bytes], { type: 'application/pdf' })
+
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `simulation-report-${state.result.id}.pdf`
+      a.download = result.filename || `simulation-report-${state.result.id}.pdf`
       a.click()
       URL.revokeObjectURL(url)
 

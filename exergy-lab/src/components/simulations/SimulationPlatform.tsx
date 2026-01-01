@@ -23,6 +23,7 @@ import {
 } from 'lucide-react'
 import { Card, Button, Badge, Input } from '@/components/ui'
 import { useSimulation, TIER_INFO, QUICK_CALCULATORS, type QuickCalculator } from '@/hooks/useSimulation'
+import { AIInsightsCard } from '@/components/simulations/AIInsightsCard'
 import type { Domain } from '@/types/discovery'
 import type { SimulationTier, SimulationParameter } from '@/types/simulation'
 
@@ -184,28 +185,28 @@ export function SimulationPlatform({ domains = [] }: SimulationPlatformProps) {
         {/* Left Panel: Configuration */}
         <div className="w-[45%] border-r border-border flex flex-col">
           {/* Tier Selector */}
-          <div className="p-4 border-b border-border bg-background">
-            <h3 className="text-sm font-semibold text-foreground mb-3">Simulation Tier</h3>
-            <div className="grid grid-cols-3 gap-3">
+          <div className="p-5 border-b border-border bg-background">
+            <h3 className="text-base font-semibold text-foreground mb-4">Simulation Tier</h3>
+            <div className="grid grid-cols-3 gap-4">
               {TIER_INFO.map(tier => (
                 <button
                   key={tier.tier}
                   onClick={() => sim.setTier(tier.tier)}
                   disabled={sim.phase === 'running'}
-                  className={`p-3 rounded-lg border-2 text-left transition-all ${
+                  className={`p-5 rounded-xl border-2 text-left transition-all duration-200 ${
                     sim.selectedTier === tier.tier
-                      ? 'border-primary bg-primary/5'
-                      : 'border-border hover:border-primary/50'
+                      ? 'border-primary bg-primary/5 shadow-lg shadow-primary/10'
+                      : 'border-border hover:border-primary/50 hover:shadow-md'
                   }`}
                 >
-                  <div className="flex items-center gap-2 mb-1">
-                    <Badge className={getTierBadgeColor(tier.tier)}>
+                  <div className="flex items-center gap-3 mb-2">
+                    <Badge className={`${getTierBadgeColor(tier.tier)} text-sm px-2 py-1`}>
                       {tier.tier === 'local' ? 'T1' : tier.tier === 'browser' ? 'T2' : 'T3'}
                     </Badge>
-                    {tier.tier === 'local' && <span className="text-xs text-green-600">Free</span>}
+                    {tier.tier === 'local' && <span className="text-sm font-medium text-green-600">Free</span>}
                   </div>
-                  <p className="text-xs font-medium text-foreground">{tier.name.replace('Tier 1: ', '').replace('Tier 2: ', '').replace('Tier 3: ', '')}</p>
-                  <p className="text-xs text-foreground-muted mt-0.5">{tier.estimatedTime}</p>
+                  <p className="text-base font-semibold text-foreground">{tier.name.replace('Tier 1: ', '').replace('Tier 2: ', '').replace('Tier 3: ', '')}</p>
+                  <p className="text-sm text-foreground-muted mt-1">{tier.estimatedTime}</p>
                 </button>
               ))}
             </div>
@@ -527,21 +528,24 @@ export function SimulationPlatform({ domains = [] }: SimulationPlatformProps) {
                 </div>
 
                 {/* Key Metrics */}
-                <Card className="p-4">
-                  <h3 className="font-semibold text-foreground mb-4">Key Metrics</h3>
-                  <div className="grid grid-cols-2 gap-4">
+                <Card className="p-5">
+                  <h3 className="text-lg font-semibold text-foreground mb-5">Key Metrics</h3>
+                  <div className="grid grid-cols-2 gap-5">
                     {sim.result.metrics.map((metric, idx) => (
-                      <div key={idx} className="p-3 bg-background rounded-lg border border-border">
-                        <p className="text-sm text-foreground-muted">{metric.name}</p>
-                        <p className="text-2xl font-bold text-foreground">
+                      <div
+                        key={idx}
+                        className="p-5 bg-background rounded-xl border border-border shadow-sm hover:shadow-md transition-shadow duration-200"
+                      >
+                        <p className="text-sm text-foreground-muted mb-1">{metric.name}</p>
+                        <p className="text-3xl font-bold text-foreground">
                           {metric.value.toFixed(2)}
-                          <span className="text-sm font-normal text-foreground-muted ml-1">
+                          <span className="text-base font-normal text-foreground-muted ml-2">
                             {metric.unit}
                           </span>
                         </p>
                         {metric.uncertainty && (
-                          <p className="text-xs text-foreground-subtle">
-                            +/- {metric.uncertainty}%
+                          <p className="text-xs text-foreground-subtle mt-2">
+                            +/- {metric.uncertainty}% uncertainty
                           </p>
                         )}
                       </div>
@@ -550,13 +554,16 @@ export function SimulationPlatform({ domains = [] }: SimulationPlatformProps) {
                 </Card>
 
                 {/* Insights */}
-                {sim.result.insights && (
-                  <Card className="p-4">
-                    <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-                      <Zap className="h-4 w-4 text-primary" />
+                {(sim.result.insights || sim.result.structuredInsights) && (
+                  <Card className="p-5">
+                    <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                      <Zap className="h-5 w-5 text-primary" />
                       AI Insights
                     </h3>
-                    <p className="text-sm text-foreground">{sim.result.insights}</p>
+                    <AIInsightsCard
+                      insights={sim.result.insights}
+                      structuredInsights={sim.result.structuredInsights}
+                    />
                   </Card>
                 )}
               </div>
