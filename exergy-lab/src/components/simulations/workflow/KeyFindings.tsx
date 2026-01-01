@@ -1,0 +1,261 @@
+'use client'
+
+/**
+ * KeyFindings Component
+ *
+ * Displays simulation results with key metrics and AI insights.
+ */
+
+import { TrendingUp, TrendingDown, Minus, Info, AlertTriangle, CheckCircle } from 'lucide-react'
+import { Card, Badge } from '@/components/ui'
+import type { SimulationResult } from '@/types/simulation'
+import type { SimulationPlan } from '@/types/simulation-workflow'
+
+export interface KeyFindingsProps {
+  results: SimulationResult
+  plan: SimulationPlan | null
+}
+
+// Metric interpretation for common outputs
+const METRIC_INTERPRETATIONS: Record<string, { good: [number, number]; unit: string; description: string }> = {
+  efficiency: {
+    good: [15, 100],
+    unit: '%',
+    description: 'Ratio of useful output to total input energy',
+  },
+  'thermal efficiency': {
+    good: [10, 50],
+    unit: '%',
+    description: 'Fraction of thermal energy converted to work',
+  },
+  'power output': {
+    good: [0, Infinity],
+    unit: 'MW',
+    description: 'Electrical power generated',
+  },
+  lcoe: {
+    good: [0, 100],
+    unit: '$/MWh',
+    description: 'Levelized cost of energy over plant lifetime',
+  },
+  'capacity factor': {
+    good: [50, 100],
+    unit: '%',
+    description: 'Actual output as percentage of maximum possible',
+  },
+  'exergy efficiency': {
+    good: [30, 100],
+    unit: '%',
+    description: 'Second-law efficiency accounting for entropy generation',
+  },
+}
+
+export function KeyFindings({ results, plan }: KeyFindingsProps) {
+  // Get key metrics (high significance)
+  const keyMetrics = results.metrics.filter((m) => {
+    const name = m.name.toLowerCase()
+    return (
+      name.includes('efficiency') ||
+      name.includes('power') ||
+      name.includes('lcoe') ||
+      name.includes('capacity')
+    )
+  })
+
+  // Get other metrics
+  const otherMetrics = results.metrics.filter(
+    (m) => !keyMetrics.includes(m)
+  )
+
+  // Parse structured insights if available
+  const insights = results.structuredInsights
+
+  const getMetricStatus = (name: string, value: number): 'good' | 'neutral' | 'warning' => {
+    const lowerName = name.toLowerCase()
+    const interpretation = Object.entries(METRIC_INTERPRETATIONS).find(([key]) =>
+      lowerName.includes(key)
+    )?.[1]
+
+    if (!interpretation) return 'neutral'
+
+    const [min, max] = interpretation.good
+    if (value >= min && value <= max) return 'good'
+    return 'warning'
+  }
+
+  const StatusIcon = ({ status }: { status: 'good' | 'neutral' | 'warning' }) => {
+    switch (status) {
+      case 'good':
+        return <TrendingUp className="w-4 h-4 text-green-400" />
+      case 'warning':
+        return <TrendingDown className="w-4 h-4 text-amber-400" />
+      default:
+        return <Minus className="w-4 h-4 text-foreground-subtle" />
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Key Metrics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {keyMetrics.map((metric, i) => {
+          const status = getMetricStatus(metric.name, metric.value)
+          const lowerName = metric.name.toLowerCase()
+          const interpretation = Object.entries(METRIC_INTERPRETATIONS).find(
+            ([key]) => lowerName.includes(key)
+          )?.[1]
+
+          return (
+            <Card
+              key={i}
+              className={`p-4 bg-card-dark border-border ${
+                status === 'good'
+                  ? 'border-l-2 border-l-green-500'
+                  : status === 'warning'
+                  ? 'border-l-2 border-l-amber-500'
+                  : ''
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-foreground-subtle">{metric.name}</span>
+                {interpretation && (
+                  <span title={interpretation.description}>
+                    <Info className="w-4 h-4 text-foreground-subtle cursor-help" />
+                  </span>
+                )}
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl font-bold text-white">
+                  {metric.value.toFixed(2)}
+                </span>
+                <span className="text-sm text-foreground-subtle">{metric.unit}</span>
+              </div>
+              {metric.uncertainty && (
+                <p className="text-xs text-foreground-subtle mt-1">
+                  +/- {metric.uncertainty.toFixed(1)}% (95% CI)
+                </p>
+              )}
+              <div className="flex items-center gap-1 mt-2">
+                <StatusIcon status={status} />
+                <span className="text-xs text-foreground-subtle">
+                  {status === 'good'
+                    ? 'Within expected range'
+                    : status === 'warning'
+                    ? 'Outside typical range'
+                    : 'Nominal value'}
+                </span>
+              </div>
+            </Card>
+          )
+        })}
+      </div>
+
+      {/* AI Insights */}
+      {insights && (
+        <Card className="p-4 bg-card-dark border-border">
+          <h4 className="text-sm font-medium text-white mb-3">AI Analysis</h4>
+
+          {/* Summary */}
+          {insights.summary && (
+            <p className="text-sm text-foreground-subtle mb-4">{insights.summary}</p>
+          )}
+
+          {/* Observations */}
+          {insights.observations.length > 0 && (
+            <div className="mb-4">
+              <h5 className="text-xs font-medium text-foreground-subtle mb-2">
+                Key Observations
+              </h5>
+              <ul className="space-y-2">
+                {insights.observations.map((obs, i) => (
+                  <li key={i} className="flex items-start gap-2 text-sm">
+                    <CheckCircle className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                    <span className="text-foreground-subtle">{obs}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Warnings */}
+          {insights.warnings.length > 0 && (
+            <div className="mb-4">
+              <h5 className="text-xs font-medium text-amber-400 mb-2">Warnings</h5>
+              <ul className="space-y-2">
+                {insights.warnings.map((warn, i) => (
+                  <li key={i} className="flex items-start gap-2 text-sm">
+                    <AlertTriangle className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
+                    <span className="text-foreground-subtle">{warn}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Recommendations */}
+          {insights.recommendations.length > 0 && (
+            <div>
+              <h5 className="text-xs font-medium text-foreground-subtle mb-2">
+                Recommendations
+              </h5>
+              <ul className="space-y-2">
+                {insights.recommendations.map((rec, i) => (
+                  <li key={i} className="flex items-start gap-2 text-sm">
+                    <TrendingUp className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
+                    <span className="text-foreground-subtle">{rec}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </Card>
+      )}
+
+      {/* All Metrics Table */}
+      {otherMetrics.length > 0 && (
+        <Card className="p-4 bg-card-dark border-border">
+          <h4 className="text-sm font-medium text-white mb-3">All Metrics</h4>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-foreground-subtle border-b border-border">
+                  <th className="pb-2 font-medium">Metric</th>
+                  <th className="pb-2 font-medium text-right">Value</th>
+                  <th className="pb-2 font-medium text-right">Unit</th>
+                  <th className="pb-2 font-medium text-right">Uncertainty</th>
+                </tr>
+              </thead>
+              <tbody>
+                {otherMetrics.map((metric, i) => (
+                  <tr key={i} className="border-b border-border/50">
+                    <td className="py-2 text-white">{metric.name}</td>
+                    <td className="py-2 text-right font-mono text-white">
+                      {metric.value.toFixed(4)}
+                    </td>
+                    <td className="py-2 text-right text-foreground-subtle">{metric.unit}</td>
+                    <td className="py-2 text-right text-foreground-subtle">
+                      {metric.uncertainty ? `+/- ${metric.uncertainty.toFixed(1)}%` : '-'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Confidence Interval Explanation */}
+      <div className="p-3 rounded-lg bg-card-dark border border-border">
+        <div className="flex items-start gap-2">
+          <Info className="w-4 h-4 text-foreground-subtle mt-0.5 flex-shrink-0" />
+          <p className="text-xs text-foreground-subtle">
+            Values shown with +/- X% represent the 95% confidence interval from Monte Carlo simulation.
+            This means we are 95% confident the true value falls within this range.
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default KeyFindings

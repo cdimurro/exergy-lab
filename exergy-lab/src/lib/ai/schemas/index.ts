@@ -224,6 +224,51 @@ export const SimulationResultSchema = z.object({
 })
 
 // ============================================================================
+// Simulation Workflow Schemas (AI-Generated Plans)
+// ============================================================================
+
+export const SimulationTypeSchema = z.enum([
+  'geothermal',
+  'solar',
+  'wind',
+  'battery',
+  'hydrogen',
+  'carbon-capture',
+  'materials',
+  'process',
+])
+
+export const ParameterCategorySchema = z.enum(['input', 'boundary', 'operational'])
+
+export const SimulationPlanParameterSchema = z.object({
+  id: z.string(),
+  name: z.string().min(2),
+  value: z.union([z.number(), z.string()]),
+  unit: z.string(),
+  category: ParameterCategorySchema,
+  description: z.string(),
+  isEditable: z.boolean(),
+  min: z.number().optional(),
+  max: z.number().optional(),
+})
+
+export const ExpectedOutputSchema = z.object({
+  name: z.string().min(2),
+  unit: z.string(),
+  description: z.string(),
+})
+
+export const SimulationPlanSchema = z.object({
+  simulationType: SimulationTypeSchema,
+  title: z.string().min(10).max(200),
+  methodology: z.string().min(100),
+  parameters: z.array(SimulationPlanParameterSchema).min(3).max(20),
+  expectedOutputs: z.array(ExpectedOutputSchema).min(2).max(10),
+  estimatedDuration: z.number().min(1000),
+  estimatedCost: z.number().min(0),
+})
+
+// ============================================================================
 // Data Extraction Schemas
 // ============================================================================
 
@@ -491,6 +536,13 @@ export const AISchemas = {
   // Simulations
   SimulationResult: SimulationResultSchema,
 
+  // Simulation Workflow
+  SimulationType: SimulationTypeSchema,
+  ParameterCategory: ParameterCategorySchema,
+  SimulationPlanParameter: SimulationPlanParameterSchema,
+  ExpectedOutput: ExpectedOutputSchema,
+  SimulationPlan: SimulationPlanSchema,
+
   // Data Extraction
   ExtractedData: ExtractedDataSchema,
 
@@ -515,6 +567,11 @@ export type ExperimentDesign = z.infer<typeof ExperimentDesignSchema>
 export type TEAInsight = z.infer<typeof TEAInsightSchema>
 export type TEAAnalysis = z.infer<typeof TEAAnalysisSchema>
 export type SimulationResult = z.infer<typeof SimulationResultSchema>
+export type SimulationTypeInferred = z.infer<typeof SimulationTypeSchema>
+export type ParameterCategory = z.infer<typeof ParameterCategorySchema>
+export type SimulationPlanParameter = z.infer<typeof SimulationPlanParameterSchema>
+export type ExpectedOutput = z.infer<typeof ExpectedOutputSchema>
+export type SimulationPlan = z.infer<typeof SimulationPlanSchema>
 export type ExtractedData = z.infer<typeof ExtractedDataSchema>
 export type AgentPlan = z.infer<typeof AgentPlanSchema>
 export type AgentAnalysis = z.infer<typeof AgentAnalysisSchema>

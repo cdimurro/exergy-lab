@@ -519,10 +519,33 @@ Be specific and technical. Focus on clean energy performance metrics.`
    * Helper: Calculate efficiency (simplified)
    */
   private calculateEfficiency(params: Record<string, number>): number {
-    // Simplified efficiency calculation
-    const baseEfficiency = 80
+    // Extract temperature parameters (look for various naming conventions)
+    const tHot = params.temperatureHot ?? params.tHot ?? params.sourceTemp ?? params.inletTemp ?? null
+    const tCold = params.temperatureCold ?? params.tCold ?? params.sinkTemp ?? params.ambientTemp ?? null
+
+    // If we have temperature data, calculate Carnot-based efficiency
+    if (tHot !== null && tCold !== null) {
+      // Convert to Kelvin if needed (assume Kelvin if > 200, otherwise Celsius)
+      const hotK = tHot > 200 ? tHot : tHot + 273.15
+      const coldK = tCold > 200 ? tCold : tCold + 273.15
+
+      // Carnot efficiency = 1 - T_cold/T_hot
+      const carnotEfficiency = 1 - (coldK / hotK)
+
+      // Practical efficiency is typically 70-85% of Carnot for ORC/binary cycle
+      // Use 80% as default with small random variation (±5%)
+      const practicalFactor = 0.80 + (Math.random() * 0.10 - 0.05)
+      const efficiency = carnotEfficiency * practicalFactor * 100
+
+      // Return efficiency in percentage, clamped to reasonable bounds
+      return Math.max(5, Math.min(40, efficiency))
+    }
+
+    // Fallback for non-thermal systems (solar, wind, etc.)
+    // Use conservative default with variation
+    const baseEfficiency = 25
     const variation = Math.random() * 10 - 5 // ±5%
-    return Math.max(50, Math.min(95, baseEfficiency + variation))
+    return Math.max(10, Math.min(45, baseEfficiency + variation))
   }
 
   /**
