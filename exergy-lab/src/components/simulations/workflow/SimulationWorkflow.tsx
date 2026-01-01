@@ -9,7 +9,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { AlertCircle, ArrowLeft, Download, RefreshCw, Lightbulb, Check } from 'lucide-react'
+import { AlertCircle, ArrowLeft, Download, RefreshCw, Lightbulb, Check, Settings, Target } from 'lucide-react'
 import { Card, Button, Badge } from '@/components/ui'
 import { useSimulationWorkflow } from '@/hooks/useSimulationWorkflow'
 import { TierSelector } from './TierSelector'
@@ -17,8 +17,13 @@ import { SimulationTypeSelector } from './SimulationTypeSelector'
 import { GoalInput } from './GoalInput'
 import { SimulationPlanCard } from './SimulationPlanCard'
 import { KeyFindings } from './KeyFindings'
-import { WorkflowStepper } from './WorkflowStepper'
 import { SampleSimulations } from '../SampleSimulations'
+import {
+  WorkflowStepper,
+  WorkflowLayout,
+  WorkflowSectionCard,
+  GuidanceSidebar,
+} from '@/components/shared/workflow'
 import { buildReportData, extractGoalsFromDescription } from '@/lib/simulation-report-builder'
 import { ReportDownloadButton } from '../ReportDownloadButton'
 import { SaveWorkflowButton } from './SaveWorkflowButton'
@@ -27,12 +32,38 @@ import type { SampleSimulation } from '@/data/sample-simulations'
 import type { ExperimentDomain } from '@/types/exergy-experiment'
 import type { RecommendationAction } from '@/types/simulation-workflow'
 
+// Workflow steps configuration
+const WORKFLOW_STEPS = [
+  { id: 'setup', label: 'Setup', description: 'Configure simulation' },
+  { id: 'generating', label: 'Generate', description: 'AI creates plan' },
+  { id: 'review', label: 'Review', description: 'Adjust parameters' },
+  { id: 'executing', label: 'Execute', description: 'Run simulation' },
+  { id: 'complete', label: 'Complete', description: 'View results' },
+]
+
+// Guidance sidebar content
+const HOW_IT_WORKS = [
+  { step: 1, title: 'Choose Your Tier', description: 'Start with T1 for quick checks, use T2 for detailed analysis, or T3 for publication-grade results.' },
+  { step: 2, title: 'Describe Your Goal', description: 'Provide operating conditions, materials, and expected outputs. The AI will auto-detect the simulation type.' },
+  { step: 3, title: 'Review & Run', description: 'The AI generates a detailed plan with parameters. Review, adjust, and execute.' },
+]
+
+const TIPS = [
+  'Include specific numbers (temperatures, pressures, flow rates)',
+  'Mention materials and working fluids when relevant',
+  'State what outputs you care about most',
+  'Try the Quick Start examples above to see best practices',
+]
+
 export function SimulationWorkflow() {
   const workflow = useSimulationWorkflow()
   const router = useRouter()
   const searchParams = useSearchParams()
   const [changeFeedback, setChangeFeedback] = useState('')
   const { toggleComparison, getSimulationById } = useSimulationsStore()
+
+  // Calculate current step index
+  const currentStepIndex = WORKFLOW_STEPS.findIndex((s) => s.id === workflow.phase)
 
   // Sample selection handler
   const handleSampleSelect = (sample: SampleSimulation) => {
@@ -182,106 +213,40 @@ export function SimulationWorkflow() {
     switch (workflow.phase) {
       case 'setup':
         return (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left 2/3: Configuration Cards */}
-            <div className="lg:col-span-2 space-y-6">
-              <Card className="p-6">
-                <TierSelector
-                  selectedTier={workflow.tier}
-                  onTierSelect={workflow.setTier}
-                />
-              </Card>
+          <WorkflowLayout sidebar={<GuidanceSidebar howItWorks={HOW_IT_WORKS} tips={TIPS} />}>
+            <WorkflowSectionCard title="Select Computational Tier" icon={Settings}>
+              <TierSelector
+                selectedTier={workflow.tier}
+                onTierSelect={workflow.setTier}
+              />
+            </WorkflowSectionCard>
 
-              <Card className="p-6">
-                <SimulationTypeSelector
-                  selectedType={workflow.simulationType}
-                  detectedType={workflow.detectedType}
-                  onTypeSelect={workflow.setSimulationType}
-                />
-              </Card>
+            <WorkflowSectionCard title="Simulation Type" icon={Target}>
+              <SimulationTypeSelector
+                selectedType={workflow.simulationType}
+                detectedType={workflow.detectedType}
+                onTypeSelect={workflow.setSimulationType}
+              />
+            </WorkflowSectionCard>
 
-              <Card className="p-6">
-                <GoalInput
-                  value={workflow.goal}
-                  onChange={workflow.setGoal}
-                  detectedType={workflow.detectedType}
-                />
-              </Card>
+            <WorkflowSectionCard title="Describe Your Simulation Goal" icon={Target}>
+              <GoalInput
+                value={workflow.goal}
+                onChange={workflow.setGoal}
+                detectedType={workflow.detectedType}
+              />
+            </WorkflowSectionCard>
 
-              <div className="flex justify-end">
-                <Button
-                  onClick={workflow.generatePlan}
-                  disabled={!workflow.canGenerate}
-                  size="lg"
-                >
-                  Generate Simulation Plan
-                </Button>
-              </div>
+            <div className="flex justify-end">
+              <Button
+                onClick={workflow.generatePlan}
+                disabled={!workflow.canGenerate}
+                size="lg"
+              >
+                Generate Simulation Plan
+              </Button>
             </div>
-
-            {/* Right 1/3: Guidance Cards */}
-            <div className="space-y-4">
-              <Card className="p-4 bg-elevated border-border">
-                <h3 className="text-sm font-semibold text-foreground mb-3">
-                  How It Works
-                </h3>
-                <div className="space-y-3 text-xs text-muted">
-                  <div className="flex gap-3">
-                    <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center flex-shrink-0 font-semibold">
-                      1
-                    </div>
-                    <div>
-                      <div className="font-medium text-foreground mb-1">Choose Your Tier</div>
-                      <div>Start with T1 for quick checks, use T2 for detailed analysis, or T3 for publication-grade results.</div>
-                    </div>
-                  </div>
-                  <div className="flex gap-3">
-                    <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center flex-shrink-0 font-semibold">
-                      2
-                    </div>
-                    <div>
-                      <div className="font-medium text-foreground mb-1">Describe Your Goal</div>
-                      <div>Provide operating conditions, materials, and expected outputs. The AI will auto-detect the simulation type.</div>
-                    </div>
-                  </div>
-                  <div className="flex gap-3">
-                    <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center flex-shrink-0 font-semibold">
-                      3
-                    </div>
-                    <div>
-                      <div className="font-medium text-foreground mb-1">Review & Run</div>
-                      <div>The AI generates a detailed plan with parameters. Review, adjust, and execute.</div>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-
-              <Card className="p-4 bg-primary/5 border-primary/20">
-                <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
-                  <Lightbulb className="w-4 h-4 text-primary" />
-                  Pro Tips
-                </h3>
-                <ul className="space-y-2 text-xs text-muted">
-                  <li className="flex gap-2">
-                    <span className="text-primary">•</span>
-                    <span>Include specific numbers (temperatures, pressures, flow rates)</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="text-primary">•</span>
-                    <span>Mention materials and working fluids when relevant</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="text-primary">•</span>
-                    <span>State what outputs you care about most</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="text-primary">•</span>
-                    <span>Try the Quick Start examples above to see best practices</span>
-                  </li>
-                </ul>
-              </Card>
-            </div>
-          </div>
+          </WorkflowLayout>
         )
 
       case 'generating':
@@ -536,43 +501,13 @@ export function SimulationWorkflow() {
   }
 
   return (
-    <div className="w-full">
-      {/* Phase Indicator */}
-      <div className="mb-8">
-        <div className="flex items-center gap-2 mb-4">
-          {['setup', 'generating', 'review', 'executing', 'complete'].map((phase, i) => (
-            <div key={phase} className="flex items-center">
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
-                  phase === workflow.phase
-                    ? 'bg-primary text-white'
-                    : ['generating', 'review', 'executing', 'complete'].indexOf(workflow.phase) > i
-                    ? 'bg-primary/30 text-primary'
-                    : 'bg-border text-foreground-subtle'
-                }`}
-              >
-                {i + 1}
-              </div>
-              {i < 4 && (
-                <div
-                  className={`w-12 h-0.5 ${
-                    ['generating', 'review', 'executing', 'complete'].indexOf(workflow.phase) > i
-                      ? 'bg-primary/30'
-                      : 'bg-border'
-                  }`}
-                />
-              )}
-            </div>
-          ))}
-        </div>
-        <div className="flex justify-between text-xs text-foreground-subtle">
-          <span>Setup</span>
-          <span>Generate</span>
-          <span>Review</span>
-          <span>Execute</span>
-          <span>Complete</span>
-        </div>
-      </div>
+    <div className="w-full max-w-7xl mx-auto space-y-6">
+      {/* Workflow Stepper */}
+      <WorkflowStepper
+        steps={WORKFLOW_STEPS}
+        currentStepIndex={currentStepIndex}
+        disabledSteps={['generating', 'executing']}
+      />
 
       {/* Phase Content */}
       {renderPhaseContent()}

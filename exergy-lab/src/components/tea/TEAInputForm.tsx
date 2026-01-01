@@ -10,6 +10,7 @@ import { useTEAFormState } from '@/hooks/useTEAFormState'
 import { useFormPersistence } from '@/hooks/useFormPersistence'
 import { useTechnologyDefaults } from '@/hooks/useTechnologyDefaults'
 import { validateForm } from '@/lib/tea/validation-rules'
+import { WorkflowLayout, GuidanceSidebar } from '@/components/shared/workflow'
 import type { TEAInput_v2 } from '@/types/tea'
 
 // Section imports
@@ -20,6 +21,20 @@ import { CapitalCostsSection } from './sections/CapitalCostsSection'
 import { OperatingCostsSection } from './sections/OperatingCostsSection'
 import { FinancialParametersSection } from './sections/FinancialParametersSection'
 import { RevenueAssumptionsSection } from './sections/RevenueAssumptionsSection'
+
+// Guidance sidebar content
+const HOW_IT_WORKS = [
+  { step: 1, title: 'Basic Information', description: 'Enter project name, select technology type, and describe your project.' },
+  { step: 2, title: 'Technical Parameters', description: 'Provide capacity, production, and cost estimates for your system.' },
+  { step: 3, title: 'Financial Details', description: 'Enter financial parameters like discount rate, debt ratio, and revenue assumptions.' },
+]
+
+const TIPS = [
+  'Start with Quick Mode for faster analysis, switch to Expert Mode for detailed inputs',
+  'Upload supporting documents (PDFs, spreadsheets) for AI-enhanced analysis',
+  'Use "Load Defaults" to populate typical values for your technology type',
+  'All inputs are auto-saved locally in case you need to return later',
+]
 
 export interface TEAInputFormProps {
   onSubmit: (input: TEAInput_v2) => void
@@ -204,8 +219,16 @@ export function TEAInputForm({
 
   const progress = calculateProgress()
 
+  // Sidebar content
+  const sidebar = (
+    <GuidanceSidebar
+      howItWorks={HOW_IT_WORKS}
+      tips={TIPS}
+    />
+  )
+
   return (
-    <div className="space-y-6">
+    <WorkflowLayout sidebar={sidebar}>
       {/* Restore Dialog */}
       {showRestoreDialog && (
         <Card className="p-4 bg-info/10 border-info/30">
@@ -456,6 +479,6 @@ export function TEAInputForm({
           </Card>
         )}
       </form>
-    </div>
+    </WorkflowLayout>
   )
 }

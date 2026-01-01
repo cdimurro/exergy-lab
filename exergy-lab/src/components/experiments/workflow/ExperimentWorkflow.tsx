@@ -11,16 +11,28 @@ import { useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useExperimentWorkflow } from '@/hooks/useExperimentWorkflow'
 import { useExperimentsStore } from '@/lib/store/experiments-store'
-import { PhaseIndicator } from './PhaseIndicator'
+import { WorkflowStepper } from '@/components/shared/workflow'
 import { SetupPhase } from './SetupPhase'
 import { GeneratingPhase } from './GeneratingPhase'
 import { ReviewPhase } from './ReviewPhase'
 import { ValidatingPhase } from './ValidatingPhase'
 import { CompletePhase } from './CompletePhase'
 
+// Workflow steps configuration
+const WORKFLOW_STEPS = [
+  { id: 'setup', label: 'Setup', description: 'Define experiment goal' },
+  { id: 'generating', label: 'Generating', description: 'AI creates protocol' },
+  { id: 'review', label: 'Review', description: 'Edit and approve' },
+  { id: 'validating', label: 'Validating', description: 'Check accuracy' },
+  { id: 'complete', label: 'Complete', description: 'View results' },
+]
+
 export function ExperimentWorkflow() {
   const workflow = useExperimentWorkflow()
   const searchParams = useSearchParams()
+
+  // Calculate current step index
+  const currentStepIndex = WORKFLOW_STEPS.findIndex((s) => s.id === workflow.phase)
 
   // Load saved experiment or import from Search
   useEffect(() => {
@@ -132,8 +144,12 @@ export function ExperimentWorkflow() {
         </div>
       )}
 
-      {/* Phase Indicator */}
-      <PhaseIndicator currentPhase={workflow.phase} />
+      {/* Workflow Stepper */}
+      <WorkflowStepper
+        steps={WORKFLOW_STEPS}
+        currentStepIndex={currentStepIndex}
+        disabledSteps={['generating', 'validating']}
+      />
 
       {/* Phase Content */}
       {renderPhaseContent()}

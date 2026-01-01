@@ -9,7 +9,15 @@ import { ValidationReportCard, CompactValidationSummary } from '@/components/tea
 import { TEAInputForm } from '@/components/tea/TEAInputForm'
 import { AdminDebugViewer, DebugProvider } from '@/components/debug'
 import { DebugContext } from '@/hooks/use-debug-capture'
+import { WorkflowStepper } from '@/components/shared/workflow'
 import type { TEAInput_v2, TEAResult_v2 } from '@/types/tea'
+
+// Workflow steps configuration
+const WORKFLOW_STEPS = [
+  { id: 'input', label: 'Input', description: 'Enter project details' },
+  { id: 'calculating', label: 'Calculating', description: 'Running analysis' },
+  { id: 'results', label: 'Results', description: 'View report' },
+]
 
 // Inner component that uses the debug context
 function TEAGeneratorContent() {
@@ -173,6 +181,9 @@ function TEAGeneratorContent() {
   // Check if debug mode is enabled
   const debugMode = debugContext?.isEnabled ?? false
 
+  // Calculate current step index
+  const currentStepIndex = WORKFLOW_STEPS.findIndex((s) => s.id === step)
+
   return (
     <div className="h-full flex flex-col bg-background relative">
       {/* Header */}
@@ -206,7 +217,19 @@ function TEAGeneratorContent() {
 
       {/* Main Content */}
       <div className="flex-1 overflow-auto p-8">
-        <div className="w-full space-y-6">
+        <div className="w-full max-w-7xl mx-auto space-y-6">
+          {/* Workflow Stepper */}
+          <WorkflowStepper
+            steps={WORKFLOW_STEPS}
+            currentStepIndex={currentStepIndex}
+            disabledSteps={['calculating']}
+            onNavigate={(index) => {
+              // Allow navigation back to input from results
+              if (index === 0 && step === 'results') {
+                setStep('input')
+              }
+            }}
+          />
 
           {/* Main Content Based on Step */}
           {step === 'input' && (

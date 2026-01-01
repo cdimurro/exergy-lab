@@ -2,6 +2,7 @@
  * Setup Phase Component
  *
  * Initial phase where users define their experiment goal and domain.
+ * Uses shared workflow components for consistent UI.
  */
 
 'use client'
@@ -23,36 +24,45 @@ import {
   Globe,
   Atom,
 } from 'lucide-react'
+import {
+  WorkflowLayout,
+  WorkflowSectionCard,
+  DomainTypeGrid,
+  GoalTextarea,
+  GuidanceSidebar,
+  type GridItem,
+} from '@/components/shared/workflow'
 
 interface SetupPhaseProps {
   workflow: UseExperimentWorkflowReturn
 }
 
-// Domain icons mapping
-const DOMAIN_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
-  'solar-energy': Sun,
-  'wind-energy': Wind,
-  'battery-storage': Battery,
-  'geothermal': Flame,
-  'hydrogen-fuel': Droplets,
-  'biomass': Recycle,
-  'carbon-capture': Factory,
-  'energy-efficiency': Zap,
-  'grid-optimization': Globe,
-  'materials-science': Atom,
-}
+// Domain grid items with icons
+const DOMAIN_ITEMS: GridItem[] = [
+  { id: 'solar-energy', label: 'Solar Energy', icon: Sun },
+  { id: 'wind-energy', label: 'Wind Energy', icon: Wind },
+  { id: 'battery-storage', label: 'Battery Storage', icon: Battery },
+  { id: 'geothermal', label: 'Geothermal', icon: Flame },
+  { id: 'hydrogen-fuel', label: 'Hydrogen Fuel', icon: Droplets },
+  { id: 'biomass', label: 'Biomass', icon: Recycle },
+  { id: 'carbon-capture', label: 'Carbon Capture', icon: Factory },
+  { id: 'energy-efficiency', label: 'Energy Efficiency', icon: Zap },
+  { id: 'grid-optimization', label: 'Grid Optimization', icon: Globe },
+  { id: 'materials-science', label: 'Materials Science', icon: Atom },
+]
 
-const DOMAINS: Array<{ id: ExperimentDomain; label: string }> = [
-  { id: 'solar-energy', label: 'Solar Energy' },
-  { id: 'wind-energy', label: 'Wind Energy' },
-  { id: 'battery-storage', label: 'Battery Storage' },
-  { id: 'geothermal', label: 'Geothermal' },
-  { id: 'hydrogen-fuel', label: 'Hydrogen Fuel' },
-  { id: 'biomass', label: 'Biomass' },
-  { id: 'carbon-capture', label: 'Carbon Capture' },
-  { id: 'energy-efficiency', label: 'Energy Efficiency' },
-  { id: 'grid-optimization', label: 'Grid Optimization' },
-  { id: 'materials-science', label: 'Materials Science' },
+// Guidance sidebar content
+const HOW_IT_WORKS = [
+  { step: 1, title: 'Select Domain', description: 'Choose the research area for your experiment.' },
+  { step: 2, title: 'Define Goal', description: 'Describe what you want to test or investigate.' },
+  { step: 3, title: 'Generate Protocol', description: 'AI creates a detailed experimental protocol.' },
+]
+
+const TIPS = [
+  'Include specific materials, equipment, or techniques you want to use',
+  'Mention environmental conditions (temperature, pressure, atmosphere)',
+  'Specify what you want to measure or characterize',
+  'Note any safety constraints or resource limitations',
 ]
 
 export function SetupPhase({ workflow }: SetupPhaseProps) {
@@ -75,10 +85,18 @@ export function SetupPhase({ workflow }: SetupPhaseProps) {
     }
   }
 
+  // Sidebar content
+  const sidebar = (
+    <GuidanceSidebar
+      howItWorks={HOW_IT_WORKS}
+      tips={TIPS}
+    />
+  )
+
   return (
-    <div className="w-full max-w-4xl mx-auto space-y-6">
+    <WorkflowLayout sidebar={sidebar}>
       {/* Header */}
-      <div className="text-center space-y-2">
+      <div className="text-center space-y-2 mb-6">
         <div className="flex items-center justify-center gap-2">
           <FlaskConical className="w-6 h-6 text-primary" />
           <h2 className="text-2xl font-bold text-foreground">Design Your Experiment</h2>
@@ -89,76 +107,35 @@ export function SetupPhase({ workflow }: SetupPhaseProps) {
       </div>
 
       {/* Domain Selection */}
-      <Card className="p-6 bg-card-dark border-border">
-        <h3 className="text-lg font-semibold text-foreground mb-4">Select Domain</h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-          {DOMAINS.map((domain) => {
-            const Icon = DOMAIN_ICONS[domain.id] || Atom
-            const isSelected = workflow.domain === domain.id
-
-            return (
-              <button
-                key={domain.id}
-                onClick={() => workflow.setDomain(domain.id)}
-                className={`
-                  p-4 rounded-lg border-2 transition-all hover:scale-105
-                  ${
-                    isSelected
-                      ? 'bg-primary/10 border-primary'
-                      : 'bg-background border-border hover:border-primary/50'
-                  }
-                `}
-              >
-                <div className="flex flex-col items-center gap-2">
-                  <Icon
-                    className={`w-6 h-6 ${isSelected ? 'text-primary' : 'text-muted'}`}
-                  />
-                  <span
-                    className={`text-xs font-medium ${
-                      isSelected ? 'text-foreground' : 'text-muted'
-                    }`}
-                  >
-                    {domain.label}
-                  </span>
-                </div>
-              </button>
-            )
-          })}
-        </div>
-      </Card>
+      <WorkflowSectionCard title="Select Domain" icon={Globe}>
+        <DomainTypeGrid
+          items={DOMAIN_ITEMS}
+          selected={workflow.domain}
+          onSelect={(id) => workflow.setDomain(id as ExperimentDomain)}
+          columns={5}
+        />
+      </WorkflowSectionCard>
 
       {/* Goal Input */}
-      <Card className="p-6 bg-card-dark border-border">
-        <h3 className="text-lg font-semibold text-foreground mb-4">
-          Experiment Goal
-          <span className="text-red-400 ml-1">*</span>
-        </h3>
-        <textarea
+      <WorkflowSectionCard title="Experiment Goal" icon={FlaskConical}>
+        <GoalTextarea
           value={workflow.goal}
-          onChange={(e) => workflow.setGoal(e.target.value)}
+          onChange={workflow.setGoal}
           placeholder="Describe what you want to test or investigate. Example: 'Synthesize a high-efficiency perovskite solar cell with lead-free materials and test its stability under humid conditions'"
+          maxLength={1000}
+          minLength={20}
           rows={4}
-          className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
+          required
+          helperText="Be specific about materials, conditions, and what you want to measure"
         />
-        <div className="mt-2 flex items-center justify-between">
-          <p className="text-xs text-muted">
-            Be specific about materials, conditions, and what you want to measure
-          </p>
-          <span
-            className={`text-xs ${workflow.goal.length > 500 ? 'text-amber-400' : 'text-muted'}`}
-          >
-            {workflow.goal.length} / 1000
-          </span>
-        </div>
-      </Card>
+      </WorkflowSectionCard>
 
       {/* Objectives (Optional) */}
-      <Card className="p-6 bg-card-dark border-border">
-        <h3 className="text-lg font-semibold text-foreground mb-4">
-          Measurable Objectives
-          <span className="text-xs font-normal text-muted ml-2">(Optional)</span>
-        </h3>
-
+      <WorkflowSectionCard
+        title="Measurable Objectives"
+        description="(Optional)"
+        icon={Sparkles}
+      >
         {/* Objectives List */}
         {workflow.objectives.length > 0 && (
           <div className="space-y-2 mb-4">
@@ -203,7 +180,7 @@ export function SetupPhase({ workflow }: SetupPhaseProps) {
           Define specific, measurable outcomes you want to achieve (e.g., efficiency targets,
           stability duration, cost limits)
         </p>
-      </Card>
+      </WorkflowSectionCard>
 
       {/* Source Papers Info */}
       {workflow.sourcePapers && (
@@ -235,17 +212,6 @@ export function SetupPhase({ workflow }: SetupPhaseProps) {
           Generate Protocol
         </Button>
       </div>
-
-      {/* Instructions */}
-      <div className="p-4 rounded-lg bg-background border border-border">
-        <h4 className="text-sm font-medium text-foreground mb-2">Quick Tips:</h4>
-        <ul className="text-xs text-muted space-y-1 list-disc list-inside">
-          <li>Include specific materials, equipment, or techniques you want to use</li>
-          <li>Mention environmental conditions (temperature, pressure, atmosphere)</li>
-          <li>Specify what you want to measure or characterize</li>
-          <li>Note any safety constraints or resource limitations</li>
-        </ul>
-      </div>
-    </div>
+    </WorkflowLayout>
   )
 }
