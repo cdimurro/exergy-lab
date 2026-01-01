@@ -19,6 +19,7 @@ import {
   Bot,
   Calculator,
   Cpu,
+  Rocket,
 } from 'lucide-react'
 import { Card, Button, Badge } from '@/components/ui'
 import { useProjectsStore } from '@/lib/store/projects-store'
@@ -37,31 +38,12 @@ import {
 } from '@/components/dashboard'
 
 const ABOUT_FEATURES = [
-  {
-    title: 'Search',
-    description: 'Find papers across 15+ academic databases',
-    icon: Search,
-  },
-  {
-    title: 'Experiments',
-    description: 'AI-generated experimental protocols',
-    icon: FlaskConical,
-  },
-  {
-    title: 'Simulations',
-    description: '3-tier computational simulations',
-    icon: Bot,
-  },
-  {
-    title: 'TEA Reports',
-    description: 'Techno-economic analysis',
-    icon: Calculator,
-  },
-  {
-    title: 'Discovery',
-    description: 'Novel cross-domain innovations',
-    icon: Cpu,
-  },
+  { title: 'Search', description: 'Find papers across 15+ academic databases', icon: Search, href: '/search' },
+  { title: 'Experiments', description: 'AI-generated experimental protocols', icon: FlaskConical, href: '/experiments' },
+  { title: 'Simulations', description: '3-tier computational simulations', icon: Bot, href: '/simulations' },
+  { title: 'Discovery', description: 'Novel cross-domain innovations', icon: Cpu, href: '/discovery' },
+  { title: 'Breakthrough', description: 'Scientific breakthrough engine', icon: Rocket, href: '/breakthrough' },
+  { title: 'TEA Reports', description: 'Techno-economic analysis', icon: Calculator, href: '/tea-generator' },
 ]
 
 export default function DashboardPage() {
@@ -128,8 +110,8 @@ export default function DashboardPage() {
               <Home className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold text-foreground">Dashboard</h1>
-              <p className="text-sm text-foreground-muted">Your research at a glance</p>
+              <h1 className="text-xl font-semibold text-foreground">Exergy Lab</h1>
+              <p className="text-sm text-foreground-muted">AI-powered clean energy research platform</p>
             </div>
           </div>
         </div>
@@ -156,8 +138,8 @@ export default function DashboardPage() {
               <Home className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold text-foreground">Dashboard</h1>
-              <p className="text-sm text-foreground-muted">Your research at a glance</p>
+              <h1 className="text-xl font-semibold text-foreground">Exergy Lab</h1>
+              <p className="text-sm text-foreground-muted">AI-powered clean energy research platform</p>
             </div>
           </div>
           <div className="text-sm text-foreground-muted hidden sm:block">
@@ -190,17 +172,21 @@ export default function DashboardPage() {
             <p className="text-sm text-foreground-muted mb-4">
               An AI-powered platform for accelerating clean energy research and development.
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
               {ABOUT_FEATURES.map((feature) => {
                 const Icon = feature.icon
                 return (
-                  <div key={feature.title} className="p-3 rounded-lg bg-background-surface">
+                  <button
+                    key={feature.title}
+                    onClick={() => router.push(feature.href)}
+                    className="p-3 rounded-lg bg-background-surface hover:bg-background-elevated transition-colors text-left group"
+                  >
                     <div className="flex items-center gap-2 mb-1">
-                      <Icon className="w-4 h-4 text-foreground-muted" />
-                      <span className="font-medium text-foreground text-sm">{feature.title}</span>
+                      <Icon className="w-4 h-4 text-foreground-muted group-hover:text-primary transition-colors" />
+                      <span className="font-medium text-foreground text-sm group-hover:text-primary transition-colors">{feature.title}</span>
                     </div>
                     <p className="text-foreground-muted text-xs">{feature.description}</p>
-                  </div>
+                  </button>
                 )
               })}
             </div>
