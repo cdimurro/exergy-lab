@@ -541,7 +541,7 @@ export function formatEfficiency(efficiency: number): string {
  */
 export function validateEfficiency(
   efficiency: number,
-  type: 'solar' | 'electrolyzer' | 'carnot' | 'battery' | 'fuel-cell' | 'wind'
+  type: 'solar' | 'electrolyzer' | 'carnot' | 'battery' | 'fuel-cell' | 'wind' | 'geothermal' | 'orc' | 'binary' | 'rankine' | 'brayton' | 'combined-cycle'
 ): { valid: boolean; reason?: string } {
   const limits: Record<string, number> = {
     'solar': 0.47,       // Multi-junction under concentration
@@ -550,6 +550,12 @@ export function validateEfficiency(
     'battery': 0.99,     // Round-trip
     'fuel-cell': 0.70,   // High-temp SOFC with CHP
     'wind': 0.593,       // Betz limit
+    'geothermal': 0.35,  // Binary cycle with low-temp source
+    'orc': 0.35,         // Organic Rankine Cycle
+    'binary': 0.35,      // Binary cycle geothermal
+    'rankine': 0.45,     // Steam Rankine
+    'brayton': 0.45,     // Gas turbine
+    'combined-cycle': 0.65, // CCGT
   }
 
   const limit = limits[type] || 1.0

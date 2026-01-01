@@ -21,3 +21,9 @@ export {
   type MetricValidation,
   type Domain,
 } from './benchmark-validator'
+
+export {
+  PhysicsValidator,
+  createPhysicsValidator,
+  type PhysicsValidationResult,
+} from './physics-validator'

@@ -16,6 +16,7 @@ import type { ExergyExperimentFile, SimulationSuggestion } from '@/types/exergy-
 import type {
   SimulationConfig,
   SimulationTier,
+  SimulationDomain,
   SimulationParameter as SimConfigParameter,
 } from '@/types/simulation'
 
@@ -34,7 +35,7 @@ interface ImportRequest {
  */
 interface ExtendedSimulationConfig extends SimulationConfig {
   simulationType?: string
-  domain?: string
+  domain?: SimulationDomain
   boundaryConditions?: Record<string, { type: string; value: number; unit: string }>
   expectedOutputs?: Array<{ name: string; unit: string; expectedRange: [number, number] }>
   experimentSource?: { id: string; title: string; importedAt: string }

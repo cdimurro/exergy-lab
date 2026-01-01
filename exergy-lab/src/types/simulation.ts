@@ -21,6 +21,18 @@ export interface SimulationParameter {
   description?: string
 }
 
+export type SimulationDomain =
+  | 'solar'
+  | 'wind'
+  | 'geothermal'
+  | 'battery'
+  | 'hydrogen'
+  | 'biomass'
+  | 'carbon-capture'
+  | 'grid-optimization'
+  | 'materials-science'
+  | 'energy-efficiency'
+
 export interface SimulationConfig {
   tier: SimulationTier
   experimentId?: string // Reference to experiment protocol
@@ -29,6 +41,7 @@ export interface SimulationConfig {
   parameters: SimulationParameter[]
   duration?: number // Expected duration in seconds
   targetAccuracy?: number // Desired accuracy percentage
+  domain?: SimulationDomain // Energy domain for validation and reporting
 }
 
 export interface SimulationMetric {

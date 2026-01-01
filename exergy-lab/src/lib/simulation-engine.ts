@@ -6,6 +6,7 @@
  */
 
 import { aiRouter } from './ai/model-router'
+import { PhysicsValidator } from './simulation/validation/physics-validator'
 import type {
   SimulationTier,
   TierCapabilities,
@@ -184,6 +185,9 @@ export class SimulationEngine {
     // Generate sample visualization data
     result.visualizations = this.generateLocalVisualizations(config, result.metrics)
 
+    // Apply physics validation before returning
+    this.applyPhysicsValidation(result, config)
+
     this.updateProgress({ status: 'completed', percentage: 100 })
     result.progress.status = 'completed'
     result.progress.percentage = 100
@@ -232,6 +236,9 @@ export class SimulationEngine {
     const insightsResult = await this.generateInsights(config, result.metrics)
     result.insights = insightsResult.raw
     result.structuredInsights = insightsResult.structured
+
+    // Apply physics validation before returning
+    this.applyPhysicsValidation(result, config)
 
     this.updateProgress({ status: 'completed', percentage: 100 })
     result.progress.status = 'completed'
@@ -298,6 +305,9 @@ export class SimulationEngine {
       const insightsResult = await this.generateInsights(config, result.metrics)
       result.insights = insightsResult.raw
       result.structuredInsights = insightsResult.structured
+
+      // Apply physics validation before returning
+      this.applyPhysicsValidation(result, config)
 
       this.updateProgress({ status: 'completed', percentage: 100 })
       result.progress.status = 'completed'
@@ -379,6 +389,9 @@ export class SimulationEngine {
     result.insights = insightsResult.raw
     result.structuredInsights = insightsResult.structured
     result.cost = this.estimateCloudCost(config)
+
+    // Apply physics validation before returning
+    this.applyPhysicsValidation(result, config)
 
     this.updateProgress({ status: 'completed', percentage: 100 })
     result.progress.status = 'completed'
@@ -627,6 +640,44 @@ Be specific and technical. Focus on clean energy performance metrics.`
     if (this.progressCallback) {
       this.progressCallback(progress as SimulationProgress)
     }
+  }
+
+  /**
+   * Apply physics validation to results
+   * Enforces thermodynamic limits (Carnot, Betz, etc.)
+   */
+  private applyPhysicsValidation(
+    result: SimulationResult,
+    config: SimulationConfig
+  ): SimulationResult {
+    const validation = PhysicsValidator.validate(result, config)
+
+    if (!validation.isValid && validation.correctedMetrics) {
+      // Apply corrected metrics
+      result.metrics = validation.correctedMetrics
+
+      // Add validation warnings to structured insights
+      if (result.structuredInsights) {
+        result.structuredInsights.warnings = [
+          ...result.structuredInsights.warnings,
+          ...validation.errors,
+          ...validation.warnings,
+        ]
+      } else if (validation.warnings.length > 0 || validation.errors.length > 0) {
+        // Create minimal structured insights with warnings
+        result.structuredInsights = {
+          summary: 'Physics validation applied corrections to simulation results.',
+          observations: [],
+          recommendations: [],
+          warnings: [...validation.errors, ...validation.warnings],
+          nextSteps: ['Review corrected values for physical reasonableness'],
+        }
+      }
+
+      console.warn('[Physics Validation] Corrections applied:', validation.errors)
+    }
+
+    return result
   }
 
   /**
