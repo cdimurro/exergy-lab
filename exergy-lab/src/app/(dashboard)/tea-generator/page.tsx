@@ -10,6 +10,7 @@ import { TEAInputForm } from '@/components/tea/TEAInputForm'
 import { AdminDebugViewer, DebugProvider } from '@/components/debug'
 import { DebugContext } from '@/hooks/use-debug-capture'
 import { WorkflowStepper } from '@/components/shared/workflow'
+import { useTEAStore } from '@/lib/store/tea-store'
 import type { TEAInput_v2, TEAResult_v2 } from '@/types/tea'
 
 // Workflow steps configuration
@@ -22,6 +23,7 @@ const WORKFLOW_STEPS = [
 // Inner component that uses the debug context
 function TEAGeneratorContent() {
   const debugContext = React.useContext(DebugContext)
+  const teaStore = useTEAStore()
   const [isPremium, setIsPremium] = React.useState(true) // TODO: Get from user subscription - SET TO TRUE FOR TESTING
   const [step, setStep] = React.useState<'input' | 'calculating' | 'results'>('input')
   const [teaInput, setTeaInput] = React.useState<Partial<TEAInput_v2>>({})
@@ -95,6 +97,11 @@ function TEAGeneratorContent() {
         setValidationResult(data.validation)
         setQualityScore(data.qualityAssessment)
         setStep('results')
+
+        // Save to store for dashboard display
+        if (data.results && teaInput) {
+          teaStore.saveReport(teaInput as TEAInput_v2, data.results)
+        }
 
       } catch (fetchError) {
         clearTimeout(timeout) // Clear timeout on error
