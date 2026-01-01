@@ -17,14 +17,13 @@ interface InsightRowProps {
   label: string
   value: string
   icon: React.ComponentType<{ className?: string }>
-  colorClass: string
 }
 
-function InsightRow({ label, value, icon: Icon, colorClass }: InsightRowProps) {
+function InsightRow({ label, value, icon: Icon }: InsightRowProps) {
   return (
     <div className="flex items-center justify-between py-2 border-b border-border last:border-0">
       <div className="flex items-center gap-2">
-        <Icon className={`w-4 h-4 ${colorClass}`} />
+        <Icon className="w-4 h-4 text-foreground-muted" />
         <span className="text-sm text-foreground-muted">{label}</span>
       </div>
       <span className="text-sm font-medium text-foreground">{value}</span>
@@ -39,33 +38,10 @@ function TierBreakdown({ stats }: { stats: { local: number; browser: number; clo
   return (
     <div className="mt-3 pt-3 border-t border-border">
       <p className="text-xs text-foreground-muted mb-2">Simulation Tiers</p>
-      <div className="flex gap-1 h-2 rounded-full overflow-hidden bg-background-elevated">
-        {stats.local > 0 && (
-          <div
-            className="bg-green-500 transition-all"
-            style={{ width: `${(stats.local / total) * 100}%` }}
-            title={`T1: ${stats.local}`}
-          />
-        )}
-        {stats.browser > 0 && (
-          <div
-            className="bg-amber-500 transition-all"
-            style={{ width: `${(stats.browser / total) * 100}%` }}
-            title={`T2: ${stats.browser}`}
-          />
-        )}
-        {stats.cloud > 0 && (
-          <div
-            className="bg-purple-500 transition-all"
-            style={{ width: `${(stats.cloud / total) * 100}%` }}
-            title={`T3: ${stats.cloud}`}
-          />
-        )}
-      </div>
-      <div className="flex justify-between mt-1">
-        <span className="text-xs text-green-500">T1: {stats.local}</span>
-        <span className="text-xs text-amber-500">T2: {stats.browser}</span>
-        <span className="text-xs text-purple-500">T3: {stats.cloud}</span>
+      <div className="flex justify-between text-xs text-foreground-muted">
+        <span>T1 (Local): {stats.local}</span>
+        <span>T2 (Browser): {stats.browser}</span>
+        <span>T3 (Cloud): {stats.cloud}</span>
       </div>
     </div>
   )
@@ -85,7 +61,7 @@ export function SessionInsightsCard() {
     return (
       <Card>
         <div className="flex items-center gap-2 mb-4">
-          <TrendingUp className="w-5 h-5 text-accent-purple" />
+          <TrendingUp className="w-5 h-5 text-foreground-muted" />
           <h3 className="font-semibold text-foreground">Session Insights</h3>
         </div>
         <div className="text-sm text-foreground-muted">Loading...</div>
@@ -118,7 +94,7 @@ export function SessionInsightsCard() {
     return (
       <Card>
         <div className="flex items-center gap-2 mb-4">
-          <TrendingUp className="w-5 h-5 text-accent-purple" />
+          <TrendingUp className="w-5 h-5 text-foreground-muted" />
           <h3 className="font-semibold text-foreground">Session Insights</h3>
         </div>
         <p className="text-sm text-foreground-muted text-center py-4">
@@ -131,7 +107,7 @@ export function SessionInsightsCard() {
   return (
     <Card>
       <div className="flex items-center gap-2 mb-4">
-        <TrendingUp className="w-5 h-5 text-accent-purple" />
+        <TrendingUp className="w-5 h-5 text-foreground-muted" />
         <h3 className="font-semibold text-foreground">Session Insights</h3>
       </div>
 
@@ -140,7 +116,6 @@ export function SessionInsightsCard() {
           label="Simulation Cost"
           value={`$${simStore.stats.totalCost.toFixed(2)}`}
           icon={DollarSign}
-          colorClass="text-accent-amber"
         />
 
         {bestDiscoveryScore > 0 && (
@@ -148,7 +123,6 @@ export function SessionInsightsCard() {
             label="Best Discovery"
             value={bestDiscoveryScore.toFixed(1)}
             icon={Trophy}
-            colorClass="text-accent-rose"
           />
         )}
 
@@ -156,14 +130,12 @@ export function SessionInsightsCard() {
           label="Experiments"
           value={`${completedExperiments} saved${draftExperiments > 0 ? ', 1 draft' : ''}`}
           icon={FlaskConical}
-          colorClass="text-accent-purple"
         />
 
         <InsightRow
           label="Simulations"
           value={`${simStore.stats.totalSimulations} total`}
           icon={Bot}
-          colorClass="text-accent-amber"
         />
       </div>
 

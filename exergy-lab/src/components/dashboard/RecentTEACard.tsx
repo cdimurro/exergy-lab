@@ -72,7 +72,7 @@ export function RecentTEACard() {
       <Card>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <Calculator className="w-5 h-5 text-accent-cyan" />
+            <Calculator className="w-5 h-5 text-foreground-muted" />
             <h3 className="font-semibold text-foreground">Recent TEA Reports</h3>
           </div>
         </div>
@@ -85,7 +85,7 @@ export function RecentTEACard() {
     <Card>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <Calculator className="w-5 h-5 text-accent-cyan" />
+          <Calculator className="w-5 h-5 text-foreground-muted" />
           <h3 className="font-semibold text-foreground">Recent TEA Reports</h3>
         </div>
         <Button

@@ -10,11 +10,15 @@
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  Lightbulb,
+  Home,
   Circle,
   ArrowRight,
   CheckCircle2,
-  TrendingUp,
+  Search,
+  FlaskConical,
+  Bot,
+  Calculator,
+  Cpu,
 } from 'lucide-react'
 import { Card, Button, Badge } from '@/components/ui'
 import { useProjectsStore } from '@/lib/store/projects-store'
@@ -31,6 +35,34 @@ import {
   SessionInsightsCard,
   QuickActionsCard,
 } from '@/components/dashboard'
+
+const ABOUT_FEATURES = [
+  {
+    title: 'Search',
+    description: 'Find papers across 15+ academic databases',
+    icon: Search,
+  },
+  {
+    title: 'Experiments',
+    description: 'AI-generated experimental protocols',
+    icon: FlaskConical,
+  },
+  {
+    title: 'Simulations',
+    description: '3-tier computational simulations',
+    icon: Bot,
+  },
+  {
+    title: 'TEA Reports',
+    description: 'Techno-economic analysis',
+    icon: Calculator,
+  },
+  {
+    title: 'Discovery',
+    description: 'Novel cross-domain innovations',
+    icon: Cpu,
+  },
+]
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -89,10 +121,20 @@ export default function DashboardPage() {
 
   if (!mounted) {
     return (
-      <div className="min-h-screen p-6 md:p-8">
-        <div className="max-w-7xl mx-auto">
+      <div className="h-full flex flex-col">
+        <div className="border-b border-border bg-background-elevated px-6 py-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
+              <Home className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-xl font-semibold text-foreground">Dashboard</h1>
+              <p className="text-sm text-foreground-muted">Your research at a glance</p>
+            </div>
+          </div>
+        </div>
+        <div className="flex-1 overflow-auto p-6">
           <div className="animate-pulse space-y-6">
-            <div className="h-12 bg-background-elevated rounded w-1/3" />
             <div className="grid grid-cols-5 gap-4">
               {[1, 2, 3, 4, 5].map((i) => (
                 <div key={i} className="h-24 bg-background-elevated rounded-xl" />
@@ -105,17 +147,18 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen p-6 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Welcome Header */}
+    <div className="h-full flex flex-col">
+      {/* Fixed Header */}
+      <div className="border-b border-border bg-background-elevated px-6 py-4">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-white">
-              Welcome to Exergy Lab
-            </h1>
-            <p className="text-foreground-subtle mt-1">
-              Your AI-powered clean energy research platform
-            </p>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
+              <Home className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-xl font-semibold text-foreground">Dashboard</h1>
+              <p className="text-sm text-foreground-muted">Your research at a glance</p>
+            </div>
           </div>
           <div className="text-sm text-foreground-muted hidden sm:block">
             {new Date().toLocaleDateString('en-US', {
@@ -125,112 +168,136 @@ export default function DashboardPage() {
             })}
           </div>
         </div>
+      </div>
 
-        {/* Stats Row */}
-        <DashboardStatsRow
-          searches={stats.searches}
-          experiments={stats.experiments}
-          simulations={stats.simulations}
-          teaReports={stats.teaReports}
-          discoveries={stats.discoveries}
-        />
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-auto p-6">
+        <div className="space-y-6">
+          {/* Stats Row */}
+          <DashboardStatsRow
+            searches={stats.searches}
+            experiments={stats.experiments}
+            simulations={stats.simulations}
+            teaReports={stats.teaReports}
+            discoveries={stats.discoveries}
+          />
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Recent Activity (2/3 width) */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Recent Discoveries */}
-            <RecentDiscoveriesCard />
+          {/* About Exergy Lab */}
+          <Card className="bg-background-elevated/50">
+            <h2 className="text-lg font-semibold text-foreground mb-2">
+              About Exergy Lab
+            </h2>
+            <p className="text-sm text-foreground-muted mb-4">
+              An AI-powered platform for accelerating clean energy research and development.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+              {ABOUT_FEATURES.map((feature) => {
+                const Icon = feature.icon
+                return (
+                  <div key={feature.title} className="p-3 rounded-lg bg-background-surface">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Icon className="w-4 h-4 text-foreground-muted" />
+                      <span className="font-medium text-foreground text-sm">{feature.title}</span>
+                    </div>
+                    <p className="text-foreground-muted text-xs">{feature.description}</p>
+                  </div>
+                )
+              })}
+            </div>
+          </Card>
 
-            {/* Recent Simulations */}
-            <RecentSimulationsCard />
+          {/* Main Content Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left Column - Recent Activity (2/3 width) */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Recent Discoveries */}
+              <RecentDiscoveriesCard />
 
-            {/* Recent Experiments */}
-            <RecentExperimentsCard />
+              {/* Recent Simulations */}
+              <RecentSimulationsCard />
 
-            {/* Recent TEA Reports */}
-            <RecentTEACard />
-          </div>
+              {/* Recent Experiments */}
+              <RecentExperimentsCard />
 
-          {/* Right Column - Sidebar (1/3 width) */}
-          <div className="space-y-6">
-            {/* Quick Actions */}
-            <QuickActionsCard />
+              {/* Recent TEA Reports */}
+              <RecentTEACard />
+            </div>
 
-            {/* Session Insights */}
-            <SessionInsightsCard />
+            {/* Right Column - Sidebar (1/3 width) */}
+            <div className="space-y-6">
+              {/* Quick Actions */}
+              <QuickActionsCard />
 
-            {/* Onboarding Checklist - Show for new or partial users */}
-            {completedOnboarding < 5 && (
-              <Card className="border-primary/30">
-                <div className="flex items-center gap-2 mb-4">
-                  <Lightbulb className="w-5 h-5 text-accent-amber" />
-                  <h3 className="font-semibold text-foreground">Getting Started</h3>
-                  <Badge variant="secondary" size="sm" className="ml-auto">
-                    {completedOnboarding}/5
-                  </Badge>
-                </div>
+              {/* Session Insights */}
+              <SessionInsightsCard />
 
-                <ul className="space-y-2">
-                  {onboardingItems.map((item) => (
-                    <li key={item.href} className="group">
-                      <button
-                        onClick={() => router.push(item.href)}
-                        className="w-full flex items-center gap-2 text-left text-sm py-1.5"
-                        disabled={item.done}
-                      >
-                        {item.done ? (
-                          <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
-                        ) : (
-                          <Circle className="w-4 h-4 text-foreground-subtle shrink-0 group-hover:text-primary transition-colors" />
-                        )}
-                        <span
-                          className={
-                            item.done
-                              ? 'text-foreground-muted line-through'
-                              : 'text-foreground group-hover:text-primary transition-colors'
-                          }
+              {/* Onboarding Checklist - Show for new or partial users */}
+              {completedOnboarding < 5 && (
+                <Card>
+                  <div className="flex items-center gap-2 mb-4">
+                    <h3 className="font-semibold text-foreground">Getting Started</h3>
+                    <Badge variant="secondary" size="sm" className="ml-auto">
+                      {completedOnboarding}/5
+                    </Badge>
+                  </div>
+
+                  <ul className="space-y-2">
+                    {onboardingItems.map((item) => (
+                      <li key={item.href} className="group">
+                        <button
+                          onClick={() => router.push(item.href)}
+                          className="w-full flex items-center gap-2 text-left text-sm py-1.5"
+                          disabled={item.done}
                         >
-                          {item.label}
-                        </span>
-                        {!item.done && (
-                          <ArrowRight className="w-3 h-3 text-foreground-muted ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
-                        )}
-                      </button>
-                    </li>
-                  ))}
+                          {item.done ? (
+                            <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
+                          ) : (
+                            <Circle className="w-4 h-4 text-foreground-subtle shrink-0 group-hover:text-primary transition-colors" />
+                          )}
+                          <span
+                            className={
+                              item.done
+                                ? 'text-foreground-muted line-through'
+                                : 'text-foreground group-hover:text-primary transition-colors'
+                            }
+                          >
+                            {item.label}
+                          </span>
+                          {!item.done && (
+                            <ArrowRight className="w-3 h-3 text-foreground-muted ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+                          )}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </Card>
+              )}
+
+              {/* Pro Tips */}
+              <Card>
+                <h3 className="font-semibold text-foreground mb-3">Pro Tips</h3>
+                <ul className="space-y-2 text-sm text-foreground-muted">
+                  <li className="flex items-start gap-2">
+                    <span className="text-foreground-muted shrink-0">-</span>
+                    <span>
+                      Use Discovery Engine to find novel cross-domain innovations
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-foreground-muted shrink-0">-</span>
+                    <span>
+                      Start with Tier 1 simulations (free, fast) then upgrade for accuracy
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-foreground-muted shrink-0">-</span>
+                    <span>
+                      Upload data files to TEA Reports for AI parameter extraction
+                    </span>
+                  </li>
                 </ul>
               </Card>
-            )}
-
-            {/* Pro Tips */}
-            <Card className="border-accent-purple/30">
-              <div className="flex items-center gap-2 mb-3">
-                <TrendingUp className="w-5 h-5 text-accent-purple" />
-                <h3 className="font-semibold text-foreground">Pro Tips</h3>
-              </div>
-
-              <ul className="space-y-2 text-sm text-foreground-muted">
-                <li className="flex items-start gap-2">
-                  <span className="text-accent-cyan shrink-0">1.</span>
-                  <span>
-                    Use Discovery Engine to find novel cross-domain innovations
-                  </span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-accent-cyan shrink-0">2.</span>
-                  <span>
-                    Start with Tier 1 simulations (free, fast) then upgrade for accuracy
-                  </span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-accent-cyan shrink-0">3.</span>
-                  <span>
-                    Upload data files to TEA Reports for AI parameter extraction
-                  </span>
-                </li>
-              </ul>
-            </Card>
+            </div>
           </div>
         </div>
       </div>

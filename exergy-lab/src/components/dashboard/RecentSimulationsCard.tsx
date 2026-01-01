@@ -65,7 +65,7 @@ export function RecentSimulationsCard() {
       <Card>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <Bot className="w-5 h-5 text-accent-amber" />
+            <Bot className="w-5 h-5 text-foreground-muted" />
             <h3 className="font-semibold text-foreground">Recent Simulations</h3>
           </div>
         </div>
@@ -78,7 +78,7 @@ export function RecentSimulationsCard() {
     <Card>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <Bot className="w-5 h-5 text-accent-amber" />
+          <Bot className="w-5 h-5 text-foreground-muted" />
           <h3 className="font-semibold text-foreground">Recent Simulations</h3>
           {stats.totalCost > 0 && (
             <Badge variant="secondary" size="sm" className="text-xs">

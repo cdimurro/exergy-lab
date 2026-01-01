@@ -63,7 +63,7 @@ export function RecentDiscoveriesCard() {
       <Card>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <Cpu className="w-5 h-5 text-accent-rose" />
+            <Cpu className="w-5 h-5 text-foreground-muted" />
             <h3 className="font-semibold text-foreground">Recent Discoveries</h3>
           </div>
         </div>
@@ -76,7 +76,7 @@ export function RecentDiscoveriesCard() {
     <Card>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <Cpu className="w-5 h-5 text-accent-rose" />
+          <Cpu className="w-5 h-5 text-foreground-muted" />
           <h3 className="font-semibold text-foreground">Recent Discoveries</h3>
         </div>
         <Button
