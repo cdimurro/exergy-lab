@@ -57,7 +57,7 @@ export function GoalInput({ value, onChange, detectedType }: GoalInputProps) {
 
   return (
     <div className="space-y-3">
-      <label className="text-sm font-medium text-white">
+      <label className="text-sm font-medium text-foreground">
         Describe Your Simulation Goal
       </label>
 
@@ -68,10 +68,10 @@ export function GoalInput({ value, onChange, detectedType }: GoalInputProps) {
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           placeholder={PLACEHOLDER_TEXT}
-          rows={6}
+          rows={8}
           className={`
-            w-full p-4 rounded-lg bg-card-dark border text-white resize-none
-            placeholder:text-foreground-subtle/50 transition-colors
+            w-full p-4 rounded-lg bg-card-dark border text-foreground text-base resize-none
+            placeholder:text-muted/50 transition-colors
             focus:outline-none focus:ring-2 focus:ring-primary/50
             ${
               isShort
@@ -91,7 +91,7 @@ export function GoalInput({ value, onChange, detectedType }: GoalInputProps) {
                 ? 'text-amber-500'
                 : charCount >= recommendedMinChars
                 ? 'text-primary'
-                : 'text-foreground-subtle'
+                : 'text-muted'
             }`}
           >
             {charCount}/500
@@ -118,7 +118,7 @@ export function GoalInput({ value, onChange, detectedType }: GoalInputProps) {
               <p className="text-xs font-medium text-primary mb-1">
                 Example for {detectedType}:
               </p>
-              <p className="text-xs text-foreground-subtle">&quot;{relevantExample}&quot;</p>
+              <p className="text-xs text-muted">&quot;{relevantExample}&quot;</p>
               <button
                 onClick={() => onChange(relevantExample)}
                 className="text-xs text-primary hover:underline mt-1"
@@ -131,8 +131,8 @@ export function GoalInput({ value, onChange, detectedType }: GoalInputProps) {
       )}
 
       {/* Help Text */}
-      <p className="text-xs text-foreground-subtle">
-        <strong>Tip:</strong> Be specific about operating conditions, materials, and what outputs you care about.
+      <p className="text-xs text-muted">
+        <strong className="text-foreground">Tip:</strong> Be specific about operating conditions, materials, and what outputs you care about.
         The AI will generate appropriate parameters based on your description.
       </p>
     </div>

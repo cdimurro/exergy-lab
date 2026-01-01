@@ -289,6 +289,11 @@ export interface SimulationWorkflowState {
   // Timing
   startTime: number | null
   elapsedTime: number
+
+  // Navigation
+  navigationHistory: WorkflowPhase[]
+  canNavigateBack: boolean
+  canNavigateNext: boolean
 }
 
 // ============================================================================
@@ -393,3 +398,5 @@ export type WorkflowAction =
   | { type: 'SET_ERROR'; payload: string }
   | { type: 'RESET' }
   | { type: 'TICK_ELAPSED_TIME' }
+  | { type: 'NAVIGATE_TO_PHASE'; payload: WorkflowPhase }
+  | { type: 'UPDATE_NAVIGATION_STATE' }

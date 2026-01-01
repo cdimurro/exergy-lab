@@ -90,7 +90,7 @@ export function KeyFindings({ results, plan }: KeyFindingsProps) {
       case 'warning':
         return <TrendingDown className="w-4 h-4 text-amber-400" />
       default:
-        return <Minus className="w-4 h-4 text-foreground-subtle" />
+        return <Minus className="w-4 h-4 text-muted" />
     }
   }
 
@@ -117,27 +117,27 @@ export function KeyFindings({ results, plan }: KeyFindingsProps) {
               }`}
             >
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-foreground-subtle">{metric.name}</span>
+                <span className="text-sm text-muted">{metric.name}</span>
                 {interpretation && (
                   <span title={interpretation.description}>
-                    <Info className="w-4 h-4 text-foreground-subtle cursor-help" />
+                    <Info className="w-4 h-4 text-muted cursor-help" />
                   </span>
                 )}
               </div>
               <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold text-white">
+                <span className="text-3xl font-bold text-foreground">
                   {metric.value.toFixed(2)}
                 </span>
-                <span className="text-sm text-foreground-subtle">{metric.unit}</span>
+                <span className="text-sm text-muted">{metric.unit}</span>
               </div>
               {metric.uncertainty && (
-                <p className="text-xs text-foreground-subtle mt-1">
+                <p className="text-xs text-muted mt-1">
                   +/- {metric.uncertainty.toFixed(1)}% (95% CI)
                 </p>
               )}
               <div className="flex items-center gap-1 mt-2">
                 <StatusIcon status={status} />
-                <span className="text-xs text-foreground-subtle">
+                <span className="text-xs text-muted">
                   {status === 'good'
                     ? 'Within expected range'
                     : status === 'warning'
@@ -153,24 +153,24 @@ export function KeyFindings({ results, plan }: KeyFindingsProps) {
       {/* AI Insights */}
       {insights && (
         <Card className="p-4 bg-card-dark border-border">
-          <h4 className="text-sm font-medium text-white mb-3">AI Analysis</h4>
+          <h4 className="text-sm font-medium text-foreground mb-3">AI Analysis</h4>
 
           {/* Summary */}
           {insights.summary && (
-            <p className="text-sm text-foreground-subtle mb-4">{insights.summary}</p>
+            <p className="text-sm text-muted mb-4">{insights.summary}</p>
           )}
 
           {/* Observations */}
           {insights.observations.length > 0 && (
             <div className="mb-4">
-              <h5 className="text-xs font-medium text-foreground-subtle mb-2">
+              <h5 className="text-xs font-medium text-muted mb-2">
                 Key Observations
               </h5>
               <ul className="space-y-2">
                 {insights.observations.map((obs, i) => (
                   <li key={i} className="flex items-start gap-2 text-sm">
                     <CheckCircle className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                    <span className="text-foreground-subtle">{obs}</span>
+                    <span className="text-muted">{obs}</span>
                   </li>
                 ))}
               </ul>
@@ -185,7 +185,7 @@ export function KeyFindings({ results, plan }: KeyFindingsProps) {
                 {insights.warnings.map((warn, i) => (
                   <li key={i} className="flex items-start gap-2 text-sm">
                     <AlertTriangle className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
-                    <span className="text-foreground-subtle">{warn}</span>
+                    <span className="text-muted">{warn}</span>
                   </li>
                 ))}
               </ul>
@@ -195,14 +195,14 @@ export function KeyFindings({ results, plan }: KeyFindingsProps) {
           {/* Recommendations */}
           {insights.recommendations.length > 0 && (
             <div>
-              <h5 className="text-xs font-medium text-foreground-subtle mb-2">
+              <h5 className="text-xs font-medium text-muted mb-2">
                 Recommendations
               </h5>
               <ul className="space-y-2">
                 {insights.recommendations.map((rec, i) => (
                   <li key={i} className="flex items-start gap-2 text-sm">
                     <TrendingUp className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
-                    <span className="text-foreground-subtle">{rec}</span>
+                    <span className="text-muted">{rec}</span>
                   </li>
                 ))}
               </ul>
@@ -214,11 +214,11 @@ export function KeyFindings({ results, plan }: KeyFindingsProps) {
       {/* All Metrics Table */}
       {otherMetrics.length > 0 && (
         <Card className="p-4 bg-card-dark border-border">
-          <h4 className="text-sm font-medium text-white mb-3">All Metrics</h4>
+          <h4 className="text-sm font-medium text-foreground mb-3">All Metrics</h4>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-foreground-subtle border-b border-border">
+                <tr className="text-left text-muted border-b border-border">
                   <th className="pb-2 font-medium">Metric</th>
                   <th className="pb-2 font-medium text-right">Value</th>
                   <th className="pb-2 font-medium text-right">Unit</th>
@@ -228,12 +228,12 @@ export function KeyFindings({ results, plan }: KeyFindingsProps) {
               <tbody>
                 {otherMetrics.map((metric, i) => (
                   <tr key={i} className="border-b border-border/50">
-                    <td className="py-2 text-white">{metric.name}</td>
-                    <td className="py-2 text-right font-mono text-white">
+                    <td className="py-2 text-foreground">{metric.name}</td>
+                    <td className="py-2 text-right font-mono text-foreground">
                       {metric.value.toFixed(4)}
                     </td>
-                    <td className="py-2 text-right text-foreground-subtle">{metric.unit}</td>
-                    <td className="py-2 text-right text-foreground-subtle">
+                    <td className="py-2 text-right text-muted">{metric.unit}</td>
+                    <td className="py-2 text-right text-muted">
                       {metric.uncertainty ? `+/- ${metric.uncertainty.toFixed(1)}%` : '-'}
                     </td>
                   </tr>
@@ -247,8 +247,8 @@ export function KeyFindings({ results, plan }: KeyFindingsProps) {
       {/* Confidence Interval Explanation */}
       <div className="p-3 rounded-lg bg-card-dark border border-border">
         <div className="flex items-start gap-2">
-          <Info className="w-4 h-4 text-foreground-subtle mt-0.5 flex-shrink-0" />
-          <p className="text-xs text-foreground-subtle">
+          <Info className="w-4 h-4 text-muted mt-0.5 flex-shrink-0" />
+          <p className="text-xs text-muted">
             Values shown with +/- X% represent the 95% confidence interval from Monte Carlo simulation.
             This means we are 95% confident the true value falls within this range.
           </p>

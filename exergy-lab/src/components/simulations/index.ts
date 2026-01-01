@@ -5,3 +5,7 @@ export { ResultsChart, type ResultsChartProps } from './results-chart'
 export { ExperimentFileUploader } from './ExperimentFileUploader'
 export { ImportPreview } from './ImportPreview'
 export { ReportDownloadButton } from './ReportDownloadButton'
+export { SampleSimulations, type SampleSimulationsProps } from './SampleSimulations'
+
+// Workflow Components
+export * from './workflow'

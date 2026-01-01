@@ -53,6 +53,9 @@ const initialState: SimulationWorkflowState = {
   error: null,
   startTime: null,
   elapsedTime: 0,
+  navigationHistory: ['setup'],
+  canNavigateBack: false,
+  canNavigateNext: false,
 }
 
 // ============================================================================
@@ -155,6 +158,31 @@ function workflowReducer(state: SimulationWorkflowState, action: WorkflowAction)
       if (!state.startTime) return state
       return { ...state, elapsedTime: Date.now() - state.startTime }
 
+    case 'NAVIGATE_TO_PHASE': {
+      const targetPhase = action.payload
+      // Only allow navigation between setup, review, and complete
+      // Cannot navigate during generating or executing
+      if (state.phase === 'generating' || state.phase === 'executing') {
+        return state
+      }
+      return {
+        ...state,
+        phase: targetPhase,
+        navigationHistory: [...state.navigationHistory, targetPhase],
+      }
+    }
+
+    case 'UPDATE_NAVIGATION_STATE': {
+      const canGoBack = state.phase === 'review' || state.phase === 'complete'
+      const canGoNext = (state.phase === 'setup' && state.plan !== null) ||
+                        (state.phase === 'review' && state.results !== null)
+      return {
+        ...state,
+        canNavigateBack: canGoBack,
+        canNavigateNext: canGoNext,
+      }
+    }
+
     default:
       return state
   }
@@ -178,6 +206,9 @@ export interface UseSimulationWorkflowReturn {
   results: SimulationResult | null
   error: string | null
   elapsedTime: number
+  navigationHistory: WorkflowPhase[]
+  canNavigateBack: boolean
+  canNavigateNext: boolean
 
   // Setters
   setTier: (tier: SimulationTier) => void
@@ -190,6 +221,9 @@ export interface UseSimulationWorkflowReturn {
   regeneratePlan: (feedback: string) => Promise<void>
   approvePlan: () => Promise<void>
   reset: () => void
+  navigateToPhase: (phase: WorkflowPhase) => void
+  navigateBack: () => void
+  navigateNext: () => void
 
   // Computed
   canGenerate: boolean
@@ -475,6 +509,36 @@ export function useSimulationWorkflow(): UseSimulationWorkflowReturn {
   }, [cleanup])
 
   // ============================================================================
+  // Navigation Methods
+  // ============================================================================
+
+  const navigateToPhase = useCallback((phase: WorkflowPhase) => {
+    dispatch({ type: 'NAVIGATE_TO_PHASE', payload: phase })
+    dispatch({ type: 'UPDATE_NAVIGATION_STATE' })
+  }, [])
+
+  const navigateBack = useCallback(() => {
+    if (state.phase === 'review') {
+      navigateToPhase('setup')
+    } else if (state.phase === 'complete') {
+      navigateToPhase('review')
+    }
+  }, [state.phase, navigateToPhase])
+
+  const navigateNext = useCallback(() => {
+    if (state.phase === 'setup' && state.plan) {
+      navigateToPhase('review')
+    } else if (state.phase === 'review' && state.results) {
+      navigateToPhase('complete')
+    }
+  }, [state.phase, state.plan, state.results, navigateToPhase])
+
+  // Update navigation state whenever relevant state changes
+  useEffect(() => {
+    dispatch({ type: 'UPDATE_NAVIGATION_STATE' })
+  }, [state.phase, state.plan, state.results])
+
+  // ============================================================================
   // Computed Values
   // ============================================================================
 
@@ -497,6 +561,9 @@ export function useSimulationWorkflow(): UseSimulationWorkflowReturn {
     results: state.results,
     error: state.error,
     elapsedTime: state.elapsedTime,
+    navigationHistory: state.navigationHistory,
+    canNavigateBack: state.canNavigateBack,
+    canNavigateNext: state.canNavigateNext,
 
     // Setters
     setTier,
@@ -509,6 +576,9 @@ export function useSimulationWorkflow(): UseSimulationWorkflowReturn {
     regeneratePlan,
     approvePlan,
     reset,
+    navigateToPhase,
+    navigateBack,
+    navigateNext,
 
     // Computed
     canGenerate,

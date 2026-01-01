@@ -45,23 +45,28 @@ export function SimulationTypeSelector({
 }: SimulationTypeSelectorProps) {
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <label className="text-sm font-medium text-white">
-          Simulation Type
-        </label>
-        {detectedType && !selectedType && (
-          <div className="flex items-center gap-1.5 text-xs text-foreground-subtle">
-            <Sparkles className="w-3 h-3 text-primary" />
-            AI detected: <Badge variant="secondary" size="sm">{detectedType}</Badge>
-          </div>
-        )}
+      <div>
+        <div className="flex items-center justify-between">
+          <label className="text-sm font-medium text-foreground">
+            Simulation Type
+          </label>
+          {detectedType && !selectedType && (
+            <div className="flex items-center gap-1.5 text-xs text-muted">
+              <Sparkles className="w-3 h-3 text-primary" />
+              AI detected: <Badge variant="secondary" size="sm">{detectedType}</Badge>
+            </div>
+          )}
+        </div>
+        <p className="text-xs text-muted mt-1">
+          Leave as auto-detect for AI to choose, or manually select to override
+        </p>
       </div>
 
       <div className="relative">
         <select
           value={selectedType || ''}
           onChange={(e) => onTypeSelect(e.target.value as SimulationType || null)}
-          className="w-full h-12 px-4 pr-10 rounded-lg bg-card-dark border border-border text-white
+          className="w-full h-12 px-4 pr-10 rounded-lg bg-card-dark border border-border text-foreground
                      appearance-none cursor-pointer hover:border-primary/50 transition-colors
                      focus:outline-none focus:ring-2 focus:ring-primary/50"
         >
@@ -124,7 +129,7 @@ export function SimulationTypeSelector({
       </div>
 
       {/* Help Text */}
-      <p className="text-xs text-foreground-subtle">
+      <p className="text-xs text-muted">
         Leave as &quot;Auto-detect&quot; and the AI will determine the best type from your description.
         Or select manually to override.
       </p>

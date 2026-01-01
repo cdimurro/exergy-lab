@@ -47,7 +47,12 @@ export function TierSelector({ selectedTier, onTierSelect }: TierSelectorProps) 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-white">Select Computational Tier</h3>
+        <div>
+          <h3 className="text-lg font-semibold text-foreground">Select Computational Tier</h3>
+          <p className="text-sm text-muted mt-1">
+            Choose the right balance of speed, cost, and accuracy for your analysis
+          </p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -85,11 +90,11 @@ export function TierSelector({ selectedTier, onTierSelect }: TierSelectorProps) 
                     isSelected ? colors.bg : 'bg-page-background'
                   }`}
                 >
-                  <Icon className={`w-5 h-5 ${isSelected ? colors.icon : 'text-foreground-subtle'}`} />
+                  <Icon className={`w-5 h-5 ${isSelected ? colors.icon : 'text-muted'}`} />
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className={`text-xs font-bold ${isSelected ? colors.text : 'text-foreground-subtle'}`}>
+                    <span className={`text-xs font-bold ${isSelected ? colors.text : 'text-muted'}`}>
                       {tierInfo.shortLabel}
                     </span>
                     <Badge
@@ -99,21 +104,21 @@ export function TierSelector({ selectedTier, onTierSelect }: TierSelectorProps) 
                       {tierInfo.badge}
                     </Badge>
                   </div>
-                  <h4 className={`font-semibold text-sm ${isSelected ? colors.text : 'text-white'}`}>
+                  <h4 className={`font-semibold text-base ${isSelected ? colors.text : 'text-foreground'}`}>
                     {tierInfo.label}
                   </h4>
                 </div>
               </div>
 
               {/* Description */}
-              <p className="text-xs text-foreground-subtle mb-3">
+              <p className="text-xs text-muted mb-3">
                 {tierInfo.description}
               </p>
 
               {/* Best For */}
               <div className="mb-3">
-                <p className="text-xs font-medium text-foreground-subtle mb-1">Best for:</p>
-                <ul className="text-xs text-foreground-subtle space-y-0.5">
+                <p className="text-xs font-medium text-muted mb-1">Best for:</p>
+                <ul className="text-xs text-muted space-y-0.5">
                   {tierInfo.bestFor.slice(0, 3).map((item, i) => (
                     <li key={i} className="flex items-start gap-1">
                       <span className="text-primary">-</span>
@@ -125,11 +130,11 @@ export function TierSelector({ selectedTier, onTierSelect }: TierSelectorProps) 
 
               {/* Stats */}
               <div className="flex items-center gap-4 pt-3 border-t border-border">
-                <div className="flex items-center gap-1 text-xs text-foreground-subtle">
+                <div className="flex items-center gap-1 text-xs text-muted">
                   <Clock className="w-3.5 h-3.5" />
                   <span>{tierInfo.duration}</span>
                 </div>
-                <div className="flex items-center gap-1 text-xs text-foreground-subtle">
+                <div className="flex items-center gap-1 text-xs text-muted">
                   <DollarSign className="w-3.5 h-3.5" />
                   <span className={tierInfo.cost === '$0' ? 'text-primary font-medium' : ''}>
                     {tierInfo.cost}
@@ -143,8 +148,8 @@ export function TierSelector({ selectedTier, onTierSelect }: TierSelectorProps) 
 
       {/* Help Text */}
       <div className="p-3 rounded-lg bg-card-dark border border-border">
-        <p className="text-xs text-foreground-subtle">
-          <strong className="text-white">Choosing a tier:</strong> Start with{' '}
+        <p className="text-xs text-muted">
+          <strong className="text-foreground">Choosing a tier:</strong> Start with{' '}
           <span className="text-primary">T1</span> for quick feasibility checks.
           Use <span className="text-purple-400">T2</span> for uncertainty analysis and protocols.
           Choose <span className="text-amber-400">T3</span> for publication-grade validation.
