@@ -1,5 +1,5 @@
 /**
- * Workflow Context Store (v0.0.6)
+ * Workflow Context Store (v0.6.0)
  *
  * Manages data flow between Search, Experiments, and Simulations pages.
  * Enables seamless workflow chaining:

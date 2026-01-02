@@ -272,7 +272,7 @@ export const INDUSTRY_BENCHMARKS = {
 }
 
 // ============================================================================
-// BREAKTHROUGH BASELINES (v0.0.4.0)
+// BREAKTHROUGH BASELINES (v0.6.0)
 // Domain-specific thresholds for TRUE breakthrough detection
 // Used by BD1/BD6 to calibrate scoring and prevent false positives
 // ============================================================================

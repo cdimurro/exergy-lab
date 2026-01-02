@@ -46,7 +46,7 @@ function TEAGeneratorContent() {
   }, [debugContext])
 
   React.useEffect(() => {
-    log('info', 'TEA Generator page loaded', { version: '0.0.3.1' })
+    log('info', 'TEA Generator page loaded', { version: '0.6.0' })
   }, [])
 
   const handleGenerateTEAWithInput = async (input: Partial<TEAInput_v2>) => {
@@ -209,7 +209,7 @@ function TEAGeneratorContent() {
           <div className="flex items-center gap-2">
             {/* Version Badge */}
             <Badge variant="secondary" className="text-xs">
-              v0.0.3.1 Enhanced
+              v0.6.0
             </Badge>
 
             {/* Premium Badge */}

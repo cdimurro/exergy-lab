@@ -1,5 +1,5 @@
 /**
- * Citation Styles (v0.0.5)
+ * Citation Styles (v0.6.0)
  *
  * Implementations for various citation styles:
  * - APA 7th Edition

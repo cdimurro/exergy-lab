@@ -1,5 +1,5 @@
 /**
- * Library Store (v0.0.5)
+ * Library Store (v0.6.0)
  *
  * Zustand store for managing personal library state.
  * Handles folders, items, collections, and search.

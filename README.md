@@ -10,6 +10,7 @@
 
 <p align="center">
   <a href="https://exergy-lab.vercel.app"><img src="https://img.shields.io/badge/Live%20Platform-exergy--lab.vercel.app-0066CC?style=flat-square" alt="Live Platform" /></a>
+  <img src="https://img.shields.io/badge/Version-0.6.0-blue?style=flat-square" alt="Version" />
   <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License" />
   <img src="https://img.shields.io/badge/Data%20Sources-15+-purple?style=flat-square" alt="Data Sources" />
   <img src="https://img.shields.io/badge/Simulation%20Tiers-3-orange?style=flat-square" alt="Simulation Tiers" />
@@ -240,24 +241,66 @@ Patent searches run alongside academic literature queries, revealing the IP land
 
 ## Roadmap
 
-### Current Release (v1.0)
-- 15-source federated academic search
-- AI-powered synthesis with citation tracking
-- 3-tier progressive fidelity simulation with real physics
-- Physics-based calculators (thermodynamics, electrochemistry, PV, wind)
-- Real data integration (NREL ATB, Materials Project, NSRDB)
-- Data source transparency with fallback indicators
-- TEA report generator with exergy analysis
-- AI experiment designer with safety analysis
-- Cross-domain discovery engine
-- In-app paper viewer with conversational interface
+### Current Release (v0.6)
 
-### Next Release (v1.1)
-- AI-assisted simulation type selection
-- Experiments-simulation bidirectional integration
-- User authentication with project persistence
-- Enhanced PDF parsing and figure extraction
-- Collaborative workspaces for research teams
+The platform is feature-complete with all core modules operational:
+
+| Module | Status | Description |
+|--------|--------|-------------|
+| **Federated Search** | Production | 15 academic sources with AI synthesis |
+| **Discovery Engine** | Beta | 4-phase AI workflow for research gaps |
+| **Breakthrough Engine** | Beta | Multi-agent hypothesis racing |
+| **Simulation Engine** | Production | 3-tier progressive fidelity |
+| **TEA Generator** | Production | Investor-grade financial analysis |
+| **Experiment Designer** | Production | Complete lab protocol generation |
+| **Paper Viewer** | Production | In-app reading with AI chat |
+| **Personal Library** | Production | Save and organize research artifacts |
+
+### Path to v1.0 (Production Release)
+
+The following refinements are required for a production-ready v1.0 release:
+
+**Reliability & Robustness**
+- Comprehensive error handling across all API endpoints
+- Retry logic with exponential backoff for external service failures
+- Graceful degradation when GPU compute or external APIs unavailable
+- Input validation with user-friendly error messages
+
+**AI Engine Refinement**
+- Breakthrough Engine: Calibrate scoring thresholds and breakthrough detection
+- Discovery Engine: Tune phase transitions and validation benchmarks
+- Improve convergence detection in iterative refinement loops
+- Reduce false positive rate in breakthrough classification
+
+**User Experience Polish**
+- User authentication with Clerk for cross-session persistence
+- Database-backed state management (replacing localStorage)
+- Consistent loading states and progress indicators across all modules
+- Mobile-responsive design completion
+
+**Integration & Workflow**
+- Seamless Search to Experiment to Simulation to TEA workflow
+- Bidirectional linking between all modules
+- Unified dashboard aggregating results from all workflows
+- Export all results to Library with proper categorization
+
+**Quality Assurance**
+- Unit test coverage for core calculation engines
+- Integration tests for API endpoints
+- E2E testing for critical user workflows
+- Performance benchmarking and optimization
+
+**Documentation & Polish**
+- Complete API reference documentation
+- User guides with example workflows
+- Video tutorials for each major feature
+- Deployment guides for self-hosting
+
+**Production Hardening**
+- Rate limiting on public-facing endpoints
+- Security audit and vulnerability remediation
+- Error monitoring and structured logging
+- Performance profiling and optimization
 
 ### Future Development (v2.0+)
 - PostgreSQL backend for enterprise deployment
@@ -265,6 +308,7 @@ Patent searches run alongside academic literature queries, revealing the IP land
 - Jupyter notebook bidirectional integration
 - Python SDK for workflow automation
 - Enterprise SSO and audit logging
+- Custom model fine-tuning for domain-specific accuracy
 
 ---
 
@@ -302,10 +346,10 @@ MIT License - see [LICENSE](LICENSE)
 ## Citation
 
 ```bibtex
-@software{exergy_lab_2024,
+@software{exergy_lab_2025,
   title = {Exergy Lab: Integrated Research Platform for Clean Energy Discovery},
   author = {DiMurro, Chris},
-  year = {2024},
+  year = {2025},
   url = {https://github.com/cdimurro/exergy-lab}
 }
 ```

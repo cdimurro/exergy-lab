@@ -1,5 +1,5 @@
 /**
- * Cost Estimation Module (v0.0.5)
+ * Cost Estimation Module (v0.6.0)
  *
  * Comprehensive cost estimation for clean energy research.
  * Includes material database, lab time estimation, and regional adjustments.

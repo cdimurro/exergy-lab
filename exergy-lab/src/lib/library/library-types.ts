@@ -1,5 +1,5 @@
 /**
- * Personal Library Types (v0.0.5)
+ * Personal Library Types (v0.6.0)
  *
  * Type definitions for the personal library system.
  * Supports papers, reports, discoveries, experiments, and simulations.

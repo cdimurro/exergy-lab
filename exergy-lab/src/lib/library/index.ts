@@ -1,5 +1,5 @@
 /**
- * Personal Library Module (v0.0.5)
+ * Personal Library Module (v0.6.0)
  *
  * Personal library system for saving papers, reports, discoveries,
  * experiments, and simulations with folder organization.

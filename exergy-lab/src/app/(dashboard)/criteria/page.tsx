@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * Criteria Page (v0.0.4)
+ * Criteria Page (v0.6.0)
  *
  * Explains the FrontierScience-based evaluation methodology used by the Discovery Engine.
  * Provides detailed rubric criteria for each discovery phase.
