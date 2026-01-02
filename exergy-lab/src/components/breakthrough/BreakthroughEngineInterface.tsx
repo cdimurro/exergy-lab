@@ -824,7 +824,7 @@ function BreakthroughProgressCard({
   }, [activities, thinkingMessage])
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="space-y-6">
       {/* Query Display */}
       <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-4">
         <div className="text-xs font-medium text-amber-600 mb-1">Research Challenge</div>
@@ -1070,7 +1070,7 @@ function BreakthroughResultsCard({
   }
 
   return (
-    <div className="border rounded-xl overflow-hidden bg-card flex flex-col h-full max-w-5xl mx-auto">
+    <div className="border rounded-xl overflow-hidden bg-card flex flex-col h-full">
       {/* Header - Discovery Overview (matches FrontierScienceResultsCard) */}
       <div className="p-6 border-b bg-gradient-to-br from-emerald-500/5 via-teal-500/5 to-transparent">
         {/* Top Row - Title and Export */}
