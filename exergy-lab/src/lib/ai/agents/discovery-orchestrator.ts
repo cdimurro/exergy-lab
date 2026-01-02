@@ -604,16 +604,17 @@ export class DiscoveryOrchestrator {
           this.emitThinking('refining', `Warning: ${literatureCrossRef.physicsViolations} claim(s) violate physical limits`)
         }
       } catch (error) {
-        this.log('Literature cross-reference failed, continuing without:', error)
+        this.log('Literature cross-reference failed:', error)
+        this.emitThinking('refining', `Warning: Literature validation failed - ${error instanceof Error ? error.message : 'unknown error'}`)
         literatureCrossRef = {
           totalClaims: 0,
           supportedClaims: 0,
           contradictedClaims: 0,
           overallConfidence: 0,
-          passed: true,
+          passed: false,
           claimValidations: [],
-          summary: 'Literature validation unavailable',
-          recommendations: [],
+          summary: 'Literature validation failed',
+          recommendations: ['Retry literature cross-reference validation'],
         }
       }
 
@@ -1018,6 +1019,7 @@ export class DiscoveryOrchestrator {
       simulationResults = await simulationManager.executeMany(simulationParams, selectedTier)
     } catch (e) {
       this.log('Simulation execution failed:', e)
+      this.emitThinking('validating', `Warning: Simulation execution failed - ${e instanceof Error ? e.message : 'unknown error'}`)
       simulationResults = []
     }
 
@@ -1122,6 +1124,7 @@ export class DiscoveryOrchestrator {
               )
             } catch (e) {
               this.log('Multi-benchmark validation failed:', e)
+              this.emitThinking('validating', `Warning: Multi-benchmark validation failed - ${e instanceof Error ? e.message : 'unknown error'}`)
             }
           }
 

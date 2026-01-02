@@ -69,6 +69,8 @@ export type PoolEventType =
   | 'agent_started'
   | 'agent_completed'
   | 'agent_failed'
+  | 'agent_zero_hypotheses'
+  | 'generation_warning'
   | 'hypothesis_generated'
   | 'pool_complete'
 
@@ -213,12 +215,40 @@ export class AgentPool {
       hypothesesByAgent.set(result.agentType, result.hypotheses)
     }
 
+    // Check for agents that produced 0 hypotheses
+    const zeroHypothesisAgents: HypGenAgentType[] = []
+    for (const [agentType, hypotheses] of hypothesesByAgent) {
+      if (hypotheses.length === 0) {
+        console.error(`[AgentPool] Agent ${agentType} produced 0 hypotheses`)
+        zeroHypothesisAgents.push(agentType)
+        this.emit({
+          type: 'agent_zero_hypotheses',
+          agentType,
+          timestamp: Date.now(),
+        })
+      }
+    }
+
+    // Calculate actual total hypotheses
+    const totalHypotheses = [...hypothesesByAgent.values()].reduce((sum, h) => sum + h.length, 0)
+
+    // Warn if below minimum threshold
+    if (totalHypotheses < 5) {
+      console.error(`[AgentPool] Low hypothesis count: only ${totalHypotheses} generated (expected ~25)`)
+      this.emit({
+        type: 'generation_warning',
+        timestamp: Date.now(),
+        error: `Only ${totalHypotheses} hypotheses generated from ${successfulResults.length} agents`,
+      })
+    }
+
     const poolStatus = this.getStatus()
     const totalTimeMs = Date.now() - startTime
 
     console.log(
       `[AgentPool] Generation complete: ${successfulResults.length} agents succeeded, ` +
-      `${hypothesesByAgent.size * 3} hypotheses generated in ${totalTimeMs}ms`
+      `${totalHypotheses} hypotheses generated in ${totalTimeMs}ms` +
+      (zeroHypothesisAgents.length > 0 ? ` (${zeroHypothesisAgents.join(', ')} produced 0)` : '')
     )
 
     this.emit({

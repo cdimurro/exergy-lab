@@ -177,6 +177,7 @@ export type RaceEventType =
   | 'race_started'
   | 'iteration_started'
   | 'generation_complete'
+  | 'generation_warning'
   | 'evaluation_complete'
   | 'gpu_validation_started'
   | 'gpu_validation_progress'
@@ -184,6 +185,9 @@ export type RaceEventType =
   | 'refinement_complete'
   | 'hypothesis_eliminated'
   | 'breakthrough_detected'
+  | 'hypothesis_generated'
+  | 'hypothesis_updated'
+  | 'hypotheses_batch'
   | 'iteration_complete'
   | 'expert_review_requested'
   | 'expert_review_complete'
@@ -196,6 +200,8 @@ export interface RaceEvent {
   hypothesisId?: string
   score?: number
   classification?: ClassificationTier
+  hypothesis?: RacingHypothesis
+  hypotheses?: RacingHypothesis[]
   state?: Partial<RaceState>
   message?: string
   timestamp: number
@@ -521,11 +527,19 @@ export class HypothesisRacingArena {
 
       const poolResult = await this.agentPool.generateAll(generationContext)
 
-      // Add all hypotheses to state
+      // Add all hypotheses to state and emit events for real-time UI updates
       for (const [agentType, hypotheses] of poolResult.hypothesesByAgent) {
         for (const hypothesis of hypotheses) {
           this.state.hypotheses.set(hypothesis.id, hypothesis)
           this.state.activeHypotheses.push(hypothesis)
+
+          // Emit event for each hypothesis so UI updates in real-time
+          this.emit({
+            type: 'hypothesis_generated',
+            message: `${agentType} agent generated: ${hypothesis.title}`,
+            timestamp: Date.now(),
+            hypothesis,
+          })
         }
 
         // Update agent statistics
@@ -541,6 +555,29 @@ export class HypothesisRacingArena {
       }
 
       this.state.statistics.totalGenerated = this.state.activeHypotheses.length
+
+      // Also emit a batch event for initial load
+      this.emit({
+        type: 'hypotheses_batch',
+        message: `Generated ${this.state.activeHypotheses.length} hypotheses from 5 agents`,
+        timestamp: Date.now(),
+        hypotheses: this.state.activeHypotheses,
+      })
+
+      // Validate generation results - fail fast if no hypotheses generated
+      if (this.state.activeHypotheses.length === 0) {
+        throw new Error('[HypothesisRacingArena] No hypotheses generated - all agents failed. Check agent logs for details.')
+      }
+
+      // Warn if below expected threshold
+      if (this.state.activeHypotheses.length < 5) {
+        console.warn(`[HypothesisRacingArena] Low hypothesis count: ${this.state.activeHypotheses.length} (expected ~25)`)
+        this.emit({
+          type: 'generation_warning',
+          message: `Only ${this.state.activeHypotheses.length} hypotheses generated (expected ~25 from 5 agents)`,
+          timestamp: Date.now(),
+        })
+      }
 
     } else {
       // Subsequent iterations: refine existing hypotheses using feedback
@@ -693,6 +730,18 @@ export class HypothesisRacingArena {
       ? scores.reduce((a, b) => a + b, 0) / scores.length
       : 0
     this.state.statistics.highestScore = scores.length > 0 ? Math.max(...scores) : 0
+
+    // Emit hypothesis_updated events for real-time UI updates
+    for (const hypothesis of this.state.activeHypotheses) {
+      this.emit({
+        type: 'hypothesis_updated',
+        message: `Score updated: ${hypothesis.scores.overall.toFixed(2)}`,
+        timestamp: Date.now(),
+        hypothesisId: hypothesis.id,
+        score: hypothesis.scores.overall,
+        iteration,
+      })
+    }
 
     this.emit({
       type: 'evaluation_complete',

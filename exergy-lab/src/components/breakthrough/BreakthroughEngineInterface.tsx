@@ -880,7 +880,7 @@ function BreakthroughProgressCard({
         </div>
 
         {/* Unified Real-Time Activity Log - Always visible */}
-        <div className="border-t pt-4">
+        <div className="border-t pt-4 flex flex-col">
           <div className="flex items-center gap-2 mb-3">
             <Activity size={16} className="text-muted-foreground" />
             <span className="text-sm font-medium text-foreground">Live Activity Feed</span>
@@ -890,7 +890,7 @@ function BreakthroughProgressCard({
           </div>
           <div
             ref={activityLogRef}
-            className="max-h-48 overflow-y-auto space-y-2 pr-2"
+            className="max-h-[400px] overflow-y-auto space-y-2 pr-2"
           >
             {allActivities.length === 0 ? (
               <div className="text-sm text-muted-foreground italic">Waiting for activity...</div>

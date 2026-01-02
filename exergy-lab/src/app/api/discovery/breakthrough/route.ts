@@ -742,6 +742,30 @@ function formatEventForSSE(event: RaceEvent, state: BreakthroughState): Record<s
         classification: event.classification,
       }
 
+    case 'hypothesis_generated':
+      return {
+        ...base,
+        phase: currentPhase,
+        hypothesis: event.hypothesis ? formatHypothesisForSSE(event.hypothesis) : null,
+      }
+
+    case 'hypothesis_updated':
+      return {
+        ...base,
+        phase: currentPhase,
+        hypothesisId: event.hypothesisId,
+        score: event.score,
+        iteration: event.iteration,
+      }
+
+    case 'hypotheses_batch':
+      return {
+        ...base,
+        phase: currentPhase,
+        hypotheses: event.hypotheses?.map(formatHypothesisForSSE) || [],
+        count: event.hypotheses?.length || 0,
+      }
+
     case 'iteration_complete':
       return {
         ...base,

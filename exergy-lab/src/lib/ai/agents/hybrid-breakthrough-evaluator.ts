@@ -102,17 +102,36 @@ export class HybridBreakthroughEvaluator {
   // ===========================================================================
 
   /**
-   * Generate cache key from hypothesis ID only (not content)
+   * Generate cache key from hypothesis ID + content hash
    *
-   * CRITICAL FIX v0.0.3: Cache by ID only to prevent score degradation.
-   * During refinement, hypotheses get updated text but structure (predictions,
-   * mechanism, supportingEvidence) should persist. By caching on ID alone,
-   * we evaluate once per hypothesis and reuse that score across refinement
-   * iterations, preventing the FS score drops (4.5→2.0) that were occurring
-   * when re-evaluation happened on structurally incomplete refined hypotheses.
+   * CRITICAL FIX v0.0.4: Include content hash to detect refinement changes.
+   *
+   * Previous behavior (v0.0.3) cached by ID only to prevent score degradation,
+   * but this hid actual quality changes during refinement (all scores showed +0.00 delta).
+   *
+   * New behavior: Cache by ID + content hash. When hypothesis text changes during
+   * refinement, the cache key changes and forces re-evaluation. This allows
+   * scores to reflect actual improvements while still caching identical hypotheses.
+   *
+   * Trade-off: May see some score variation if structured fields are incomplete,
+   * but this is preferable to completely hiding refinement progress.
    */
   private getCacheKey(hypothesis: RacingHypothesis): string {
-    return hypothesis.id
+    const contentHash = this.hashContent(hypothesis.statement || hypothesis.title || '')
+    return `${hypothesis.id}-${contentHash}`
+  }
+
+  /**
+   * Simple hash of first 100 characters for cache key differentiation
+   */
+  private hashContent(content: string): string {
+    let hash = 0
+    const sample = content.slice(0, 100)
+    for (let i = 0; i < sample.length; i++) {
+      hash = ((hash << 5) - hash) + sample.charCodeAt(i)
+      hash = hash & hash // Convert to 32-bit integer
+    }
+    return hash.toString(36)
   }
 
   /**

@@ -398,7 +398,11 @@ Only output the single refined hypothesis as a JSON object.`
       const jsonMatch = cleaned.match(/\[[\s\S]*\]/)
       if (!jsonMatch) {
         console.warn(`[HypGen-${this.config.agentType}] No JSON array found in response`)
-        return this.extractIndividualHypotheses(cleaned)
+        const fallback = this.extractIndividualHypotheses(cleaned)
+        if (fallback.length === 0) {
+          throw new Error(`[HypGen-${this.config.agentType}] Failed to parse hypotheses: no JSON array or extractable objects found`)
+        }
+        return fallback
       }
 
       let jsonStr = jsonMatch[0]
@@ -420,7 +424,11 @@ Only output the single refined hypothesis as a JSON object.`
 
       if (!Array.isArray(parsed)) {
         console.warn(`[HypGen-${this.config.agentType}] Parsed result is not an array`)
-        return []
+        throw new Error(`[HypGen-${this.config.agentType}] Failed to parse hypotheses: result is not an array`)
+      }
+
+      if (parsed.length === 0) {
+        throw new Error(`[HypGen-${this.config.agentType}] Model returned empty array - no hypotheses generated`)
       }
 
       console.log(`[HypGen-${this.config.agentType}] Successfully parsed ${parsed.length} hypotheses`)
@@ -428,7 +436,14 @@ Only output the single refined hypothesis as a JSON object.`
     } catch (error) {
       console.error(`[HypGen-${this.config.agentType}] Failed to parse response:`, error)
       // Try extracting individual hypotheses as fallback
-      return this.extractIndividualHypotheses(result)
+      const fallback = this.extractIndividualHypotheses(result)
+      if (fallback.length === 0) {
+        // Re-throw the original error with more context
+        const originalError = error instanceof Error ? error.message : String(error)
+        throw new Error(`[HypGen-${this.config.agentType}] Failed to parse hypotheses and fallback extraction found 0 results. Original error: ${originalError}`)
+      }
+      console.log(`[HypGen-${this.config.agentType}] Fallback extraction succeeded with ${fallback.length} hypotheses`)
+      return fallback
     }
   }
 

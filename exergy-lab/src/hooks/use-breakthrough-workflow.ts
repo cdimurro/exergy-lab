@@ -449,6 +449,13 @@ export function useBreakthroughWorkflow(): UseBreakthroughWorkflowReturn {
       case 'hypothesis_eliminated':
         const elimId = data.hypothesisId as string
         const elimScore = data.score as number
+        const elimReason = data.reason as string | undefined
+        // Update hypothesis status in state
+        setHypotheses(prev => prev.map(h =>
+          h.id === elimId
+            ? { ...h, status: 'eliminated' as const, eliminatedReason: elimReason }
+            : h
+        ))
         addActivity(
           `Hypothesis ${elimId.slice(-8)} eliminated (score: ${elimScore?.toFixed(1) || 'N/A'})`,
           'warning',
@@ -461,11 +468,61 @@ export function useBreakthroughWorkflow(): UseBreakthroughWorkflowReturn {
         const btId = data.hypothesisId as string
         const btScore = data.score as number
         const classification = data.classification as ClassificationTier
+        // Update hypothesis status in state
+        setHypotheses(prev => prev.map(h =>
+          h.id === btId
+            ? { ...h, status: 'breakthrough' as const, currentScore: btScore, classification }
+            : h
+        ))
         addActivity(
           `Breakthrough detected! ${btId.slice(-8)} scored ${btScore?.toFixed(2) || 'N/A'}`,
           'breakthrough',
           'hypothesis',
           btScore
+        )
+        break
+
+      // Real-time hypothesis updates - new events for incremental updates
+      case 'hypothesis_generated':
+        const newHypothesis = convertToUIHypothesis(data.hypothesis as BackendRacingHypothesis)
+        setHypotheses(prev => {
+          const existing = prev.find(h => h.id === newHypothesis.id)
+          if (existing) return prev
+          return [...prev, newHypothesis]
+        })
+        const agentSource = (data.hypothesis as BackendRacingHypothesis)?.agentSource
+        addActivity(
+          `${agentSource ? agentSource.charAt(0).toUpperCase() + agentSource.slice(1) : 'Agent'} generated: ${newHypothesis.title}`,
+          'info',
+          'hypothesis'
+        )
+        break
+
+      case 'hypothesis_updated':
+        const updateId = data.hypothesisId as string
+        const updateScore = data.score as number
+        const updateIteration = data.iteration as number
+        setHypotheses(prev => prev.map(h => {
+          if (h.id !== updateId) return h
+          const newHistory = [...(h.scoreHistory || []), updateScore]
+          return {
+            ...h,
+            previousScore: h.currentScore,
+            currentScore: updateScore,
+            scoreHistory: newHistory,
+            iteration: updateIteration,
+            classification: getClassificationFromScore(updateScore),
+          }
+        }))
+        break
+
+      case 'hypotheses_batch':
+        const batchHypotheses = (data.hypotheses as BackendRacingHypothesis[]).map(convertToUIHypothesis)
+        setHypotheses(batchHypotheses)
+        addActivity(
+          `${batchHypotheses.length} hypotheses generated`,
+          'success',
+          'hypothesis'
         )
         break
 
