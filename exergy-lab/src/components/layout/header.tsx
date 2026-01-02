@@ -10,13 +10,15 @@ import {
   LogOut,
   Settings,
   User,
+  Menu,
 } from 'lucide-react'
 
 interface HeaderProps {
   sidebarCollapsed?: boolean
+  onMobileMenuOpen?: () => void
 }
 
-export function Header({ sidebarCollapsed = false }: HeaderProps) {
+export function Header({ sidebarCollapsed = false, onMobileMenuOpen }: HeaderProps) {
   const [showUserMenu, setShowUserMenu] = React.useState(false)
   const [showNotifications, setShowNotifications] = React.useState(false)
 
@@ -59,12 +61,21 @@ export function Header({ sidebarCollapsed = false }: HeaderProps) {
     <header
       className={cn(
         'fixed top-0 right-0 z-30 h-16 bg-background-surface/95 backdrop-blur-md border-b border-border transition-all duration-300',
-        sidebarCollapsed ? 'left-20' : 'left-72'
+        'left-0 lg:left-72',
+        sidebarCollapsed && 'lg:left-20'
       )}
     >
-      <div className="flex items-center justify-between h-full px-6">
-        {/* Search */}
-        <div className="flex-1 max-w-xl">
+      <div className="flex items-center justify-between h-full px-4 lg:px-6">
+        {/* Mobile menu button - only visible on mobile */}
+        <button
+          onClick={() => onMobileMenuOpen?.()}
+          className="lg:hidden p-2 -ml-2 hover:bg-background-elevated rounded-lg text-foreground-muted hover:text-foreground transition-colors"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+
+        {/* Search - hidden on very small screens, visible from sm+ */}
+        <div className="hidden sm:flex flex-1 max-w-xs lg:max-w-xl">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground-subtle" />
             <input
@@ -97,7 +108,7 @@ export function Header({ sidebarCollapsed = false }: HeaderProps) {
 
             {/* Notifications dropdown */}
             {showNotifications && (
-              <div className="absolute right-0 top-full mt-2 w-80 bg-background border border-border rounded-xl shadow-lg overflow-hidden">
+              <div className="absolute right-0 top-full mt-2 w-[calc(100vw-2rem)] sm:w-80 max-w-80 bg-background border border-border rounded-xl shadow-lg overflow-hidden">
                 <div className="px-4 py-3 border-b border-border">
                   <h3 className="text-sm font-semibold text-foreground">
                     Notifications
@@ -161,7 +172,7 @@ export function Header({ sidebarCollapsed = false }: HeaderProps) {
 
             {/* User dropdown */}
             {showUserMenu && (
-              <div className="absolute right-0 top-full mt-2 w-56 bg-background border border-border rounded-xl shadow-lg overflow-hidden">
+              <div className="absolute right-0 top-full mt-2 w-56 max-w-[calc(100vw-2rem)] bg-background border border-border rounded-xl shadow-lg overflow-hidden">
                 <div className="px-4 py-3 border-b border-border">
                   <p className="text-sm font-medium text-foreground">
                     {user.name}

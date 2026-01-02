@@ -149,7 +149,7 @@ export function BasicTab({ config, onChange, className = '' }: BasicTabProps) {
         <label className="block text-xs font-medium text-zinc-400 uppercase mb-2">
           Research Domain
         </label>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
           {DOMAINS.map((d) => {
             const Icon = d.icon
             const isSelected = config.domain === d.id

@@ -191,9 +191,9 @@ export function ExperimentLab({ domains = [] }: ExperimentLabProps) {
       )}
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
         {/* Left Panel: Configuration */}
-        <div className="w-[45%] border-r border-border flex flex-col">
+        <div className="w-full lg:w-[45%] border-b lg:border-b-0 lg:border-r border-border flex flex-col min-h-0 lg:min-h-full">
           {/* Tabs */}
           <div className="flex border-b border-border">
             {(['basic', 'doe', 'safety'] as const).map(tab => (

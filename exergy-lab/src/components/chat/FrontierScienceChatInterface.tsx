@@ -308,7 +308,7 @@ export function FrontierScienceChatInterface({
             {/* Export Panel Modal for Partial Results */}
             {showExportPanel && (
               <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-                <div className="bg-background rounded-xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-auto m-4 relative">
+                <div className="bg-background rounded-xl shadow-2xl w-full max-w-[95vw] sm:max-w-2xl max-h-[85vh] overflow-auto m-4 relative">
                   <Button
                     variant="ghost"
                     size="sm"
@@ -343,7 +343,7 @@ export function FrontierScienceChatInterface({
             {/* Export Panel Modal */}
             {showExportPanel && (
               <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-                <div className="bg-background rounded-xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-auto m-4 relative">
+                <div className="bg-background rounded-xl shadow-2xl w-full max-w-[95vw] sm:max-w-2xl max-h-[85vh] overflow-auto m-4 relative">
                   <Button
                     variant="ghost"
                     size="sm"

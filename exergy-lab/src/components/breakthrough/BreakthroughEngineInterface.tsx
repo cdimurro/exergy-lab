@@ -1557,7 +1557,7 @@ function BreakthroughReportModal({
       />
 
       {/* Modal */}
-      <div className="relative bg-card border rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col">
+      <div className="relative bg-card border rounded-2xl shadow-2xl w-full max-w-[95vw] lg:max-w-5xl max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="shrink-0 border-b p-6 bg-gradient-to-r from-amber-500/5 to-yellow-500/5">
           <div className="flex items-start justify-between">
@@ -2575,7 +2575,7 @@ function BreakthroughExportPanel({
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
 
       {/* Modal */}
-      <div className="relative bg-card border rounded-2xl shadow-2xl w-full max-w-lg">
+      <div className="relative bg-card border rounded-2xl shadow-2xl w-full max-w-[95vw] sm:max-w-lg">
         {/* Header */}
         <div className="border-b p-6">
           <div className="flex items-center justify-between">

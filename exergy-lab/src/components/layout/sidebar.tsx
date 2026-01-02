@@ -147,10 +147,22 @@ function RecentSimulationsSection({ collapsed }: RecentSimulationsSectionProps) 
   )
 }
 
-export function Sidebar() {
+interface SidebarProps {
+  mobileOpen?: boolean
+  onMobileClose?: () => void
+}
+
+export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
   const pathname = usePathname()
   const [collapsed, setCollapsed] = React.useState(false)
-  const [mobileOpen, setMobileOpen] = React.useState(false)
+
+  // Close mobile menu when navigating
+  React.useEffect(() => {
+    if (mobileOpen) {
+      onMobileClose?.()
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname])
 
   return (
     <>
@@ -158,7 +170,7 @@ export function Sidebar() {
       {mobileOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-30 lg:hidden"
-          onClick={() => setMobileOpen(false)}
+          onClick={() => onMobileClose?.()}
         />
       )}
 

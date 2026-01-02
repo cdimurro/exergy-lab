@@ -181,9 +181,9 @@ export function SimulationPlatform({ domains = [] }: SimulationPlatformProps) {
       )}
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
         {/* Left Panel: Configuration */}
-        <div className="w-[45%] border-r border-border flex flex-col">
+        <div className="w-full lg:w-[45%] border-b lg:border-b-0 lg:border-r border-border flex flex-col min-h-0 lg:min-h-full">
           {/* Tier Selector */}
           <div className="p-5 border-b border-border bg-background">
             <h3 className="text-base font-semibold text-foreground mb-4">Simulation Tier</h3>

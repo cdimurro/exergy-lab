@@ -185,7 +185,7 @@ export function RiskMatrix({
         </div>
 
         {/* Risk Level Summary */}
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <div className="p-2 bg-red-500/10 rounded text-center">
             <div className="text-lg font-bold text-red-400">{riskCounts.critical}</div>
             <div className="text-xs text-red-400">Critical</div>
@@ -215,7 +215,8 @@ export function RiskMatrix({
               Severity
             </div>
 
-            <div className="ml-8">
+            <div className="ml-8 overflow-x-auto">
+              <div className="min-w-[280px]">
               {/* Matrix header */}
               <div className="grid grid-cols-6 gap-1 mb-1">
                 <div />
@@ -259,6 +260,7 @@ export function RiskMatrix({
 
               {/* X-axis label */}
               <div className="text-center text-xs text-zinc-500 mt-2">Likelihood</div>
+              </div>
             </div>
           </div>
         </div>

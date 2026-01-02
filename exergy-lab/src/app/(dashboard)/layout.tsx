@@ -2,6 +2,7 @@
 
 import * as React from 'react'
 import { Sidebar, Header } from '@/components/layout'
+import { cn } from '@/lib/utils'
 
 export default function DashboardLayout({
   children,
@@ -9,6 +10,7 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false)
 
   // Listen for sidebar collapse state
   React.useEffect(() => {
@@ -16,6 +18,7 @@ export default function DashboardLayout({
       // Auto-collapse on smaller screens
       if (window.innerWidth < 1024) {
         setSidebarCollapsed(true)
+        setMobileMenuOpen(false) // Close mobile menu when resizing
       }
     }
 
@@ -26,14 +29,22 @@ export default function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-page-background">
-      <Sidebar />
-      <Header sidebarCollapsed={sidebarCollapsed} />
+      <Sidebar
+        mobileOpen={mobileMenuOpen}
+        onMobileClose={() => setMobileMenuOpen(false)}
+      />
+      <Header
+        sidebarCollapsed={sidebarCollapsed}
+        onMobileMenuOpen={() => setMobileMenuOpen(true)}
+      />
       <main
-        className={`pt-16 transition-all duration-300 h-screen ${
-          sidebarCollapsed ? 'pl-20' : 'pl-72'
-        }`}
+        className={cn(
+          'pt-16 transition-all duration-300 h-screen',
+          'lg:pl-72',
+          sidebarCollapsed && 'lg:pl-20'
+        )}
       >
-        <div className="p-6 h-[calc(100vh-64px)] overflow-hidden">{children}</div>
+        <div className="p-4 lg:p-6 min-h-[calc(100vh-64px)] overflow-y-auto">{children}</div>
       </main>
     </div>
   )
