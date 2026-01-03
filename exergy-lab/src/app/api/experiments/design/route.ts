@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
  * Generate detailed experiment protocol
  */
 async function generateProtocol(goal: ExperimentGoal): Promise<ExperimentProtocol> {
-  const prompt = `You are an experienced clean energy research scientist. Design a detailed laboratory experiment protocol for the following goal:
+  const prompt = `You are an experienced research scientist specializing in energy, materials science, and chemical engineering. Design a detailed laboratory experiment protocol for the following goal:
 
 Domain: ${goal.domain}
 Description: ${goal.description}
@@ -89,7 +89,7 @@ Return as JSON:
   "estimatedCost": 500
 }
 
-Focus on practical, achievable experiments for a well-equipped clean energy research lab.`
+Focus on practical, achievable experiments for a well-equipped scientific research lab.`
 
   try {
     const response = await aiRouter.execute('experiment-design', prompt, {

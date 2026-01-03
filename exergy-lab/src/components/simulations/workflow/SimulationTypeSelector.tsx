@@ -97,7 +97,7 @@ export function SimulationTypeSelector({
       </div>
 
       {/* Type Grid (Alternative Visual Selection) */}
-      <div className="grid grid-cols-4 md:grid-cols-8 gap-2">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {SIMULATION_TYPES.map((type) => {
           const Icon = TYPE_ICONS[type.id]
           const isSelected = selectedType === type.id
@@ -108,19 +108,19 @@ export function SimulationTypeSelector({
               key={type.id}
               onClick={() => onTypeSelect(isSelected ? null : type.id)}
               className={`
-                flex flex-col items-center gap-1 p-2 rounded-lg border transition-all
+                flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all cursor-pointer
                 ${
                   isSelected
                     ? 'border-primary bg-primary/10 text-primary'
                     : isDetected
                     ? 'border-primary/30 bg-primary/5 text-primary/70'
-                    : 'border-border bg-card-dark text-foreground-subtle hover:border-primary/30'
+                    : 'border-border bg-background hover:border-primary/50 hover:scale-105'
                 }
               `}
               title={type.description}
             >
-              <Icon className="w-4 h-4" />
-              <span className="text-[10px] font-medium truncate w-full text-center">
+              <Icon className={`w-6 h-6 ${isSelected ? 'text-primary' : 'text-muted'}`} />
+              <span className={`text-xs font-medium text-center ${isSelected ? 'text-foreground' : 'text-muted'}`}>
                 {type.label}
               </span>
             </button>

@@ -1,9 +1,12 @@
 /**
  * Simulation Calculators Module
  *
- * Physics-based calculators for various energy system simulations.
+ * Physics-based calculators for energy systems and materials science.
+ *
+ * @version 0.7.0
  */
 
+// Energy Systems
 export {
   calculateElectrochemicalCell,
   calculateNernstVoltage,
@@ -45,3 +48,51 @@ export {
   getAvailableTurbines,
   type WindTurbineInputs,
 } from './wind-turbines'
+
+// Materials Science
+export {
+  calculatePolymerProperties,
+  calculateGlassTransition,
+  calculateIntrinsicViscosity,
+  calculateMeltViscosity,
+  calculateDegreeOfPolymerization,
+  calculateThermalProperties,
+  getAvailablePolymers,
+  type PolymerInputs,
+} from './polymer-properties'
+
+export {
+  calculateCatalystPerformance,
+  calculateRateConstant,
+  calculateTurnoverFrequency,
+  calculateActivationParameters,
+  calculateDeactivation,
+  calculateASFSelectivity,
+  calculateSpaceVelocity,
+  getAvailableCatalysts,
+  generateArrheniusPlot,
+  type CatalystInputs,
+} from './catalyst-performance'
+
+export {
+  calculateBatteryMaterials,
+  calculateCapacity,
+  calculateCycleDegradation,
+  calculateIonicConductivity,
+  calculateThermalRunaway,
+  calculateOpenCircuitVoltage,
+  calculateEnergyDensity,
+  getAvailableBatteryMaterials,
+  type BatteryInputs,
+} from './battery-materials'
+
+export {
+  calculateMembraneSeparation,
+  calculateWaterFlux,
+  calculateSoluteRejection,
+  calculateFoulingRate,
+  calculateEnergyConsumption,
+  calculatePermeateQuality,
+  getAvailableMembranes,
+  type MembraneInputs,
+} from './membrane-separation'

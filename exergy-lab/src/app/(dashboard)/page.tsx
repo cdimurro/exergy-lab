@@ -111,7 +111,7 @@ export default function DashboardPage() {
             </div>
             <div>
               <h1 className="text-xl font-semibold text-foreground">Exergy Lab</h1>
-              <p className="text-sm text-foreground-muted">AI-powered clean energy research platform</p>
+              <p className="text-sm text-foreground-muted">AI-powered scientific research platform</p>
             </div>
           </div>
         </div>
@@ -139,7 +139,7 @@ export default function DashboardPage() {
             </div>
             <div>
               <h1 className="text-xl font-semibold text-foreground">Exergy Lab</h1>
-              <p className="text-sm text-foreground-muted">AI-powered clean energy research platform</p>
+              <p className="text-sm text-foreground-muted">AI-powered scientific research platform</p>
             </div>
           </div>
           <div className="text-sm text-foreground-muted hidden sm:block">
@@ -170,7 +170,7 @@ export default function DashboardPage() {
               About Exergy Lab
             </h2>
             <p className="text-sm text-foreground-muted mb-4">
-              An AI-powered platform for accelerating clean energy research and development.
+              An AI-powered platform for accelerating scientific research in energy, materials, and chemicals.
             </p>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
               {ABOUT_FEATURES.map((feature) => {
@@ -179,7 +179,7 @@ export default function DashboardPage() {
                   <button
                     key={feature.title}
                     onClick={() => router.push(feature.href)}
-                    className="p-3 rounded-lg bg-background-surface hover:bg-background-elevated transition-colors text-left group"
+                    className="p-3 rounded-lg bg-background-surface hover:bg-background-elevated transition-colors text-left group cursor-pointer"
                   >
                     <div className="flex items-center gap-2 mb-1">
                       <Icon className="w-4 h-4 text-foreground-muted group-hover:text-primary transition-colors" />
@@ -232,7 +232,7 @@ export default function DashboardPage() {
                       <li key={item.href} className="group">
                         <button
                           onClick={() => router.push(item.href)}
-                          className="w-full flex items-center gap-2 text-left text-sm py-1.5"
+                          className="w-full flex items-center gap-2 text-left text-sm py-1.5 cursor-pointer disabled:cursor-default"
                           disabled={item.done}
                         >
                           {item.done ? (

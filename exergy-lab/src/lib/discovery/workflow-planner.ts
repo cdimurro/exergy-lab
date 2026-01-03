@@ -241,7 +241,7 @@ Respond with JSON:
     const domainContext = this.getDomainContext(domains)
     const phasesNeeded = requiredPhases.filter(p => p !== 'research').map(p => p.replace('_', ' '))
 
-    const planPrompt = `You are an expert research planner for clean energy technology.
+    const planPrompt = `You are an expert research planner for energy, materials science, and chemical technology.
 
 CRITICAL JSON REQUIREMENTS:
 - Your response must be ONLY valid JSON - no markdown, no code blocks, no explanations
@@ -531,7 +531,7 @@ Respond with ONLY the JSON object below. Start directly with { and end with }. D
       'energy-efficiency': 'Energy efficiency technologies include building insulation, HVAC optimization, industrial heat recovery. Key metrics: energy savings, payback period.',
       'grid-optimization': 'Grid technologies include smart grid, demand response, energy management systems, microgrids. Key metrics: reliability, losses, flexibility.',
       'materials-science': 'Materials research includes semiconductors, catalysts, membranes, coatings, composites. Key metrics: performance, stability, scalability.',
-      'other': 'General clean energy research including cross-domain technologies and emerging solutions.',
+      'other': 'General scientific research including cross-domain technologies and emerging solutions in energy, materials, and chemicals.',
     }
 
     return domains.map(d => contexts[d] || '').filter(Boolean).join('\n')

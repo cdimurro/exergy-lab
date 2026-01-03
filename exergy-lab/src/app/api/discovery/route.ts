@@ -128,7 +128,7 @@ async function generateNovelIdeas(
   prompt: DiscoveryPrompt,
   searchResults: any
 ): Promise<NovelIdea[]> {
-  const aiPrompt = `You are a clean energy research expert analyzing cross-domain innovations.
+  const aiPrompt = `You are a scientific research expert analyzing cross-domain innovations in energy, materials, and chemicals.
 
 Discovery Goal: ${prompt.description}
 Target Domains: ${prompt.domains.join(', ')}

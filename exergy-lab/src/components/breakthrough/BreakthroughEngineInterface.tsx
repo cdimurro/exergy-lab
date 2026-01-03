@@ -533,7 +533,7 @@ export function BreakthroughEngineInterface() {
                     onChange={(e) => setInputValue(e.target.value)}
                     onKeyDown={handleKeyDown}
                     disabled={isInputDisabled}
-                    placeholder="Describe a clean energy research challenge to discover potential breakthrough solutions..."
+                    placeholder="Describe a research challenge in energy, materials, or chemicals to discover potential breakthrough solutions..."
                     className={cn(
                       'flex-1 min-h-[80px] max-h-[160px] p-3',
                       'rounded-xl border border-border bg-background',

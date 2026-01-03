@@ -379,4 +379,7 @@ export const SOURCE_DISPLAY_NAMES: Record<DataSourceName, string> = {
   'inspire': 'INSPIRE',
   'newsapi': 'NewsAPI',
   'web-search': 'Web Search',
+  'pubchem': 'PubChem',
+  'chemspider': 'ChemSpider',
+  'nist-webbook': 'NIST WebBook',
 }

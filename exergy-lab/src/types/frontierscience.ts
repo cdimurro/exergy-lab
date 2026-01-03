@@ -17,6 +17,7 @@ import type {
   FailureMode,
 } from '@/lib/ai/rubrics/types'
 import type { ActivityItem } from '@/components/discovery/LiveActivityFeed'
+import type { PersistedWorkflow } from '@/lib/workflows/types'
 
 // Re-export for convenience
 export type {
@@ -240,6 +241,10 @@ export interface UseFrontierScienceWorkflowReturn {
   changeRequests: ChangeRequest[]
   pendingChangeRequest: ChangeRequest | null
 
+  // Background persistence state
+  hasResumableWorkflow: boolean
+  resumableWorkflow: PersistedWorkflow | null
+
   // Actions
   startDiscovery: (query: string, options?: DiscoveryOptions) => Promise<void>
   cancelDiscovery: () => void
@@ -247,6 +252,7 @@ export interface UseFrontierScienceWorkflowReturn {
   pauseDiscovery: () => void
   resumeDiscovery: () => void
   submitChangeRequest: (request: string) => Promise<ChangeRequest>
+  dismissResumableWorkflow: () => void
 
   // Computed
   qualityTier: DiscoveryQuality | null

@@ -126,27 +126,18 @@ export function BasicInformationSection({
                     }
                   }}
                   className={`
-                    p-4 rounded-lg border-2 transition-all text-left
-                    hover:border-primary/50
+                    p-4 rounded-lg border-2 transition-all text-left cursor-pointer
                     ${isSelected
                       ? 'border-primary bg-primary/10'
-                      : 'border-border bg-elevated hover:bg-elevated/80'
+                      : 'border-border bg-background hover:border-primary/50 hover:scale-105'
                     }
                   `}
                 >
                   <div className="flex flex-col items-center gap-2">
-                    <div className={`
-                      w-10 h-10 rounded-lg flex items-center justify-center
-                      ${isSelected ? 'bg-primary/20' : 'bg-background'}
-                    `}>
-                      <Icon className={`w-5 h-5 ${isSelected ? 'text-primary' : 'text-muted'}`} />
-                    </div>
+                    <Icon className={`w-6 h-6 ${isSelected ? 'text-primary' : 'text-muted'}`} />
                     <div className="text-center">
-                      <div className={`text-sm font-medium ${isSelected ? 'text-primary' : 'text-foreground'}`}>
+                      <div className={`text-xs font-medium ${isSelected ? 'text-foreground' : 'text-muted'}`}>
                         {tech.label}
-                      </div>
-                      <div className="text-xs text-muted mt-0.5">
-                        {tech.description}
                       </div>
                     </div>
                   </div>

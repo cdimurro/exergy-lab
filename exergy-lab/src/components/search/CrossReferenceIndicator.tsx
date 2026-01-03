@@ -34,6 +34,9 @@ const SOURCE_DISPLAY_NAMES: Record<DataSourceName, string> = {
   'inspire': 'INSPIRE',
   'newsapi': 'News API',
   'web-search': 'Web Search',
+  'pubchem': 'PubChem',
+  'chemspider': 'ChemSpider',
+  'nist-webbook': 'NIST WebBook',
 }
 
 // Short names for compact display
@@ -60,6 +63,9 @@ const SOURCE_SHORT_NAMES: Record<DataSourceName, string> = {
   'inspire': 'INS',
   'newsapi': 'News',
   'web-search': 'Web',
+  'pubchem': 'PChem',
+  'chemspider': 'CSpi',
+  'nist-webbook': 'NIST',
 }
 
 export function CrossReferenceIndicator({

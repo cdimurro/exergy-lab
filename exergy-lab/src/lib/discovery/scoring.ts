@@ -39,6 +39,7 @@ const SOURCE_QUALITY_WEIGHTS: Record<DataSourceType, number> = {
   'report': 11,
   'standard': 15,
   'consensus': 15,
+  'chemical-database': 14,
 }
 
 /**

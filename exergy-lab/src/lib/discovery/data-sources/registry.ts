@@ -522,6 +522,11 @@ export async function initializeDataSourceRegistry(): Promise<DataSourceRegistry
     safeRegister(() => import('../sources/consensus'), 'consensus'),
     safeRegister(() => import('../sources/materials-project'), 'materials-project'),
 
+    // Chemistry databases
+    safeRegister(() => import('../sources/pubchem'), 'pubchem'),
+    safeRegister(() => import('../sources/chemspider'), 'chemspider'),
+    safeRegister(() => import('../sources/nist-webbook'), 'nist-webbook'),
+
     // Patents
     safeRegister(() => import('../sources/google-patents'), 'google-patents'),
     safeRegister(() => import('../sources/uspto'), 'uspto'),

@@ -22,7 +22,7 @@ const FEATURES = [
   {
     id: 'discovery',
     name: 'Discovery',
-    description: 'AI-powered research discovery across clean energy domains',
+    description: 'AI-powered research discovery across energy, materials, and chemicals domains',
     icon: Compass,
     href: '/discovery',
     tips: [
@@ -61,7 +61,7 @@ const FEATURES = [
   {
     id: 'simulations',
     name: 'Simulations',
-    description: 'Run computational simulations for clean energy systems',
+    description: 'Run computational simulations for energy, materials, and chemical systems',
     icon: Cpu,
     href: '/simulations',
     tips: [
@@ -123,7 +123,7 @@ export default function HelpPage() {
       <div>
         <h1 className="text-2xl font-bold text-foreground">Help Center</h1>
         <p className="text-foreground-muted mt-1">
-          Learn how to use Exergy Lab to accelerate your clean energy research.
+          Learn how to use Exergy Lab to accelerate your scientific research.
         </p>
       </div>
 

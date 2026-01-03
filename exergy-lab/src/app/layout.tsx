@@ -15,16 +15,20 @@ const jetbrainsMono = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Exergy Lab | Energy Intelligence Platform',
+  title: 'Exergy Lab | AI-Powered Scientific Research Platform',
   description:
-    'Real-time thermodynamic tracking and analysis of global energy flows. TEA calculations, exergy analysis, and AI-powered energy research.',
+    'Accelerating discovery in energy, materials, and chemicals. AI-powered research tools including TEA calculations, exergy analysis, physics simulations, and multi-source literature search.',
   keywords: [
     'exergy',
     'energy analysis',
     'TEA calculator',
     'thermodynamics',
     'renewable energy',
-    'clean energy',
+    'materials science',
+    'battery materials',
+    'membrane separation',
+    'scientific research',
+    'AI research',
   ],
 }
 

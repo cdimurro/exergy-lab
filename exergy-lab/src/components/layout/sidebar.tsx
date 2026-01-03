@@ -30,6 +30,8 @@ import {
   Factory,
   Atom,
   Clock,
+  FileText,
+  Users,
 } from 'lucide-react'
 import { useSimulationsStore } from '@/lib/store/simulations-store'
 import { Badge } from '@/components/ui'
@@ -49,9 +51,11 @@ const mainNavItems: NavItem[] = [
   { name: 'Experiments', href: '/experiments', icon: FlaskConical },
   { name: 'Simulations', href: '/simulations', icon: Bot },
   { name: 'TEA Reports', href: '/tea-generator', icon: Calculator },
+  { name: 'Reports', href: '/reports', icon: FileText },
 ]
 
 const secondaryNavItems: NavItem[] = [
+  { name: 'Team', href: '/team', icon: Users },
   { name: 'Activity Logs', href: '/admin/logs', icon: Activity },
   { name: 'Criteria', href: '/criteria', icon: ClipboardCheck },
   { name: 'Settings', href: '/settings', icon: Settings },
@@ -195,7 +199,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
                   Exergy Lab
                 </span>
                 <span className="text-xs text-foreground-muted">
-                  Clean Energy Research
+                  Scientific Research Platform
                 </span>
               </div>
             )}

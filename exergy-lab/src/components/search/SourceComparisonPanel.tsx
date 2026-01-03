@@ -61,6 +61,9 @@ const SOURCE_DISPLAY_NAMES: Record<DataSourceName, string> = {
   'inspire': 'INSPIRE',
   'newsapi': 'News API',
   'web-search': 'Web Search',
+  'pubchem': 'PubChem',
+  'chemspider': 'ChemSpider',
+  'nist-webbook': 'NIST WebBook',
 }
 
 export function SourceComparisonPanel({

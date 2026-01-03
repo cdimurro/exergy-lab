@@ -29,6 +29,9 @@ const SOURCE_DISPLAY_NAMES: Record<DataSourceName, string> = {
   'inspire': 'INSPIRE',
   'newsapi': 'NewsAPI',
   'web-search': 'Web Search',
+  'pubchem': 'PubChem',
+  'chemspider': 'ChemSpider',
+  'nist-webbook': 'NIST WebBook',
 }
 
 // Source badge color mapping
@@ -55,6 +58,9 @@ const SOURCE_BADGE_COLORS: Record<DataSourceName, 'default' | 'primary' | 'secon
   'inspire': 'secondary',
   'newsapi': 'default',
   'web-search': 'default',
+  'pubchem': 'success',
+  'chemspider': 'success',
+  'nist-webbook': 'primary',
 }
 
 export interface PaperCardProps {

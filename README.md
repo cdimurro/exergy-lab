@@ -5,7 +5,7 @@
 <h1 align="center">Exergy Lab</h1>
 
 <p align="center">
-  <strong>The Integrated Research Platform for Clean Energy Discovery</strong>
+  <strong>AI-Powered Scientific Research Platform for Energy, Materials & Chemicals</strong>
 </p>
 
 <p align="center">
@@ -20,9 +20,9 @@
 
 ## What is Exergy Lab
 
-Exergy Lab unifies the entire clean energy research workflow into a single intelligent platform. From initial literature discovery through simulation, analysis, and publication-ready reporting, researchers operate within one environment that understands context, maintains state, and accelerates every phase of scientific investigation.
+Exergy Lab unifies the entire scientific research workflow into a single intelligent platform. From initial literature discovery through simulation, analysis, and publication-ready reporting, researchers in **energy, materials science, and chemical engineering** operate within one environment that understands context, maintains state, and accelerates every phase of scientific investigation.
 
-The platform integrates **15 academic data sources**, **physics-based simulation engines**, **AI-powered synthesis**, and **automated report generation** into a cohesive system where each capability enhances the others. Search results inform simulations. Simulations validate hypotheses. Validated hypotheses generate experiments. The research cycle that traditionally spans weeks compresses into hours.
+The platform integrates **15+ academic data sources**, **physics-based simulation engines**, **AI-powered synthesis**, and **automated report generation** into a cohesive system where each capability enhances the others. Search results inform simulations. Simulations validate hypotheses. Validated hypotheses generate experiments. The research cycle that traditionally spans weeks compresses into hours.
 
 ---
 
@@ -347,7 +347,7 @@ MIT License - see [LICENSE](LICENSE)
 
 ```bibtex
 @software{exergy_lab_2025,
-  title = {Exergy Lab: Integrated Research Platform for Clean Energy Discovery},
+  title = {Exergy Lab: AI-Powered Scientific Research Platform},
   author = {DiMurro, Chris},
   year = {2025},
   url = {https://github.com/cdimurro/exergy-lab}

@@ -15,6 +15,8 @@ import type { RacingHypothesis as BackendRacingHypothesis, HypGenAgentType } fro
 import type { LeaderboardEntry } from '@/lib/ai/agents/breakthrough-evaluator'
 import type { ClassificationTier } from '@/lib/ai/rubrics/types-breakthrough'
 import type { RacingHypothesis as UIRacingHypothesis } from '@/components/discovery/HypothesisRaceViewer'
+import { useWorkflowPersistence } from '@/hooks/use-workflow-persistence'
+import type { PersistedWorkflow } from '@/lib/workflows/types'
 
 // ============================================================================
 // Types
@@ -101,12 +103,17 @@ export interface UseBreakthroughWorkflowReturn {
   isPaused: boolean
   pausedAtPhase: BreakthroughPhase | null
 
+  // Background persistence state
+  hasResumableWorkflow: boolean
+  resumableWorkflow: PersistedWorkflow | null
+
   // Actions
   startDiscovery: (query: string, config?: Partial<BreakthroughConfig>) => Promise<void>
   stopDiscovery: () => void
   reset: () => void
   pauseDiscovery: () => Promise<void>
   resumeDiscovery: () => Promise<void>
+  dismissResumableWorkflow: () => void
 }
 
 // ============================================================================
@@ -241,6 +248,22 @@ const DEFAULT_CONFIG: BreakthroughConfig = {
 // ============================================================================
 
 export function useBreakthroughWorkflow(): UseBreakthroughWorkflowReturn {
+  // Workflow persistence for background resume
+  const [hasResumableWorkflow, setHasResumableWorkflow] = useState(false)
+  const [resumableWorkflow, setResumableWorkflow] = useState<PersistedWorkflow | null>(null)
+
+  const handleActiveWorkflowFound = useCallback((workflow: PersistedWorkflow) => {
+    setHasResumableWorkflow(true)
+    setResumableWorkflow(workflow)
+  }, [])
+
+  const persistence = useWorkflowPersistence({
+    type: 'breakthrough',
+    autoCheckpoint: true,
+    checkpointIntervalMs: 30000,
+    onActiveWorkflowFound: handleActiveWorkflowFound,
+  })
+
   // Core state
   const [breakthroughId, setBreakthroughId] = useState<string | null>(null)
   const [status, setStatus] = useState<BreakthroughStatus>('idle')
@@ -641,6 +664,14 @@ export function useBreakthroughWorkflow(): UseBreakthroughWorkflowReturn {
       setBreakthroughId(newBreakthroughId)
       setStatus('running')
 
+      // Create persisted workflow for background resume support
+      persistence.createWorkflow(
+        { query: queryText, domain: 'clean-energy', options: config },
+        `Breakthrough: ${queryText.slice(0, 50)}${queryText.length > 50 ? '...' : ''}`
+      ).catch((err) => {
+        console.warn('[Breakthrough] Failed to persist workflow:', err)
+      })
+
       console.log('[Breakthrough] Started:', newBreakthroughId)
       addActivity(`Research phase started (ID: ${newBreakthroughId.slice(-8)})`, 'info', 'researching')
 
@@ -678,7 +709,14 @@ export function useBreakthroughWorkflow(): UseBreakthroughWorkflowReturn {
       setPhase('failed')
       cleanup()
     }
-  }, [status, addActivity, handleSSEEvent, cleanup])
+  }, [status, addActivity, handleSSEEvent, cleanup, persistence])
+
+  // Dismiss resumable workflow prompt
+  const dismissResumableWorkflow = useCallback(() => {
+    setHasResumableWorkflow(false)
+    setResumableWorkflow(null)
+    persistence.dismissActiveWorkflow()
+  }, [persistence])
 
   // Stop discovery
   const stopDiscovery = useCallback(() => {
@@ -797,12 +835,17 @@ export function useBreakthroughWorkflow(): UseBreakthroughWorkflowReturn {
     isPaused,
     pausedAtPhase,
 
+    // Background persistence state
+    hasResumableWorkflow,
+    resumableWorkflow,
+
     // Actions
     startDiscovery,
     stopDiscovery,
     reset,
     pauseDiscovery,
     resumeDiscovery,
+    dismissResumableWorkflow,
   }
 }
 

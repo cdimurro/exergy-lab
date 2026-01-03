@@ -276,7 +276,7 @@ ${context.competitorHypotheses
 `
       : ''
 
-    return `${feedbackSection}${competitorSection}You are a hypothesis generator for clean energy research with a ${this.strategicFocus} focus.
+    return `${feedbackSection}${competitorSection}You are a hypothesis generator for scientific research in energy, materials, and chemicals with a ${this.strategicFocus} focus.
 
 ## YOUR STRATEGIC APPROACH
 ${strategicInstructions}

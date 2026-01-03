@@ -124,6 +124,9 @@ export const SOURCE_DISPLAY_NAMES: Record<DataSourceName, string> = {
   'zenodo': 'Zenodo',
   'inspire': 'INSPIRE-HEP',
   'newsapi': 'News API',
+  'pubchem': 'PubChem',
+  'chemspider': 'ChemSpider',
+  'nist-webbook': 'NIST WebBook',
 }
 
 export const SOURCE_TYPES: Record<DataSourceName, 'academic' | 'patent' | 'dataset' | 'preprint' | 'web'> = {
@@ -149,6 +152,9 @@ export const SOURCE_TYPES: Record<DataSourceName, 'academic' | 'patent' | 'datas
   'zenodo': 'dataset',
   'inspire': 'academic',
   'newsapi': 'web',
+  'pubchem': 'dataset',
+  'chemspider': 'dataset',
+  'nist-webbook': 'dataset',
 }
 
 export const SOURCES_REQUIRING_API_KEY: DataSourceName[] = [

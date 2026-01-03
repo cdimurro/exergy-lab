@@ -49,7 +49,7 @@ async function generateFailureAnalysis(
   const similarFailures = await searchSimilarFailures(protocol)
 
   // Generate failure modes using AI
-  const prompt = `You are a clean energy research expert analyzing potential failure modes for an experiment.
+  const prompt = `You are a scientific research expert analyzing potential failure modes for an experiment.
 
 Experiment: ${protocol.title}
 Domain: ${protocol.goal.domain}

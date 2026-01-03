@@ -38,7 +38,7 @@ export function QuickActionsCard() {
             <button
               key={action.href}
               onClick={() => router.push(action.href)}
-              className="w-full flex items-center gap-3 p-2.5 rounded-lg hover:bg-background-surface transition-colors group"
+              className="w-full flex items-center gap-3 p-2.5 rounded-lg hover:bg-background-surface transition-colors group cursor-pointer"
             >
               <div className="p-1.5 rounded-lg bg-background-elevated">
                 <Icon className="w-4 h-4 text-foreground-muted" />

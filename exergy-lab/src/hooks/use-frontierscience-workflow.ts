@@ -34,6 +34,8 @@ import {
   createActivityFromPhaseStart,
   createActivityFromPhaseComplete,
 } from '@/components/discovery/LiveActivityFeed'
+import { useWorkflowPersistence } from '@/hooks/use-workflow-persistence'
+import type { PersistedWorkflow, WorkflowCheckpoint } from '@/lib/workflows/types'
 
 /**
  * Consolidated 4-Phase Model
@@ -81,6 +83,22 @@ export interface ChangeRequest {
 export function useFrontierScienceWorkflow(): UseFrontierScienceWorkflowReturn {
   // Get debug context from provider (shared with AdminDebugViewer)
   const debugContext = useContext(DebugContext)
+
+  // Workflow persistence for background resume
+  const [hasResumableWorkflow, setHasResumableWorkflow] = useState(false)
+  const [resumableWorkflow, setResumableWorkflow] = useState<PersistedWorkflow | null>(null)
+
+  const handleActiveWorkflowFound = useCallback((workflow: PersistedWorkflow) => {
+    setHasResumableWorkflow(true)
+    setResumableWorkflow(workflow)
+  }, [])
+
+  const persistence = useWorkflowPersistence({
+    type: 'discovery',
+    autoCheckpoint: true,
+    checkpointIntervalMs: 30000, // 30 seconds
+    onActiveWorkflowFound: handleActiveWorkflowFound,
+  })
 
   // Core state
   const [discoveryId, setDiscoveryId] = useState<string | null>(null)
@@ -430,6 +448,14 @@ export function useFrontierScienceWorkflow(): UseFrontierScienceWorkflowReturn {
       setStatus('running')
       startTimer()
 
+      // Create persisted workflow for background resume support
+      persistence.createWorkflow(
+        { query, domain: options?.domain, options: requestPayload.options },
+        `Discovery: ${query.slice(0, 50)}${query.length > 50 ? '...' : ''}`
+      ).catch((err) => {
+        console.warn('[FrontierScience] Failed to persist workflow:', err)
+      })
+
       // Start SSE connection
       const eventSource = new EventSource(
         `/api/discovery/frontierscience?discoveryId=${newDiscoveryId}&stream=true`
@@ -475,7 +501,14 @@ export function useFrontierScienceWorkflow(): UseFrontierScienceWorkflowReturn {
 
       cleanup()
     }
-  }, [cleanup, handleSSEEvent, startTimer, debugContext])
+  }, [cleanup, handleSSEEvent, startTimer, debugContext, persistence])
+
+  // Dismiss resumable workflow prompt
+  const dismissResumableWorkflow = useCallback(() => {
+    setHasResumableWorkflow(false)
+    setResumableWorkflow(null)
+    persistence.dismissActiveWorkflow()
+  }, [persistence])
 
   // Cancel discovery
   const cancelDiscovery = useCallback(() => {
@@ -663,6 +696,10 @@ export function useFrontierScienceWorkflow(): UseFrontierScienceWorkflowReturn {
     changeRequests,
     pendingChangeRequest,
 
+    // Background persistence state
+    hasResumableWorkflow,
+    resumableWorkflow,
+
     // Actions
     startDiscovery,
     cancelDiscovery,
@@ -670,6 +707,7 @@ export function useFrontierScienceWorkflow(): UseFrontierScienceWorkflowReturn {
     pauseDiscovery,
     resumeDiscovery,
     submitChangeRequest,
+    dismissResumableWorkflow,
 
     // Computed
     qualityTier,

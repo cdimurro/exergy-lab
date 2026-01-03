@@ -37,6 +37,9 @@ export type DataSourceName =
   | 'inspire'
   | 'newsapi'
   | 'web-search'
+  | 'pubchem'
+  | 'chemspider'
+  | 'nist-webbook'
 
 /**
  * Type of data source
@@ -50,6 +53,7 @@ export type DataSourceType =
   | 'report'
   | 'standard'
   | 'consensus'
+  | 'chemical-database'
 
 /**
  * Source metadata
@@ -266,6 +270,7 @@ export const SOURCE_QUALITY_SCORES: Record<DataSourceType, number> = {
   'report': 80, // Usually well-researched
   'standard': 100, // Official standards
   'consensus': 95, // Aggregated evidence
+  'chemical-database': 90, // Authoritative compound data
 }
 
 /**
