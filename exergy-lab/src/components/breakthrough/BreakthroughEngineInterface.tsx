@@ -2387,7 +2387,7 @@ function BreakthroughExportPanel({
     lines.push('```yaml')
     lines.push(`query: "${query}"`)
     lines.push(`status: completed`)
-    lines.push(`engine_version: 0.6.0`)
+    lines.push(`engine_version: 0.7.0`)
     lines.push(`exported_at: ${new Date().toISOString()}`)
     lines.push(`total_duration_ms: ${raceStats.elapsedTimeMs}`)
     lines.push('```')

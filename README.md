@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="https://exergy-lab.vercel.app"><img src="https://img.shields.io/badge/Live%20Platform-exergy--lab.vercel.app-0066CC?style=flat-square" alt="Live Platform" /></a>
-  <img src="https://img.shields.io/badge/Version-0.6.0-blue?style=flat-square" alt="Version" />
+  <img src="https://img.shields.io/badge/Version-0.7.0-blue?style=flat-square" alt="Version" />
   <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License" />
   <img src="https://img.shields.io/badge/Data%20Sources-15+-purple?style=flat-square" alt="Data Sources" />
   <img src="https://img.shields.io/badge/Simulation%20Tiers-3-orange?style=flat-square" alt="Simulation Tiers" />
@@ -241,7 +241,7 @@ Patent searches run alongside academic literature queries, revealing the IP land
 
 ## Roadmap
 
-### Current Release (v0.6)
+### Current Release (v0.7)
 
 The platform is feature-complete with all core modules operational:
 
@@ -250,11 +250,17 @@ The platform is feature-complete with all core modules operational:
 | **Federated Search** | Production | 15 academic sources with AI synthesis |
 | **Discovery Engine** | Beta | 4-phase AI workflow for research gaps |
 | **Breakthrough Engine** | Beta | Multi-agent hypothesis racing |
-| **Simulation Engine** | Production | 3-tier progressive fidelity |
+| **Simulation Engine** | Production | 3-tier progressive fidelity + GPU billing |
 | **TEA Generator** | Production | Investor-grade financial analysis |
 | **Experiment Designer** | Production | Complete lab protocol generation |
 | **Paper Viewer** | Production | In-app reading with AI chat |
 | **Personal Library** | Production | Save and organize research artifacts |
+
+**v0.7 Highlights:**
+- Real PhysicsNeMo CFD with Fourier Neural Operators (FNO)
+- NVIDIA ALCHEMI materials discovery (battery screening, molecular properties)
+- GPU usage tracking with time-based billing (T4/A10G/A100/H100)
+- User tier limits (Free/Pro/Enterprise) with budget enforcement
 
 ### Path to v1.0 (Production Release)
 

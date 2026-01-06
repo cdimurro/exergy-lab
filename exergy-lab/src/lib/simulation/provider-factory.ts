@@ -27,6 +27,10 @@ import {
   type ModalProgressEvent,
 } from './providers/modal-provider'
 import {
+  PhysicsNeMoProvider,
+  createPhysicsNeMoProvider,
+} from './providers/physicsnemo-provider'
+import {
   getDataSourceRegistry,
   getParameterResolver,
   getMaterialsDatabase,
@@ -65,6 +69,10 @@ const providerInstances: Map<SimulationTier, SimulationProvider> = new Map()
 // Track Modal availability for logging
 let modalAvailabilityChecked = false
 let modalAvailable = false
+
+// PhysicsNeMo provider instance (specialized for CFD)
+let physicsNeMoInstance: PhysicsNeMoProvider | null = null
+let physicsNeMoAvailable: boolean | null = null
 
 /**
  * Get or create a simulation provider for the specified tier
@@ -162,6 +170,66 @@ export function isModalAvailable(): boolean {
   return modalAvailable
 }
 
+// ============================================================================
+// PhysicsNeMo Provider (Specialized CFD)
+// ============================================================================
+
+/**
+ * Get the PhysicsNeMo provider for CFD simulations
+ *
+ * This is a specialized Tier 3 provider that uses NVIDIA PhysicsNeMo
+ * with Fourier Neural Operators (FNO) for physics-informed deep learning.
+ *
+ * Use this for:
+ * - CFD simulations (Navier-Stokes)
+ * - Heat transfer simulations
+ * - Thermodynamic simulations requiring field solutions
+ */
+export function getPhysicsNeMoProvider(): PhysicsNeMoProvider {
+  if (!physicsNeMoInstance) {
+    physicsNeMoInstance = createPhysicsNeMoProvider()
+    console.log('[SimulationProvider] Created PhysicsNeMo CFD provider')
+  }
+  return physicsNeMoInstance
+}
+
+/**
+ * Check if PhysicsNeMo is available
+ * Caches the result to avoid repeated endpoint checks
+ */
+export async function isPhysicsNeMoAvailable(): Promise<boolean> {
+  if (physicsNeMoAvailable !== null) {
+    return physicsNeMoAvailable
+  }
+
+  const provider = getPhysicsNeMoProvider()
+  physicsNeMoAvailable = await provider.isAvailable()
+
+  if (physicsNeMoAvailable) {
+    console.log('[SimulationProvider] PhysicsNeMo CFD is available')
+  } else {
+    console.log('[SimulationProvider] PhysicsNeMo CFD not available (Modal not configured)')
+  }
+
+  return physicsNeMoAvailable
+}
+
+/**
+ * Get the best provider for CFD simulations
+ *
+ * Returns PhysicsNeMo if available, otherwise falls back to Modal Tier 3
+ */
+export async function getCFDProvider(): Promise<SimulationProvider> {
+  const physicsNeMoReady = await isPhysicsNeMoAvailable()
+
+  if (physicsNeMoReady) {
+    return getPhysicsNeMoProvider()
+  }
+
+  // Fall back to Modal Tier 3 (or Tier 2 if Tier 3 not configured)
+  return getSimulationProvider('tier3')
+}
+
 /**
  * Clear cached providers (useful for testing)
  */
@@ -169,6 +237,8 @@ export function clearProviderCache(): void {
   providerInstances.clear()
   modalAvailabilityChecked = false
   modalAvailable = false
+  physicsNeMoInstance = null
+  physicsNeMoAvailable = null
 }
 
 // ============================================================================

@@ -1,17 +1,18 @@
 /**
- * Simulation Module (v0.0.4.2)
+ * Simulation Module (v2.0)
  *
  * Tiered simulation architecture with providers for:
  * - Tier 1: Analytical models (JavaScript) - FREE, instant
- * - Tier 2: Modal T4 GPU ($0.01/run) - Monte Carlo, parametric
- * - Tier 3: Modal A10G/A100 ($0.02-0.05/run) - ML-MD, DFT
+ * - Tier 2: Modal T4 GPU ($0.26/hr) - Monte Carlo, parametric
+ * - Tier 3: Modal A10G/A100 ($0.76-$2.86/hr) - ML-MD, DFT, CFD
  *
  * v0.0.2: Added Modal GPU integration for accelerated validation
  * v0.0.4.2: Added PhysX 5 and MuJoCo providers for advanced physics
+ * v2.0: Real PhysicsNeMo CFD + NVIDIA ALCHEMI + GPU billing
  *
  * @see providers/modal-provider.ts - GPU-accelerated provider
- * @see providers/physx-provider.ts - PhysX 5 fluid/thermal simulations
- * @see providers/mujoco-provider.ts - MuJoCo mechanical simulations
+ * @see providers/physicsnemo-provider.ts - PhysicsNeMo CFD simulations
+ * @see providers/alchemi-provider.ts - ALCHEMI materials discovery
  * @see orchestrator/simulation-orchestrator.ts - Intelligent routing
  */
 
@@ -26,6 +27,10 @@ export {
   clearProviderCache,
   SimulationManager,
   defaultSimulationManager,
+  // PhysicsNeMo CFD (v0.0.5)
+  getPhysicsNeMoProvider,
+  isPhysicsNeMoAvailable,
+  getCFDProvider,
 } from './provider-factory'
 
 // Providers
@@ -63,6 +68,41 @@ export {
   type EnergyStorageParams,
   type MuJoCoSimulationResult,
 } from './providers/mujoco-provider'
+
+// PhysicsNeMo CFD Provider (v2.0 - NVIDIA CES 2026)
+export {
+  PhysicsNeMoProvider,
+  createPhysicsNeMoProvider,
+  DEFAULT_PHYSICSNEMO_CONFIG,
+  // GPU Billing (v2.0)
+  GPU_PRICING,
+  estimateGPUCost,
+  type GPUType,
+  type GPUBillingInfo,
+  type PhysicsNeMoConfig,
+  type CFDConfig,
+  type BoundaryCondition,
+  type HeatTransferConfig,
+  type CFDResult,
+  type HeatTransferResult,
+} from './providers/physicsnemo-provider'
+
+// ALCHEMI Materials Discovery Provider (v2.0 - NVIDIA ALCHEMI)
+export {
+  ALCHEMIProvider,
+  createALCHEMIProvider,
+  DEFAULT_ALCHEMI_CONFIG,
+  type ALCHEMIConfig,
+  type ALCHEMIModel,
+  type AtomicStructure,
+  type RelaxationRequest,
+  type RelaxationResult,
+  type BatteryScreeningRequest,
+  type BatteryScreeningResult,
+  type BatteryCandidate,
+  type PropertyPredictionRequest,
+  type PropertyPredictionResult,
+} from './providers/alchemi-provider'
 
 // Simulation Orchestrator (v0.0.4.2)
 export {

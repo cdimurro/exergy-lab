@@ -304,13 +304,13 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
               Powered by AI
             </p>
             <span className="text-xs text-muted-foreground/60 font-mono">
-              v0.0.6
+              v0.7.0
             </span>
           </div>
         ) : (
           <div className="flex justify-center">
             <span className="text-xs text-muted-foreground/60 font-mono">
-              v0.0.6
+              v0.7.0
             </span>
           </div>
         )}
