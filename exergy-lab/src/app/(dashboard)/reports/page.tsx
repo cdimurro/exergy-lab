@@ -26,6 +26,7 @@ import {
   AlertCircle,
 } from 'lucide-react'
 import { Card, Button, Badge } from '@/components/ui'
+import { PageHeader } from '@/components/shared'
 import type { ReportType } from '@/types/database'
 
 // Report from API
@@ -240,20 +241,20 @@ export default function ReportsPage() {
   }
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-6 p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground mb-2">Reports</h1>
-          <p className="text-foreground-muted">
-            View and manage all your generated research reports
-          </p>
-        </div>
-        <Button variant="outline" onClick={fetchReports} disabled={isLoading}>
-          <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-          Refresh
-        </Button>
-      </div>
+    <div className="flex flex-col h-full">
+      <PageHeader
+        icon={FileText}
+        title="Reports"
+        description="View and manage all your generated research reports"
+        actions={
+          <Button variant="outline" onClick={fetchReports} disabled={isLoading}>
+            <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        }
+      />
+
+      <div className="flex-1 p-6 space-y-6">
 
       {/* Error State */}
       {error && (
@@ -266,7 +267,7 @@ export default function ReportsPage() {
       )}
 
       {/* Filters */}
-      <Card className="p-4 bg-background-surface border-border">
+      <Card className="p-4 bg-background-elevated border-border">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Search */}
           <div className="relative">
@@ -339,7 +340,7 @@ export default function ReportsPage() {
 
       {/* Loading State */}
       {isLoading && (
-        <Card className="p-12 bg-background-surface border-border">
+        <Card className="p-12 bg-background-elevated border-border">
           <div className="flex flex-col items-center text-center space-y-4">
             <RefreshCw className="w-8 h-8 text-primary animate-spin" />
             <p className="text-foreground-muted">Loading reports...</p>
@@ -349,7 +350,7 @@ export default function ReportsPage() {
 
       {/* Empty State */}
       {!isLoading && filteredReports.length === 0 && !error && (
-        <Card className="p-12 bg-background-surface border-border">
+        <Card className="p-12 bg-background-elevated border-border">
           <div className="flex flex-col items-center text-center space-y-4">
             <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
               <FileText className="w-8 h-8 text-primary" />
@@ -383,7 +384,7 @@ export default function ReportsPage() {
             return (
               <Card
                 key={report.id}
-                className={`p-4 bg-background-surface border-border hover:border-primary/30 transition-all cursor-pointer ${
+                className={`p-4 bg-background-elevated border-border hover:border-primary/30 transition-all cursor-pointer ${
                   isSelected ? 'ring-2 ring-primary/50 border-primary' : ''
                 }`}
                 onClick={() => handleView(report.id)}
@@ -472,6 +473,7 @@ export default function ReportsPage() {
           })}
         </div>
       )}
+      </div>
     </div>
   )
 }

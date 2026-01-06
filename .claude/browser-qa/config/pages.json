@@ -1,0 +1,216 @@
+{
+  "version": "1.0.0",
+  "baseUrl": "http://localhost:3000",
+  "pages": [
+    {
+      "id": "dashboard",
+      "name": "Dashboard",
+      "route": "/",
+      "priority": 1,
+      "checks": {
+        "requiredElements": [
+          {"selector": "h1", "contains": "Exergy Lab"},
+          {"selector": "[data-testid='stats-row']", "exists": true},
+          {"selector": "[data-testid='quick-actions']", "exists": true},
+          {"selector": "[data-testid='sidebar']", "exists": true}
+        ],
+        "consoleErrors": {
+          "allowedPatterns": ["favicon.ico"],
+          "maxWarnings": 5
+        },
+        "screenshot": {
+          "fullPage": false,
+          "waitForSelector": "[data-testid='stats-row']"
+        }
+      }
+    },
+    {
+      "id": "discovery",
+      "name": "Discovery Engine",
+      "route": "/discovery",
+      "priority": 1,
+      "checks": {
+        "requiredElements": [
+          {"selector": "h1, [data-page-title]", "contains": "Discovery"},
+          {"selector": "textarea, input[type='text']", "exists": true},
+          {"selector": "[data-testid='sidebar']", "exists": true}
+        ],
+        "consoleErrors": {
+          "allowedPatterns": [],
+          "maxWarnings": 3
+        },
+        "screenshot": {
+          "fullPage": false,
+          "waitForSelector": "textarea, input[type='text']"
+        }
+      }
+    },
+    {
+      "id": "breakthrough",
+      "name": "Breakthrough Engine",
+      "route": "/breakthrough",
+      "priority": 1,
+      "checks": {
+        "requiredElements": [
+          {"selector": "h1, [data-page-title]", "contains": "Breakthrough"},
+          {"selector": "[data-testid='sidebar']", "exists": true}
+        ],
+        "consoleErrors": {
+          "allowedPatterns": [],
+          "maxWarnings": 3
+        },
+        "screenshot": {
+          "fullPage": false
+        }
+      }
+    },
+    {
+      "id": "search",
+      "name": "Search",
+      "route": "/search",
+      "priority": 2,
+      "checks": {
+        "requiredElements": [
+          {"selector": "input[type='text'], input[type='search']", "exists": true},
+          {"selector": "[data-testid='sidebar']", "exists": true}
+        ],
+        "consoleErrors": {
+          "allowedPatterns": [],
+          "maxWarnings": 3
+        },
+        "screenshot": {
+          "fullPage": false,
+          "waitForSelector": "input"
+        }
+      }
+    },
+    {
+      "id": "experiments",
+      "name": "Experiments",
+      "route": "/experiments",
+      "priority": 2,
+      "checks": {
+        "requiredElements": [
+          {"selector": "h1", "contains": "Experiment"},
+          {"selector": "[data-testid='sidebar']", "exists": true}
+        ],
+        "consoleErrors": {
+          "allowedPatterns": [],
+          "maxWarnings": 3
+        },
+        "screenshot": {
+          "fullPage": false
+        }
+      }
+    },
+    {
+      "id": "simulations",
+      "name": "Simulations",
+      "route": "/simulations",
+      "priority": 2,
+      "checks": {
+        "requiredElements": [
+          {"selector": "h1", "contains": "Simulation"},
+          {"selector": "[data-testid='sidebar']", "exists": true}
+        ],
+        "consoleErrors": {
+          "allowedPatterns": [],
+          "maxWarnings": 3
+        },
+        "screenshot": {
+          "fullPage": false
+        }
+      }
+    },
+    {
+      "id": "tea-generator",
+      "name": "TEA Reports",
+      "route": "/tea-generator",
+      "priority": 2,
+      "checks": {
+        "requiredElements": [
+          {"selector": "h1", "contains": "TEA"},
+          {"selector": "[data-testid='sidebar']", "exists": true}
+        ],
+        "consoleErrors": {
+          "allowedPatterns": [],
+          "maxWarnings": 3
+        },
+        "screenshot": {
+          "fullPage": false
+        }
+      }
+    },
+    {
+      "id": "reports",
+      "name": "Reports",
+      "route": "/reports",
+      "priority": 3,
+      "checks": {
+        "requiredElements": [
+          {"selector": "h1", "contains": "Reports"},
+          {"selector": "[data-testid='sidebar']", "exists": true}
+        ],
+        "consoleErrors": {
+          "allowedPatterns": [],
+          "maxWarnings": 3
+        },
+        "screenshot": {
+          "fullPage": false
+        }
+      }
+    },
+    {
+      "id": "team",
+      "name": "Team",
+      "route": "/team",
+      "priority": 3,
+      "checks": {
+        "requiredElements": [
+          {"selector": "h1", "contains": "Team"},
+          {"selector": "[data-testid='sidebar']", "exists": true}
+        ],
+        "consoleErrors": {
+          "allowedPatterns": [],
+          "maxWarnings": 3
+        },
+        "screenshot": {
+          "fullPage": false
+        }
+      }
+    },
+    {
+      "id": "settings",
+      "name": "Settings",
+      "route": "/settings",
+      "priority": 3,
+      "checks": {
+        "requiredElements": [
+          {"selector": "h1", "contains": "Settings"},
+          {"selector": "[data-testid='sidebar']", "exists": true}
+        ],
+        "consoleErrors": {
+          "allowedPatterns": [],
+          "maxWarnings": 3
+        },
+        "screenshot": {
+          "fullPage": false
+        }
+      }
+    }
+  ],
+  "validationModes": {
+    "quick": {
+      "description": "Fast validation of core pages after small UI changes",
+      "pages": ["dashboard", "discovery", "breakthrough", "search", "simulations"]
+    },
+    "full": {
+      "description": "Complete validation of all pages before major commits",
+      "pages": ["dashboard", "discovery", "breakthrough", "search", "experiments", "simulations", "tea-generator", "reports", "team", "settings"]
+    },
+    "affected": {
+      "description": "Validate only pages affected by recent changes",
+      "pages": []
+    }
+  }
+}

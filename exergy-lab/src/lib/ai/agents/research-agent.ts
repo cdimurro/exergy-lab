@@ -20,6 +20,11 @@
 
 import { generateText } from '../model-router'
 import type { RefinementHints } from '../rubrics/types'
+import {
+  rerankDocuments,
+  isRerankerAvailable,
+  type RerankerDocument,
+} from '../nvidia-reranker'
 
 // Import real API adapters
 import { arxivAdapter } from '@/lib/discovery/sources/arxiv'
@@ -960,14 +965,60 @@ CRITICAL: Return a COMPLETE, valid JSON array with ALL ${materialCount} material
   }
 
   /**
-   * Rank sources by relevance using AI
+   * Rank sources by relevance using Nemotron reranker
+   *
+   * Uses NVIDIA Nemotron cross-encoder reranker for accurate relevance scoring.
+   * Falls back to simple score sorting if reranker is unavailable.
    */
   private async rankByRelevance(sources: Source[], query: string): Promise<Source[]> {
-    // For now, use existing relevance scores
-    // In production, would use embeddings + AI ranking
-    return sources
-      .filter(s => (s.relevanceScore || 0) >= this.config.minRelevanceScore)
-      .sort((a, b) => (b.relevanceScore || 0) - (a.relevanceScore || 0))
+    // Filter by minimum relevance score first
+    const filteredSources = sources.filter(
+      s => (s.relevanceScore || 0) >= this.config.minRelevanceScore
+    )
+
+    if (filteredSources.length === 0) {
+      return []
+    }
+
+    // Try Nemotron reranker for more accurate relevance scoring
+    try {
+      const rerankerAvailable = await isRerankerAvailable()
+
+      if (rerankerAvailable) {
+        console.log(`[ResearchAgent] Using Nemotron reranker for ${filteredSources.length} sources`)
+
+        // Prepare documents for reranking
+        const documents: RerankerDocument[] = filteredSources.map(s => ({
+          id: s.id,
+          text: `${s.title}. ${s.abstract || ''}`.slice(0, 1000), // Limit text length
+        }))
+
+        // Rerank documents
+        const rerankedResults = await rerankDocuments(query, documents)
+
+        // Map reranked scores back to sources
+        const scoreMap = new Map(rerankedResults.map(r => [r.id, r.score]))
+
+        // Update relevance scores and sort
+        const rerankedSources = filteredSources.map(s => ({
+          ...s,
+          relevanceScore: scoreMap.get(s.id) ?? s.relevanceScore ?? 0,
+        }))
+
+        // Sort by new relevance scores
+        rerankedSources.sort((a, b) => (b.relevanceScore || 0) - (a.relevanceScore || 0))
+
+        console.log(`[ResearchAgent] Reranking complete, top score: ${rerankedSources[0]?.relevanceScore?.toFixed(3)}`)
+
+        return rerankedSources
+      }
+    } catch (error) {
+      console.warn('[ResearchAgent] Reranker failed, using fallback:', error)
+    }
+
+    // Fallback: sort by existing relevance scores
+    console.log('[ResearchAgent] Using fallback relevance sorting')
+    return filteredSources.sort((a, b) => (b.relevanceScore || 0) - (a.relevanceScore || 0))
   }
 
   /**

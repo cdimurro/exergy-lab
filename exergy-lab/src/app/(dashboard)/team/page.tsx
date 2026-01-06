@@ -10,6 +10,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useUser } from '@clerk/nextjs'
 import { Card, Button, Badge } from '@/components/ui'
+import { PageHeader } from '@/components/shared'
 import {
   Users,
   Crown,
@@ -194,13 +195,20 @@ export default function TeamPage() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="w-full max-w-7xl mx-auto p-6">
-        <Card className="p-12 bg-background-surface border-border">
-          <div className="flex flex-col items-center text-center space-y-4">
-            <RefreshCw className="w-8 h-8 text-primary animate-spin" />
-            <p className="text-foreground-muted">Loading team data...</p>
-          </div>
-        </Card>
+      <div className="flex flex-col h-full">
+        <PageHeader
+          icon={Users}
+          title="Team"
+          description="Manage your organization and team members"
+        />
+        <div className="flex-1 p-6">
+          <Card className="p-12 bg-background-elevated border-border">
+            <div className="flex flex-col items-center text-center space-y-4">
+              <RefreshCw className="w-8 h-8 text-primary animate-spin" />
+              <p className="text-foreground-muted">Loading team data...</p>
+            </div>
+          </Card>
+        </div>
       </div>
     )
   }
@@ -208,13 +216,20 @@ export default function TeamPage() {
   // Error state
   if (error) {
     return (
-      <div className="w-full max-w-7xl mx-auto p-6">
-        <Card className="p-6 bg-red-50 border-red-200">
-          <div className="flex items-center gap-3 text-red-700">
-            <AlertCircle className="w-5 h-5 flex-shrink-0" />
-            <p>{error}</p>
-          </div>
-        </Card>
+      <div className="flex flex-col h-full">
+        <PageHeader
+          icon={Users}
+          title="Team"
+          description="Manage your organization and team members"
+        />
+        <div className="flex-1 p-6">
+          <Card className="p-6 bg-red-50 border-red-200">
+            <div className="flex items-center gap-3 text-red-700">
+              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+              <p>{error}</p>
+            </div>
+          </Card>
+        </div>
       </div>
     )
   }
@@ -222,8 +237,14 @@ export default function TeamPage() {
   // No organization - show create form or upgrade prompt
   if (!organization) {
     return (
-      <div className="w-full max-w-2xl mx-auto p-6">
-        <Card className="p-8 bg-background-surface border-border">
+      <div className="flex flex-col h-full">
+        <PageHeader
+          icon={Users}
+          title="Team"
+          description="Create an organization to collaborate with your team"
+        />
+        <div className="flex-1 p-6 flex items-center justify-center">
+        <Card className="p-8 bg-background-elevated border-border max-w-2xl">
           <div className="text-center">
             <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
               <Building2 className="w-8 h-8 text-primary" />
@@ -276,27 +297,27 @@ export default function TeamPage() {
             </div>
           </div>
         </Card>
+        </div>
       </div>
     )
   }
 
   // Has organization - show team dashboard and management
   return (
-    <div className="w-full max-w-7xl mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground mb-1">Team</h1>
-          <p className="text-foreground-muted">
-            Manage your organization and team members
-          </p>
-        </div>
-        <Button variant="outline" onClick={fetchTeamData}>
-          <RefreshCw className="w-4 h-4 mr-2" />
-          Refresh
-        </Button>
-      </div>
+    <div className="flex flex-col h-full">
+      <PageHeader
+        icon={Users}
+        title="Team"
+        description="Manage your organization and team members"
+        actions={
+          <Button variant="outline" onClick={fetchTeamData}>
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Refresh
+          </Button>
+        }
+      />
 
+      <div className="flex-1 p-6 space-y-6">
       {/* Dashboard */}
       {stats && currentUserRole && (
         <TeamDashboard
@@ -317,6 +338,7 @@ export default function TeamPage() {
           onRemoveMember={handleRemoveMember}
         />
       )}
+      </div>
 
       {/* Invite Modal */}
       <InviteMembers

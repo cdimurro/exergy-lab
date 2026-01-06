@@ -4,7 +4,7 @@
  * Supports per-user rate limiting with tiered quotas
  */
 
-export type AIProvider = 'gemini' | 'openai' | 'huggingface'
+export type AIProvider = 'gemini' | 'openai' | 'huggingface' | 'nemotron'
 export type UserTier = 'free' | 'pro' | 'enterprise'
 
 interface RateLimitConfig {
@@ -46,6 +46,10 @@ const RATE_LIMITS: Record<AIProvider, RateLimitConfig> = {
     requestsPerMinute: 30, // Conservative estimate
     requestsPerDay: 1000,
   },
+  nemotron: {
+    requestsPerMinute: 30, // Modal GPU endpoint rate limit
+    requestsPerDay: 2000,  // Higher daily limit for embeddings
+  },
 }
 
 // Per-user tier limits
@@ -79,7 +83,7 @@ class RateLimiter {
 
   private initializeBuckets() {
     const now = Date.now()
-    const providers: AIProvider[] = ['gemini', 'openai', 'huggingface']
+    const providers: AIProvider[] = ['gemini', 'openai', 'huggingface', 'nemotron']
 
     providers.forEach((provider) => {
       const config = RATE_LIMITS[provider]
@@ -212,7 +216,7 @@ class RateLimiter {
     }
 
     const now = Date.now()
-    const providers: AIProvider[] = ['gemini', 'openai', 'huggingface']
+    const providers: AIProvider[] = ['gemini', 'openai', 'huggingface', 'nemotron']
     const tierConfig = TIER_LIMITS[tier]
 
     const buckets = new Map<AIProvider, TokenBucket>()

@@ -4,7 +4,7 @@
  * Generates comprehensive PDF reports for experiment protocols and validations.
  * Follows the pattern of the simulation report generator with experiment-specific sections.
  *
- * @version 1.0.0
+ * @version 2.0.0 - Updated with custom Inter fonts and professional styling
  */
 
 import jsPDF from 'jspdf'
@@ -14,40 +14,17 @@ import type {
   ExperimentReportConfig,
   DEFAULT_EXPERIMENT_REPORT_CONFIG,
 } from '@/types/experiment-report'
+import {
+  COLORS,
+  FONT_SIZES,
+  MARGINS,
+  registerCustomFonts,
+  FONT_FAMILIES,
+  getTableConfig,
+} from './pdf/shared-styles'
 
-// ============================================================================
-// Constants
-// ============================================================================
-
-const COLORS = {
-  primary: [30, 58, 138] as [number, number, number], // Blue-800
-  secondary: [59, 130, 246] as [number, number, number], // Blue-500
-  accent: [16, 185, 129] as [number, number, number], // Emerald-500
-  success: [34, 197, 94] as [number, number, number], // Green-500
-  warning: [245, 158, 11] as [number, number, number], // Amber-500
-  error: [239, 68, 68] as [number, number, number], // Red-500
-  text: [17, 24, 39] as [number, number, number], // Gray-900
-  textMuted: [107, 114, 128] as [number, number, number], // Gray-500
-  background: [249, 250, 251] as [number, number, number], // Gray-50
-  white: [255, 255, 255] as [number, number, number],
-}
-
-const FONTS = {
-  title: 24,
-  h1: 18,
-  h2: 14,
-  h3: 12,
-  body: 10,
-  small: 8,
-  caption: 7,
-}
-
-const MARGINS = {
-  left: 20,
-  right: 20,
-  top: 25,
-  bottom: 25,
-}
+// Re-export FONTS for backward compatibility
+const FONTS = FONT_SIZES
 
 // ============================================================================
 // Main Generator Class
@@ -87,6 +64,9 @@ export class ExperimentPDFGenerator {
       unit: 'mm',
       format: this.config.pageSize,
     })
+
+    // Register custom Inter font family
+    registerCustomFonts(this.doc)
   }
 
   /**
@@ -180,12 +160,12 @@ export class ExperimentPDFGenerator {
     // Title
     this.doc.setTextColor(...COLORS.white)
     this.doc.setFontSize(FONTS.title)
-    this.doc.setFont('helvetica', 'bold')
+    this.doc.setFont(FONT_FAMILIES.body, 'bold')
     this.doc.text('EXPERIMENT PROTOCOL', pageWidth / 2, 35, { align: 'center' })
 
     // Subtitle
     this.doc.setFontSize(FONTS.h2)
-    this.doc.setFont('helvetica', 'normal')
+    this.doc.setFont(FONT_FAMILIES.body, 'normal')
     const title = this.data.metadata.title.length > 60
       ? this.data.metadata.title.substring(0, 57) + '...'
       : this.data.metadata.title
@@ -204,12 +184,12 @@ export class ExperimentPDFGenerator {
     y += 15
     this.doc.setTextColor(...COLORS.text)
     this.doc.setFontSize(FONTS.h3)
-    this.doc.setFont('helvetica', 'bold')
+    this.doc.setFont(FONT_FAMILIES.body, 'bold')
     this.doc.text('Protocol Details', MARGINS.left + 10, y)
 
     y += 10
     this.doc.setFontSize(FONTS.body)
-    this.doc.setFont('helvetica', 'normal')
+    this.doc.setFont(FONT_FAMILIES.body, 'normal')
     this.doc.text(`Generated: ${new Date(this.data.metadata.createdAt).toLocaleDateString()}`, MARGINS.left + 10, y)
 
     y += 7
@@ -225,12 +205,12 @@ export class ExperimentPDFGenerator {
 
     y += 15
     this.doc.setFontSize(FONTS.h3)
-    this.doc.setFont('helvetica', 'bold')
+    this.doc.setFont(FONT_FAMILIES.body, 'bold')
     this.doc.text('Validation Summary', MARGINS.left + 10, y)
 
     y += 10
     this.doc.setFontSize(FONTS.body)
-    this.doc.setFont('helvetica', 'normal')
+    this.doc.setFont(FONT_FAMILIES.body, 'normal')
     const validationText = [
       `Literature: ${this.data.validation.literatureAlignment.confidence}%`,
       `Equipment: ${this.data.validation.equipmentFeasibility.tier}`,
@@ -254,7 +234,7 @@ export class ExperimentPDFGenerator {
 
     this.doc.setTextColor(...COLORS.primary)
     this.doc.setFontSize(FONTS.h1)
-    this.doc.setFont('helvetica', 'bold')
+    this.doc.setFont(FONT_FAMILIES.body, 'bold')
     this.doc.text('Table of Contents', MARGINS.left, MARGINS.top + 10)
 
     let y = MARGINS.top + 25
@@ -263,7 +243,7 @@ export class ExperimentPDFGenerator {
     for (const entry of this.tocEntries) {
       const indent = entry.level === 1 ? 0 : 10
       this.doc.setFontSize(entry.level === 1 ? FONTS.h3 : FONTS.body)
-      this.doc.setFont('helvetica', entry.level === 1 ? 'bold' : 'normal')
+      this.doc.setFont(FONT_FAMILIES.body, entry.level === 1 ? 'bold' : 'normal')
 
       // Title
       this.doc.text(entry.title, MARGINS.left + indent, y)
@@ -298,13 +278,13 @@ export class ExperimentPDFGenerator {
 
     // Goal
     this.doc.setFontSize(FONTS.h3)
-    this.doc.setFont('helvetica', 'bold')
+    this.doc.setFont(FONT_FAMILIES.body, 'bold')
     this.doc.setTextColor(...COLORS.text)
     this.doc.text('Experiment Goal', MARGINS.left, y)
 
     y += 8
     this.doc.setFontSize(FONTS.body)
-    this.doc.setFont('helvetica', 'normal')
+    this.doc.setFont(FONT_FAMILIES.body, 'normal')
     const goalLines = this.doc.splitTextToSize(
       this.data.overview.goal,
       this.doc.internal.pageSize.getWidth() - MARGINS.left * 2
@@ -315,12 +295,12 @@ export class ExperimentPDFGenerator {
     // Objectives
     if (this.data.overview.objectives.length > 0) {
       this.doc.setFontSize(FONTS.h3)
-      this.doc.setFont('helvetica', 'bold')
+      this.doc.setFont(FONT_FAMILIES.body, 'bold')
       this.doc.text('Objectives', MARGINS.left, y)
       y += 8
 
       this.doc.setFontSize(FONTS.body)
-      this.doc.setFont('helvetica', 'normal')
+      this.doc.setFont(FONT_FAMILIES.body, 'normal')
       for (const objective of this.data.overview.objectives) {
         this.doc.text(`• ${objective}`, MARGINS.left + 5, y)
         y += 6
@@ -339,7 +319,7 @@ export class ExperimentPDFGenerator {
 
     // Materials table
     this.doc.setFontSize(FONTS.h3)
-    this.doc.setFont('helvetica', 'bold')
+    this.doc.setFont(FONT_FAMILIES.body, 'bold')
     this.doc.setTextColor(...COLORS.text)
     this.doc.text('2.1 Materials', MARGINS.left, y)
     this.tocEntries.push({ title: 'Materials', page: this.pageNumber, level: 2 })
@@ -366,13 +346,13 @@ export class ExperimentPDFGenerator {
 
     // Equipment list
     this.doc.setFontSize(FONTS.h3)
-    this.doc.setFont('helvetica', 'bold')
+    this.doc.setFont(FONT_FAMILIES.body, 'bold')
     this.doc.text('2.2 Equipment', MARGINS.left, y)
     this.tocEntries.push({ title: 'Equipment', page: this.pageNumber, level: 2 })
 
     y += 8
     this.doc.setFontSize(FONTS.body)
-    this.doc.setFont('helvetica', 'normal')
+    this.doc.setFont(FONT_FAMILIES.body, 'normal')
     for (const equipment of this.data.protocol.equipment) {
       this.doc.text(`• ${equipment}`, MARGINS.left + 5, y)
       y += 6
@@ -388,7 +368,7 @@ export class ExperimentPDFGenerator {
 
     // Procedure steps
     this.doc.setFontSize(FONTS.h3)
-    this.doc.setFont('helvetica', 'bold')
+    this.doc.setFont(FONT_FAMILIES.body, 'bold')
     this.doc.text('2.3 Procedure', MARGINS.left, y)
     this.tocEntries.push({ title: 'Procedure', page: this.pageNumber, level: 2 })
 
@@ -428,7 +408,7 @@ export class ExperimentPDFGenerator {
 
     // Hazards table
     this.doc.setFontSize(FONTS.h3)
-    this.doc.setFont('helvetica', 'bold')
+    this.doc.setFont(FONT_FAMILIES.body, 'bold')
     this.doc.setTextColor(...COLORS.text)
     this.doc.text('3.1 Material Hazards', MARGINS.left, y)
     this.tocEntries.push({ title: 'Material Hazards', page: this.pageNumber, level: 2 })
@@ -456,20 +436,20 @@ export class ExperimentPDFGenerator {
     } else {
       y += 10
       this.doc.setFontSize(FONTS.body)
-      this.doc.setFont('helvetica', 'normal')
+      this.doc.setFont(FONT_FAMILIES.body, 'normal')
       this.doc.text('No significant hazards identified.', MARGINS.left, y)
       y += 15
     }
 
     // Required PPE
     this.doc.setFontSize(FONTS.h3)
-    this.doc.setFont('helvetica', 'bold')
+    this.doc.setFont(FONT_FAMILIES.body, 'bold')
     this.doc.text('3.2 Required Personal Protective Equipment', MARGINS.left, y)
     this.tocEntries.push({ title: 'Required PPE', page: this.pageNumber, level: 2 })
 
     y += 8
     this.doc.setFontSize(FONTS.body)
-    this.doc.setFont('helvetica', 'normal')
+    this.doc.setFont(FONT_FAMILIES.body, 'normal')
 
     if (this.data.safety.requiredPPE.length > 0) {
       for (const ppe of this.data.safety.requiredPPE) {
@@ -497,7 +477,7 @@ export class ExperimentPDFGenerator {
     this.doc.roundedRect(MARGINS.left, y, colWidth, 45, 2, 2, 'F')
 
     this.doc.setFontSize(FONTS.h3)
-    this.doc.setFont('helvetica', 'bold')
+    this.doc.setFont(FONT_FAMILIES.body, 'bold')
     this.doc.setTextColor(...COLORS.text)
     this.doc.text('Literature Alignment', MARGINS.left + 5, y + 12)
 
@@ -522,7 +502,7 @@ export class ExperimentPDFGenerator {
     this.doc.roundedRect(MARGINS.left + colWidth + 10, y, colWidth, 45, 2, 2, 'F')
 
     this.doc.setFontSize(FONTS.h3)
-    this.doc.setFont('helvetica', 'bold')
+    this.doc.setFont(FONT_FAMILIES.body, 'bold')
     this.doc.setTextColor(...COLORS.text)
     this.doc.text('Equipment Tier', MARGINS.left + colWidth + 15, y + 12)
 
@@ -547,7 +527,7 @@ export class ExperimentPDFGenerator {
     // Cost Breakdown
     if (this.config.includeCostBreakdown) {
       this.doc.setFontSize(FONTS.h3)
-      this.doc.setFont('helvetica', 'bold')
+      this.doc.setFont(FONT_FAMILIES.body, 'bold')
       this.doc.setTextColor(...COLORS.text)
       this.doc.text('4.1 Cost Breakdown', MARGINS.left, y)
       this.tocEntries.push({ title: 'Cost Breakdown', page: this.pageNumber, level: 2 })
@@ -613,14 +593,14 @@ export class ExperimentPDFGenerator {
       // Title
       y += 8
       this.doc.setFontSize(FONTS.h3)
-      this.doc.setFont('helvetica', 'bold')
+      this.doc.setFont(FONT_FAMILIES.body, 'bold')
       this.doc.setTextColor(...COLORS.text)
       this.doc.text(rec.title, MARGINS.left, y)
 
       // Description
       y += 7
       this.doc.setFontSize(FONTS.body)
-      this.doc.setFont('helvetica', 'normal')
+      this.doc.setFont(FONT_FAMILIES.body, 'normal')
       const descLines = this.doc.splitTextToSize(
         rec.description,
         this.doc.internal.pageSize.getWidth() - MARGINS.left * 2
@@ -640,7 +620,7 @@ export class ExperimentPDFGenerator {
     let y = MARGINS.top + 25
 
     this.doc.setFontSize(FONTS.body)
-    this.doc.setFont('helvetica', 'normal')
+    this.doc.setFont(FONT_FAMILIES.body, 'normal')
     this.doc.setTextColor(...COLORS.text)
 
     for (const conclusion of this.data.conclusions) {
@@ -663,7 +643,7 @@ export class ExperimentPDFGenerator {
     let y = MARGINS.top + 25
 
     this.doc.setFontSize(FONTS.body)
-    this.doc.setFont('helvetica', 'normal')
+    this.doc.setFont(FONT_FAMILIES.body, 'normal')
     this.doc.setTextColor(...COLORS.text)
 
     for (const limitation of this.data.limitations) {
@@ -682,7 +662,7 @@ export class ExperimentPDFGenerator {
     let y = MARGINS.top + 25
 
     this.doc.setFontSize(FONTS.body)
-    this.doc.setFont('helvetica', 'normal')
+    this.doc.setFont(FONT_FAMILIES.body, 'normal')
     this.doc.setTextColor(...COLORS.text)
 
     if (this.data.references) {
@@ -705,7 +685,7 @@ export class ExperimentPDFGenerator {
 
   private addSectionHeader(title: string): void {
     this.doc.setFontSize(FONTS.h1)
-    this.doc.setFont('helvetica', 'bold')
+    this.doc.setFont(FONT_FAMILIES.body, 'bold')
     this.doc.setTextColor(...COLORS.primary)
     this.doc.text(title, MARGINS.left, MARGINS.top + 10)
 

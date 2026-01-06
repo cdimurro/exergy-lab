@@ -9,7 +9,7 @@ import { ValidationReportCard, CompactValidationSummary } from '@/components/tea
 import { TEAInputForm } from '@/components/tea/TEAInputForm'
 import { AdminDebugViewer, DebugProvider } from '@/components/debug'
 import { DebugContext } from '@/hooks/use-debug-capture'
-import { WorkflowStepper } from '@/components/shared/workflow'
+import { WorkflowStepper, PageHeader, LoadingSpinner } from '@/components/shared'
 import { useTEAStore } from '@/lib/store/tea-store'
 import type { TEAInput_v2, TEAResult_v2 } from '@/types/tea'
 
@@ -193,34 +193,18 @@ function TEAGeneratorContent() {
 
   return (
     <div className="h-full flex flex-col bg-background relative">
-      {/* Header */}
-      <div className="border-b border-border bg-elevated px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
-              <Calculator className="w-5 h-5 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-xl font-semibold text-foreground">TEA Generator</h1>
-              <p className="text-sm text-muted">Industry-standard techno-economic analysis with multi-agent validation</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {/* Version Badge */}
-            <Badge variant="secondary" className="text-xs">
-              v0.7.0
+      <PageHeader
+        icon={Calculator}
+        title="TEA Generator"
+        description="Industry-standard techno-economic analysis with multi-agent validation"
+        actions={
+          isPremium && (
+            <Badge className="bg-amber-500 text-white">
+              Premium
             </Badge>
-
-            {/* Premium Badge */}
-            {isPremium && (
-              <Badge className="bg-amber-500 text-white">
-                Premium
-              </Badge>
-            )}
-          </div>
-        </div>
-      </div>
+          )
+        }
+      />
 
       {/* Main Content */}
       <div className="flex-1 overflow-auto p-6">
@@ -259,11 +243,8 @@ function TEAGeneratorContent() {
 
           {step === 'calculating' && (
             <Card className="p-8 text-center">
-              <div className="animate-spin w-12 h-12 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-foreground mb-2">
-                Running Multi-Agent Validation...
-              </h3>
-              <p className="text-sm text-muted">
+              <LoadingSpinner size="lg" centered text="Running Multi-Agent Validation..." />
+              <p className="text-sm text-foreground-muted mt-2">
                 Validating calculations against industry standards (NETL, ICAO, IEA)
               </p>
             </Card>
@@ -297,32 +278,32 @@ function TEAGeneratorContent() {
                 </h2>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                  <div className="p-4 bg-elevated rounded-lg border border-border">
-                    <div className="text-xs text-muted mb-1">LCOE</div>
+                  <div className="p-4 bg-background-elevated rounded-lg border border-border">
+                    <div className="text-xs text-foreground-muted mb-1">LCOE</div>
                     <div className="text-2xl font-bold text-foreground">
                       ${teaResults.lcoe.toFixed(3)}
-                      <span className="text-sm font-normal text-muted">/kWh</span>
+                      <span className="text-sm font-normal text-foreground-muted">/kWh</span>
                     </div>
                   </div>
-                  <div className="p-4 bg-elevated rounded-lg border border-border">
-                    <div className="text-xs text-muted mb-1">NPV</div>
+                  <div className="p-4 bg-background-elevated rounded-lg border border-border">
+                    <div className="text-xs text-foreground-muted mb-1">NPV</div>
                     <div className="text-2xl font-bold text-foreground">
                       ${(teaResults.npv / 1e6).toFixed(2)}
-                      <span className="text-sm font-normal text-muted">M</span>
+                      <span className="text-sm font-normal text-foreground-muted">M</span>
                     </div>
                   </div>
-                  <div className="p-4 bg-elevated rounded-lg border border-border">
-                    <div className="text-xs text-muted mb-1">IRR</div>
+                  <div className="p-4 bg-background-elevated rounded-lg border border-border">
+                    <div className="text-xs text-foreground-muted mb-1">IRR</div>
                     <div className="text-2xl font-bold text-foreground">
                       {teaResults.irr.toFixed(1)}
-                      <span className="text-sm font-normal text-muted">%</span>
+                      <span className="text-sm font-normal text-foreground-muted">%</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Report Preview (Always Visible) */}
                 <div className="space-y-4">
-                  <div className="border border-border rounded-lg p-4 bg-elevated/50">
+                  <div className="border border-border rounded-lg p-4 bg-background-elevated/50">
                     <div className="flex items-center gap-2 mb-3">
                       <Eye className="w-4 h-4 text-primary" />
                       <span className="text-sm font-medium text-foreground">Report Contents Preview</span>
@@ -420,10 +401,10 @@ function TEAGeneratorContent() {
                           <h4 className="font-semibold text-foreground mb-1">
                             Premium Features
                           </h4>
-                          <p className="text-xs text-muted mb-3">
+                          <p className="text-xs text-foreground-muted mb-3">
                             Upgrade to access the complete 18-section industry-standard TEA report with:
                           </p>
-                          <ul className="text-xs text-muted space-y-1 mb-3">
+                          <ul className="text-xs text-foreground-muted space-y-1 mb-3">
                             <li className="flex items-center gap-2">
                               <CheckCircle2 className="w-3 h-3 text-success" />
                               Monte Carlo uncertainty analysis (10,000 iterations)

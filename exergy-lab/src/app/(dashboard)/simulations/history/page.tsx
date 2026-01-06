@@ -29,8 +29,10 @@ import {
   Bot,
   Clock,
   Filter,
+  History,
 } from 'lucide-react'
 import { Card, Button, Badge } from '@/components/ui'
+import { PageHeader } from '@/components/shared'
 import { useSimulationsStore } from '@/lib/store/simulations-store'
 import type { SimulationTier, SimulationType, SavedSimulation } from '@/types/simulation-workflow'
 
@@ -191,33 +193,32 @@ export default function SimulationHistoryPage() {
   }
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground mb-2">Simulation History</h1>
-        <p className="text-muted">
-          Browse, search, and manage all saved simulation workflows
-        </p>
-      </div>
+    <div className="flex flex-col h-full">
+      <PageHeader
+        icon={History}
+        title="Simulation History"
+        description="Browse, search, and manage all saved simulation workflows"
+      />
 
+      <div className="flex-1 p-6 space-y-6">
       {/* Filters */}
-      <Card className="p-4 bg-card-dark border-border">
+      <Card className="p-4 bg-background-elevated border-border">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Search */}
           <div className="relative">
-            <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted" />
+            <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-foreground-muted" />
             <input
               type="text"
               placeholder="Search by name, goal, or tags..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-background border border-border rounded-lg text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className="w-full pl-10 pr-4 py-2 bg-background border border-border rounded-lg text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-primary/50"
             />
           </div>
 
           {/* Tier Filter */}
           <div className="relative">
-            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted pointer-events-none" />
+            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-foreground-muted pointer-events-none" />
             <select
               value={tierFilter}
               onChange={(e) => setTierFilter(e.target.value as SimulationTier | 'all')}
@@ -232,7 +233,7 @@ export default function SimulationHistoryPage() {
 
           {/* Type Filter */}
           <div className="relative">
-            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted pointer-events-none" />
+            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-foreground-muted pointer-events-none" />
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value as SimulationType | 'all')}
@@ -296,14 +297,14 @@ export default function SimulationHistoryPage() {
 
       {/* Results Count */}
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted">
+        <p className="text-sm text-foreground-muted">
           {filteredSimulations.length} simulation{filteredSimulations.length !== 1 ? 's' : ''} found
         </p>
       </div>
 
       {/* Grid */}
       {filteredSimulations.length === 0 ? (
-        <Card className="p-12 bg-card-dark border-border">
+        <Card className="p-12 bg-background-elevated border-border">
           <div className="flex flex-col items-center text-center space-y-4">
             <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
               <Clock className="w-8 h-8 text-primary" />
@@ -312,7 +313,7 @@ export default function SimulationHistoryPage() {
               <h3 className="text-lg font-semibold text-foreground mb-2">
                 No simulations found
               </h3>
-              <p className="text-muted max-w-md">
+              <p className="text-foreground-muted max-w-md">
                 {searchQuery || tierFilter !== 'all' || typeFilter !== 'all'
                   ? 'Try adjusting your filters or search query'
                   : 'Complete and save a simulation to see it appear here'}
@@ -334,7 +335,7 @@ export default function SimulationHistoryPage() {
             return (
               <Card
                 key={sim.id}
-                className={`p-4 bg-card-dark border-border hover:border-primary/30 transition-all ${
+                className={`p-4 bg-background-elevated border-border hover:border-primary/30 transition-all ${
                   isSelected ? 'ring-2 ring-primary/50 border-primary' : ''
                 }`}
               >
@@ -370,7 +371,7 @@ export default function SimulationHistoryPage() {
                 </div>
 
                 {/* Goal Preview */}
-                <p className="text-xs text-muted line-clamp-2 mb-3">
+                <p className="text-xs text-foreground-muted line-clamp-2 mb-3">
                   {sim.goal}
                 </p>
 
@@ -378,16 +379,16 @@ export default function SimulationHistoryPage() {
                 <div className="grid grid-cols-2 gap-2 mb-3 text-xs">
                   <div>
                     <span className="text-foreground-subtle">Saved:</span>{' '}
-                    <span className="text-muted">{formatDate(sim.savedAt)}</span>
+                    <span className="text-foreground-muted">{formatDate(sim.savedAt)}</span>
                   </div>
                   <div>
                     <span className="text-foreground-subtle">Duration:</span>{' '}
-                    <span className="text-muted">{formatDuration(sim.duration)}</span>
+                    <span className="text-foreground-muted">{formatDuration(sim.duration)}</span>
                   </div>
                   {sim.cost !== undefined && (
                     <div className="col-span-2">
                       <span className="text-foreground-subtle">Cost:</span>{' '}
-                      <span className="text-muted">${sim.cost.toFixed(4)}</span>
+                      <span className="text-foreground-muted">${sim.cost.toFixed(4)}</span>
                     </div>
                   )}
                 </div>
@@ -433,6 +434,7 @@ export default function SimulationHistoryPage() {
           })}
         </div>
       )}
+      </div>
     </div>
   )
 }

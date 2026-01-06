@@ -78,9 +78,23 @@ export class ChemRxivAdapter extends BaseAdapter {
   ): Promise<SearchResult> {
     const startTime = Date.now()
 
+    // ChemRxiv API requires non-empty term parameter
+    const trimmedQuery = query?.trim() || ''
+    if (!trimmedQuery) {
+      console.warn('[chemrxiv] Empty query provided, returning empty results')
+      return {
+        sources: [],
+        total: 0,
+        searchTime: Date.now() - startTime,
+        query,
+        filters,
+        from: this.name,
+      }
+    }
+
     // Build search parameters
     const params: Record<string, any> = {
-      term: query,
+      term: trimmedQuery,
       limit: filters.limit || 20,
       skip: 0,
     }

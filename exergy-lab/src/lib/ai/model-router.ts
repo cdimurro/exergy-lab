@@ -184,8 +184,8 @@ const TASK_ROUTING: Record<
     fallbacks: ['gemini', 'openai'],
   },
   embeddings: {
-    primary: 'huggingface',
-    fallbacks: ['openai'],
+    primary: 'nemotron',    // NVIDIA Nemotron-8B (#1 MTEB) - 4096-dim embeddings
+    fallbacks: ['huggingface', 'openai'],
   },
 }
 
@@ -347,8 +347,14 @@ class AIModelRouter {
 
   /**
    * Generate embeddings for semantic search
+   *
+   * Uses NVIDIA Nemotron-8B as primary provider (4096-dim, #1 MTEB)
+   * with fallback to HuggingFace and OpenAI
    */
-  async generateEmbeddings(texts: string[]): Promise<number[][]> {
+  async generateEmbeddings(
+    texts: string[],
+    options?: { taskType?: string; instruction?: string }
+  ): Promise<number[][]> {
     const task: AITask = 'embeddings'
     const routing = TASK_ROUTING[task]
     const providers = [routing.primary, ...routing.fallbacks]
@@ -361,7 +367,14 @@ class AIModelRouter {
 
         let result: number[][]
 
-        if (provider === 'huggingface') {
+        if (provider === 'nemotron') {
+          // Use NVIDIA Nemotron-8B for high-quality scientific embeddings
+          const { generateNemotronEmbeddings } = await import('./nvidia-nemotron')
+          result = await generateNemotronEmbeddings(texts, {
+            taskType: options?.taskType as any,
+            instruction: options?.instruction,
+          })
+        } else if (provider === 'huggingface') {
           const embeddings = await huggingface.generateEmbeddings(texts)
           result = Array.isArray(embeddings[0])
             ? (embeddings as number[][])
@@ -421,6 +434,7 @@ class AIModelRouter {
       gemini: rateLimiter.getQuota('gemini'),
       openai: rateLimiter.getQuota('openai'),
       huggingface: rateLimiter.getQuota('huggingface'),
+      nemotron: rateLimiter.getQuota('nemotron'),
     }
   }
 }

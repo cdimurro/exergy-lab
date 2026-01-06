@@ -30,6 +30,32 @@ import type { TEAReportConfig, TEAInput_v2, TEAResult_v2, CalculationProvenance 
 import type { QualityOrchestrationResult } from './quality-orchestrator'
 import type { TEAQualityAssessment } from './quality-rubric'
 import type { MaterialBalance, EnergyBalance } from '@/types/tea-process'
+import { registerCustomFonts, FONTS, TYPOGRAPHY } from '../fonts'
+
+/**
+ * Professional color palette for TEA reports
+ * Based on Exergy Lab design system with blue primary and emerald accent
+ */
+const COLORS = {
+  // Primary palette
+  primary: [30, 58, 138] as [number, number, number],      // Deep blue (#1e3a8a)
+  primaryLight: [59, 130, 246] as [number, number, number], // Light blue (#3b82f6)
+  accent: [16, 185, 129] as [number, number, number],      // Emerald (#10b981)
+
+  // Semantic colors
+  success: [34, 197, 94] as [number, number, number],      // Green (#22c55e)
+  warning: [245, 158, 11] as [number, number, number],     // Amber (#f59e0b)
+  error: [239, 68, 68] as [number, number, number],        // Red (#ef4444)
+
+  // Neutral palette
+  text: [17, 24, 39] as [number, number, number],          // Gray-900 (#111827)
+  textSecondary: [75, 85, 99] as [number, number, number], // Gray-600 (#4b5563)
+  textMuted: [156, 163, 175] as [number, number, number],  // Gray-400 (#9ca3af)
+  border: [229, 231, 235] as [number, number, number],     // Gray-200 (#e5e7eb)
+  background: [249, 250, 251] as [number, number, number], // Gray-50 (#f9fafb)
+  backgroundAlt: [243, 244, 246] as [number, number, number], // Gray-100 (#f3f4f6)
+  white: [255, 255, 255] as [number, number, number],
+} as const
 
 export interface ComprehensiveTEAReportData {
   // Report configuration
@@ -110,6 +136,10 @@ export class EnhancedTEAReportGenerator {
   private figureList: Array<{ number: number; title: string; page: number }> = []
   private tableList: Array<{ number: number; title: string; page: number }> = []
 
+  // PDF Outline/Bookmarks tracking
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private bookmarkStack: any[] = []
+
   constructor(data: ComprehensiveTEAReportData) {
     this.data = data
     this.doc = new jsPDF({
@@ -117,6 +147,10 @@ export class EnhancedTEAReportGenerator {
       unit: 'mm',
       format: 'a4',
     })
+
+    // Register custom Inter font family for professional typography
+    registerCustomFonts(this.doc)
+
     this.pageWidth = this.doc.internal.pageSize.getWidth()
     this.pageHeight = this.doc.internal.pageSize.getHeight()
   }
@@ -240,97 +274,191 @@ export class EnhancedTEAReportGenerator {
   }
 
   /**
-   * Section 1: Cover Page
+   * Section 1: Cover Page - Professional design with metrics summary
    */
   private addCoverPage() {
     const branding = this.data.config.branding
 
-    // Header bar with branding color
-    this.doc.setFillColor(branding?.colors.primary || '#1e3a8a')
-    this.doc.rect(0, 0, this.pageWidth, 60, 'F')
+    // Full-bleed header with primary color
+    this.doc.setFillColor(...COLORS.primary)
+    this.doc.rect(0, 0, this.pageWidth, 65, 'F')
 
-    // Logo if provided
+    // Accent stripe below header
+    this.doc.setFillColor(...COLORS.accent)
+    this.doc.rect(0, 65, this.pageWidth, 3, 'F')
+
+    // Logo if provided, otherwise show "Exergy Lab" text
     if (branding?.logo) {
       try {
-        this.doc.addImage(branding.logo, 'PNG', this.margin, 10, 40, 40)
-      } catch (e) {
-        console.warn('Logo could not be added')
+        this.doc.addImage(branding.logo, 'PNG', this.margin, 12, 35, 35)
+      } catch {
+        // Fallback to text
+        this.doc.setTextColor(...COLORS.white)
+        this.doc.setFontSize(18)
+        this.doc.setFont(FONTS.body, 'bold')
+        this.doc.text('Exergy Lab', this.margin, 28)
       }
+    } else {
+      this.doc.setTextColor(...COLORS.white)
+      this.doc.setFontSize(18)
+      this.doc.setFont(FONTS.body, 'bold')
+      this.doc.text('Exergy Lab', this.margin, 28)
+      this.doc.setFontSize(9)
+      this.doc.setFont(FONTS.body, 'normal')
+      this.doc.text('AI-Powered Clean Energy Research', this.margin, 36)
     }
 
-    // Report title
-    this.doc.setTextColor(255, 255, 255)
-    this.doc.setFontSize(28)
-    this.doc.setFont('helvetica', 'bold')
-    this.doc.text('Techno-Economic Analysis', this.pageWidth / 2, 30, { align: 'center' })
-
-    this.doc.setFontSize(16)
-    this.doc.setFont('helvetica', 'normal')
-    this.doc.text(this.data.config.reportType.toUpperCase() + ' REPORT', this.pageWidth / 2, 45, {
+    // Report type badge (top right)
+    const badgeWidth = 55
+    const badgeX = this.pageWidth - this.margin - badgeWidth
+    this.doc.setFillColor(...COLORS.white)
+    this.doc.roundedRect(badgeX, 18, badgeWidth, 18, 2, 2, 'F')
+    this.doc.setTextColor(...COLORS.primary)
+    this.doc.setFontSize(9)
+    this.doc.setFont(FONTS.body, 'bold')
+    this.doc.text(this.data.config.reportType.toUpperCase(), badgeX + badgeWidth / 2, 29, {
       align: 'center',
     })
 
-    // Reset color
-    this.doc.setTextColor(0, 0, 0)
+    // Main title section
+    this.doc.setTextColor(...COLORS.white)
+    this.doc.setFontSize(22)
+    this.doc.setFont(FONTS.body, 'bold')
+    this.doc.text('Techno-Economic Analysis', this.pageWidth / 2, 52, { align: 'center' })
 
-    // Project information
-    this.currentY = 80
-    this.doc.setFontSize(24)
-    this.doc.setFont('helvetica', 'bold')
-    this.doc.text(this.data.config.title, this.pageWidth / 2, this.currentY, { align: 'center' })
+    // Project title
+    this.currentY = 85
+    this.doc.setTextColor(...COLORS.text)
+    this.doc.setFontSize(20)
+    this.doc.setFont(FONTS.body, 'bold')
+    const titleLines = this.doc.splitTextToSize(this.data.config.title, this.pageWidth - 2 * this.margin)
+    titleLines.forEach((line: string) => {
+      this.doc.text(line, this.pageWidth / 2, this.currentY, { align: 'center' })
+      this.currentY += 9
+    })
 
-    this.currentY += 15
-    this.doc.setFontSize(14)
-    this.doc.setFont('helvetica', 'normal')
+    // Technology type
+    this.currentY += 5
+    this.doc.setFontSize(13)
+    this.doc.setFont(FONTS.body, 'normal')
+    this.doc.setTextColor(...COLORS.textSecondary)
     this.doc.text(
-      `Technology: ${this.data.input.technology_type.toUpperCase()}`,
+      `Technology: ${this.data.input.technology_type.replace(/_/g, ' ').toUpperCase()}`,
       this.pageWidth / 2,
       this.currentY,
       { align: 'center' }
     )
 
+    // Key metrics summary box
+    this.currentY += 20
+    const boxHeight = 55
+    this.doc.setFillColor(...COLORS.backgroundAlt)
+    this.doc.roundedRect(this.margin, this.currentY, this.pageWidth - 2 * this.margin, boxHeight, 4, 4, 'F')
+
+    // Draw accent left border on metrics box
+    this.doc.setFillColor(...COLORS.accent)
+    this.doc.rect(this.margin, this.currentY, 4, boxHeight, 'F')
+
+    // Metrics grid (3 columns)
+    const metricsBoxPadding = 12
+    const colWidth = (this.pageWidth - 2 * this.margin - 2 * metricsBoxPadding) / 3
+    const metricsY = this.currentY + 15
+
+    const metrics = [
+      { label: 'LCOE', value: `$${this.data.results.lcoe.toFixed(3)}/kWh` },
+      { label: 'NPV', value: this.formatCurrency(this.data.results.npv) },
+      { label: 'IRR', value: `${this.data.results.irr.toFixed(1)}%` },
+    ]
+
+    metrics.forEach((metric, i) => {
+      const x = this.margin + metricsBoxPadding + i * colWidth
+
+      // Label
+      this.doc.setFont(FONTS.body, 'normal')
+      this.doc.setFontSize(9)
+      this.doc.setTextColor(...COLORS.textMuted)
+      this.doc.text(metric.label, x, metricsY)
+
+      // Value
+      this.doc.setFont(FONTS.body, 'bold')
+      this.doc.setFontSize(16)
+      this.doc.setTextColor(...COLORS.primary)
+      this.doc.text(metric.value, x, metricsY + 14)
+    })
+
+    // Secondary metrics row
+    const secondaryMetrics = [
+      { label: 'Payback Period', value: `${this.data.results.payback_years.toFixed(1)} years` },
+      { label: 'Total CAPEX', value: this.formatCurrency(this.data.results.total_capex) },
+      { label: 'Annual OPEX', value: this.formatCurrency(this.data.results.annual_opex) },
+    ]
+
+    const secondaryY = metricsY + 28
+    secondaryMetrics.forEach((metric, i) => {
+      const x = this.margin + metricsBoxPadding + i * colWidth
+
+      this.doc.setFont(FONTS.body, 'normal')
+      this.doc.setFontSize(8)
+      this.doc.setTextColor(...COLORS.textMuted)
+      this.doc.text(metric.label, x, secondaryY)
+
+      this.doc.setFont(FONTS.body, 'bold')
+      this.doc.setFontSize(11)
+      this.doc.setTextColor(...COLORS.textSecondary)
+      this.doc.text(metric.value, x, secondaryY + 8)
+    })
+
+    this.currentY += boxHeight + 15
+
     // Authors
     if (this.data.config.authors && this.data.config.authors.length > 0) {
-      this.currentY += 20
-      this.doc.setFontSize(12)
-      this.doc.setTextColor(60, 60, 60)
+      this.doc.setFontSize(10)
+      this.doc.setFont(FONTS.body, 'normal')
+      this.doc.setTextColor(...COLORS.textMuted)
       this.doc.text('Prepared by:', this.pageWidth / 2, this.currentY, { align: 'center' })
-      this.currentY += 7
+      this.currentY += 6
+      this.doc.setTextColor(...COLORS.text)
       this.doc.text(this.data.config.authors.join(', '), this.pageWidth / 2, this.currentY, {
         align: 'center',
       })
+      this.currentY += 8
     }
 
     // Organization
     if (this.data.config.organization) {
-      this.currentY += 10
+      this.doc.setTextColor(...COLORS.textSecondary)
       this.doc.text(this.data.config.organization, this.pageWidth / 2, this.currentY, {
         align: 'center',
       })
     }
 
-    // Date and version
-    this.currentY = this.pageHeight - 40
-    this.doc.setFontSize(11)
-    this.doc.setTextColor(100, 100, 100)
+    // Footer section
+    this.currentY = this.pageHeight - 35
+    this.doc.setFontSize(9)
+    this.doc.setTextColor(...COLORS.textMuted)
     const dateStr = this.data.config.date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
     })
-    this.doc.text(`Date: ${dateStr}`, this.pageWidth / 2, this.currentY, { align: 'center' })
-    this.doc.text(`Version: ${this.data.config.version}`, this.pageWidth / 2, this.currentY + 7, {
-      align: 'center',
+    this.doc.text(`Generated: ${dateStr}`, this.margin, this.currentY)
+    this.doc.text(`Version ${this.data.config.version}`, this.pageWidth - this.margin, this.currentY, {
+      align: 'right',
     })
 
-    // Confidentiality notice
+    // Confidentiality badge
     if (this.data.config.confidential) {
-      this.doc.setTextColor(200, 0, 0)
-      this.doc.setFontSize(10)
-      this.doc.setFont('helvetica', 'bold')
-      this.doc.text('CONFIDENTIAL', this.pageWidth / 2, this.currentY + 20, { align: 'center' })
+      this.currentY += 12
+      const confBadgeWidth = 70
+      this.doc.setFillColor(...COLORS.error)
+      this.doc.roundedRect(this.pageWidth / 2 - confBadgeWidth / 2, this.currentY - 4, confBadgeWidth, 12, 2, 2, 'F')
+      this.doc.setTextColor(...COLORS.white)
+      this.doc.setFont(FONTS.body, 'bold')
+      this.doc.setFontSize(8)
+      this.doc.text('CONFIDENTIAL', this.pageWidth / 2, this.currentY + 4, { align: 'center' })
     }
 
+    // Reset colors
     this.doc.setTextColor(0, 0, 0)
   }
 
@@ -447,12 +575,12 @@ export class EnhancedTEAReportGenerator {
 
     this.currentY += 8
     this.doc.setFontSize(11)
-    this.doc.setFont('helvetica', 'bold')
+    this.doc.setFont(FONTS.body, 'bold')
     this.doc.text('Key Findings:', this.margin + 5, this.currentY)
 
     this.currentY += 7
     this.doc.setFontSize(10)
-    this.doc.setFont('helvetica', 'normal')
+    this.doc.setFont(FONTS.body, 'normal')
     const findings = [
       `LCOE: $${this.data.results.lcoe.toFixed(3)}/kWh`,
       `NPV: ${this.formatCurrency(this.data.results.npv)}`,
@@ -571,7 +699,7 @@ export class EnhancedTEAReportGenerator {
 
     // Introduction text
     this.doc.setFontSize(10)
-    this.doc.setFont('helvetica', 'normal')
+    this.doc.setFont(FONTS.body, 'normal')
     this.doc.setTextColor(60, 60, 60)
     const introText =
       'Exergy analysis evaluates energy quality rather than just quantity. ' +
@@ -637,7 +765,7 @@ export class EnhancedTEAReportGenerator {
     // Statement text
     this.doc.setTextColor(22, 101, 52) // Dark green text
     this.doc.setFontSize(10)
-    this.doc.setFont('helvetica', 'italic')
+    this.doc.setFont(FONTS.body, 'normal')
     const statementLines = this.doc.splitTextToSize(
       exergy.fossilComparisonStatement,
       this.pageWidth - 2 * this.margin - 10
@@ -653,7 +781,7 @@ export class EnhancedTEAReportGenerator {
     // Confidence indicator
     this.doc.setTextColor(100, 100, 100)
     this.doc.setFontSize(8)
-    this.doc.setFont('helvetica', 'normal')
+    this.doc.setFont(FONTS.body, 'normal')
     const confidenceLabel =
       exergy.confidence === 'high'
         ? 'High Confidence'
@@ -769,7 +897,7 @@ export class EnhancedTEAReportGenerator {
     this.data.references.forEach((ref, index) => {
       this.checkPageBreak(10)
       this.doc.setFontSize(9)
-      this.doc.setFont('helvetica', 'normal')
+      this.doc.setFont(FONTS.body, 'normal')
       const refText = `[${index + 1}] ${ref}`
       const lines = this.doc.splitTextToSize(refText, this.pageWidth - 2 * this.margin)
 
@@ -816,12 +944,44 @@ export class EnhancedTEAReportGenerator {
     // Record for TOC
     this.tocEntries.push({ title, page: this.doc.getNumberOfPages(), level })
 
+    // Add PDF bookmark for level 1 and 2 headers (visible in PDF reader sidebar)
+    if (level <= 2) {
+      this.addBookmark(title, level)
+    }
+
     this.doc.setFontSize(sizes[level])
-    this.doc.setFont('helvetica', 'bold')
+    this.doc.setFont(FONTS.body, 'bold')
     this.doc.setTextColor(30, 58, 138)
     this.doc.text(title, this.margin, this.currentY)
     this.doc.setTextColor(0, 0, 0)
     this.currentY += spacing[level]
+  }
+
+  /**
+   * Add a PDF bookmark/outline entry for navigation in PDF readers
+   */
+  private addBookmark(title: string, level: number) {
+    const pageNumber = this.doc.getNumberOfPages()
+
+    try {
+      // Access jsPDF outline API (may not exist in all versions)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const docWithOutline = this.doc as any
+
+      if (typeof docWithOutline.outline?.add === 'function') {
+        if (level === 1) {
+          // Top-level bookmark (no parent)
+          const bookmark = docWithOutline.outline.add(null, title, { pageNumber })
+          this.bookmarkStack = [bookmark]
+        } else {
+          // Nested bookmark (child of most recent level 1)
+          const parent = this.bookmarkStack.length > 0 ? this.bookmarkStack[0] : null
+          docWithOutline.outline.add(parent, title, { pageNumber })
+        }
+      }
+    } catch {
+      // Outline API not available, silently skip
+    }
   }
 
   private addText(text: string, options: { fontSize?: number; maxWidth?: number } = {}) {
@@ -829,7 +989,7 @@ export class EnhancedTEAReportGenerator {
     const maxWidth = options.maxWidth || this.pageWidth - 2 * this.margin
 
     this.doc.setFontSize(fontSize)
-    this.doc.setFont('helvetica', 'normal')
+    this.doc.setFont(FONTS.body, 'normal')
 
     const lines = this.doc.splitTextToSize(text, maxWidth)
     const lineHeight = fontSize * 0.35
@@ -858,8 +1018,10 @@ export class EnhancedTEAReportGenerator {
       page: this.doc.getNumberOfPages(),
     })
 
+    // Table title with accent color
     this.doc.setFontSize(10)
-    this.doc.setFont('helvetica', 'bold')
+    this.doc.setFont(FONTS.body, 'bold')
+    this.doc.setTextColor(...COLORS.text)
     this.doc.text(tableTitle, this.margin, this.currentY)
     this.currentY += 5
 
@@ -867,13 +1029,36 @@ export class EnhancedTEAReportGenerator {
       startY: this.currentY,
       head: [headers],
       body: data,
-      theme: 'striped',
-      headStyles: { fillColor: [30, 58, 138], fontSize: options.fontSize || 10 },
-      styles: { fontSize: options.fontSize || 9 },
+      theme: 'plain',
+      headStyles: {
+        fillColor: COLORS.primary,
+        textColor: COLORS.white,
+        fontSize: options.fontSize || 10,
+        fontStyle: 'bold',
+        halign: 'left',
+        cellPadding: 4,
+      },
+      bodyStyles: {
+        fontSize: options.fontSize || 9,
+        cellPadding: 3,
+        textColor: COLORS.text,
+      },
+      alternateRowStyles: {
+        fillColor: COLORS.backgroundAlt,
+      },
+      styles: {
+        font: FONTS.body,
+        overflow: 'linebreak',
+        lineWidth: 0.1,
+        lineColor: COLORS.border,
+      },
       margin: { left: this.margin, right: this.margin },
+      tableLineColor: COLORS.border,
+      tableLineWidth: 0.1,
     })
 
-    this.currentY = (this.doc as any).lastAutoTable.finalY + 8
+    this.currentY = (this.doc as any).lastAutoTable.finalY + 10
+    this.doc.setTextColor(0, 0, 0)
   }
 
   private addFigure(title: string, imageData: string, width: number, height: number) {
@@ -886,7 +1071,7 @@ export class EnhancedTEAReportGenerator {
     })
 
     this.doc.setFontSize(10)
-    this.doc.setFont('helvetica', 'bold')
+    this.doc.setFont(FONTS.body, 'bold')
     this.doc.text(figureTitle, this.margin, this.currentY)
     this.currentY += 5
 
@@ -921,13 +1106,13 @@ export class EnhancedTEAReportGenerator {
 
       // Label
       this.doc.setFontSize(8)
-      this.doc.setFont('helvetica', 'normal')
+      this.doc.setFont(FONTS.body, 'normal')
       this.doc.setTextColor(100, 100, 100)
       this.doc.text(metric.label, xOffset + 3, this.currentY + 7)
 
       // Value
       this.doc.setFontSize(12)
-      this.doc.setFont('helvetica', 'bold')
+      this.doc.setFont(FONTS.body, 'bold')
       this.doc.setTextColor(0, 0, 0)
       this.doc.text(metric.value, xOffset + 3, this.currentY + 16)
 
@@ -950,12 +1135,228 @@ export class EnhancedTEAReportGenerator {
     return 'Industry standard'
   }
 
-  private insertTableOfContents(page: number) {
-    // Implementation would insert TOC at specified page
+  /**
+   * Insert Table of Contents at the specified page position.
+   * Uses two-pass approach: insert pages, shift references, then render content.
+   */
+  private insertTableOfContents(insertAfterPage: number) {
+    // Calculate how many pages we need for the TOC
+    const entriesPerPage = 35 // Approximate TOC entries per page
+    const tocPageCount = Math.max(1, Math.ceil(this.tocEntries.length / entriesPerPage))
+
+    // Insert blank pages at the specified position
+    for (let i = 0; i < tocPageCount; i++) {
+      this.doc.insertPage(insertAfterPage + i)
+    }
+
+    // Shift all page references by the number of inserted pages
+    this.tocEntries.forEach(entry => {
+      if (entry.page >= insertAfterPage) {
+        entry.page += tocPageCount
+      }
+    })
+    this.figureList.forEach(fig => {
+      if (fig.page >= insertAfterPage) {
+        fig.page += tocPageCount
+      }
+    })
+    this.tableList.forEach(tbl => {
+      if (tbl.page >= insertAfterPage) {
+        tbl.page += tocPageCount
+      }
+    })
+
+    // Render TOC content onto the inserted pages
+    let currentPage = insertAfterPage
+    this.doc.setPage(currentPage)
+    let tocY = this.margin + 10
+
+    // TOC Header
+    this.doc.setFontSize(20)
+    this.doc.setFont(FONTS.body, 'bold')
+    this.doc.setTextColor(30, 58, 138)
+    this.doc.text('Table of Contents', this.margin, tocY)
+    tocY += 15
+
+    // Reset text color
+    this.doc.setTextColor(0, 0, 0)
+
+    // Render TOC entries with dot leaders and clickable links
+    let entryCount = 0
+    for (const entry of this.tocEntries) {
+      // Check if we need a new page
+      if (tocY > this.pageHeight - 30) {
+        currentPage++
+        if (currentPage <= insertAfterPage + tocPageCount - 1) {
+          this.doc.setPage(currentPage)
+          tocY = this.margin + 10
+        } else {
+          break // Ran out of TOC pages
+        }
+      }
+
+      this.renderTOCEntry(entry, tocY)
+      tocY += entry.level === 1 ? 7 : 5
+      entryCount++
+    }
   }
 
-  private insertListOfExhibits(page: number) {
-    // Implementation would insert list of figures and tables
+  /**
+   * Render a single TOC entry with dot leader and internal link
+   */
+  private renderTOCEntry(entry: { title: string; page: number; level: number }, y: number) {
+    const indent = (entry.level - 1) * 8
+    const fontSize = entry.level === 1 ? 11 : 10
+    const fontWeight = entry.level === 1 ? 'bold' : 'normal'
+
+    this.doc.setFont(FONTS.body, fontWeight)
+    this.doc.setFontSize(fontSize)
+    this.doc.setTextColor(0, 0, 0)
+
+    // Title (left side)
+    const titleX = this.margin + indent
+    const maxTitleWidth = this.pageWidth - 2 * this.margin - 20 - indent
+    const truncatedTitle = this.truncateText(entry.title, maxTitleWidth)
+    this.doc.text(truncatedTitle, titleX, y)
+
+    // Page number (right side)
+    const pageNumX = this.pageWidth - this.margin
+    this.doc.text(entry.page.toString(), pageNumX, y, { align: 'right' })
+
+    // Dot leader
+    const titleWidth = this.doc.getTextWidth(truncatedTitle)
+    const pageNumWidth = this.doc.getTextWidth(entry.page.toString())
+    const dotsStartX = titleX + titleWidth + 3
+    const dotsEndX = pageNumX - pageNumWidth - 3
+
+    this.doc.setTextColor(180, 180, 180)
+    this.doc.setFontSize(8)
+    let dotX = dotsStartX
+    while (dotX < dotsEndX) {
+      this.doc.text('.', dotX, y)
+      dotX += 2
+    }
+    this.doc.setTextColor(0, 0, 0)
+
+    // Add clickable internal link
+    const linkHeight = 5
+    const linkWidth = this.pageWidth - 2 * this.margin
+    this.doc.link(
+      this.margin,
+      y - linkHeight + 1,
+      linkWidth,
+      linkHeight,
+      { pageNumber: entry.page }
+    )
+  }
+
+  /**
+   * Truncate text to fit within maxWidth
+   */
+  private truncateText(text: string, maxWidth: number): string {
+    let truncated = text
+    while (this.doc.getTextWidth(truncated) > maxWidth && truncated.length > 10) {
+      truncated = truncated.substring(0, truncated.length - 4) + '...'
+    }
+    return truncated
+  }
+
+  /**
+   * Insert List of Exhibits (Figures and Tables) at the specified page position.
+   */
+  private insertListOfExhibits(insertAfterPage: number) {
+    const totalExhibits = this.figureList.length + this.tableList.length
+    if (totalExhibits === 0) return
+
+    // Calculate pages needed
+    const exhibitsPerPage = 30
+    const exhibitPageCount = Math.max(1, Math.ceil(totalExhibits / exhibitsPerPage))
+
+    // Insert blank pages
+    for (let i = 0; i < exhibitPageCount; i++) {
+      this.doc.insertPage(insertAfterPage + i)
+    }
+
+    // Shift page references again
+    this.tocEntries.forEach(entry => {
+      if (entry.page >= insertAfterPage) {
+        entry.page += exhibitPageCount
+      }
+    })
+    this.figureList.forEach(fig => {
+      if (fig.page >= insertAfterPage) {
+        fig.page += exhibitPageCount
+      }
+    })
+    this.tableList.forEach(tbl => {
+      if (tbl.page >= insertAfterPage) {
+        tbl.page += exhibitPageCount
+      }
+    })
+
+    // Render exhibits content
+    let currentPage = insertAfterPage
+    this.doc.setPage(currentPage)
+    let exhibitY = this.margin + 10
+
+    // List of Figures
+    if (this.figureList.length > 0) {
+      this.doc.setFontSize(16)
+      this.doc.setFont(FONTS.body, 'bold')
+      this.doc.setTextColor(30, 58, 138)
+      this.doc.text('List of Figures', this.margin, exhibitY)
+      exhibitY += 10
+
+      this.doc.setTextColor(0, 0, 0)
+      for (const fig of this.figureList) {
+        if (exhibitY > this.pageHeight - 30) {
+          currentPage++
+          this.doc.setPage(currentPage)
+          exhibitY = this.margin + 10
+        }
+
+        this.doc.setFont(FONTS.body, 'normal')
+        this.doc.setFontSize(10)
+        const figText = `Figure ${fig.number}: ${fig.title}`
+        this.doc.text(this.truncateText(figText, this.pageWidth - 2 * this.margin - 20), this.margin + 5, exhibitY)
+        this.doc.text(fig.page.toString(), this.pageWidth - this.margin, exhibitY, { align: 'right' })
+        this.doc.link(this.margin, exhibitY - 4, this.pageWidth - 2 * this.margin, 5, { pageNumber: fig.page })
+        exhibitY += 5
+      }
+      exhibitY += 10
+    }
+
+    // List of Tables
+    if (this.tableList.length > 0) {
+      if (exhibitY > this.pageHeight - 50) {
+        currentPage++
+        this.doc.setPage(currentPage)
+        exhibitY = this.margin + 10
+      }
+
+      this.doc.setFontSize(16)
+      this.doc.setFont(FONTS.body, 'bold')
+      this.doc.setTextColor(30, 58, 138)
+      this.doc.text('List of Tables', this.margin, exhibitY)
+      exhibitY += 10
+
+      this.doc.setTextColor(0, 0, 0)
+      for (const tbl of this.tableList) {
+        if (exhibitY > this.pageHeight - 30) {
+          currentPage++
+          this.doc.setPage(currentPage)
+          exhibitY = this.margin + 10
+        }
+
+        this.doc.setFont(FONTS.body, 'normal')
+        this.doc.setFontSize(10)
+        const tblText = `Table ${tbl.number}: ${tbl.title}`
+        this.doc.text(this.truncateText(tblText, this.pageWidth - 2 * this.margin - 20), this.margin + 5, exhibitY)
+        this.doc.text(tbl.page.toString(), this.pageWidth - this.margin, exhibitY, { align: 'right' })
+        this.doc.link(this.margin, exhibitY - 4, this.pageWidth - 2 * this.margin, 5, { pageNumber: tbl.page })
+        exhibitY += 5
+      }
+    }
   }
 
   private addPageNumbers() {

@@ -11,6 +11,7 @@
 
 import * as React from 'react'
 import { Card, Badge } from '@/components/ui'
+import { PageHeader } from '@/components/shared'
 import { cn } from '@/lib/utils'
 import {
   BookOpen,
@@ -421,22 +422,14 @@ export default function CriteriaPage() {
   const [expandedPhase, setExpandedPhase] = React.useState<string | null>('research')
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="space-y-6 pb-8 flex-1 overflow-y-auto">
-        {/* Page Header */}
-        <div>
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-              <Award className="h-5 w-5" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">Evaluation Criteria</h1>
-              <p className="text-foreground-muted">
-                How the Discovery Engine analyzes and scores scientific inquiries
-              </p>
-            </div>
-          </div>
-        </div>
+    <div className="flex flex-col h-full">
+      <PageHeader
+        icon={Award}
+        title="Evaluation Criteria"
+        description="How the Discovery Engine analyzes and scores scientific inquiries"
+      />
+
+      <div className="flex-1 p-6 space-y-6 overflow-y-auto">
 
         {/* Methodology Overview */}
         <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
@@ -542,7 +535,7 @@ export default function CriteriaPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
                         <h3 className="font-semibold text-foreground text-sm">{phase.name}</h3>
-                        <span className="text-xs font-mono bg-background-surface px-1.5 py-0.5 rounded text-foreground-muted">
+                        <span className="text-xs font-mono bg-background-elevated px-1.5 py-0.5 rounded text-foreground-muted">
                           {phase.weight}x
                         </span>
                       </div>
@@ -629,7 +622,7 @@ export default function CriteriaPage() {
                   <button
                     type="button"
                     onClick={() => setExpandedPhase(isExpanded ? null : phase.id)}
-                    className="w-full flex items-center gap-3 p-4 text-left hover:bg-background-surface/50 transition-colors"
+                    className="w-full flex items-center gap-3 p-4 text-left hover:bg-background-elevated/50 transition-colors"
                   >
                     <div className={cn(
                       'flex h-10 w-10 items-center justify-center rounded-lg shrink-0',
@@ -661,7 +654,7 @@ export default function CriteriaPage() {
                       <div className="overflow-x-auto">
                         <table className="w-full">
                           <thead>
-                            <tr className="bg-background-surface/50">
+                            <tr className="bg-background-elevated/50">
                               <th className="px-4 py-2 text-left text-xs font-semibold text-foreground-muted uppercase tracking-wider w-16">ID</th>
                               <th className="px-4 py-2 text-left text-xs font-semibold text-foreground-muted uppercase tracking-wider">Criterion</th>
                               <th className="px-4 py-2 text-center text-xs font-semibold text-foreground-muted uppercase tracking-wider w-16">Pts</th>
@@ -673,9 +666,9 @@ export default function CriteriaPage() {
                             {criteria.map((item) => {
                               const CategoryIcon = categoryIcons[item.category] || Check
                               return (
-                                <tr key={item.id} className="hover:bg-background-surface/30 transition-colors">
+                                <tr key={item.id} className="hover:bg-background-elevated/30 transition-colors">
                                   <td className="px-4 py-3">
-                                    <span className="font-mono text-xs font-semibold text-foreground bg-background-surface px-1.5 py-0.5 rounded">
+                                    <span className="font-mono text-xs font-semibold text-foreground bg-background-elevated px-1.5 py-0.5 rounded">
                                       {item.id}
                                     </span>
                                   </td>
@@ -713,7 +706,7 @@ export default function CriteriaPage() {
                             })}
                           </tbody>
                           <tfoot>
-                            <tr className="bg-background-surface/50">
+                            <tr className="bg-background-elevated/50">
                               <td colSpan={2} className="px-4 py-2 text-xs font-semibold text-foreground">
                                 Total Points
                               </td>
@@ -736,7 +729,7 @@ export default function CriteriaPage() {
         </div>
 
         {/* Footer Note */}
-        <Card className="bg-background-surface border-border">
+        <Card className="bg-background-elevated border-border">
           <div className="flex items-start gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
               <Info className="h-5 w-5" />

@@ -2,10 +2,20 @@
  * Comprehensive PDF Generator for Investor-Ready TEA Reports
  * Generates 20+ page professional reports with table of contents
  * Uses jsPDF and jsPDF-AutoTable
+ *
+ * @version 2.0.0 - Updated with custom Inter fonts and professional styling
  */
 
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import {
+  COLORS as SHARED_COLORS,
+  FONT_SIZES,
+  MARGINS as SHARED_MARGINS,
+  registerCustomFonts,
+  FONT_FAMILIES,
+  getTableConfig,
+} from './pdf/shared-styles'
 
 export interface TEAReportData {
   // Project Information
@@ -128,9 +138,9 @@ export class PDFGenerator {
   private currentY = 20
   private tocEntries: TOCEntry[] = []
   private currentPage = 1
-  private readonly primaryColor: [number, number, number] = [16, 185, 129] // Emerald-500
-  private readonly secondaryColor: [number, number, number] = [12, 17, 27] // Dark background
-  private readonly accentColor: [number, number, number] = [59, 130, 246] // Blue-500
+  private readonly primaryColor: [number, number, number] = SHARED_COLORS.accent // Emerald-500
+  private readonly secondaryColor: [number, number, number] = SHARED_COLORS.primary // Deep blue
+  private readonly accentColor: [number, number, number] = SHARED_COLORS.primaryLight // Blue-500
 
   constructor() {
     this.doc = new jsPDF({
@@ -140,6 +150,9 @@ export class PDFGenerator {
     })
     this.pageWidth = this.doc.internal.pageSize.getWidth()
     this.pageHeight = this.doc.internal.pageSize.getHeight()
+
+    // Register custom Inter font family
+    registerCustomFonts(this.doc)
   }
 
   private addNewPage() {
@@ -159,7 +172,7 @@ export class PDFGenerator {
 
     this.doc.setTextColor(255, 255, 255)
     this.doc.setFontSize(8)
-    this.doc.setFont('helvetica', 'normal')
+    this.doc.setFont(FONT_FAMILIES.body, 'normal')
     this.doc.text('Exergy Lab - Techno-Economic Analysis', this.margin, 6)
 
     // Simple microscope icon using shapes
@@ -220,7 +233,7 @@ export class PDFGenerator {
     }
 
     this.doc.setFontSize(sizes[level])
-    this.doc.setFont('helvetica', 'bold')
+    this.doc.setFont(FONT_FAMILIES.body, 'bold')
 
     if (level === 1) {
       this.doc.setTextColor(...this.primaryColor)
@@ -247,7 +260,7 @@ export class PDFGenerator {
     const bold = options.bold || false
 
     this.doc.setFontSize(fontSize)
-    this.doc.setFont('helvetica', bold ? 'bold' : 'normal')
+    this.doc.setFont(FONT_FAMILIES.body, bold ? 'bold' : 'normal')
 
     const lines = this.doc.splitTextToSize(text, maxWidth)
     const lineHeight = fontSize * 0.4
@@ -266,7 +279,7 @@ export class PDFGenerator {
     const bulletX = this.margin + indent
 
     this.doc.setFontSize(fontSize)
-    this.doc.setFont('helvetica', 'normal')
+    this.doc.setFont(FONT_FAMILIES.body, 'normal')
 
     // Add bullet
     this.checkPageBreak(5)
@@ -296,13 +309,13 @@ export class PDFGenerator {
 
     // Label
     this.doc.setFontSize(8)
-    this.doc.setFont('helvetica', 'normal')
+    this.doc.setFont(FONT_FAMILIES.body, 'normal')
     this.doc.setTextColor(100, 116, 139) // slate-500
     this.doc.text(label, x + 3, y + 6)
 
     // Value
     this.doc.setFontSize(13)
-    this.doc.setFont('helvetica', 'bold')
+    this.doc.setFont(FONT_FAMILIES.body, 'bold')
     this.doc.setTextColor(15, 23, 42) // slate-900
     this.doc.text(value, x + 3, y + 15)
 
@@ -331,13 +344,13 @@ export class PDFGenerator {
 
     // Title
     this.doc.setFontSize(10)
-    this.doc.setFont('helvetica', 'bold')
+    this.doc.setFont(FONT_FAMILIES.body, 'bold')
     this.doc.setTextColor(...colors[type])
     this.doc.text(title, this.margin + 8, boxY + 7)
 
     // Content
     this.doc.setFontSize(9)
-    this.doc.setFont('helvetica', 'normal')
+    this.doc.setFont(FONT_FAMILIES.body, 'normal')
     this.doc.setTextColor(71, 85, 105)
     const lines = this.doc.splitTextToSize(content, this.pageWidth - 2 * this.margin - 16)
     let textY = boxY + 13
@@ -381,24 +394,24 @@ export class PDFGenerator {
 
     // Company name
     this.doc.setFontSize(22)
-    this.doc.setFont('helvetica', 'bold')
+    this.doc.setFont(FONT_FAMILIES.body, 'bold')
     this.doc.text('Exergy Lab', this.margin + 15, 32)
 
     this.doc.setFontSize(12)
-    this.doc.setFont('helvetica', 'normal')
+    this.doc.setFont(FONT_FAMILIES.body, 'normal')
     this.doc.text('Clean Energy Research Platform', this.margin + 20, 48)
 
     // Report title
     this.currentY = 100
     this.doc.setTextColor(0, 0, 0)
     this.doc.setFontSize(26)
-    this.doc.setFont('helvetica', 'bold')
+    this.doc.setFont(FONT_FAMILIES.body, 'bold')
     this.doc.text('Techno-Economic Analysis', this.margin, this.currentY)
 
     // Project name
     this.currentY += 20
     this.doc.setFontSize(20)
-    this.doc.setFont('helvetica', 'bold')
+    this.doc.setFont(FONT_FAMILIES.body, 'bold')
     const projectLines = this.doc.splitTextToSize(data.projectName, this.pageWidth - 2 * this.margin)
     projectLines.forEach((line: string) => {
       this.doc.text(line, this.margin, this.currentY)
@@ -414,7 +427,7 @@ export class PDFGenerator {
     // Project details
     this.currentY += 15
     this.doc.setFontSize(13)
-    this.doc.setFont('helvetica', 'normal')
+    this.doc.setFont(FONT_FAMILIES.body, 'normal')
     this.doc.setTextColor(71, 85, 105)
 
     const details = [
@@ -443,11 +456,11 @@ export class PDFGenerator {
 
     this.doc.setTextColor(...this.primaryColor)
     this.doc.setFontSize(11)
-    this.doc.setFont('helvetica', 'bold')
+    this.doc.setFont(FONT_FAMILIES.body, 'bold')
     this.doc.text('Key Financial Highlights', this.margin + 5, highlightBoxY + 8)
 
     this.doc.setFontSize(10)
-    this.doc.setFont('helvetica', 'normal')
+    this.doc.setFont(FONT_FAMILIES.body, 'normal')
     this.doc.setTextColor(0, 0, 0)
     const highlights = [
       `LCOE: $${data.lcoe.toFixed(3)}/kWh  |  NPV: ${this.formatCurrency(data.npv)}  |  IRR: ${data.irr.toFixed(1)}%`,
@@ -463,7 +476,7 @@ export class PDFGenerator {
     this.currentY = this.pageHeight - 50
     this.doc.setFontSize(10)
     this.doc.setTextColor(100, 116, 139)
-    this.doc.setFont('helvetica', 'normal')
+    this.doc.setFont(FONT_FAMILIES.body, 'normal')
 
     const date = new Date(data.generatedDate).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -481,7 +494,7 @@ export class PDFGenerator {
     this.currentY = this.pageHeight - 25
     this.doc.setFontSize(8)
     this.doc.setTextColor(150, 150, 150)
-    this.doc.setFont('helvetica', 'italic')
+    this.doc.setFont(FONT_FAMILIES.body, 'italic')
     this.doc.text(
       'CONFIDENTIAL - This report contains proprietary information for investment review purposes only.',
       this.pageWidth / 2,
@@ -499,7 +512,7 @@ export class PDFGenerator {
 
     // Add instruction text for interactivity
     this.doc.setFontSize(8)
-    this.doc.setFont('helvetica', 'italic')
+    this.doc.setFont(FONT_FAMILIES.body, 'italic')
     this.doc.setTextColor(100, 116, 139) // slate-500
     this.doc.text('Click on any section below to jump directly to that page', this.margin, this.currentY)
     this.doc.setTextColor(0, 0, 0)
@@ -510,7 +523,7 @@ export class PDFGenerator {
       const dotLineY = this.currentY - 2
 
       this.doc.setFontSize(10)
-      this.doc.setFont('helvetica', entry.level === 1 ? 'bold' : 'normal')
+      this.doc.setFont(FONT_FAMILIES.body, entry.level === 1 ? 'bold' : 'normal')
 
       // Title - use primary color for clickable appearance
       const titleX = this.margin + indent

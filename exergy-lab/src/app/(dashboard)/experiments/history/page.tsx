@@ -28,8 +28,10 @@ import {
   FlaskConical,
   Clock,
   Filter,
+  History,
 } from 'lucide-react'
 import { Card, Button, Badge } from '@/components/ui'
+import { PageHeader } from '@/components/shared'
 import { useExperimentsStore } from '@/lib/store/experiments-store'
 import type { ExperimentDomain, SavedExperiment } from '@/types/experiment-workflow'
 
@@ -176,33 +178,32 @@ export default function ExperimentHistoryPage() {
   }
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-6 p-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground mb-2">Experiment History</h1>
-        <p className="text-muted">
-          Browse, search, and manage all saved experiment workflows
-        </p>
-      </div>
+    <div className="flex flex-col h-full">
+      <PageHeader
+        icon={History}
+        title="Experiment History"
+        description="Browse, search, and manage all saved experiment workflows"
+      />
 
+      <div className="flex-1 p-6 space-y-6">
       {/* Filters */}
-      <Card className="p-4 bg-card-dark border-border">
+      <Card className="p-4 bg-background-elevated border-border">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Search */}
           <div className="relative">
-            <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted" />
+            <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-foreground-muted" />
             <input
               type="text"
               placeholder="Search by name, goal, or tags..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-background border border-border rounded-lg text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className="w-full pl-10 pr-4 py-2 bg-background border border-border rounded-lg text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-primary/50"
             />
           </div>
 
           {/* Domain Filter */}
           <div className="relative">
-            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted pointer-events-none" />
+            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-foreground-muted pointer-events-none" />
             <select
               value={domainFilter}
               onChange={(e) => setDomainFilter(e.target.value as ExperimentDomain | 'all')}
@@ -257,14 +258,14 @@ export default function ExperimentHistoryPage() {
 
       {/* Results Count */}
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted">
+        <p className="text-sm text-foreground-muted">
           {filteredExperiments.length} experiment{filteredExperiments.length !== 1 ? 's' : ''} found
         </p>
       </div>
 
       {/* Grid */}
       {filteredExperiments.length === 0 ? (
-        <Card className="p-12 bg-card-dark border-border">
+        <Card className="p-12 bg-background-elevated border-border">
           <div className="flex flex-col items-center text-center space-y-4">
             <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
               <Clock className="w-8 h-8 text-primary" />
@@ -273,7 +274,7 @@ export default function ExperimentHistoryPage() {
               <h3 className="text-lg font-semibold text-foreground mb-2">
                 No experiments found
               </h3>
-              <p className="text-muted max-w-md">
+              <p className="text-foreground-muted max-w-md">
                 {searchQuery || domainFilter !== 'all'
                   ? 'Try adjusting your filters or search query'
                   : 'Complete and save an experiment to see it appear here'}
@@ -295,7 +296,7 @@ export default function ExperimentHistoryPage() {
             return (
               <Card
                 key={exp.id}
-                className={`p-4 bg-card-dark border-border hover:border-primary/30 transition-all ${
+                className={`p-4 bg-background-elevated border-border hover:border-primary/30 transition-all ${
                   isSelected ? 'ring-2 ring-primary/50 border-primary' : ''
                 }`}
               >
@@ -328,7 +329,7 @@ export default function ExperimentHistoryPage() {
                 </div>
 
                 {/* Goal Preview */}
-                <p className="text-xs text-muted line-clamp-2 mb-3">
+                <p className="text-xs text-foreground-muted line-clamp-2 mb-3">
                   {exp.goal}
                 </p>
 
@@ -336,16 +337,16 @@ export default function ExperimentHistoryPage() {
                 <div className="grid grid-cols-2 gap-2 mb-3 text-xs">
                   <div>
                     <span className="text-foreground-subtle">Saved:</span>{' '}
-                    <span className="text-muted">{formatDate(exp.savedAt)}</span>
+                    <span className="text-foreground-muted">{formatDate(exp.savedAt)}</span>
                   </div>
                   <div>
                     <span className="text-foreground-subtle">Duration:</span>{' '}
-                    <span className="text-muted">{formatDuration(exp.duration)}</span>
+                    <span className="text-foreground-muted">{formatDuration(exp.duration)}</span>
                   </div>
                   {exp.cost !== undefined && (
                     <div className="col-span-2">
                       <span className="text-foreground-subtle">Cost:</span>{' '}
-                      <span className="text-muted">${exp.cost.toFixed(2)}</span>
+                      <span className="text-foreground-muted">${exp.cost.toFixed(2)}</span>
                     </div>
                   )}
                 </div>
@@ -355,11 +356,11 @@ export default function ExperimentHistoryPage() {
                   <div className="p-2 rounded bg-background border border-border mb-3">
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div>
-                        <span className="text-muted">Literature:</span>{' '}
+                        <span className="text-foreground-muted">Literature:</span>{' '}
                         <span className="text-foreground">{exp.validation.literatureAlignment.confidence}%</span>
                       </div>
                       <div>
-                        <span className="text-muted">Equipment:</span>{' '}
+                        <span className="text-foreground-muted">Equipment:</span>{' '}
                         <span className="text-foreground">{exp.validation.equipmentFeasibility.tier}</span>
                       </div>
                     </div>
@@ -407,6 +408,7 @@ export default function ExperimentHistoryPage() {
           })}
         </div>
       )}
+      </div>
     </div>
   )
 }

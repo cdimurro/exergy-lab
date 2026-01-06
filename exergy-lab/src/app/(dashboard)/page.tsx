@@ -22,6 +22,7 @@ import {
   Rocket,
 } from 'lucide-react'
 import { Card, Button, Badge } from '@/components/ui'
+import { PageHeader } from '@/components/shared'
 import { useProjectsStore } from '@/lib/store/projects-store'
 import { useSimulationsStore } from '@/lib/store/simulations-store'
 import { useExperimentsStore } from '@/lib/store/experiments-store'
@@ -103,18 +104,12 @@ export default function DashboardPage() {
 
   if (!mounted) {
     return (
-      <div className="h-full flex flex-col">
-        <div className="border-b border-border bg-background-elevated px-6 py-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
-              <Home className="w-5 h-5 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-xl font-semibold text-foreground">Exergy Lab</h1>
-              <p className="text-sm text-foreground-muted">AI-powered scientific research platform</p>
-            </div>
-          </div>
-        </div>
+      <div className="flex flex-col h-full">
+        <PageHeader
+          icon={Home}
+          title="Exergy Lab"
+          description="AI-powered scientific research platform"
+        />
         <div className="flex-1 overflow-auto p-6">
           <div className="animate-pulse space-y-6">
             <div className="grid grid-cols-5 gap-4">
@@ -129,28 +124,21 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Fixed Header */}
-      <div className="border-b border-border bg-background-elevated px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
-              <Home className="w-5 h-5 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-xl font-semibold text-foreground">Exergy Lab</h1>
-              <p className="text-sm text-foreground-muted">AI-powered scientific research platform</p>
-            </div>
-          </div>
-          <div className="text-sm text-foreground-muted hidden sm:block">
+    <div className="flex flex-col h-full">
+      <PageHeader
+        icon={Home}
+        title="Exergy Lab"
+        description="AI-powered scientific research platform"
+        actions={
+          <span className="text-sm text-foreground-muted hidden sm:block">
             {new Date().toLocaleDateString('en-US', {
               weekday: 'long',
               month: 'long',
               day: 'numeric',
             })}
-          </div>
-        </div>
-      </div>
+          </span>
+        }
+      />
 
       {/* Scrollable Content */}
       <div className="flex-1 overflow-auto p-6">

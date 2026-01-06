@@ -4,7 +4,7 @@
  * Generates comprehensive 18+ section PDF reports for simulation results.
  * Follows the pattern of the TEA report generator with simulation-specific sections.
  *
- * @version 1.0.0
+ * @version 2.0.0 - Updated with custom Inter fonts and professional styling
  */
 
 import jsPDF from 'jspdf'
@@ -18,40 +18,17 @@ import type {
   DataTable,
   DEFAULT_REPORT_CONFIG,
 } from '@/types/simulation-report'
+import {
+  COLORS,
+  FONT_SIZES,
+  MARGINS,
+  registerCustomFonts,
+  FONT_FAMILIES,
+  getTableConfig,
+} from './pdf/shared-styles'
 
-// ============================================================================
-// Constants
-// ============================================================================
-
-const COLORS = {
-  primary: [30, 58, 138] as [number, number, number], // Blue-800
-  secondary: [59, 130, 246] as [number, number, number], // Blue-500
-  accent: [16, 185, 129] as [number, number, number], // Emerald-500
-  success: [34, 197, 94] as [number, number, number], // Green-500
-  warning: [245, 158, 11] as [number, number, number], // Amber-500
-  error: [239, 68, 68] as [number, number, number], // Red-500
-  text: [17, 24, 39] as [number, number, number], // Gray-900
-  textMuted: [107, 114, 128] as [number, number, number], // Gray-500
-  background: [249, 250, 251] as [number, number, number], // Gray-50
-  white: [255, 255, 255] as [number, number, number],
-}
-
-const FONTS = {
-  title: 24,
-  h1: 18,
-  h2: 14,
-  h3: 12,
-  body: 10,
-  small: 8,
-  caption: 7,
-}
-
-const MARGINS = {
-  left: 20,
-  right: 20,
-  top: 25,
-  bottom: 25,
-}
+// Re-export FONTS for backward compatibility
+const FONTS = FONT_SIZES
 
 // ============================================================================
 // Main Generator Class
@@ -95,6 +72,9 @@ export class SimulationPDFGenerator {
       unit: 'mm',
       format: 'a4',
     })
+
+    // Register custom Inter font family
+    registerCustomFonts(this.doc)
   }
 
   /**
@@ -222,12 +202,12 @@ export class SimulationPDFGenerator {
     // Title
     this.doc.setTextColor(...COLORS.white)
     this.doc.setFontSize(FONTS.title)
-    this.doc.setFont('helvetica', 'bold')
+    this.doc.setFont(FONT_FAMILIES.body, 'bold')
     this.doc.text('SIMULATION REPORT', pageWidth / 2, 35, { align: 'center' })
 
     // Subtitle
     this.doc.setFontSize(FONTS.h2)
-    this.doc.setFont('helvetica', 'normal')
+    this.doc.setFont(FONT_FAMILIES.body, 'normal')
     this.doc.text(this.data.metadata.title, pageWidth / 2, 50, { align: 'center' })
 
     // Domain badge
@@ -245,12 +225,12 @@ export class SimulationPDFGenerator {
     y += 15
     this.doc.setTextColor(...COLORS.text)
     this.doc.setFontSize(FONTS.h3)
-    this.doc.setFont('helvetica', 'bold')
+    this.doc.setFont(FONT_FAMILIES.body, 'bold')
     this.doc.text('Project Details', MARGINS.left + 10, y)
 
     y += 10
     this.doc.setFontSize(FONTS.body)
-    this.doc.setFont('helvetica', 'normal')
+    this.doc.setFont(FONT_FAMILIES.body, 'normal')
     this.doc.text(`Simulation Type: ${this.data.methodology.simulationType}`, MARGINS.left + 10, y)
     y += 7
     this.doc.text(`Provider: ${this.data.methodology.provider}`, MARGINS.left + 10, y)
@@ -278,10 +258,10 @@ export class SimulationPDFGenerator {
     y = pageHeight - 30
     this.doc.setTextColor(...COLORS.primary)
     this.doc.setFontSize(FONTS.h3)
-    this.doc.setFont('helvetica', 'bold')
+    this.doc.setFont(FONT_FAMILIES.body, 'bold')
     this.doc.text('Exergy Lab', pageWidth / 2, y, { align: 'center' })
     this.doc.setFontSize(FONTS.small)
-    this.doc.setFont('helvetica', 'normal')
+    this.doc.setFont(FONT_FAMILIES.body, 'normal')
     this.doc.setTextColor(...COLORS.textMuted)
     this.doc.text('AI-Powered Clean Energy Research Platform', pageWidth / 2, y + 6, { align: 'center' })
 
@@ -302,14 +282,14 @@ export class SimulationPDFGenerator {
 
     this.doc.setTextColor(...COLORS.text)
     this.doc.setFontSize(FONTS.h1)
-    this.doc.setFont('helvetica', 'bold')
+    this.doc.setFont(FONT_FAMILIES.body, 'bold')
     this.doc.text('Table of Contents', MARGINS.left, 40)
 
     let y = 55
 
     this.tocEntries.forEach((entry) => {
       this.doc.setFontSize(FONTS.body)
-      this.doc.setFont('helvetica', entry.level === 1 ? 'bold' : 'normal')
+      this.doc.setFont(FONT_FAMILIES.body, entry.level === 1 ? 'bold' : 'normal')
 
       const indent = entry.level === 1 ? 0 : 10
       const titleX = MARGINS.left + indent
@@ -354,7 +334,7 @@ export class SimulationPDFGenerator {
 
     this.doc.setTextColor(...COLORS.white)
     this.doc.setFontSize(FONTS.h3)
-    this.doc.setFont('helvetica', 'bold')
+    this.doc.setFont(FONT_FAMILIES.body, 'bold')
     this.doc.text('Key Findings', MARGINS.left + 10, y + 12)
 
     // Top 3 metrics
@@ -378,7 +358,7 @@ export class SimulationPDFGenerator {
     // Overview text
     this.doc.setTextColor(...COLORS.text)
     this.doc.setFontSize(FONTS.body)
-    this.doc.setFont('helvetica', 'normal')
+    this.doc.setFont(FONT_FAMILIES.body, 'normal')
 
     const overview = this.data.overview.description || 'No description provided.'
     const lines = this.doc.splitTextToSize(overview, this.getContentWidth())
@@ -387,11 +367,11 @@ export class SimulationPDFGenerator {
 
     // Goals
     if (this.data.overview.goals.length > 0) {
-      this.doc.setFont('helvetica', 'bold')
+      this.doc.setFont(FONT_FAMILIES.body, 'bold')
       this.doc.text('Simulation Goals:', MARGINS.left, y)
       y += 7
 
-      this.doc.setFont('helvetica', 'normal')
+      this.doc.setFont(FONT_FAMILIES.body, 'normal')
       this.data.overview.goals.forEach((goal) => {
         this.doc.text(`• ${goal}`, MARGINS.left + 5, y)
         y += 6
@@ -404,7 +384,7 @@ export class SimulationPDFGenerator {
       const status = this.data.results.convergence.converged ? 'Converged' : 'Not Converged'
       const statusColor = this.data.results.convergence.converged ? COLORS.success : COLORS.error
 
-      this.doc.setFont('helvetica', 'bold')
+      this.doc.setFont(FONT_FAMILIES.body, 'bold')
       this.doc.text('Simulation Status: ', MARGINS.left, y)
       this.doc.setTextColor(...statusColor)
       this.doc.text(status, MARGINS.left + 35, y)
@@ -424,11 +404,11 @@ export class SimulationPDFGenerator {
 
     // Background context
     if (this.data.overview.backgroundContext) {
-      this.doc.setFont('helvetica', 'bold')
+      this.doc.setFont(FONT_FAMILIES.body, 'bold')
       this.doc.text('Background', MARGINS.left, y)
       y += 7
 
-      this.doc.setFont('helvetica', 'normal')
+      this.doc.setFont(FONT_FAMILIES.body, 'normal')
       const lines = this.doc.splitTextToSize(
         this.data.overview.backgroundContext,
         this.getContentWidth()
@@ -438,22 +418,22 @@ export class SimulationPDFGenerator {
     }
 
     // Domain description
-    this.doc.setFont('helvetica', 'bold')
+    this.doc.setFont(FONT_FAMILIES.body, 'bold')
     this.doc.text('Research Domain', MARGINS.left, y)
     y += 7
 
-    this.doc.setFont('helvetica', 'normal')
+    this.doc.setFont(FONT_FAMILIES.body, 'normal')
     const domainDesc = this.getDomainDescription(this.data.metadata.domain)
     const domainLines = this.doc.splitTextToSize(domainDesc, this.getContentWidth())
     this.doc.text(domainLines, MARGINS.left, y)
     y += domainLines.length * 5 + 10
 
     // Simulation objectives
-    this.doc.setFont('helvetica', 'bold')
+    this.doc.setFont(FONT_FAMILIES.body, 'bold')
     this.doc.text('Objectives', MARGINS.left, y)
     y += 7
 
-    this.doc.setFont('helvetica', 'normal')
+    this.doc.setFont(FONT_FAMILIES.body, 'normal')
     this.data.overview.goals.forEach((goal, i) => {
       this.doc.text(`${i + 1}. ${goal}`, MARGINS.left + 5, y)
       y += 6
@@ -479,12 +459,12 @@ export class SimulationPDFGenerator {
     y += 12
     this.doc.setTextColor(...COLORS.text)
     this.doc.setFontSize(FONTS.h3)
-    this.doc.setFont('helvetica', 'bold')
+    this.doc.setFont(FONT_FAMILIES.body, 'bold')
     this.doc.text(exp.metadata.title, MARGINS.left + 10, y)
 
     y += 8
     this.doc.setFontSize(FONTS.small)
-    this.doc.setFont('helvetica', 'normal')
+    this.doc.setFont(FONT_FAMILIES.body, 'normal')
     this.doc.setTextColor(...COLORS.textMuted)
     this.doc.text(`ID: ${exp.metadata.id}`, MARGINS.left + 10, y)
     this.doc.text(
@@ -498,7 +478,7 @@ export class SimulationPDFGenerator {
     // Protocol summary
     this.doc.setTextColor(...COLORS.text)
     this.doc.setFontSize(FONTS.h3)
-    this.doc.setFont('helvetica', 'bold')
+    this.doc.setFont(FONT_FAMILIES.body, 'bold')
     this.doc.text('Experiment Protocol Summary', MARGINS.left, y)
     y += 10
 
@@ -517,7 +497,7 @@ export class SimulationPDFGenerator {
 
     // Steps count
     this.doc.setFontSize(FONTS.body)
-    this.doc.setFont('helvetica', 'normal')
+    this.doc.setFont(FONT_FAMILIES.body, 'normal')
     this.doc.text(
       `Experiment contains ${exp.protocol.steps.length} steps`,
       MARGINS.left,
@@ -551,7 +531,7 @@ export class SimulationPDFGenerator {
     // Simulation type and provider
     this.doc.setTextColor(...COLORS.text)
     this.doc.setFontSize(FONTS.h3)
-    this.doc.setFont('helvetica', 'bold')
+    this.doc.setFont(FONT_FAMILIES.body, 'bold')
     this.doc.text('Simulation Configuration', MARGINS.left, y)
     y += 10
 
@@ -575,7 +555,7 @@ export class SimulationPDFGenerator {
     // Parameters
     if (method.parameters.length > 0) {
       this.doc.setFontSize(FONTS.h3)
-      this.doc.setFont('helvetica', 'bold')
+      this.doc.setFont(FONT_FAMILIES.body, 'bold')
       this.doc.text('Input Parameters', MARGINS.left, y)
       y += 8
 
@@ -598,7 +578,7 @@ export class SimulationPDFGenerator {
     // Boundary conditions
     if (method.boundaryConditions.length > 0) {
       this.doc.setFontSize(FONTS.h3)
-      this.doc.setFont('helvetica', 'bold')
+      this.doc.setFont(FONT_FAMILIES.body, 'bold')
       this.doc.text('Boundary Conditions', MARGINS.left, y)
       y += 8
 
@@ -622,12 +602,12 @@ export class SimulationPDFGenerator {
     // Assumptions
     if (method.assumptions.length > 0) {
       this.doc.setFontSize(FONTS.h3)
-      this.doc.setFont('helvetica', 'bold')
+      this.doc.setFont(FONT_FAMILIES.body, 'bold')
       this.doc.text('Assumptions', MARGINS.left, y)
       y += 8
 
       this.doc.setFontSize(FONTS.body)
-      this.doc.setFont('helvetica', 'normal')
+      this.doc.setFont(FONT_FAMILIES.body, 'normal')
       method.assumptions.forEach((assumption, i) => {
         this.doc.text(`${i + 1}. ${assumption}`, MARGINS.left + 5, y)
         y += 6
@@ -646,7 +626,7 @@ export class SimulationPDFGenerator {
     // Key metrics table
     this.doc.setTextColor(...COLORS.text)
     this.doc.setFontSize(FONTS.h3)
-    this.doc.setFont('helvetica', 'bold')
+    this.doc.setFont(FONT_FAMILIES.body, 'bold')
     this.doc.text('Key Performance Metrics', MARGINS.left, y)
     y += 8
 
@@ -687,7 +667,7 @@ export class SimulationPDFGenerator {
       const conv = this.data.results.convergence
 
       this.doc.setFontSize(FONTS.h3)
-      this.doc.setFont('helvetica', 'bold')
+      this.doc.setFont(FONT_FAMILIES.body, 'bold')
       this.doc.text('Convergence Analysis', MARGINS.left, y)
       y += 10
 
@@ -696,7 +676,7 @@ export class SimulationPDFGenerator {
       this.doc.circle(MARGINS.left + 5, y - 2, 3, 'F')
 
       this.doc.setFontSize(FONTS.body)
-      this.doc.setFont('helvetica', 'normal')
+      this.doc.setFont(FONT_FAMILIES.body, 'normal')
       this.doc.text(
         `Status: ${conv.converged ? 'Converged' : 'Not Converged'}`,
         MARGINS.left + 12,
@@ -726,7 +706,7 @@ export class SimulationPDFGenerator {
       this.figureCount++
       this.doc.setTextColor(...COLORS.text)
       this.doc.setFontSize(FONTS.h3)
-      this.doc.setFont('helvetica', 'bold')
+      this.doc.setFont(FONT_FAMILIES.body, 'bold')
       this.doc.text(`Figure ${this.figureCount}: ${viz.title}`, MARGINS.left, y)
       y += 8
 
@@ -744,7 +724,7 @@ export class SimulationPDFGenerator {
           y += 85
         } catch {
           this.doc.setFontSize(FONTS.body)
-          this.doc.setFont('helvetica', 'italic')
+          this.doc.setFont(FONT_FAMILIES.body, 'italic')
           this.doc.setTextColor(...COLORS.textMuted)
           this.doc.text('[Visualization not available]', MARGINS.left, y)
           y += 10
@@ -766,7 +746,7 @@ export class SimulationPDFGenerator {
       // Description
       if (viz.description) {
         this.doc.setFontSize(FONTS.small)
-        this.doc.setFont('helvetica', 'italic')
+        this.doc.setFont(FONT_FAMILIES.body, 'italic')
         this.doc.setTextColor(...COLORS.textMuted)
         const descLines = this.doc.splitTextToSize(viz.description, this.getContentWidth())
         this.doc.text(descLines, MARGINS.left, y)
@@ -795,7 +775,7 @@ export class SimulationPDFGenerator {
 
     this.doc.setTextColor(...COLORS.white)
     this.doc.setFontSize(FONTS.h1)
-    this.doc.setFont('helvetica', 'bold')
+    this.doc.setFont(FONT_FAMILIES.body, 'bold')
     this.doc.text(`${(exergy.efficiency * 100).toFixed(1)}%`, MARGINS.left + 10, y + 20)
     this.doc.setFontSize(FONTS.small)
     this.doc.text('Second-Law Efficiency', MARGINS.left + 10, y + 28)
@@ -831,12 +811,12 @@ export class SimulationPDFGenerator {
     // Major losses
     this.doc.setTextColor(...COLORS.text)
     this.doc.setFontSize(FONTS.h3)
-    this.doc.setFont('helvetica', 'bold')
+    this.doc.setFont(FONT_FAMILIES.body, 'bold')
     this.doc.text('Major Sources of Exergy Loss', MARGINS.left, y)
     y += 8
 
     this.doc.setFontSize(FONTS.body)
-    this.doc.setFont('helvetica', 'normal')
+    this.doc.setFont(FONT_FAMILIES.body, 'normal')
     exergy.majorLosses.forEach((loss, i) => {
       this.doc.text(`${i + 1}. ${loss}`, MARGINS.left + 5, y)
       y += 6
@@ -858,7 +838,7 @@ export class SimulationPDFGenerator {
     // Summary
     this.doc.setTextColor(...COLORS.text)
     this.doc.setFontSize(FONTS.body)
-    this.doc.setFont('helvetica', 'normal')
+    this.doc.setFont(FONT_FAMILIES.body, 'normal')
     const summaryLines = this.doc.splitTextToSize(insights.summary, this.getContentWidth())
     this.doc.text(summaryLines, MARGINS.left, y)
     y += summaryLines.length * 5 + 15
@@ -877,21 +857,21 @@ export class SimulationPDFGenerator {
       if (categoryInsights.length === 0) return
 
       this.doc.setFontSize(FONTS.h3)
-      this.doc.setFont('helvetica', 'bold')
+      this.doc.setFont(FONT_FAMILIES.body, 'bold')
       this.doc.setTextColor(...categoryColors[category])
       this.doc.text(category.charAt(0).toUpperCase() + category.slice(1) + 's', MARGINS.left, y)
       y += 8
 
       this.doc.setTextColor(...COLORS.text)
       this.doc.setFontSize(FONTS.body)
-      this.doc.setFont('helvetica', 'normal')
+      this.doc.setFont(FONT_FAMILIES.body, 'normal')
 
       categoryInsights.forEach((insight) => {
-        this.doc.setFont('helvetica', 'bold')
+        this.doc.setFont(FONT_FAMILIES.body, 'bold')
         this.doc.text(`• ${insight.title}`, MARGINS.left + 5, y)
         y += 5
 
-        this.doc.setFont('helvetica', 'normal')
+        this.doc.setFont(FONT_FAMILIES.body, 'normal')
         const descLines = this.doc.splitTextToSize(insight.description, this.getContentWidth() - 10)
         this.doc.text(descLines, MARGINS.left + 8, y)
         y += descLines.length * 5 + 5
@@ -903,13 +883,13 @@ export class SimulationPDFGenerator {
     // Next steps
     if (insights.nextSteps.length > 0) {
       this.doc.setFontSize(FONTS.h3)
-      this.doc.setFont('helvetica', 'bold')
+      this.doc.setFont(FONT_FAMILIES.body, 'bold')
       this.doc.setTextColor(...COLORS.text)
       this.doc.text('Recommended Next Steps', MARGINS.left, y)
       y += 8
 
       this.doc.setFontSize(FONTS.body)
-      this.doc.setFont('helvetica', 'normal')
+      this.doc.setFont(FONT_FAMILIES.body, 'normal')
       insights.nextSteps.forEach((step, i) => {
         this.doc.text(`${i + 1}. ${step}`, MARGINS.left + 5, y)
         y += 6
@@ -953,12 +933,12 @@ export class SimulationPDFGenerator {
 
     // Most/least sensitive
     this.doc.setFontSize(FONTS.h3)
-    this.doc.setFont('helvetica', 'bold')
+    this.doc.setFont(FONT_FAMILIES.body, 'bold')
     this.doc.text('Most Sensitive Parameters:', MARGINS.left, y)
     y += 7
 
     this.doc.setFontSize(FONTS.body)
-    this.doc.setFont('helvetica', 'normal')
+    this.doc.setFont(FONT_FAMILIES.body, 'normal')
     sensitivity.mostSensitive.forEach((param) => {
       this.doc.text(`• ${param}`, MARGINS.left + 5, y)
       y += 5
@@ -984,7 +964,7 @@ export class SimulationPDFGenerator {
 
     this.doc.setTextColor(...COLORS.white)
     this.doc.setFontSize(FONTS.h1)
-    this.doc.setFont('helvetica', 'bold')
+    this.doc.setFont(FONT_FAMILIES.body, 'bold')
     this.doc.text(`${validation.overallAccuracy.toFixed(1)}%`, MARGINS.left + 10, y + 18)
     this.doc.setFontSize(FONTS.small)
     this.doc.text('Overall Accuracy', MARGINS.left + 10, y + 25)
@@ -994,7 +974,7 @@ export class SimulationPDFGenerator {
     // Validation results table
     this.doc.setTextColor(...COLORS.text)
     this.doc.setFontSize(FONTS.h3)
-    this.doc.setFont('helvetica', 'bold')
+    this.doc.setFont(FONT_FAMILIES.body, 'bold')
     this.doc.text(`Compared to: ${validation.comparedTo}`, MARGINS.left, y)
     y += 10
 
@@ -1034,7 +1014,7 @@ export class SimulationPDFGenerator {
     // Summary
     this.doc.setTextColor(...COLORS.text)
     this.doc.setFontSize(FONTS.body)
-    this.doc.setFont('helvetica', 'normal')
+    this.doc.setFont(FONT_FAMILIES.body, 'normal')
     const summaryLines = this.doc.splitTextToSize(conclusions.summary, this.getContentWidth())
     this.doc.text(summaryLines, MARGINS.left, y)
     y += summaryLines.length * 5 + 10
@@ -1042,12 +1022,12 @@ export class SimulationPDFGenerator {
     // Key findings
     if (conclusions.keyFindings.length > 0) {
       this.doc.setFontSize(FONTS.h3)
-      this.doc.setFont('helvetica', 'bold')
+      this.doc.setFont(FONT_FAMILIES.body, 'bold')
       this.doc.text('Key Findings', MARGINS.left, y)
       y += 8
 
       this.doc.setFontSize(FONTS.body)
-      this.doc.setFont('helvetica', 'normal')
+      this.doc.setFont(FONT_FAMILIES.body, 'normal')
       conclusions.keyFindings.forEach((finding, i) => {
         this.doc.text(`${i + 1}. ${finding}`, MARGINS.left + 5, y)
         y += 6
@@ -1058,12 +1038,12 @@ export class SimulationPDFGenerator {
     // Achievements
     if (conclusions.achievements.length > 0) {
       this.doc.setFontSize(FONTS.h3)
-      this.doc.setFont('helvetica', 'bold')
+      this.doc.setFont(FONT_FAMILIES.body, 'bold')
       this.doc.text('Achievements', MARGINS.left, y)
       y += 8
 
       this.doc.setFontSize(FONTS.body)
-      this.doc.setFont('helvetica', 'normal')
+      this.doc.setFont(FONT_FAMILIES.body, 'normal')
       conclusions.achievements.forEach((achievement) => {
         this.doc.text(`• ${achievement}`, MARGINS.left + 5, y)
         y += 6
@@ -1081,7 +1061,7 @@ export class SimulationPDFGenerator {
 
     this.doc.setTextColor(...COLORS.text)
     this.doc.setFontSize(FONTS.body)
-    this.doc.setFont('helvetica', 'normal')
+    this.doc.setFont(FONT_FAMILIES.body, 'normal')
 
     if (this.data.conclusions.limitations.length > 0) {
       this.data.conclusions.limitations.forEach((limitation, i) => {
@@ -1095,12 +1075,12 @@ export class SimulationPDFGenerator {
     // Methodology assumptions
     y += 15
     this.doc.setFontSize(FONTS.h3)
-    this.doc.setFont('helvetica', 'bold')
+    this.doc.setFont(FONT_FAMILIES.body, 'bold')
     this.doc.text('Modeling Assumptions', MARGINS.left, y)
     y += 8
 
     this.doc.setFontSize(FONTS.body)
-    this.doc.setFont('helvetica', 'normal')
+    this.doc.setFont(FONT_FAMILIES.body, 'normal')
     this.data.methodology.assumptions.forEach((assumption, i) => {
       const lines = this.doc.splitTextToSize(
         `${i + 1}. ${assumption}`,
@@ -1133,12 +1113,12 @@ export class SimulationPDFGenerator {
 
       this.doc.setTextColor(...COLORS.text)
       this.doc.setFontSize(FONTS.h3)
-      this.doc.setFont('helvetica', 'bold')
+      this.doc.setFont(FONT_FAMILIES.body, 'bold')
       this.doc.text(section.title, MARGINS.left, y)
       y += 8
 
       this.doc.setFontSize(FONTS.body)
-      this.doc.setFont('helvetica', 'normal')
+      this.doc.setFont(FONT_FAMILIES.body, 'normal')
       section.items.forEach((item, i) => {
         const lines = this.doc.splitTextToSize(`${i + 1}. ${item}`, this.getContentWidth())
         this.doc.text(lines, MARGINS.left + 5, y)
@@ -1158,7 +1138,7 @@ export class SimulationPDFGenerator {
 
     this.doc.setTextColor(...COLORS.text)
     this.doc.setFontSize(FONTS.body)
-    this.doc.setFont('helvetica', 'normal')
+    this.doc.setFont(FONT_FAMILIES.body, 'normal')
 
     this.data.references.forEach((ref, i) => {
       const refText = `[${i + 1}] ${ref.citation}`
@@ -1197,7 +1177,7 @@ export class SimulationPDFGenerator {
       this.tableCount++
       this.doc.setTextColor(...COLORS.text)
       this.doc.setFontSize(FONTS.h3)
-      this.doc.setFont('helvetica', 'bold')
+      this.doc.setFont(FONT_FAMILIES.body, 'bold')
       this.doc.text(`Table ${this.tableCount}: ${table.title}`, MARGINS.left, y)
       y += 8
 
@@ -1216,12 +1196,12 @@ export class SimulationPDFGenerator {
     // Download links
     if (this.data.appendix.downloadLinks && this.data.appendix.downloadLinks.length > 0) {
       this.doc.setFontSize(FONTS.h3)
-      this.doc.setFont('helvetica', 'bold')
+      this.doc.setFont(FONT_FAMILIES.body, 'bold')
       this.doc.text('Available Data Downloads', MARGINS.left, y)
       y += 8
 
       this.doc.setFontSize(FONTS.body)
-      this.doc.setFont('helvetica', 'normal')
+      this.doc.setFont(FONT_FAMILIES.body, 'normal')
       this.data.appendix.downloadLinks.forEach((link) => {
         this.doc.text(
           `• ${link.description} (${link.format.toUpperCase()})`,
@@ -1247,7 +1227,7 @@ export class SimulationPDFGenerator {
 
     this.doc.setTextColor(...COLORS.primary)
     this.doc.setFontSize(FONTS.h1)
-    this.doc.setFont('helvetica', 'bold')
+    this.doc.setFont(FONT_FAMILIES.body, 'bold')
     this.doc.text(title, MARGINS.left, 35)
 
     // Underline
